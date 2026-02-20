@@ -1,0 +1,22 @@
+import 'package:flutter/material.dart';
+
+class EventLegendItem {
+  final Color color;
+  final String label;
+
+  const EventLegendItem({required this.color, required this.label});
+}
+
+const eventTypes = <String>[
+  'Vacunación',
+  'Mantenimiento',
+  'Alerta',
+  'Recordatorio',
+];
+
+const eventLegendItems = <EventLegendItem>[
+  EventLegendItem(color: Colors.teal, label: 'Vacunación'),
+  EventLegendItem(color: Colors.amber, label: 'Mantenimiento'),
+  EventLegendItem(color: Colors.redAccent, label: 'Alerta'),
+  EventLegendItem(color: Colors.indigo, label: 'Recordatorio'),
+];
