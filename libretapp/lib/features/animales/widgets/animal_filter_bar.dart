@@ -26,57 +26,49 @@ class AnimalFilterBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final chips = <_StageChipConfig>[
-      _StageChipConfig(
-        l10n.stageFilterCalf,
-        [LifeStage.calf, LifeStage.calfMale, LifeStage.calfFemale],
-        AnimalPalette.stageColor(LifeStage.calf),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterHeifer,
-        [LifeStage.heifer, LifeStage.youngBull],
-        AnimalPalette.stageColor(LifeStage.heifer),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterSteer,
-        [LifeStage.steer],
-        AnimalPalette.stageColor(LifeStage.steer),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterCow,
-        [LifeStage.cow],
-        AnimalPalette.stageColor(LifeStage.cow),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterBull,
-        [LifeStage.bull, LifeStage.youngBull],
-        AnimalPalette.stageColor(LifeStage.bull),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterColt,
-        [LifeStage.colt, LifeStage.filly],
-        AnimalPalette.stageColor(LifeStage.colt),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterHorse,
-        [LifeStage.horse, LifeStage.mare],
-        AnimalPalette.stageColor(LifeStage.horse),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterDonkey,
-        [LifeStage.donkey, LifeStage.donkeyFemale],
-        AnimalPalette.stageColor(LifeStage.donkey),
-      ),
-      _StageChipConfig(
-        l10n.stageFilterMule,
-        [LifeStage.mule],
-        AnimalPalette.stageColor(LifeStage.mule),
-      ),
+      _StageChipConfig(l10n.stageFilterCalf, [
+        LifeStage.calf,
+        LifeStage.calfMale,
+        LifeStage.calfFemale,
+      ], AnimalPalette.stageColor(LifeStage.calf)),
+      _StageChipConfig(l10n.stageFilterHeifer, [
+        LifeStage.heifer,
+      ], AnimalPalette.stageColor(LifeStage.heifer)),
+      _StageChipConfig(l10n.stageFilterYoungBull, [
+        LifeStage.youngBull,
+      ], AnimalPalette.stageColor(LifeStage.youngBull)),
+      _StageChipConfig(l10n.stageFilterSteer, [
+        LifeStage.steer,
+      ], AnimalPalette.stageColor(LifeStage.steer)),
+      _StageChipConfig(l10n.stageFilterCow, [
+        LifeStage.cow,
+      ], AnimalPalette.stageColor(LifeStage.cow)),
+      _StageChipConfig(l10n.stageFilterBull, [
+        LifeStage.bull,
+      ], AnimalPalette.stageColor(LifeStage.bull)),
+      _StageChipConfig(l10n.stageFilterColt, [
+        LifeStage.colt,
+        LifeStage.filly,
+      ], AnimalPalette.stageColor(LifeStage.colt)),
+      _StageChipConfig(l10n.stageFilterHorse, [
+        LifeStage.horse,
+      ], AnimalPalette.stageColor(LifeStage.horse)),
+      _StageChipConfig(l10n.stageFilterMare, [
+        LifeStage.mare,
+      ], AnimalPalette.stageColor(LifeStage.mare)),
+      _StageChipConfig(l10n.stageFilterDonkey, [
+        LifeStage.donkey,
+        LifeStage.donkeyFemale,
+      ], AnimalPalette.stageColor(LifeStage.donkey)),
+      _StageChipConfig(l10n.stageFilterMule, [
+        LifeStage.mule,
+      ], AnimalPalette.stageColor(LifeStage.mule)),
     ];
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
           child: TextField(
             onChanged: onSearchChanged,
             decoration: InputDecoration(
@@ -143,7 +135,7 @@ class AnimalFilterBar extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 1),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,7 +177,6 @@ class AnimalFilterBar extends StatelessWidget {
       showCheckmark: false,
     );
   }
-
 }
 
 class _StageChipConfig {

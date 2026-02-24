@@ -18,3 +18,5 @@ export 'quick_actions_fab.dart';
 export 'records_tab.dart';
 export 'reproduction_form_sheet.dart';
 export 'weight_form_sheet.dart';
+export 'animal_filters_sheet.dart';
+export 'animal_search_overlay.dart';

@@ -164,6 +164,42 @@ abstract class AppLocalizations {
   /// **'Arete, nombre, raza, lote...'**
   String get animalsSearchHint;
 
+  /// No description provided for @animalsAdvancedSearch.
+  ///
+  /// In es, this message translates to:
+  /// **'Búsqueda avanzada'**
+  String get animalsAdvancedSearch;
+
+  /// No description provided for @animalsRecentSearches.
+  ///
+  /// In es, this message translates to:
+  /// **'Búsquedas recientes'**
+  String get animalsRecentSearches;
+
+  /// No description provided for @animalsRecentActivity.
+  ///
+  /// In es, this message translates to:
+  /// **'Actividad reciente'**
+  String get animalsRecentActivity;
+
+  /// No description provided for @animalsClearHistory.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar historial'**
+  String get animalsClearHistory;
+
+  /// No description provided for @animalsFilters.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtros'**
+  String get animalsFilters;
+
+  /// No description provided for @animalsNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin resultados'**
+  String get animalsNoResults;
+
   /// No description provided for @animalsStageFilterLabel.
   ///
   /// In es, this message translates to:
@@ -185,14 +221,20 @@ abstract class AppLocalizations {
   /// No description provided for @stageFilterCalf.
   ///
   /// In es, this message translates to:
-  /// **'Becerro/Becerra'**
+  /// **'Becerros'**
   String get stageFilterCalf;
 
   /// No description provided for @stageFilterHeifer.
   ///
   /// In es, this message translates to:
-  /// **'Vaquilla/Torete'**
+  /// **'Vaquilla'**
   String get stageFilterHeifer;
+
+  /// No description provided for @stageFilterYoungBull.
+  ///
+  /// In es, this message translates to:
+  /// **'Torete'**
+  String get stageFilterYoungBull;
 
   /// No description provided for @stageFilterSteer.
   ///
@@ -221,8 +263,14 @@ abstract class AppLocalizations {
   /// No description provided for @stageFilterHorse.
   ///
   /// In es, this message translates to:
-  /// **'Caballo/Yegua'**
+  /// **'Caballo'**
   String get stageFilterHorse;
+
+  /// No description provided for @stageFilterMare.
+  ///
+  /// In es, this message translates to:
+  /// **'Yegua'**
+  String get stageFilterMare;
 
   /// No description provided for @stageFilterDonkey.
   ///

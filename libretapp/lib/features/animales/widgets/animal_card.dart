@@ -12,11 +12,13 @@ class AnimalCard extends StatelessWidget {
     required this.animal,
     this.location,
     this.batchLabel,
+    this.onTap,
   });
 
   final AnimalEntity animal;
   final LocationEntity? location;
   final String? batchLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,7 @@ class AnimalCard extends StatelessWidget {
     final stageColor = AnimalPalette.stageColor(animal.lifeStage);
     final profile = profileVisualFor(animal, stageColor);
     final stageLabel = animal.lifeStage.displayName;
+
     final stageAsset = profile.asset;
     final sexoSymbol = animal.sex == Sex.male ? '♂' : '♀';
     final sexoColor = animal.sex == Sex.male
@@ -32,20 +35,34 @@ class AnimalCard extends StatelessWidget {
     final healthColor = colorFromHex(animal.healthStatus.hexColor);
     final riskColor = colorFromHex(animal.riskLevel.hexColor);
     final locationLabel = location?.name ?? 'Sin ubicación';
-    final batch = batchLabel ?? 'Sin lote';
+    final breedLabel = animal.breed.isNotEmpty
+        ? animal.breed
+        : animal.species.displayName;
     final secondaryLabel = (animal.visualId ?? '').isNotEmpty
         ? animal.visualId!
         : (animal.breed.isNotEmpty ? animal.breed : animal.species.displayName);
+    final ageMonths = animal.ageMonths;
+    final ageYears = ageMonths ~/ 12;
+    final ageRemainderMonths = ageMonths % 12;
+    final ageLabel = ageYears > 0
+        ? [
+            '$ageYears año${ageYears == 1 ? '' : 's'}',
+            if (ageRemainderMonths > 0)
+              '$ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}',
+          ].join(' ')
+        : '$ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}';
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 3,
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(AppRoutes.animalDetallePath(animal.uuid)),
+        onTap:
+            onTap ??
+            () => context.push(AppRoutes.animalDetallePath(animal.uuid)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -57,7 +74,7 @@ class AnimalCard extends StatelessWidget {
                     stageAsset: stageAsset,
                     profile: profile,
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 7),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,26 +102,41 @@ class AnimalCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          secondaryLabel,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Colors.grey[800],
-                                fontWeight: FontWeight.w600,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              secondaryLabel,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.grey[900],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              ageLabel,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 2),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
+                          spacing: 4,
+                          runSpacing: 2,
                           children: [
                             TagChip(label: stageLabel, color: stageColor),
                             TagChip(
-                              label: '${animal.ageMonths} meses',
-                              color: Colors.blueGrey,
+                              label: breedLabel,
+                              color: const Color.fromARGB(255, 83, 155, 148),
                             ),
                           ],
                         ),
@@ -113,30 +145,36 @@ class AnimalCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 18,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _InlineInfo(icon: Icons.place_outlined, label: locationLabel),
-                  _InlineInfo(icon: Icons.inventory_2_outlined, label: batch),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                children: [
-                  _StatusPill(
-                    icon: Icons.monitor_heart,
-                    label: animal.healthStatus.displayName,
-                    color: healthColor,
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _InlineInfo(
+                        icon: Icons.place_outlined,
+                        label: locationLabel,
+                      ),
+                    ],
                   ),
-                  _StatusPill(
-                    icon: Icons.shield_outlined,
-                    label: animal.riskLevel.displayName,
-                    color: riskColor,
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 2,
+                    children: [
+                      _StatusPill(
+                        icon: Icons.monitor_heart,
+                        label: animal.healthStatus.displayName,
+                        color: healthColor,
+                      ),
+                      _StatusPill(
+                        icon: Icons.shield_outlined,
+                        label: animal.riskLevel.displayName,
+                        color: riskColor,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -162,8 +200,8 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 70,
-      height: 70,
+      width: 80,
+      height: 80,
       decoration: BoxDecoration(
         color: stageColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
@@ -197,10 +235,10 @@ class _InlineInfo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 18, color: Colors.grey[800]),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w600,
             color: Colors.grey[800],
           ),
@@ -257,7 +295,7 @@ class TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),

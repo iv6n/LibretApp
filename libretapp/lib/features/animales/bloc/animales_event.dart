@@ -69,15 +69,6 @@ class RenameBatch extends AnimalesEvent {
   List<Object> get props => [oldBatchId, newBatchId];
 }
 
-class SearchAnimales extends AnimalesEvent {
-  final String query;
-
-  const SearchAnimales(this.query);
-
-  @override
-  List<Object> get props => [query];
-}
-
 class AnimalesStreamUpdated extends AnimalesEvent {
   final List<AnimalEntity> animales;
 
@@ -94,4 +85,26 @@ class AnimalesStreamFailed extends AnimalesEvent {
 
   @override
   List<Object> get props => [message];
+}
+
+class ToggleSearch extends AnimalesEvent {
+  const ToggleSearch({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  List<Object> get props => [enabled];
+}
+
+class SearchQueryChanged extends AnimalesEvent {
+  const SearchQueryChanged(this.query);
+
+  final String query;
+
+  @override
+  List<Object> get props => [query];
+}
+
+class ClearSearch extends AnimalesEvent {
+  const ClearSearch();
 }

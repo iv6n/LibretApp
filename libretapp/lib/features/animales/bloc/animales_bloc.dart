@@ -5,13 +5,15 @@ import 'package:libretapp/features/animales/bloc/animales_event.dart';
 import 'package:libretapp/features/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/animales/infrastructure/animal_repository.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   final AnimalRepository repository;
 
   StreamSubscription<List<AnimalEntity>>? _subscription;
   List<AnimalEntity> _latest = const [];
-  String _query = '';
+  String _searchQuery = '';
+  bool _isSearching = false;
 
   AnimalesBloc(this.repository) : super(const AnimalesInitial()) {
     on<LoadAnimales>(_onLoadAnimales);
@@ -20,9 +22,14 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     on<AddAnimal>(_onAddAnimal);
     on<UpdateAnimal>(_onUpdateAnimal);
     on<DeleteAnimal>(_onDeleteAnimal);
-    on<SearchAnimales>(_onSearchAnimales);
     on<AssignAnimalLocationBatch>(_onAssignAnimalLocationBatch);
     on<RenameBatch>(_onRenameBatch);
+    on<ToggleSearch>(_onToggleSearch);
+    on<SearchQueryChanged>(
+      _onSearchQueryChanged,
+      transformer: _debounce(const Duration(milliseconds: 260)),
+    );
+    on<ClearSearch>(_onClearSearch);
   }
 
   Future<void> _onLoadAnimales(
@@ -47,7 +54,15 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     Emitter<AnimalesState> emit,
   ) {
     _latest = event.animales;
-    emit(AnimalesLoaded(_applyFilter(_latest, _query)));
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      AnimalesLoaded(
+        allAnimals: _latest,
+        visibleAnimals: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
   }
 
   void _onStreamFailed(
@@ -93,12 +108,50 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     }
   }
 
-  Future<void> _onSearchAnimales(
-    SearchAnimales event,
+  void _onToggleSearch(ToggleSearch event, Emitter<AnimalesState> emit) {
+    _isSearching = event.enabled;
+    if (!_isSearching) {
+      _searchQuery = '';
+    }
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      AnimalesLoaded(
+        allAnimals: _latest,
+        visibleAnimals: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
+  }
+
+  Future<void> _onSearchQueryChanged(
+    SearchQueryChanged event,
     Emitter<AnimalesState> emit,
   ) async {
-    _query = event.query.toLowerCase();
-    emit(AnimalesLoaded(_applyFilter(_latest, _query)));
+    _searchQuery = event.query.trim();
+    _isSearching = true;
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      AnimalesLoaded(
+        allAnimals: _latest,
+        visibleAnimals: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
+  }
+
+  void _onClearSearch(ClearSearch event, Emitter<AnimalesState> emit) {
+    _searchQuery = '';
+    _isSearching = false;
+    emit(
+      AnimalesLoaded(
+        allAnimals: _latest,
+        visibleAnimals: _latest,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
   }
 
   Future<void> _onAssignAnimalLocationBatch(
@@ -157,12 +210,29 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   }
 
   List<AnimalEntity> _applyFilter(List<AnimalEntity> source, String query) {
-    if (query.isEmpty) return source;
-    return source.where((a) {
-      final display = (a.visualId ?? a.earTagNumber).toLowerCase();
-      final breed = a.breed.toLowerCase();
-      return display.contains(query) || breed.contains(query);
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return source;
+    return source.where((animal) {
+      final fields = <String?>[
+        animal.earTagNumber,
+        animal.visualId,
+        animal.breed,
+        animal.species.displayName,
+        animal.category.displayName,
+        animal.lifeStage.displayName,
+        animal.sex.displayName,
+        animal.rfidTag,
+        animal.batchId,
+        animal.chronicNotes,
+      ];
+      return fields.any(
+        (field) => (field ?? '').toLowerCase().contains(normalized),
+      );
     }).toList();
+  }
+
+  EventTransformer<T> _debounce<T>(Duration duration) {
+    return (events, mapper) => events.debounce(duration).switchMap(mapper);
   }
 
   @override

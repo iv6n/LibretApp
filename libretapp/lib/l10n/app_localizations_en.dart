@@ -42,6 +42,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animalsSearchHint => 'Ear tag, name, breed, lot...';
 
   @override
+  String get animalsAdvancedSearch => 'Advanced search';
+
+  @override
+  String get animalsRecentSearches => 'Recent searches';
+
+  @override
+  String get animalsRecentActivity => 'Recent activity';
+
+  @override
+  String get animalsClearHistory => 'Clear history';
+
+  @override
+  String get animalsFilters => 'Filters';
+
+  @override
+  String get animalsNoResults => 'No results';
+
+  @override
   String get animalsStageFilterLabel => 'Stage filters';
 
   @override
@@ -62,7 +80,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stageFilterCalf => 'Calf';
 
   @override
-  String get stageFilterHeifer => 'Heifer / Young bull';
+  String get stageFilterHeifer => 'Heifer';
+
+  @override
+  String get stageFilterYoungBull => 'Young bull';
 
   @override
   String get stageFilterSteer => 'Steer';
@@ -77,7 +98,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stageFilterColt => 'Colt / Filly';
 
   @override
-  String get stageFilterHorse => 'Horse / Mare';
+  String get stageFilterHorse => 'Horse';
+
+  @override
+  String get stageFilterMare => 'Mare';
 
   @override
   String get stageFilterDonkey => 'Donkey';

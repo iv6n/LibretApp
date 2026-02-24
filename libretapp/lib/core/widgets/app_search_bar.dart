@@ -46,6 +46,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
     final showClear = widget.controller.text.isNotEmpty;
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null)

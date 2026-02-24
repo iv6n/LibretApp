@@ -42,6 +42,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get animalsSearchHint => 'Arete, nombre, raza, lote...';
 
   @override
+  String get animalsAdvancedSearch => 'Búsqueda avanzada';
+
+  @override
+  String get animalsRecentSearches => 'Búsquedas recientes';
+
+  @override
+  String get animalsRecentActivity => 'Actividad reciente';
+
+  @override
+  String get animalsClearHistory => 'Limpiar historial';
+
+  @override
+  String get animalsFilters => 'Filtros';
+
+  @override
+  String get animalsNoResults => 'Sin resultados';
+
+  @override
   String get animalsStageFilterLabel => 'Filtros por etapa';
 
   @override
@@ -59,10 +77,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get stageFilterCalf => 'Becerro/Becerra';
+  String get stageFilterCalf => 'Becerros';
 
   @override
-  String get stageFilterHeifer => 'Vaquilla/Torete';
+  String get stageFilterHeifer => 'Vaquilla';
+
+  @override
+  String get stageFilterYoungBull => 'Torete';
 
   @override
   String get stageFilterSteer => 'Novillo';
@@ -77,7 +98,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get stageFilterColt => 'Potro/Potranca';
 
   @override
-  String get stageFilterHorse => 'Caballo/Yegua';
+  String get stageFilterHorse => 'Caballo';
+
+  @override
+  String get stageFilterMare => 'Yegua';
 
   @override
   String get stageFilterDonkey => 'Burro/Burra';
