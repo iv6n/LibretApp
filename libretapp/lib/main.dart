@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_bloc.dart';
 import 'package:libretapp/app/app.dart';
+import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/performance/interaction_tracer.dart';
 import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/core/performance/navigation_tracer.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/services/theme_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,15 +20,17 @@ void main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   final isDark =
       WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-          Brightness.dark;
+      Brightness.dark;
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
+      // Slight tint keeps the nav bar legible while staying edge-to-edge.
       systemNavigationBarColor: Colors.transparent,
       systemNavigationBarDividerColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      systemNavigationBarIconBrightness:
-          isDark ? Brightness.light : Brightness.dark,
+      systemNavigationBarIconBrightness: isDark
+          ? Brightness.light
+          : Brightness.dark,
       systemNavigationBarContrastEnforced: false,
     ),
   );
@@ -46,10 +50,21 @@ void main() async {
   startupSpan.stop(context: {'phase': 'bootstrap'});
 
   runApp(
-    BlocProvider(
-      create: (context) =>
-          AppBloc(prefs: locator<SharedPrefsService>())
-            ..add(const AppStarted()),
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => ThemeBloc(
+            repository: locator<ThemeRepository>(),
+            platformBrightness:
+                WidgetsBinding.instance.platformDispatcher.platformBrightness,
+          )..add(const ThemeStarted()),
+        ),
+        BlocProvider(
+          create: (context) =>
+              AppBloc(prefs: locator<SharedPrefsService>())
+                ..add(const AppStarted()),
+        ),
+      ],
       child: const LibretApp(),
     ),
   );

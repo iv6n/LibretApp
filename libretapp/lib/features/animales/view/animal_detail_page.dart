@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/animales/application/bloc/animal_bloc.dart';
@@ -16,7 +17,6 @@ import 'package:libretapp/features/animales/infrastructure/animal_repository.dar
 import 'package:libretapp/features/animales/widgets/widgets.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
-import 'package:libretapp/app/app_shell.dart';
 
 /// Detail page for a single animal.
 ///
@@ -24,12 +24,14 @@ import 'package:libretapp/app/app_shell.dart';
 class AnimalDetailPage extends StatefulWidget {
   AnimalDetailPage({
     required this.animalUuid,
+    this.showQuickActions = true,
     AnimalRepository? repository,
     super.key,
   }) : repository = repository ?? locator<AnimalRepository>();
 
   final String animalUuid;
   final AnimalRepository repository;
+  final bool showQuickActions;
 
   @override
   State<AnimalDetailPage> createState() => _AnimalDetailPageState();
@@ -121,7 +123,8 @@ class _AnimalDetailPageState extends State<AnimalDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final fabBottomPadding = AppShell.fabDockPadding(context);
+    final fabBottomPadding =
+        widget.showQuickActions ? ShellInsets.fabDockPadding(context) : 0.0;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.animalDetailTitle),
@@ -133,54 +136,58 @@ class _AnimalDetailPageState extends State<AnimalDetailPage> {
           ),
         ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: fabBottomPadding),
-        child: QuickActionsFab(
-          onAddWeight: () => showWeightForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddReproduction: () => showReproductionForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddProduction: () => showProductionForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddHealth: () => showHealthForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddCommercial: () => showCommercialForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddMovement: () => showMovementForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-          onAddCost: () => showCostForm(
-            context,
-            animalUuid: widget.animalUuid,
-            dispatchAndAwait: _dispatchAndAwait,
-            onReload: _reload,
-          ),
-        ),
-      ),
+      floatingActionButtonLocation: widget.showQuickActions
+          ? FloatingActionButtonLocation.endDocked
+          : null,
+      floatingActionButton: widget.showQuickActions
+          ? Padding(
+              padding: EdgeInsets.only(bottom: fabBottomPadding),
+              child: QuickActionsFab(
+                onAddWeight: () => showWeightForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddReproduction: () => showReproductionForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddProduction: () => showProductionForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddHealth: () => showHealthForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddCommercial: () => showCommercialForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddMovement: () => showMovementForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+                onAddCost: () => showCostForm(
+                  context,
+                  animalUuid: widget.animalUuid,
+                  dispatchAndAwait: _dispatchAndAwait,
+                  onReload: _reload,
+                ),
+              ),
+            )
+          : null,
       body: FutureBuilder<DetailData>(
         future: _future,
         builder: (context, snapshot) {

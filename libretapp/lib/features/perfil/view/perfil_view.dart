@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/app/app_shell.dart';
+import 'package:libretapp/app/theme/theme_bloc.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_state.dart';
 import 'package:libretapp/features/perfil/widgets/widgets.dart';
@@ -10,7 +11,7 @@ class PerfilView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = AppShell.bottomSafePadding(context);
+    final bottomInset = ShellInsets.bottomSafePadding(context);
 
     return BlocBuilder<PerfilBloc, PerfilState>(
       builder: (context, state) {
@@ -42,6 +43,8 @@ class PerfilView extends StatelessWidget {
                 const SizedBox(height: 16),
                 ProfileField(label: 'Dirección', value: perfil.direccion),
                 const SizedBox(height: 32),
+                const _ThemeToggleTile(),
+                const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -59,6 +62,27 @@ class PerfilView extends StatelessWidget {
         }
 
         return const SizedBox.shrink();
+      },
+    );
+  }
+}
+
+class _ThemeToggleTile extends StatelessWidget {
+  const _ThemeToggleTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ThemeBloc, ThemeState>(
+      builder: (context, state) {
+        final isDark = state.themeMode == ThemeMode.dark;
+        return SwitchListTile(
+          title: const Text('Tema oscuro'),
+          subtitle: const Text('Activa o desactiva el modo oscuro'),
+          value: isDark,
+          onChanged: (_) => context.read<ThemeBloc>().add(
+            ThemeModeChanged(isDark ? ThemeMode.light : ThemeMode.dark),
+          ),
+        );
       },
     );
   }

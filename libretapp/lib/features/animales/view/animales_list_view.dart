@@ -2,9 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/app/app_shell.dart';
+import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/animales/animals.dart';
 import 'package:libretapp/features/animales/domain/animal_palette.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -51,42 +53,8 @@ class _AnimalesListViewState extends State<AnimalesListView> {
     });
   }
 
-  void _openAnimalDetailSheet(AnimalEntity animal) {
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      builder: (ctx) {
-        return FractionallySizedBox(
-          heightFactor: 0.95,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 12,
-                  offset: Offset(0, -4),
-                ),
-              ],
-            ),
-            child: BlocProvider(
-              create: (_) =>
-                  AnimalBloc(animalRepository: locator<AnimalRepository>()),
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                child: AnimalDetailPage(animalUuid: animal.uuid),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+  void _openAnimalDetail(AnimalEntity animal) {
+    context.push(AppRoutes.animalDetallePath(animal.uuid));
   }
 
   Future<void> _openFiltersSheet() async {
@@ -113,38 +81,46 @@ class _AnimalesListViewState extends State<AnimalesListView> {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final bottomInset = AppShell.bottomSafePadding(context);
-        final fabBottomPadding = AppShell.fabDockPadding(context);
-        final listBottomPadding = max(bottomInset + 2, fabBottomPadding + 8);
+        final bottomInset = ShellInsets.bottomSafePadding(context);
+        final listBottomPadding = bottomInset + 2;
         final uiState = _controller.state;
+        final isSearching = context.select<AnimalesBloc, bool>((bloc) {
+          final state = bloc.state;
+          return state is AnimalesLoaded ? state.isSearching : false;
+        });
 
-        return Scaffold(
-          body: NestedScrollView(
-            controller: _scrollController,
-            headerSliverBuilder: (context, innerScrolled) => [
-              AnimalesSearchAppBar(
-                l10n: l10n,
-                isAtTop: _isAtTop,
-                onOpenFilters: _openFiltersSheet,
-              ),
-            ],
-            body: BlocBuilder<AnimalesBloc, AnimalesState>(
-              builder: (context, state) =>
-                  _buildBody(state, listBottomPadding, l10n),
-            ),
+        final fabConfig = ShellFabConfig(
+          id: 'animales',
+          label: 'Agregar',
+          icon: Icons.add,
+          heroTag: 'fab_animales',
+          onPressed: () => showCreateAnimalSheet(
+            context,
+            locations: uiState.locations,
+            generateUuid: _generateUuid,
+            onLocationsRefresh: _controller.refreshLocations,
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-          floatingActionButton: Padding(
-            padding: EdgeInsets.only(bottom: fabBottomPadding),
-            child: FloatingActionButton.extended(
-              onPressed: () => showCreateAnimalSheet(
-                context,
-                locations: uiState.locations,
-                generateUuid: _generateUuid,
-                onLocationsRefresh: _controller.refreshLocations,
+        );
+
+        return ShellFabConfigScope(
+          config: fabConfig,
+          child: ShellChromeScope(
+            visible: !isSearching,
+            child: Scaffold(
+              body: NestedScrollView(
+                controller: _scrollController,
+                headerSliverBuilder: (context, innerScrolled) => [
+                  AnimalesSearchAppBar(
+                    l10n: l10n,
+                    isAtTop: _isAtTop,
+                    onOpenFilters: _openFiltersSheet,
+                  ),
+                ],
+                body: BlocBuilder<AnimalesBloc, AnimalesState>(
+                  builder: (context, state) =>
+                      _buildBody(state, listBottomPadding, l10n),
+                ),
               ),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.navAnimals),
             ),
           ),
         );
@@ -170,6 +146,7 @@ class _AnimalesListViewState extends State<AnimalesListView> {
     }
 
     final filtered = _controller.applyFilters(state.visibleAnimals);
+    final stageCounts = _countByStage(state.allAnimals);
 
     return RefreshIndicator(
       onRefresh: () async => context.read<AnimalesBloc>().add(
@@ -185,9 +162,10 @@ class _AnimalesListViewState extends State<AnimalesListView> {
           l10n: l10n,
           selectedStages: _controller.state.selectedStages,
           availableStages: state.allAnimals.map((a) => a.lifeStage).toSet(),
+          stageCounts: stageCounts,
           onStagesChanged: _controller.setStages,
           locationResolver: _controller.locationById,
-          onOpenDetail: _openAnimalDetailSheet,
+          onOpenDetail: _openAnimalDetail,
         ),
       ),
     );
@@ -202,6 +180,7 @@ List<Widget> _buildSlivers({
   required AppLocalizations l10n,
   required Set<LifeStage> selectedStages,
   required Set<LifeStage> availableStages,
+  required Map<LifeStage, int> stageCounts,
   required ValueChanged<Set<LifeStage>> onStagesChanged,
   required LocationEntity? Function(String?) locationResolver,
   required void Function(AnimalEntity) onOpenDetail,
@@ -229,11 +208,11 @@ List<Widget> _buildSlivers({
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _StageFilterChips(
+              _stageFilterChips(
                 l10n: l10n,
                 selectedStages: selectedStages,
                 availableStages: availableStages,
-                totalCount: filtered.length,
+                stageCounts: stageCounts,
                 theme: theme,
                 onStagesChanged: onStagesChanged,
               ),
@@ -256,15 +235,15 @@ List<Widget> _buildSlivers({
     else ...[
       SliverToBoxAdapter(
         child: _CenteredSection(
-          padding: const EdgeInsets.fromLTRB(6, 0, 8, 2),
+          padding: const EdgeInsets.fromLTRB(2, 0, 4, 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _StageFilterChips(
+              _stageFilterChips(
                 l10n: l10n,
                 selectedStages: selectedStages,
                 availableStages: availableStages,
-                totalCount: filtered.length,
+                stageCounts: stageCounts,
                 theme: theme,
                 onStagesChanged: onStagesChanged,
               ),
@@ -281,7 +260,7 @@ List<Widget> _buildSlivers({
                     const Spacer(),
                     if (isOnlyCalfFilter)
                       Text(
-                        '${calfFemaleCount} ♀   ${calfMaleCount} ♂',
+                        '$calfFemaleCount ♀   $calfMaleCount ♂',
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Colors.grey[700],
@@ -343,11 +322,11 @@ class _ClearFiltersChip extends StatelessWidget {
   }
 }
 
-Widget _StageFilterChips({
+Widget _stageFilterChips({
   required AppLocalizations l10n,
   required Set<LifeStage> selectedStages,
   required Set<LifeStage> availableStages,
-  required int totalCount,
+  required Map<LifeStage, int> stageCounts,
   required ThemeData theme,
   required ValueChanged<Set<LifeStage>> onStagesChanged,
 }) {
@@ -403,7 +382,7 @@ Widget _StageFilterChips({
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             itemCount: configs.length + (hasStageFilters ? 2 : 0),
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (context, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final bool isLeadingClear = hasStageFilters && index == 0;
               final bool isTrailingClear =
@@ -417,16 +396,29 @@ Widget _StageFilterChips({
               final config = configs[configIndex];
               final isSelected = config.stages.any(selectedStages.contains);
               final color = config.color;
+              final count = config.stages
+                  .map((s) => stageCounts[s] ?? 0)
+                  .fold<int>(0, (a, b) => a + b);
+              final label = count > 0 ? '${config.label} $count' : config.label;
+              final labelColor = isSelected
+                  ? Colors.white
+                  : color.withValues(alpha: 0.86);
+              final bgColor = isSelected
+                  ? color
+                  : color.withValues(alpha: 0.18);
+              final borderColor = isSelected
+                  ? color.withValues(alpha: 0.9)
+                  : Colors.transparent;
 
               return ChoiceChip(
                 label: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Text(
-                    config.label,
+                    label,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? color : Colors.grey[800],
+                      color: labelColor,
                     ),
                   ),
                 ),
@@ -445,13 +437,9 @@ Widget _StageFilterChips({
                   vertical: -2,
                 ),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: color.withValues(alpha: 0.10),
-                selectedColor: color.withValues(alpha: 0.20),
-                shape: StadiumBorder(
-                  side: BorderSide(
-                    color: isSelected ? color : Colors.grey.shade300,
-                  ),
-                ),
+                backgroundColor: bgColor,
+                selectedColor: bgColor,
+                shape: StadiumBorder(side: BorderSide(color: borderColor)),
                 showCheckmark: false,
               );
             },
@@ -604,6 +592,11 @@ class _AnimalesSearchAppBarState extends State<AnimalesSearchAppBar> {
     required bool showSearchIcon,
   }) {
     final bloc = context.read<AnimalesBloc>();
+    final searchPillColor = theme.colorScheme.surface;
+    final searchHintStyle = theme.textTheme.bodySmall?.copyWith(
+      color: Colors.grey[600],
+      fontWeight: FontWeight.w500,
+    );
 
     return SizedBox(
       key: const ValueKey('animales_normal_appbar'),
@@ -746,4 +739,12 @@ class _CenteredSection extends StatelessWidget {
       child: Padding(padding: padding, child: child),
     );
   }
+}
+
+Map<LifeStage, int> _countByStage(List<AnimalEntity> animals) {
+  final counts = <LifeStage, int>{};
+  for (final animal in animals) {
+    counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+  }
+  return counts;
 }

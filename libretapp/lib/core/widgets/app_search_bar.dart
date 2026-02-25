@@ -5,6 +5,7 @@ class AppSearchBar extends StatefulWidget {
   const AppSearchBar({
     required this.controller,
     required this.onChanged,
+    this.focusNode,
     this.hintText = 'Buscar',
     this.label,
     this.onClear,
@@ -15,6 +16,7 @@ class AppSearchBar extends StatefulWidget {
 
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final FocusNode? focusNode;
   final String hintText;
   final String? label;
   final VoidCallback? onClear;
@@ -56,12 +58,13 @@ class _AppSearchBarState extends State<AppSearchBar> {
               widget.label!,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.64),
               ),
             ),
           ),
         TextField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           autofocus: widget.autofocus,
           onChanged: widget.onChanged,
           textInputAction: TextInputAction.search,

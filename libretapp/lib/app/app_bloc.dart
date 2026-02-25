@@ -1,11 +1,8 @@
-import 'dart:ui';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/l10n/app_localizations.dart';
 
 part 'app_event.dart';
 part 'app_state.dart';
@@ -13,9 +10,7 @@ part 'app_state.dart';
 class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc({SharedPrefsService? prefs})
     : _prefs = prefs ?? locator<SharedPrefsService>(),
-      _supportedLanguageCodes = AppLocalizations.supportedLocales
-          .map((l) => l.languageCode)
-          .toSet(),
+      _supportedLanguageCodes = const {'es'},
       super(const AppInitial()) {
     on<AppStarted>(_onAppStarted);
     on<AppLanguageChanged>(_onLanguageChanged);
@@ -41,10 +36,6 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   Future<String> _resolveInitialLanguage() async {
     final saved = _prefs.getString(PrefsKeys.appLanguage);
     if (_isSupported(saved)) return saved!;
-
-    final systemCode = PlatformDispatcher.instance.locale.languageCode;
-    if (_isSupported(systemCode)) return systemCode;
-
     return 'es';
   }
 

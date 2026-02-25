@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:libretapp/app/app_shell.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -14,8 +14,8 @@ class RecordsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final bottomInset = AppShell.bottomSafePadding(context);
-    final fabBottomPadding = AppShell.fabDockPadding(context);
+    final bottomInset = ShellInsets.bottomSafePadding(context);
+    final fabBottomPadding = ShellInsets.fabDockPadding(context);
     // Use the larger of content inset and FAB dock to keep items clear.
     final listBottomPadding = max(bottomInset + 2, fabBottomPadding + 8);
     return SingleChildScrollView(

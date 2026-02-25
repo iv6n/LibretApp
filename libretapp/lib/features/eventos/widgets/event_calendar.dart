@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
 import 'package:libretapp/features/eventos/widgets/event_style.dart';
 
+enum CalendarMode { month, twoWeeks }
+
 class EventCalendar extends StatelessWidget {
   const EventCalendar({
     super.key,
-    required this.visibleMonth,
+    required this.visibleDate,
+    required this.mode,
     required this.selectedDay,
     required this.eventosPorDia,
     required this.onDaySelected,
   });
 
-  final DateTime visibleMonth;
+  final DateTime visibleDate;
+  final CalendarMode mode;
   final DateTime? selectedDay;
   final Map<DateTime, List<Evento>> eventosPorDia;
   final ValueChanged<DateTime> onDaySelected;
@@ -20,7 +24,7 @@ class EventCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     const dayHeaders = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    final dias = _diasParaCalendario(visibleMonth);
+    final dias = _diasParaCalendario(mode, visibleDate);
 
     return Column(
       children: [
@@ -52,7 +56,9 @@ class EventCalendar extends StatelessWidget {
           itemCount: dias.length,
           itemBuilder: (context, index) {
             final dia = dias[index];
-            final isDelMes = dia.month == visibleMonth.month;
+            final isDelMes = mode == CalendarMode.month
+                ? dia.month == visibleDate.month
+                : true;
             final diaKey = DateTime(dia.year, dia.month, dia.day);
             final eventos = eventosPorDia[diaKey] ?? const [];
             final esHoy = DateUtils.isSameDay(dia, DateTime.now());
@@ -149,11 +155,19 @@ class EventCalendar extends StatelessWidget {
     );
   }
 
-  List<DateTime> _diasParaCalendario(DateTime mes) {
-    final primerDiaMes = DateTime(mes.year, mes.month, 1);
+  List<DateTime> _diasParaCalendario(CalendarMode mode, DateTime base) {
+    if (mode == CalendarMode.twoWeeks) {
+      final inicio = _inicioSemana(base);
+      return List<DateTime>.generate(
+        14,
+        (index) => inicio.add(Duration(days: index)),
+      );
+    }
+
+    final primerDiaMes = DateTime(base.year, base.month, 1);
     final diasAntes = primerDiaMes.weekday - 1;
     final primerDiaVista = primerDiaMes.subtract(Duration(days: diasAntes));
-    final totalDiasMes = DateUtils.getDaysInMonth(mes.year, mes.month);
+    final totalDiasMes = DateUtils.getDaysInMonth(base.year, base.month);
     final totalCeldas = diasAntes + totalDiasMes;
     final filas = (totalCeldas / 7).ceil();
     final celdas = filas * 7;
@@ -162,5 +176,11 @@ class EventCalendar extends StatelessWidget {
       celdas,
       (index) => primerDiaVista.add(Duration(days: index)),
     );
+  }
+
+  DateTime _inicioSemana(DateTime fecha) {
+    final normalizada = DateTime(fecha.year, fecha.month, fecha.day);
+    final diasARestar = normalizada.weekday - DateTime.monday;
+    return normalizada.subtract(Duration(days: diasARestar));
   }
 }

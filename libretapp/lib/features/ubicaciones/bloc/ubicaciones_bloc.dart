@@ -5,6 +5,7 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   UbicacionesBloc(this.repository) : super(const UbicacionesInitial()) {
@@ -13,7 +14,17 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     on<UbicacionesStreamFailed>(_onStreamFailed);
     on<UpsertUbicacion>(_onUpsertUbicacion);
     on<DeleteUbicacion>(_onDeleteUbicacion);
-    on<SearchUbicaciones>(_onSearchUbicaciones);
+    on<ToggleSearch>(_onToggleSearch);
+    on<SearchQueryChanged>(
+      _onSearchQueryChanged,
+      transformer: _debounce(const Duration(milliseconds: 260)),
+    );
+    on<ClearSearch>(_onClearSearch);
+    // Compatibility with older calls using SearchUbicaciones.
+    on<SearchUbicaciones>(
+      _onSearchUbicaciones,
+      transformer: _debounce(const Duration(milliseconds: 260)),
+    );
     on<AddVisitRecordEvent>(_onAddVisit);
     on<AddWaterRecordEvent>(_onAddWater);
     on<AddPastureRecordEvent>(_onAddPasture);
@@ -26,7 +37,8 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   final LocationRepository repository;
   StreamSubscription<List<LocationEntity>>? _subscription;
   List<LocationEntity> _latest = const [];
-  String _query = '';
+  String _searchQuery = '';
+  bool _isSearching = false;
 
   Future<void> _onLoadUbicaciones(
     LoadUbicaciones event,
@@ -45,7 +57,15 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     Emitter<UbicacionesState> emit,
   ) {
     _latest = event.ubicaciones;
-    emit(UbicacionesLoaded(_applyFilter(_latest, _query)));
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      UbicacionesLoaded(
+        allUbicaciones: _latest,
+        visibleUbicaciones: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
   }
 
   void _onStreamFailed(
@@ -83,8 +103,63 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     SearchUbicaciones event,
     Emitter<UbicacionesState> emit,
   ) async {
-    _query = event.query.toLowerCase();
-    emit(UbicacionesLoaded(_applyFilter(_latest, _query)));
+    _searchQuery = event.query.trim();
+    _isSearching = _searchQuery.isNotEmpty;
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      UbicacionesLoaded(
+        allUbicaciones: _latest,
+        visibleUbicaciones: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
+  }
+
+  void _onToggleSearch(ToggleSearch event, Emitter<UbicacionesState> emit) {
+    _isSearching = event.enabled;
+    if (!_isSearching) {
+      _searchQuery = '';
+    }
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      UbicacionesLoaded(
+        allUbicaciones: _latest,
+        visibleUbicaciones: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
+  }
+
+  Future<void> _onSearchQueryChanged(
+    SearchQueryChanged event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    _searchQuery = event.query.trim();
+    _isSearching = true;
+    final filtered = _applyFilter(_latest, _searchQuery);
+    emit(
+      UbicacionesLoaded(
+        allUbicaciones: _latest,
+        visibleUbicaciones: filtered,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
+  }
+
+  void _onClearSearch(ClearSearch event, Emitter<UbicacionesState> emit) {
+    _searchQuery = '';
+    _isSearching = false;
+    emit(
+      UbicacionesLoaded(
+        allUbicaciones: _latest,
+        visibleUbicaciones: _latest,
+        isSearching: _isSearching,
+        searchQuery: _searchQuery,
+      ),
+    );
   }
 
   Future<void> _onAddVisit(
@@ -169,10 +244,15 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   }
 
   List<LocationEntity> _applyFilter(List<LocationEntity> source, String query) {
-    if (query.isEmpty) return source;
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return source;
     return source
-        .where((u) => u.name.toLowerCase().contains(query))
+        .where((u) => u.name.toLowerCase().contains(normalized))
         .toList();
+  }
+
+  EventTransformer<T> _debounce<T>(Duration duration) {
+    return (events, mapper) => events.debounce(duration).switchMap(mapper);
   }
 
   @override

@@ -39,7 +39,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animalsEmptySubtitle => 'Adjust filters or search';
 
   @override
-  String get animalsSearchHint => 'Ear tag, name, breed, lot...';
+  String get animalsSearchHint => 'Search by ear tag, name or breed';
 
   @override
   String get animalsAdvancedSearch => 'Advanced search';

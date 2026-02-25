@@ -52,17 +52,25 @@ class AnimalCard extends StatelessWidget {
           ].join(' ')
         : '$ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}';
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final cardOverlay = theme.brightness == Brightness.dark
+        ? Colors.black.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.04);
+    final cardColor = Color.alphaBlend(cardOverlay, colorScheme.surface);
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 14),
+      clipBehavior: Clip.antiAlias,
+      color: cardColor,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap:
             onTap ??
             () => context.push(AppRoutes.animalDetallePath(animal.uuid)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -84,12 +92,13 @@ class AnimalCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                '${l10n.labelEarTag}: ${animal.earTagNumber}',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black87,
-                                    ),
+                                animal.earTagNumber,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                  color: colorScheme.onSurface,
+                                  letterSpacing: -0.3,
+                                ),
                               ),
                             ),
                             Text(
@@ -107,22 +116,22 @@ class AnimalCard extends StatelessWidget {
                           children: [
                             Text(
                               secondaryLabel,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.grey[900],
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               ageLabel,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.64,
+                                ),
+                                fontWeight: FontWeight.w600,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -200,15 +209,15 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
         color: stageColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: stageColor, width: 1.8),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: stageColor, width: 1.4),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Image.asset(
@@ -234,13 +243,21 @@ class _InlineInfo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: Colors.grey[800]),
+        Icon(
+          icon,
+          size: 18,
+          color: Theme.of(context).colorScheme.onSurface.withValues(
+            alpha: 0.82,
+          ),
+        ),
         const SizedBox(width: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w600,
-            color: Colors.grey[800],
+            color: Theme.of(context).colorScheme.onSurface.withValues(
+              alpha: 0.82,
+            ),
           ),
         ),
       ],
@@ -261,23 +278,28 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double luminance = color.computeLuminance();
+    final bool isLight = luminance > 0.65;
+    final Color pillText = isLight ? Colors.black : Colors.white;
+    final Color pillBg = color.withValues(alpha: 0.24);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: pillBg,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 14, color: pillText),
+          const SizedBox(width: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: color,
+              letterSpacing: 0.1,
+              color: pillText,
             ),
           ),
         ],
@@ -294,17 +316,20 @@ class TagChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double luminance = color.computeLuminance();
+    final textColor = luminance > 0.65 ? Colors.black87 : Colors.white;
+    final bgColor = color.withValues(alpha: 0.24);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: color,
+          color: textColor,
           fontWeight: FontWeight.w700,
           fontSize: 12,
         ),

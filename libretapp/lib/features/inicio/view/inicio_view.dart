@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:libretapp/app/app_shell.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/inicio/widgets/widgets.dart';
 
 class InicioView extends StatelessWidget {
@@ -7,7 +7,7 @@ class InicioView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = AppShell.bottomSafePadding(context);
+    final bottomInset = ShellInsets.bottomSafePadding(context);
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 2),

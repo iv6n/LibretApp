@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/performance/navigation_tracer.dart';
 import 'package:libretapp/core/router/app_routes.dart';
@@ -30,14 +32,42 @@ final router = GoRouter(
                 GoRoute(
                   path: AppRoutes.animalDetalleRelative,
                   name: AppRoutes.nameAnimalDetalle,
-                  builder: (context, state) => BlocProvider(
-                    create: (_) => AnimalBloc(
-                      animalRepository: locator<AnimalRepository>(),
-                    ),
-                    child: AnimalDetailPage(
-                      animalUuid: state.pathParameters['uuid']!,
-                    ),
-                  ),
+                  pageBuilder: (context, state) {
+                    final child = ShellChromeScope(
+                      visible: false,
+                      child: BlocProvider(
+                        create: (_) => AnimalBloc(
+                          animalRepository: locator<AnimalRepository>(),
+                        ),
+                        child: AnimalDetailPage(
+                          animalUuid: state.pathParameters['uuid']!,
+                          showQuickActions: false,
+                        ),
+                      ),
+                    );
+
+                    return CustomTransitionPage<void>(
+                      key: state.pageKey,
+                      transitionDuration: const Duration(milliseconds: 260),
+                      reverseTransitionDuration:
+                          const Duration(milliseconds: 220),
+                      opaque: true,
+                      child: child,
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        final slide = Tween<Offset>(
+                          begin: const Offset(1, 0),
+                          end: Offset.zero,
+                        ).chain(
+                          CurveTween(curve: Curves.easeOutCubic),
+                        );
+                        return SlideTransition(
+                          position: animation.drive(slide),
+                          child: child,
+                        );
+                      },
+                    );
+                  },
                 ),
               ],
             ),

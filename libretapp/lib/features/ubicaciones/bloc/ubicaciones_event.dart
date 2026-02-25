@@ -40,6 +40,26 @@ class SearchUbicaciones extends UbicacionesEvent {
   List<Object> get props => [query];
 }
 
+class ToggleSearch extends UbicacionesEvent {
+  final bool enabled;
+
+  const ToggleSearch({required this.enabled});
+
+  @override
+  List<Object> get props => [enabled];
+}
+
+class SearchQueryChanged extends UbicacionesEvent {
+  final String query;
+
+  const SearchQueryChanged(this.query);
+
+  @override
+  List<Object> get props => [query];
+}
+
+class ClearSearch extends UbicacionesEvent {}
+
 class UbicacionesStreamUpdated extends UbicacionesEvent {
   final List<LocationEntity> ubicaciones;
 

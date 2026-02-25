@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/services/theme_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/animales/infrastructure/animal_repository.dart';
@@ -21,6 +22,9 @@ Future<void> setupLocator() async {
     ..registerSingleton<IsarDatabase>(isarDatabase)
     ..registerSingleton<SharedPrefsService>(
       SharedPrefsService(sharedPreferences),
+    )
+    ..registerLazySingleton<ThemeRepository>(
+      () => ThemeRepository(locator<SharedPrefsService>()),
     )
     ..registerLazySingleton<AnimalRemoteDataSource>(AnimalApiMock.new)
     ..registerLazySingleton<AnimalRepository>(

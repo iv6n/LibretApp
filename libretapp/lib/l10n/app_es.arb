@@ -10,7 +10,7 @@
   "animalsTitle": "Animales",
   "animalsEmptyTitle": "No se encontraron animales",
   "animalsEmptySubtitle": "Ajusta los filtros o la búsqueda",
-  "animalsSearchHint": "Arete, nombre, raza, lote...",
+  "animalsSearchHint": "Buscar por arete, nombre o raza",
   "animalsAdvancedSearch": "Búsqueda avanzada",
   "animalsRecentSearches": "Búsquedas recientes",
   "animalsRecentActivity": "Actividad reciente",

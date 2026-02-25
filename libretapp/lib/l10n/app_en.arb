@@ -10,7 +10,7 @@
   "animalsTitle": "Animals",
   "animalsEmptyTitle": "No animals found",
   "animalsEmptySubtitle": "Adjust filters or search",
-  "animalsSearchHint": "Ear tag, name, breed, lot...",
+  "animalsSearchHint": "Search by ear tag, name or breed",
     "animalsAdvancedSearch": "Advanced search",
     "animalsRecentSearches": "Recent searches",
     "animalsRecentActivity": "Recent activity",

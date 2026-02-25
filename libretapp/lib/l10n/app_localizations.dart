@@ -161,7 +161,7 @@ abstract class AppLocalizations {
   /// No description provided for @animalsSearchHint.
   ///
   /// In es, this message translates to:
-  /// **'Arete, nombre, raza, lote...'**
+  /// **'Buscar por arete, nombre o raza'**
   String get animalsSearchHint;
 
   /// No description provided for @animalsAdvancedSearch.

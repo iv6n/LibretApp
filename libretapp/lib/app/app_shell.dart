@@ -1,32 +1,43 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
-  static double bottomSafePadding(BuildContext context) {
-    final state = context.findAncestorStateOfType<_AppShellState>();
-    return state?._bodyBottomInset(context) ?? 0;
-  }
+  static double bottomSafePadding(BuildContext context) =>
+      ShellInsets.bottomSafePadding(context);
 
-  static double fabDockPadding(BuildContext context, {double lift = -30}) {
-    final state = context.findAncestorStateOfType<_AppShellState>();
-    return state?._fabDockPadding(context, lift: lift) ?? 0;
-  }
+  static double fabDockPadding(BuildContext context, {double lift = -30}) =>
+      ShellInsets.fabDockPadding(context, lift: lift);
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
-  static const double _barHeight = 67;
-
+class _AppShellState extends State<AppShell>
+    implements ShellFabHostState<AppShell>, ShellChromeHostState<AppShell> {
+  static const double _barHeight = ShellInsets.defaultBarHeight;
   static const double _barHorizontalPadding = 10;
-  static const double _barBottomGap = 10;
+  static const double _barBottomGap = ShellInsets.defaultBarBottomGap;
+
+  static const bool _fabLogEnabled = true;
+  int _fabVersion = 0;
+  final Map<int, ShellFabConfig> _fabCache = <int, ShellFabConfig>{};
+
+  ShellFabConfig? _fabConfig;
+  int? _fabOwnerIndex;
+  int _lastIndex = -1;
+
+  bool _chromeVisible = true;
+  int? _chromeOwnerIndex;
+  final Map<int, bool> _chromeCache = <int, bool>{};
 
   final List<_NavItem> _navItems = const [
     _NavItem(routeName: AppRoutes.nameAnimales, icon: Icons.pets),
@@ -40,223 +51,265 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final selectedIndex = widget.navigationShell.currentIndex;
+    _ensureFabResetOnIndexChange(selectedIndex);
     final accent = Theme.of(context).colorScheme.primary;
-    const navBackground = Color.fromARGB(255, 27, 29, 34);
-    const surfaceShadow = Color(0x33000000);
-    double fabSize = selectedIndex == 2 ? 46 : 39.5;
+    final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
 
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          Positioned.fill(child: widget.navigationShell),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: SizedBox(height: _bodyBottomInset(context)),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: _barBottomGap),
-          child: Container(
-            height: _barHeight,
-            color: Colors.transparent,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Positioned.fill(
-                  top: 11,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _barHorizontalPadding,
-                    ),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: navBackground,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: surfaceShadow,
-                            blurRadius: 16,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: _buildNavItem(
-                              context,
-                              l10n,
-                              index: 0,
-                              selectedIndex: selectedIndex,
-                              icon: _navItems[0].icon,
-                              label: _labelForNav(_navItems[0].routeName, l10n),
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildNavItem(
-                              context,
-                              l10n,
-                              index: 1,
-                              selectedIndex: selectedIndex,
-                              icon: _navItems[1].icon,
-                              label: _labelForNav(_navItems[1].routeName, l10n),
-                            ),
-                          ),
-                          SizedBox(width: 46 + 10),
-                          Expanded(
-                            child: _buildNavItem(
-                              context,
-                              l10n,
-                              index: 3,
-                              selectedIndex: selectedIndex,
-                              icon: _navItems[3].icon,
-                              label: _labelForNav(_navItems[3].routeName, l10n),
-                            ),
-                          ),
-                          Expanded(
-                            child: _buildNavItem(
-                              context,
-                              l10n,
-                              index: 4,
-                              selectedIndex: selectedIndex,
-                              icon: _navItems[4].icon,
-                              label: _labelForNav(_navItems[4].routeName, l10n),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: selectedIndex == 2
-                        ? MainAxisAlignment.start
-                        : MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: selectedIndex == 2 ? 0 : 13),
-                      SizedBox(
-                        width: 46,
-                        height: fabSize,
-                        child: FloatingActionButton(
-                          heroTag: 'home_fab_central',
-                          onPressed: () =>
-                              _onCentralTap(selectedIndex, context),
-                          backgroundColor: selectedIndex == 2
-                              ? accent
-                              : Colors.grey.shade700,
-                          elevation: selectedIndex == 2 ? 4 : 0,
-                          shape: selectedIndex == 2
-                              ? const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(15),
-                                  ),
-                                )
-                              : const CircleBorder(),
-                          child: Icon(
-                            selectedIndex == 2 ? Icons.add : Icons.home,
-                            key: ValueKey(selectedIndex == 2),
-                            size: selectedIndex == 2 ? 26 : 21,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-
-                      Text(
-                        selectedIndex == 2 ? "Registrar" : l10n.navHome,
-                        key: ValueKey(selectedIndex == 2),
-                        style: TextStyle(
-                          fontSize: selectedIndex == 2 ? 9.0 : 8.2,
-                          fontWeight: selectedIndex == 2
-                              ? FontWeight.w700
-                              : FontWeight.w600,
-                          color: selectedIndex == 2
-                              ? accent
-                              : Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    final navItems = List<AppNavItemConfig>.generate(
+      _navItems.length,
+      (index) => AppNavItemConfig(
+        index: index,
+        icon: _navItems[index].icon,
+        label: _labelForNav(_navItems[index].routeName, l10n),
       ),
     );
-  }
 
-  void _onCentralTap(int selectedIndex, BuildContext context) {
-    widget.navigationShell.goBranch(2, initialLocation: true);
-  }
+    final isHomeSelected = selectedIndex == 2;
 
-  double _bodyBottomInset(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final safeBottom = media.padding.bottom;
-    final keyboard = media.viewInsets.bottom;
-    // Leave room for the nav bar; if the keyboard is open, prefer that inset so
-    // scrollables stay fully visible while the bar remains reachable.
-    final inset = _barHeight + _barBottomGap + 2 + safeBottom;
-    final effective = keyboard > 0 ? keyboard + _barBottomGap + 4 : inset;
-    return effective.clamp(0, 260).toDouble();
-  }
-
-  double _fabDockPadding(BuildContext context, {double lift = 0}) {
-    final inset = _bodyBottomInset(context);
-    // Position FAB just above the bar; positive lift moves it further up.
-    return (inset - (_barHeight - 20) + lift).clamp(0, 220).toDouble();
-  }
-
-  Widget _buildNavItem(
-    BuildContext context,
-    AppLocalizations l10n, {
-    required int index,
-    required int selectedIndex,
-    required IconData icon,
-    required String label,
-  }) {
-    final isSelected = selectedIndex == index;
-    final accent = Theme.of(context).colorScheme.primary;
-    final iconColor = isSelected ? accent : Colors.grey.shade400;
-    final textColor = isSelected ? accent : Colors.grey.shade500;
-
-    return InkWell(
-      onTap: () => widget.navigationShell.goBranch(
-        index,
-        initialLocation: index == selectedIndex,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+    return ShellChromeVisibility(
+      visible: _chromeVisible,
+      child: Scaffold(
+        extendBody: true,
+        body: Stack(
           children: [
-            Icon(icon, color: iconColor, size: 22),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              key: ValueKey(isSelected),
-              style: TextStyle(
-                fontSize: isSelected ? 9 : 8,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: textColor,
+            Positioned.fill(child: widget.navigationShell),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: SizedBox(height: _bodyBottomInset(context)),
               ),
             ),
           ],
         ),
+        bottomNavigationBar: _chromeVisible
+            ? SafeArea(
+                top: false,
+                child: AppBottomNavBar(
+                  items: navItems,
+                  selectedIndex: selectedIndex,
+                  onItemSelected: (index) => widget.navigationShell.goBranch(
+                    index,
+                    initialLocation: index == selectedIndex,
+                  ),
+                  center: _buildCenterButton(
+                    context,
+                    isHomeSelected: isHomeSelected,
+                    accent: accent,
+                  ),
+                  barHeight: _barHeight,
+                  barHorizontalPadding: _barHorizontalPadding,
+                  barBottomGap: _barBottomGap,
+                  backgroundColor:
+                      shellTheme?.navBackground ?? const Color(0xFF1B1D22),
+                  shadowColor: shellTheme?.navShadow ?? const Color(0x33000000),
+                ),
+              )
+            : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        floatingActionButton: _chromeVisible
+            ? AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                child: AppShellFab(
+                  config: _fabConfig,
+                  dockPadding: _fabDockPadding(context, lift: -40),
+                  backgroundColor: shellTheme?.fabBackground ?? accent,
+                  foregroundColor: shellTheme?.fabForeground ?? Colors.white,
+                ),
+              )
+            : null,
       ),
     );
+  }
+
+  Widget _buildCenterButton(
+    BuildContext context, {
+    required bool isHomeSelected,
+    required Color accent,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final surface = Theme.of(context).colorScheme.surface;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 44,
+          height: 44,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: isHomeSelected ? accent : surface,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                if (isHomeSelected)
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+              ],
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _onCentralTap(context),
+              child: Icon(
+                isHomeSelected ? Icons.add : Icons.home,
+                key: ValueKey(isHomeSelected),
+                size: 22,
+                color: isHomeSelected
+                    ? Colors.white
+                    : onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ),
+        Text(
+          isHomeSelected ? 'Registrar' : l10n.navHome,
+          key: ValueKey(isHomeSelected),
+          style: TextStyle(
+            fontSize: 9.0,
+            fontWeight: isHomeSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isHomeSelected ? accent : Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _ensureFabResetOnIndexChange(int index) {
+    if (_lastIndex == index) return;
+    _logFab('Tab change $_lastIndex -> $index (owner: $_fabOwnerIndex)');
+    _lastIndex = index;
+    final cached = _fabCache[index];
+    final cachedChrome = _chromeCache[index];
+    setState(() {
+      final allowedFab = _isFabAllowed(index) ? cached : null;
+      _fabConfig = allowedFab;
+      _fabOwnerIndex = allowedFab == null ? null : index;
+      _chromeVisible = cachedChrome ?? true;
+      _chromeOwnerIndex = cachedChrome == null ? null : index;
+      _fabVersion++;
+    });
+    _logFab(
+      cached == null
+          ? 'No cached FAB for tab $index, cleared.'
+          : 'Restored cached FAB for tab $index id=${cached.id}',
+    );
+  }
+
+  @override
+  void updateFab(ShellFabConfig? config) => _updateFab(config);
+
+  @override
+  void removeFab(ShellFabConfig? config) => _removeFab(config);
+
+  @override
+  void updateChromeVisibility(bool visible) => _updateChromeVisibility(visible);
+
+  @override
+  void removeChromeVisibility(bool visible) {
+    final shouldRestore = !visible || !_chromeVisible;
+    if (!shouldRestore) return;
+    void restore() {
+      if (!mounted) return;
+      setState(() {
+        _chromeVisible = true;
+        _chromeOwnerIndex = null;
+        _chromeCache.remove(_lastIndex);
+      });
+    }
+
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    final canSetStateNow =
+        phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks;
+    if (canSetStateNow) {
+      restore();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => restore());
+    }
+  }
+
+  void _updateFab(ShellFabConfig? config) {
+    if (!_isFabAllowed(_lastIndex)) {
+      if (_fabConfig != null) {
+        setState(() {
+          _fabConfig = null;
+          _fabOwnerIndex = null;
+          _fabCache.remove(_lastIndex);
+        });
+      }
+      return;
+    }
+    final needsUpdate = config != _fabConfig || _fabOwnerIndex != _lastIndex;
+    if (!needsUpdate) return;
+    setState(() {
+      _fabVersion++;
+      _fabConfig = config;
+      _fabOwnerIndex = config == null ? null : _lastIndex;
+      if (config == null) {
+        _fabCache.remove(_lastIndex);
+      } else {
+        _fabCache[_lastIndex] = config;
+      }
+    });
+    _logFab('Set FAB v$_fabVersion owner=$_fabOwnerIndex id=${config?.id}');
+  }
+
+  void _removeFab(ShellFabConfig? config) {
+    if (_fabConfig == null) return;
+    if (config == null || _fabConfig?.id == config.id) {
+      setState(() {
+        _fabConfig = null;
+        _fabOwnerIndex = null;
+        _fabCache.remove(_lastIndex);
+      });
+      _logFab('Removed FAB id=${config?.id}');
+    }
+  }
+
+  bool _isFabAllowed(int index) => index != 2 && index != 4;
+
+  void _updateChromeVisibility(bool visible) {
+    final needsUpdate =
+        _chromeVisible != visible || _chromeOwnerIndex != _lastIndex;
+    if (!needsUpdate) return;
+    setState(() {
+      _chromeVisible = visible;
+      _chromeOwnerIndex = _lastIndex;
+      _chromeCache[_lastIndex] = visible;
+    });
+  }
+
+  void _onCentralTap(BuildContext context) {
+    widget.navigationShell.goBranch(2, initialLocation: true);
+  }
+
+  double _bodyBottomInset(BuildContext context) {
+    return ShellInsets.bottomSafePadding(
+      context,
+      barHeight: _barHeight,
+      barBottomGap: _barBottomGap,
+    );
+  }
+
+  double _fabDockPadding(BuildContext context, {double lift = 0}) {
+    return ShellInsets.fabDockPadding(
+      context,
+      barHeight: _barHeight,
+      barBottomGap: _barBottomGap,
+      lift: lift,
+    );
+  }
+
+  void _logFab(String message) {
+    if (!_fabLogEnabled) return;
+    debugPrint('[FAB] $message');
   }
 
   String _labelForNav(String routeName, AppLocalizations l10n) {

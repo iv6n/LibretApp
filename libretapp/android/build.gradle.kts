@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.LibraryExtension
+
 allprojects {
     repositories {
         google()
@@ -21,6 +23,16 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+// Force all Android library modules (e.g., plugins) to compile with the same SDK/tools as the app.
+subprojects {
+    plugins.withId("com.android.library") {
+        extensions.configure<LibraryExtension>("android") {
+            compileSdk = 36
+            buildToolsVersion = "36.0.0"
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

@@ -21,7 +21,7 @@ class AppChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _colorsForTone();
+    final colors = _colorsForTone(context);
     final background = selected ? colors.backgroundSelected : colors.background;
     final borderColor = selected ? colors.borderSelected : colors.border;
 
@@ -58,47 +58,48 @@ class AppChip extends StatelessWidget {
     );
   }
 
-  _ChipColors _colorsForTone() {
+  _ChipColors _colorsForTone(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     switch (tone) {
       case AppChipTone.info:
         return _ChipColors(
-          foreground: AppColors.primary,
-          background: AppColors.primary.withValues(alpha: 0.06),
-          backgroundSelected: AppColors.primary.withValues(alpha: 0.12),
-          border: AppColors.primary.withValues(alpha: 0.24),
-          borderSelected: AppColors.primary.withValues(alpha: 0.36),
+          foreground: scheme.primary,
+          background: scheme.primary.withValues(alpha: 0.08),
+          backgroundSelected: scheme.primary.withValues(alpha: 0.14),
+          border: scheme.primary.withValues(alpha: 0.28),
+          borderSelected: scheme.primary.withValues(alpha: 0.40),
         );
       case AppChipTone.success:
         return _ChipColors(
           foreground: AppColors.success,
           background: AppColors.success.withValues(alpha: 0.08),
           backgroundSelected: AppColors.success.withValues(alpha: 0.16),
-          border: AppColors.success.withValues(alpha: 0.24),
-          borderSelected: AppColors.success.withValues(alpha: 0.36),
+          border: AppColors.success.withValues(alpha: 0.26),
+          borderSelected: AppColors.success.withValues(alpha: 0.38),
         );
       case AppChipTone.warning:
         return _ChipColors(
           foreground: AppColors.warning,
           background: AppColors.warning.withValues(alpha: 0.10),
           backgroundSelected: AppColors.warning.withValues(alpha: 0.18),
-          border: AppColors.warning.withValues(alpha: 0.30),
-          borderSelected: AppColors.warning.withValues(alpha: 0.40),
+          border: AppColors.warning.withValues(alpha: 0.32),
+          borderSelected: AppColors.warning.withValues(alpha: 0.44),
         );
       case AppChipTone.error:
         return _ChipColors(
           foreground: AppColors.error,
-          background: AppColors.error.withValues(alpha: 0.08),
-          backgroundSelected: AppColors.error.withValues(alpha: 0.16),
-          border: AppColors.error.withValues(alpha: 0.30),
-          borderSelected: AppColors.error.withValues(alpha: 0.40),
+          background: AppColors.error.withValues(alpha: 0.10),
+          backgroundSelected: AppColors.error.withValues(alpha: 0.18),
+          border: AppColors.error.withValues(alpha: 0.32),
+          borderSelected: AppColors.error.withValues(alpha: 0.44),
         );
       case AppChipTone.neutral:
-        return const _ChipColors(
-          foreground: AppColors.textSecondary,
-          background: Colors.white,
-          backgroundSelected: AppColors.surfaceAlt,
-          border: AppColors.border,
-          borderSelected: AppColors.border,
+        return _ChipColors(
+          foreground: scheme.onSurface.withValues(alpha: 0.78),
+          background: Theme.of(context).cardColor,
+          backgroundSelected: scheme.surface.withValues(alpha: 0.92),
+          border: scheme.outline.withValues(alpha: 0.6),
+          borderSelected: scheme.outline,
         );
     }
   }

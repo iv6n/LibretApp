@@ -140,6 +140,8 @@ class _FiltersContent extends StatelessWidget {
   Widget _buildStageChip(_StageChipConfig config) {
     final isSelected = config.stages.any(selectedStages.contains);
     final color = config.color;
+    final labelColor = isSelected ? Colors.white : color.withValues(alpha: 0.9);
+    final bgColor = isSelected ? color : color.withValues(alpha: 0.18);
 
     return FilterChip(
       label: Text(
@@ -156,11 +158,11 @@ class _FiltersContent extends StatelessWidget {
         }
         onStagesChanged(updated);
       },
-      backgroundColor: color.withValues(alpha: 0.12),
-      selectedColor: color.withValues(alpha: 0.25),
-      side: BorderSide(color: isSelected ? color : Colors.grey[300]!),
+      backgroundColor: bgColor,
+      selectedColor: bgColor,
+      side: BorderSide(color: isSelected ? color : Colors.transparent),
       labelStyle: TextStyle(
-        color: color,
+        color: labelColor,
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
       ),
       showCheckmark: false,
