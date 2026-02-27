@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/core.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
@@ -40,7 +40,7 @@ class _AppShellState extends State<AppShell>
   final Map<int, bool> _chromeCache = <int, bool>{};
 
   final List<_NavItem> _navItems = const [
-    _NavItem(routeName: AppRoutes.nameAnimales, icon: Icons.pets),
+    _NavItem(routeName: AppRoutes.nameDirectorio, icon: Icons.folder),
     _NavItem(routeName: AppRoutes.nameEventos, icon: Icons.calendar_today),
     _NavItem(routeName: AppRoutes.nameInicio, icon: Icons.home),
     _NavItem(routeName: AppRoutes.nameUbicaciones, icon: Icons.location_on),
@@ -264,16 +264,31 @@ class _AppShellState extends State<AppShell>
   void _removeFab(ShellFabConfig? config) {
     if (_fabConfig == null) return;
     if (config == null || _fabConfig?.id == config.id) {
-      setState(() {
-        _fabConfig = null;
-        _fabOwnerIndex = null;
-        _fabCache.remove(_lastIndex);
-      });
+      if (!mounted) return;
+      // Defer setState to a safe time if we're in a frame callback
+      final phase = WidgetsBinding.instance.schedulerPhase;
+      if (phase == SchedulerPhase.idle ||
+          phase == SchedulerPhase.postFrameCallbacks) {
+        setState(() {
+          _fabConfig = null;
+          _fabOwnerIndex = null;
+          _fabCache.remove(_lastIndex);
+        });
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _fabConfig = null;
+            _fabOwnerIndex = null;
+            _fabCache.remove(_lastIndex);
+          });
+        });
+      }
       _logFab('Removed FAB id=${config?.id}');
     }
   }
 
-  bool _isFabAllowed(int index) => index != 2 && index != 4;
+  bool _isFabAllowed(int index) => index != 3 && index != 5;
 
   void _updateChromeVisibility(bool visible) {
     final needsUpdate =
@@ -314,8 +329,8 @@ class _AppShellState extends State<AppShell>
 
   String _labelForNav(String routeName, AppLocalizations l10n) {
     switch (routeName) {
-      case AppRoutes.nameAnimales:
-        return l10n.navAnimals;
+      case AppRoutes.nameDirectorio:
+        return l10n.navDirectory;
       case AppRoutes.nameEventos:
         return l10n.navEvents;
       case AppRoutes.nameUbicaciones:

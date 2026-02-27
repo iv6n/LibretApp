@@ -1,19 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
-import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/di/injection.dart';
-import 'package:libretapp/core/performance/navigation_tracer.dart';
-import 'package:libretapp/core/router/app_routes.dart';
-import 'package:libretapp/features/animales/application/bloc/animal_bloc.dart';
-import 'package:libretapp/features/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/animales/view/animal_detail_page.dart';
-import 'package:libretapp/features/animales/view/animales_page.dart';
-import 'package:libretapp/features/eventos/view/eventos_page.dart';
-import 'package:libretapp/features/inicio/view/inicio_page.dart';
-import 'package:libretapp/features/perfil/view/perfil_page.dart';
-import 'package:libretapp/features/ubicaciones/view/ubicaciones_page.dart';
+import 'package:libretapp/core/core.dart';
+import 'package:libretapp/features/directorio/directorio.dart';
+import 'package:libretapp/features/eventos/eventos.dart';
+import 'package:libretapp/features/inicio/inicio.dart';
+import 'package:libretapp/features/perfil/perfil.dart';
+import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
 
 final router = GoRouter(
   observers: [NavigationTracer.observer],
@@ -25,47 +18,50 @@ final router = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AppRoutes.animales,
-              name: AppRoutes.nameAnimales,
-              builder: (context, state) => const AnimalesPage(),
+              path: AppRoutes.directorio,
+              name: AppRoutes.nameDirectorio,
+              builder: (context, state) => MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) =>
+                        AnimalesBloc(locator<AnimalRepository>())
+                          ..add(const LoadAnimales()),
+                  ),
+                  BlocProvider(
+                    create: (_) => AnimalesTabBloc(locator<AnimalRepository>()),
+                  ),
+                  BlocProvider(
+                    create: (_) => LotesBloc(locator<LotesRepository>()),
+                  ),
+                  BlocProvider(
+                    create: (_) => LotesTabBloc(locator<LotesRepository>()),
+                  ),
+                  BlocProvider(
+                    create: (_) =>
+                        UbicacionesTabBloc(locator<LocationRepository>()),
+                  ),
+                  BlocProvider(
+                    create: (context) => DirectorioBloc(
+                      animalesTabBloc: context.read<AnimalesTabBloc>(),
+                      lotesTabBloc: context.read<LotesTabBloc>(),
+                      ubicacionesTabBloc: context.read<UbicacionesTabBloc>(),
+                    ),
+                  ),
+                ],
+                child: const DirectorioView(),
+              ),
               routes: [
                 GoRoute(
-                  path: AppRoutes.animalDetalleRelative,
+                  path: 'animales/:uuid',
                   name: AppRoutes.nameAnimalDetalle,
-                  pageBuilder: (context, state) {
-                    final child = ShellChromeScope(
-                      visible: false,
-                      child: BlocProvider(
-                        create: (_) => AnimalBloc(
-                          animalRepository: locator<AnimalRepository>(),
-                        ),
-                        child: AnimalDetailPage(
-                          animalUuid: state.pathParameters['uuid']!,
-                          showQuickActions: false,
-                        ),
+                  builder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return BlocProvider(
+                      create: (_) => AnimalBloc(
+                        animalRepository: locator<AnimalRepository>(),
+                        lotesRepository: locator<LotesRepository>(),
                       ),
-                    );
-
-                    return CustomTransitionPage<void>(
-                      key: state.pageKey,
-                      transitionDuration: const Duration(milliseconds: 260),
-                      reverseTransitionDuration:
-                          const Duration(milliseconds: 220),
-                      opaque: true,
-                      child: child,
-                      transitionsBuilder:
-                          (context, animation, secondaryAnimation, child) {
-                        final slide = Tween<Offset>(
-                          begin: const Offset(1, 0),
-                          end: Offset.zero,
-                        ).chain(
-                          CurveTween(curve: Curves.easeOutCubic),
-                        );
-                        return SlideTransition(
-                          position: animation.drive(slide),
-                          child: child,
-                        );
-                      },
+                      child: AnimalDetailPage(animalUuid: uuid),
                     );
                   },
                 ),

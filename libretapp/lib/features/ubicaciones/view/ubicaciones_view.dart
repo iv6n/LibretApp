@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
-import 'package:libretapp/features/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
@@ -10,7 +11,9 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/widgets/widgets.dart';
 
 class UbicacionesView extends StatefulWidget {
-  const UbicacionesView({super.key});
+  const UbicacionesView({super.key, this.animalRepository});
+
+  final AnimalRepository? animalRepository;
 
   @override
   State<UbicacionesView> createState() => _UbicacionesViewState();
@@ -18,14 +21,19 @@ class UbicacionesView extends StatefulWidget {
 
 class _UbicacionesViewState extends State<UbicacionesView> {
   late final ScrollController _scrollController;
-  late final AnimalRepository _animalRepository;
+  AnimalRepository? _animalRepository;
   Map<String, int> _animalCounts = <String, int>{};
+  String _lastCountsKey = '';
   bool _isAtTop = true;
 
   @override
   void initState() {
     super.initState();
-    _animalRepository = locator<AnimalRepository>();
+    _animalRepository =
+        widget.animalRepository ??
+        (locator.isRegistered<AnimalRepository>()
+            ? locator<AnimalRepository>()
+            : null);
     _scrollController = ScrollController()..addListener(_handleScroll);
   }
 
@@ -44,8 +52,15 @@ class _UbicacionesViewState extends State<UbicacionesView> {
   }
 
   Future<void> _refreshCounts(List<LocationEntity> locations) async {
+    final repository = _animalRepository;
+    if (repository == null) {
+      if (!mounted) return;
+      setState(() => _animalCounts = <String, int>{});
+      return;
+    }
+
     final ids = locations.map((e) => e.uuid).toSet();
-    final animals = await _animalRepository.getAll();
+    final animals = await repository.getAll();
     final counts = <String, int>{};
     for (final animal in animals) {
       final locId = animal.currentPaddockId ?? animal.initialLocationId;
@@ -54,7 +69,18 @@ class _UbicacionesViewState extends State<UbicacionesView> {
     }
 
     if (!mounted) return;
+    if (mapEquals(_animalCounts, counts)) return;
     setState(() => _animalCounts = counts);
+  }
+
+  void _scheduleRefreshCounts(List<LocationEntity> locations) {
+    final key = locations.map((e) => e.uuid).join('|');
+    if (key == _lastCountsKey) return;
+    _lastCountsKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshCounts(locations);
+    });
   }
 
   void _showFiltersPlaceholder(BuildContext context) {
@@ -114,7 +140,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
       return const SizedBox.shrink();
     }
 
-    _refreshCounts(state.allUbicaciones);
+    _scheduleRefreshCounts(state.allUbicaciones);
     final ubicaciones = state.visibleUbicaciones;
 
     return RefreshIndicator(

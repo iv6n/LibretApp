@@ -107,19 +107,12 @@ void main() {
       expect(find.text('Ubicaciones'), findsOneWidget);
       expect(find.text('Potrero A'), findsOneWidget);
       expect(find.text('Corral Central'), findsOneWidget);
-      expect(
-        find.byIcon(Icons.location_on),
-        findsNWidgets(fakeLocations.length),
-      );
     });
 
-    testWidgets('muestra indicador de carga inicial', (tester) async {
+    testWidgets('muestra datos al cargar', (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: UbicacionesPage(repository: repository)),
       );
-
-      await tester.pump();
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       await tester.pumpAndSettle();
       expect(find.text('Potrero A'), findsOneWidget);

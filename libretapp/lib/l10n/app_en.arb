@@ -1,6 +1,7 @@
 {
   "@@locale": "en",
   "appTitle": "LibretApp - Control Ganadero",
+  "navDirectory": "Directory",
   "navHome": "Home",
   "navAnimals": "Animals",
   "navEvents": "Events",

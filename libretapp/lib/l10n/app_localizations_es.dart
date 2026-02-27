@@ -12,6 +12,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get appTitle => 'LibretApp - Control Ganadero';
 
   @override
+  String get navDirectory => 'Directorio';
+
+  @override
   String get navHome => 'Inicio';
 
   @override

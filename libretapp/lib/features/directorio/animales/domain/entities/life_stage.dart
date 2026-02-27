@@ -1,0 +1,17 @@
+enum LifeStage {
+  calf,
+  calfMale,
+  calfFemale,
+  heifer,
+  youngBull,
+  steer,
+  cow,
+  bull,
+  colt,
+  filly,
+  horse,
+  mare,
+  donkey,
+  donkeyFemale,
+  mule,
+}

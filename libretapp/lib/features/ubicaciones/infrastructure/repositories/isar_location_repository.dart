@@ -134,272 +134,166 @@ class IsarLocationRepository implements LocationRepository {
     final now = DateTime.now();
     final seeds = [
       LocationEntity(
-        uuid: 'potrero-a',
-        name: 'Potrero A',
+        uuid: 'monte',
+        name: 'Monte',
         type: LocationType.potrero,
-        surfaceArea: 12.5,
-        capacity: 40,
-        waterSource: 'Pozo',
-        terrainType: 'Plano',
+        surfaceArea: 45.8,
+        capacity: 120,
+        waterSource: 'Arroyo natural',
+        terrainType: 'Montañoso con pastizal',
         status: 'activo',
         visits: [
           VisitRecord(
-            date: now.subtract(const Duration(days: 2)),
-            animals: 38,
-            notes: 'Rotación principal',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 1)),
-            level: 72,
-            type: WaterType.pozo,
-          ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 7)),
-            grassType: 'Brachiaria',
-            condition: 'Rebrote vigoroso',
-            carryingCapacity: 3.5,
-          ),
-        ],
-        rains: [
-          RainRecord(
-            date: now.subtract(const Duration(days: 3)),
-            millimeters: 12,
-            location: 'Potrero A',
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 12)),
-            maintenance: 120,
-            fences: 0,
-            repairs: 0,
-            labor: 80,
-            total: 200,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'potrero-b',
-        name: 'Potrero B',
-        type: LocationType.potrero,
-        surfaceArea: 18.0,
-        capacity: 55,
-        waterSource: 'Pozo y represo',
-        terrainType: 'Ligeramente ondulado',
-        status: 'activo',
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 5)),
-            animals: 42,
-            notes: 'Revisión de alambrado',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 2)),
-            level: 65,
-            type: WaterType.pozo,
-            notes: 'Recarga parcial',
-          ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 10)),
-            grassType: 'Estrella africana',
-            condition: 'Parejo',
-            carryingCapacity: 3.0,
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 20)),
-            maintenance: 90,
-            fences: 60,
-            repairs: 40,
-            labor: 50,
-            total: 240,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'potrero-c',
-        name: 'Potrero C',
-        type: LocationType.potrero,
-        surfaceArea: 9.8,
-        capacity: 32,
-        waterSource: 'Represo',
-        terrainType: 'Semi ondulado',
-        status: 'activo',
-        waters: [
-          WaterRecord(
             date: now.subtract(const Duration(days: 4)),
-            level: 58,
-            type: WaterType.represo,
-            notes: 'Nivel a vigilar en verano',
+            animals: 98,
+            notes: 'Inspección de cercas en zona alta',
           ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 14)),
-            grassType: 'Panicum',
-            condition: 'Buen porte',
-            carryingCapacity: 2.8,
-          ),
-        ],
-        rains: [
-          RainRecord(
-            date: now.subtract(const Duration(days: 9)),
-            millimeters: 8,
-            location: 'Potrero C',
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'potrero-d',
-        name: 'Potrero D',
-        type: LocationType.potrero,
-        surfaceArea: 7.2,
-        capacity: 22,
-        waterSource: 'Pila móvil',
-        terrainType: 'Ligeramente arcilloso',
-        status: 'activo',
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 3)),
-            level: 60,
-            type: WaterType.pila,
-          ),
-        ],
-        pastures: [
-          PastureRecord(
+          VisitRecord(
             date: now.subtract(const Duration(days: 11)),
-            grassType: 'Brachiaria + trébol',
-            condition: 'Mixto, requiere descanso',
-            carryingCapacity: 2.1,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'feedlot-1',
-        name: 'Feedlot 1',
-        type: LocationType.corral,
-        surfaceArea: 4.5,
-        capacity: 80,
-        waterSource: 'Bebederos automáticos',
-        terrainType: 'Estabilizado',
-        status: 'activo',
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 1)),
-            animals: 74,
-            notes: 'Chequeo de comederos',
+            animals: 95,
+            notes: 'Conteo de hacienda',
           ),
         ],
         waters: [
           WaterRecord(
-            date: now.subtract(const Duration(days: 1)),
-            level: 85,
-            type: WaterType.pila,
-            notes: 'Nivel óptimo',
+            date: now.subtract(const Duration(days: 2)),
+            level: 68,
+            type: WaterType.pozo,
+            notes: 'Nivel adecuado post-lluvia',
+          ),
+        ],
+        pastures: [
+          PastureRecord(
+            date: now.subtract(const Duration(days: 5)),
+            grassType: 'Pasto natural mixto con flechilla',
+            condition: 'Vegetación exuberante por estación',
+            carryingCapacity: 2.6,
+          ),
+        ],
+        rains: [
+          RainRecord(
+            date: now.subtract(const Duration(days: 2)),
+            millimeters: 22,
+            location: 'Monte',
           ),
         ],
         costs: [
           CostRecord(
-            date: now.subtract(const Duration(days: 15)),
-            maintenance: 140,
-            fences: 45,
-            repairs: 110,
-            labor: 160,
-            total: 455,
+            date: now.subtract(const Duration(days: 25)),
+            maintenance: 300,
+            fences: 150,
+            repairs: 80,
+            labor: 200,
+            total: 730,
           ),
         ],
       ),
       LocationEntity(
-        uuid: 'corral-crias',
-        name: 'Corral Crías',
-        type: LocationType.corral,
-        surfaceArea: 2.4,
-        capacity: 35,
-        waterSource: 'Pila',
-        terrainType: 'Firme',
+        uuid: 'potrero',
+        name: 'Potrero',
+        type: LocationType.potrero,
+        surfaceArea: 32.5,
+        capacity: 95,
+        waterSource: 'Perforación con molino',
+        terrainType: 'Plano con ligeras depresiones',
         status: 'activo',
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 2)),
-            level: 78,
-            type: WaterType.pila,
-          ),
-        ],
         visits: [
           VisitRecord(
-            date: now.subtract(const Duration(days: 4)),
-            animals: 26,
-            notes: 'Chequeo de destetes',
+            date: now.subtract(const Duration(days: 1)),
+            animals: 78,
+            notes: 'Movimiento de hacienda desde Rancho',
+          ),
+          VisitRecord(
+            date: now.subtract(const Duration(days: 8)),
+            animals: 75,
+            notes: 'Rotación periódica',
+          ),
+          VisitRecord(
+            date: now.subtract(const Duration(days: 15)),
+            animals: 82,
+            notes: 'Inspección de alambrado',
+          ),
+        ],
+        waters: [
+          WaterRecord(
+            date: now.subtract(const Duration(days: 1)),
+            level: 75,
+            type: WaterType.pozo,
+            notes: 'Sistema automático en funcionamiento',
+          ),
+        ],
+        pastures: [
+          PastureRecord(
+            date: now.subtract(const Duration(days: 3)),
+            grassType: 'Brachiaria Brizantha + Estrella africana',
+            condition: 'Muy bueno - pastoreo rotativo',
+            carryingCapacity: 2.9,
+          ),
+        ],
+        irrigations: [
+          IrrigationRecord(
+            date: now.subtract(const Duration(days: 10)),
+            type: 'Riego por goteo (suplementario)',
+            duration: const Duration(hours: 2),
+            cost: 45,
+          ),
+        ],
+        costs: [
+          CostRecord(
+            date: now.subtract(const Duration(days: 18)),
+            maintenance: 200,
+            fences: 120,
+            repairs: 30,
+            labor: 100,
+            total: 450,
           ),
         ],
       ),
       LocationEntity(
         uuid: 'rancho-trabajo',
-        name: 'Rancho de Trabajo',
+        name: 'Rancho',
         type: LocationType.rancho,
-        surfaceArea: 1.8,
-        capacity: 15,
-        waterSource: 'Bebedero',
-        terrainType: 'Compactado',
+        surfaceArea: 8.5,
+        capacity: 50,
+        waterSource: 'Tanque elevado + perforación',
+        terrainType: 'Compactado - acceso vehicular',
         status: 'activo',
         visits: [
           VisitRecord(
+            date: now.subtract(const Duration(days: 0)),
+            animals: 32,
+            notes: 'Animales en descanso y trabajo',
+          ),
+          VisitRecord(
             date: now.subtract(const Duration(days: 6)),
-            animals: 6,
-            notes: 'Caballos de trabajo',
+            animals: 28,
+            notes: 'Manejo sanitario',
           ),
         ],
-      ),
-      LocationEntity(
-        uuid: 'gallinero-central',
-        name: 'Gallinero Central',
-        type: LocationType.corral,
-        surfaceArea: 0.9,
-        capacity: 120,
-        waterSource: 'Bebederos',
-        terrainType: 'Piso elevado',
-        status: 'activo',
         waters: [
           WaterRecord(
-            date: now.subtract(const Duration(days: 1)),
-            level: 90,
+            date: now.subtract(const Duration(days: 0)),
+            level: 92,
             type: WaterType.pila,
-            notes: 'Limpieza semanal',
+            notes: 'Tanque lleno - suficiente para operaciones',
           ),
         ],
-      ),
-      LocationEntity(
-        uuid: 'siembra-alfalfa',
-        name: 'Siembra de Alfalfa',
-        type: LocationType.siembra,
-        surfaceArea: 6.0,
-        capacity: 0,
-        waterSource: 'Riego rodado',
-        terrainType: 'Plano',
-        status: 'en-siembra',
-        seedings: [
-          SeedingRecord(
-            date: now.subtract(const Duration(days: 20)),
-            crop: 'Alfalfa',
-            surface: 6.0,
-            cost: 850,
+        pastures: [
+          PastureRecord(
+            date: now.subtract(const Duration(days: 8)),
+            grassType: 'Pasto de corta para henificado',
+            condition: 'Mantenido para suplemento',
+            carryingCapacity: 1.2,
           ),
         ],
-        irrigations: [
-          IrrigationRecord(
-            date: now.subtract(const Duration(days: 2)),
-            type: 'Aspersión',
-            duration: const Duration(minutes: 90),
-            cost: 120,
+        costs: [
+          CostRecord(
+            date: now.subtract(const Duration(days: 7)),
+            maintenance: 180,
+            fences: 60,
+            repairs: 120,
+            labor: 250,
+            total: 610,
           ),
         ],
       ),

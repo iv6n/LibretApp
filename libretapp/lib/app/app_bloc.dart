@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
 
 part 'app_event.dart';
 part 'app_state.dart';
@@ -20,6 +21,18 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   final Set<String> _supportedLanguageCodes;
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
+    // Ejecutar migración de lotes si es necesaria
+    try {
+      final migrationService = BatchMigrationService(
+        animalRepository: locator(),
+        lotesRepository: locator(),
+      );
+      await migrationService.migrate();
+    } catch (e) {
+      // Log pero no bloquea el inicio de la app
+      // Silently fail - migration errors don't block app startup
+    }
+
     final languageCode = await _resolveInitialLanguage();
     emit(AppReady(languageCode: languageCode));
   }

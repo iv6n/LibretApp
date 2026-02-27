@@ -67,7 +67,12 @@ class _ShellFabConfigScopeState extends State<ShellFabConfigScope> {
 
   @override
   void dispose() {
-    _host?.removeFab(widget.config);
+    // Schedule removal after the current frame to avoid "widget tree locked" errors
+    if (mounted && _host != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _host?.removeFab(widget.config);
+      });
+    }
     super.dispose();
   }
 

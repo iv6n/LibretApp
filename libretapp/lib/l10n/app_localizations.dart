@@ -104,6 +104,12 @@ abstract class AppLocalizations {
   /// **'LibretApp - Control Ganadero'**
   String get appTitle;
 
+  /// No description provided for @navDirectory.
+  ///
+  /// In es, this message translates to:
+  /// **'Directorio'**
+  String get navDirectory;
+
   /// No description provided for @navHome.
   ///
   /// In es, this message translates to:

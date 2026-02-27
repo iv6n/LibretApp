@@ -2,9 +2,11 @@ import 'package:get_it/get_it.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/theme_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/features/animales/infrastructure/animal_remote_data_source.dart';
-import 'package:libretapp/features/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/animales/infrastructure/animal_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository_isar.dart';
 import 'package:libretapp/features/eventos/data/eventos_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -33,6 +35,9 @@ Future<void> setupLocator() async {
         locator<SharedPrefsService>(),
         locator<AnimalRemoteDataSource>(),
       ),
+    )
+    ..registerLazySingleton<LotesRepository>(
+      () => LotesRepositoryIsar(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<LocationRepository>(
       () => IsarLocationRepository(locator<IsarDatabase>()),

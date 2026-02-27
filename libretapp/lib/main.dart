@@ -2,16 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/app/app_bloc.dart';
-import 'package:libretapp/app/app.dart';
-import 'package:libretapp/app/theme/theme_bloc.dart';
-import 'package:libretapp/core/di/injection.dart';
-import 'package:libretapp/core/performance/interaction_tracer.dart';
-import 'package:libretapp/core/performance/performance_monitor.dart';
-import 'package:libretapp/core/performance/navigation_tracer.dart';
-import 'package:libretapp/core/services/logger_service.dart';
-import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/core/services/theme_repository.dart';
+import 'package:libretapp/app/app_index.dart';
+import 'package:libretapp/core/core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

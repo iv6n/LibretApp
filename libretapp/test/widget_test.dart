@@ -8,16 +8,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/app/theme/theme_bloc.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/services/theme_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:libretapp/main.dart';
 import 'package:libretapp/app/app_bloc.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('LibretApp opens successfully', (WidgetTester tester) async {
+    final prefs = SharedPrefsService(await SharedPreferences.getInstance());
+    final themeRepository = ThemeRepository(prefs);
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      BlocProvider(
-        create: (context) => AppBloc()..add(const AppStarted()),
+      MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                ThemeBloc(repository: themeRepository)..add(const ThemeStarted()),
+          ),
+          BlocProvider(
+            create: (context) => AppBloc(prefs: prefs)..add(const AppStarted()),
+          ),
+        ],
         child: const LibretApp(),
       ),
     );

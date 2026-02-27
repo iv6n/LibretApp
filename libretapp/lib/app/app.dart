@@ -4,9 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_bloc.dart';
 import 'package:libretapp/app/app_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
-import 'package:libretapp/core/widgets/responsive_scaler.dart';
+import 'package:libretapp/core/core.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -35,34 +35,34 @@ class MyApp extends StatelessWidget {
                 final scrimHeight = (navPadding > 0 ? navPadding : 16.0) + 20.0;
                 final brightness = Theme.of(context).brightness;
                 final base = brightness == Brightness.dark
-                  ? Colors.black
-                  : Colors.white;
+                    ? Colors.black
+                    : Colors.white;
                 // Stronger fade: intensify stops and swap to white in light mode.
                 final topOpacity = brightness == Brightness.dark ? 0.28 : 0.24;
                 final midOpacity = brightness == Brightness.dark ? 0.48 : 0.40;
                 final bottomOpacity = brightness == Brightness.dark
-                  ? 0.68
-                  : 0.56;
+                    ? 0.68
+                    : 0.56;
                 final overlayStyle = SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
                   systemNavigationBarColor: Colors.transparent,
                   systemNavigationBarDividerColor: Colors.transparent,
-                  statusBarIconBrightness:
-                      brightness == Brightness.dark
-                          ? Brightness.light
-                          : Brightness.dark,
+                  statusBarIconBrightness: brightness == Brightness.dark
+                      ? Brightness.light
+                      : Brightness.dark,
                   systemNavigationBarIconBrightness:
                       brightness == Brightness.dark
-                          ? Brightness.light
-                          : Brightness.dark,
+                      ? Brightness.light
+                      : Brightness.dark,
                   systemNavigationBarContrastEnforced: false,
                 );
                 return Stack(
                   children: [
                     AnnotatedRegion<SystemUiOverlayStyle>(
                       value: overlayStyle,
-                      child:
-                          ResponsiveScaler(child: child ?? const SizedBox.shrink()),
+                      child: ResponsiveScaler(
+                        child: child ?? const SizedBox.shrink(),
+                      ),
                     ),
                     // Soft fade from transparent to dark behind the system navigation bar.
                     Positioned(
@@ -77,10 +77,10 @@ class MyApp extends StatelessWidget {
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                base.withOpacity(0.0),
-                                base.withOpacity(topOpacity),
-                                base.withOpacity(midOpacity),
-                                base.withOpacity(bottomOpacity),
+                                base.withValues(alpha: 0.0),
+                                base.withValues(alpha: topOpacity),
+                                base.withValues(alpha: midOpacity),
+                                base.withValues(alpha: bottomOpacity),
                               ],
                             ),
                           ),

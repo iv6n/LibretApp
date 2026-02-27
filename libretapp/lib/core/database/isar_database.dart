@@ -1,14 +1,15 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_animal.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_commercial_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_cost_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_health_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_movement_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_production_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_reproduction_record.dart';
-import 'package:libretapp/features/animales/infrastructure/isar/isar_weight_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_movement_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class IsarDatabase {
@@ -38,6 +39,7 @@ class IsarDatabase {
         IsarCostRecordSchema,
         IsarCommercialRecordSchema,
         IsarMovementRecordSchema,
+        IsarLoteSchema,
         IsarLocationSchema,
       ],
       directory: dir.path,

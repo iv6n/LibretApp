@@ -1,0 +1,55 @@
+import 'package:equatable/equatable.dart';
+
+abstract class UbicacionesTabState extends Equatable {
+  const UbicacionesTabState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Estado inicial
+class UbicacionesTabInitial extends UbicacionesTabState {
+  const UbicacionesTabInitial();
+}
+
+/// Estado cargando
+class UbicacionesTabLoading extends UbicacionesTabState {
+  const UbicacionesTabLoading();
+}
+
+/// Estado cargado
+class UbicacionesTabLoaded extends UbicacionesTabState {
+  const UbicacionesTabLoaded({
+    required this.ubicaciones,
+    this.filteredUbicaciones,
+  });
+
+  final List<dynamic> ubicaciones;
+  final List<dynamic>? filteredUbicaciones;
+
+  /// Devuelve las ubicaciones a mostrar (filtradas o todas)
+  List<dynamic> get displayUbicaciones => filteredUbicaciones ?? ubicaciones;
+
+  UbicacionesTabLoaded copyWith({
+    List<dynamic>? ubicaciones,
+    List<dynamic>? filteredUbicaciones,
+  }) {
+    return UbicacionesTabLoaded(
+      ubicaciones: ubicaciones ?? this.ubicaciones,
+      filteredUbicaciones: filteredUbicaciones ?? this.filteredUbicaciones,
+    );
+  }
+
+  @override
+  List<Object?> get props => [ubicaciones, filteredUbicaciones];
+}
+
+/// Estado con error
+class UbicacionesTabError extends UbicacionesTabState {
+  const UbicacionesTabError(this.message);
+
+  final String message;
+
+  @override
+  List<Object> get props => [message];
+}
