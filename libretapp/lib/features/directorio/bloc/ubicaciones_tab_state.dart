@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
 abstract class UbicacionesTabState extends Equatable {
   const UbicacionesTabState();
@@ -24,15 +25,16 @@ class UbicacionesTabLoaded extends UbicacionesTabState {
     this.filteredUbicaciones,
   });
 
-  final List<dynamic> ubicaciones;
-  final List<dynamic>? filteredUbicaciones;
+  final List<LocationEntity> ubicaciones;
+  final List<LocationEntity>? filteredUbicaciones;
 
   /// Devuelve las ubicaciones a mostrar (filtradas o todas)
-  List<dynamic> get displayUbicaciones => filteredUbicaciones ?? ubicaciones;
+  List<LocationEntity> get displayUbicaciones =>
+      filteredUbicaciones ?? ubicaciones;
 
   UbicacionesTabLoaded copyWith({
-    List<dynamic>? ubicaciones,
-    List<dynamic>? filteredUbicaciones,
+    List<LocationEntity>? ubicaciones,
+    List<LocationEntity>? filteredUbicaciones,
   }) {
     return UbicacionesTabLoaded(
       ubicaciones: ubicaciones ?? this.ubicaciones,

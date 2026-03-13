@@ -18,70 +18,63 @@ class LoadAnimales extends AnimalesEvent {
 }
 
 class AddAnimal extends AnimalesEvent {
-  final AnimalEntity animal;
-
   const AddAnimal(this.animal);
+  final AnimalEntity animal;
 
   @override
   List<Object> get props => [animal];
 }
 
 class UpdateAnimal extends AnimalesEvent {
-  final AnimalEntity animal;
-
   const UpdateAnimal(this.animal);
+  final AnimalEntity animal;
 
   @override
   List<Object> get props => [animal];
 }
 
 class DeleteAnimal extends AnimalesEvent {
-  final String id;
-
   const DeleteAnimal(this.id);
+  final String id;
 
   @override
   List<Object> get props => [id];
 }
 
 class AssignAnimalLocationBatch extends AnimalesEvent {
-  final String uuid;
-  final String? locationId;
-  final String? batchId;
-
   const AssignAnimalLocationBatch({
     required this.uuid,
     this.locationId,
     this.batchId,
   });
+  final String uuid;
+  final String? locationId;
+  final String? batchId;
 
   @override
   List<Object> get props => [uuid, locationId ?? '', batchId ?? ''];
 }
 
 class RenameBatch extends AnimalesEvent {
+  const RenameBatch({required this.oldBatchId, required this.newBatchId});
   final String oldBatchId;
   final String newBatchId;
-
-  const RenameBatch({required this.oldBatchId, required this.newBatchId});
 
   @override
   List<Object> get props => [oldBatchId, newBatchId];
 }
 
 class AnimalesStreamUpdated extends AnimalesEvent {
-  final List<AnimalEntity> animales;
-
   const AnimalesStreamUpdated(this.animales);
+  final List<AnimalEntity> animales;
 
   @override
   List<Object> get props => [animales];
 }
 
 class AnimalesStreamFailed extends AnimalesEvent {
-  final String message;
-
   const AnimalesStreamFailed(this.message);
+  final String message;
 
   @override
   List<Object> get props => [message];
@@ -107,4 +100,26 @@ class SearchQueryChanged extends AnimalesEvent {
 
 class ClearSearch extends AnimalesEvent {
   const ClearSearch();
+}
+
+class ToggleAnimalSelection extends AnimalesEvent {
+  const ToggleAnimalSelection(this.animalUuid);
+
+  final String animalUuid;
+
+  @override
+  List<Object> get props => [animalUuid];
+}
+
+class SelectAllVisibleAnimals extends AnimalesEvent {
+  const SelectAllVisibleAnimals(this.visibleAnimalUuids);
+
+  final List<String> visibleAnimalUuids;
+
+  @override
+  List<Object> get props => [visibleAnimalUuids];
+}
+
+class ClearAnimalSelection extends AnimalesEvent {
+  const ClearAnimalSelection();
 }

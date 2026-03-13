@@ -1,17 +1,16 @@
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 
 class ReproductionScheduleResult {
-  final DateTime dueDate;
-  final DateTime? pregnancyCheckDate;
-  final DateTime? dryOffDate;
-  final DateTime? closeUpDate;
-
   const ReproductionScheduleResult({
     required this.dueDate,
     this.pregnancyCheckDate,
     this.dryOffDate,
     this.closeUpDate,
   });
+  final DateTime dueDate;
+  final DateTime? pregnancyCheckDate;
+  final DateTime? dryOffDate;
+  final DateTime? closeUpDate;
 }
 
 /// Calcula hitos básicos de gestación y parto.

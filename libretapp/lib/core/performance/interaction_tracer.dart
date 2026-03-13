@@ -7,11 +7,10 @@ import 'package:libretapp/core/services/logger_service.dart';
 /// metric entry. It does not try to identify the exact widget hit, but the
 /// screen location is included for correlating in dev tools or logs.
 class InteractionTracer {
+  factory InteractionTracer() => _instance;
   InteractionTracer._internal();
 
   static final InteractionTracer _instance = InteractionTracer._internal();
-
-  factory InteractionTracer() => _instance;
 
   bool _started = false;
   final Map<int, PerformanceSpan> _activeTaps = {};

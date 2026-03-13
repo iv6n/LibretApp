@@ -12,14 +12,6 @@ enum ProductionRecordType {
 
 /// Registro productivo para un animal.
 class ProductionRecord extends Equatable {
-  final DateTime date;
-  final ProductionRecordType type;
-  final double? value;
-  final String? unit;
-  final int? score;
-  final String? notes;
-  final String? id;
-
   const ProductionRecord({
     required this.date,
     required this.type,
@@ -29,6 +21,13 @@ class ProductionRecord extends Equatable {
     this.notes,
     this.id,
   });
+  final DateTime date;
+  final ProductionRecordType type;
+  final double? value;
+  final String? unit;
+  final int? score;
+  final String? notes;
+  final String? id;
 
   ProductionRecord copyWith({
     DateTime? date,

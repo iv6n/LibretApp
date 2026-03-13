@@ -3,14 +3,6 @@ import 'package:libretapp/features/directorio/animales/domain/entities/care_rule
 
 /// Registro de la ejecución de una tarea de cuidado.
 class CareRecord extends Equatable {
-  final String id;
-  final String animalId;
-  final String ruleId;
-  final CareType type;
-  final DateTime performedAt;
-  final String? notes;
-  final String? performedBy;
-
   const CareRecord({
     required this.id,
     required this.animalId,
@@ -20,6 +12,13 @@ class CareRecord extends Equatable {
     this.notes,
     this.performedBy,
   });
+  final String id;
+  final String animalId;
+  final String ruleId;
+  final CareType type;
+  final DateTime performedAt;
+  final String? notes;
+  final String? performedBy;
 
   @override
   List<Object?> get props => [

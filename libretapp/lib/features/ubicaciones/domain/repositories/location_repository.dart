@@ -9,6 +9,8 @@ abstract class LocationRepository {
   Future<void> deleteByUuid(String uuid);
   Future<void> addVisit(String uuid, VisitRecord record);
   Future<void> addWater(String uuid, WaterRecord record);
+  Future<void> addSalt(String uuid, SaltRecord record);
+  Future<void> addShade(String uuid, ShadeRecord record);
   Future<void> addPasture(String uuid, PastureRecord record);
   Future<void> addSeeding(String uuid, SeedingRecord record);
   Future<void> addIrrigation(String uuid, IrrigationRecord record);

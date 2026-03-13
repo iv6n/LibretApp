@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
 abstract class UbicacionesTabEvent extends Equatable {
   const UbicacionesTabEvent();
@@ -26,7 +27,7 @@ class SearchUbicacionesTab extends UbicacionesTabEvent {
 class UbicacionesTabStreamUpdated extends UbicacionesTabEvent {
   const UbicacionesTabStreamUpdated(this.ubicaciones);
 
-  final List<dynamic> ubicaciones;
+  final List<LocationEntity> ubicaciones;
 
   @override
   List<Object> get props => [ubicaciones];

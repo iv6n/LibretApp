@@ -161,3 +161,38 @@ Future<void> removeAnimalFromLote(...)
 Future<void> updateLote(LoteEntity lote)
 Future<void> deleteLote(String uuid)
 ```
+
+---
+
+## Continuation Update (2026-03-08)
+
+### Stability and Warning Remediation Completed
+- Startup hardening completed in `lib/main.dart`:
+  - Added `FlutterError.onError` logging.
+  - Added `PlatformDispatcher.instance.onError` logging.
+  - Added guarded startup `try/catch` with fallback failure UI.
+- Silent failure remediation completed:
+  - Replaced silent `catch` in `lib/features/directorio/animales/widgets/info_tab.dart` with structured logs.
+- Unsafe cast and dynamic-detail cleanup completed:
+  - Hardened combined-search mapping in `lib/features/directorio/bloc/directorio_bloc.dart` using typed entities and safe string reads.
+- BLoC lifecycle hardening completed:
+  - Added lifecycle-safe emit guards (`emit.isDone`/`isClosed`) for:
+    - `lib/features/directorio/lotes/bloc/lotes_bloc.dart`
+    - `lib/features/directorio/bloc/animales_tab_bloc.dart`
+    - `lib/features/directorio/bloc/lotes_tab_bloc.dart`
+    - `lib/features/directorio/bloc/ubicaciones_tab_bloc.dart`
+- Dynamic tab rendering stabilized in `lib/features/directorio/view/directorio_view.dart`:
+  - Switched to fixed-length `TabController` and visibility-based tab behavior to avoid controller recreation issues.
+
+### Duplicate Stub Bloc Cleanup
+- Verified removal of legacy stub files:
+  - `lib/features/directorio/animales/view/animales_bloc.dart` (not present)
+  - `lib/features/directorio/animales/view/animales_state.dart` (not present)
+- Verified no remaining imports/references to those legacy view-level stub files.
+- Confirmed active blocs are intentional and scoped:
+  - `AnimalesBloc` for list/workflow feature state.
+  - `AnimalBloc` for detail/application state.
+
+### Validation
+- Workspace diagnostics (`get_errors`) reports no current errors.
+- Unit tests pass (`5 passed, 0 failed`).

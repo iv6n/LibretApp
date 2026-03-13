@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
 abstract class LotesTabEvent extends Equatable {
   const LotesTabEvent();
@@ -26,7 +27,7 @@ class SearchLotesTab extends LotesTabEvent {
 class LotesTabStreamUpdated extends LotesTabEvent {
   const LotesTabStreamUpdated(this.lotes);
 
-  final List<dynamic> lotes;
+  final List<LoteEntity> lotes;
 
   @override
   List<Object> get props => [lotes];

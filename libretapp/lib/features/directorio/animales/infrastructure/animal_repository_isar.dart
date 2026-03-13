@@ -391,6 +391,27 @@ class AnimalRepositoryIsar implements AnimalRepository {
   }
 
   @override
+  Future<void> addHealthRecordToMultiple(
+    List<String> animalUuids,
+    HealthRecord record,
+  ) async {
+    if (animalUuids.isEmpty) return;
+    final isar = await _isar;
+    final models = animalUuids
+        .map((animalUuid) => record.toIsar(animalUuid))
+        .toList(growable: false);
+
+    await isar.writeTxn(() async {
+      await isar.isarHealthRecords.putAll(models);
+    });
+
+    LoggerService.i(
+      'Registro sanitario masivo guardado para ${animalUuids.length} animales',
+      tag: _logTag,
+    );
+  }
+
+  @override
   Future<void> deleteHealthRecord(String recordId) async {
     final isar = await _isar;
     final id = int.tryParse(recordId);

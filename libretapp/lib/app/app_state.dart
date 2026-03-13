@@ -12,18 +12,16 @@ class AppInitial extends AppState {
 }
 
 class AppReady extends AppState {
-  final String languageCode;
-
   const AppReady({this.languageCode = 'es'});
+  final String languageCode;
 
   @override
   List<Object> get props => [languageCode];
 }
 
 class AppLanguageUpdated extends AppState {
-  final String languageCode;
-
   const AppLanguageUpdated(this.languageCode);
+  final String languageCode;
 
   @override
   List<Object> get props => [languageCode];

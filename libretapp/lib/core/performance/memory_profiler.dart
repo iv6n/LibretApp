@@ -1,11 +1,10 @@
 class MemoryProfiler {
-  static final MemoryProfiler _instance = MemoryProfiler._internal();
-
   factory MemoryProfiler() {
     return _instance;
   }
 
   MemoryProfiler._internal();
+  static final MemoryProfiler _instance = MemoryProfiler._internal();
 
   final Map<String, int> _memoryUsage = {};
 

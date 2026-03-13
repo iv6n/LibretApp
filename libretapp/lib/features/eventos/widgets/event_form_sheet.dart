@@ -103,9 +103,9 @@ Future<void> showEventFormSheet({
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Ubicación (opcional)',
-                        prefixIcon: const Icon(Icons.place_outlined),
+                        prefixIcon: Icon(Icons.place_outlined),
                         hintText: 'Ej: Potrero B',
                       ),
                       onChanged: (value) => ubicacion = value,

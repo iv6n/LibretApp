@@ -4,9 +4,8 @@
 /// This file contains the localization strings for the LIBRETAPP application.
 ///
 class AppLocalizations {
-  final String languageCode;
-
   AppLocalizations({required this.languageCode});
+  final String languageCode;
 
   static AppLocalizations of(String languageCode) {
     return AppLocalizations(languageCode: languageCode);

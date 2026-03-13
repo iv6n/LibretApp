@@ -1,16 +1,30 @@
 import 'package:equatable/equatable.dart';
 
+enum CombinedSearchType { animal, lote, ubicacion }
+
+extension CombinedSearchTypeX on CombinedSearchType {
+  String get label {
+    switch (this) {
+      case CombinedSearchType.animal:
+        return 'animal';
+      case CombinedSearchType.lote:
+        return 'lote';
+      case CombinedSearchType.ubicacion:
+        return 'ubicacion';
+    }
+  }
+}
+
 /// Modelo para representar un resultado de búsqueda combinada
 class CombinedSearchResult extends Equatable {
   const CombinedSearchResult({
     required this.type,
     required this.id,
     required this.name,
-    required this.data,
   });
 
-  /// Tipo de entidad: 'animal', 'lote', 'ubicacion'
-  final String type;
+  /// Tipo de entidad resultante de búsqueda combinada.
+  final CombinedSearchType type;
 
   /// ID único de la entidad
   final String id;
@@ -18,11 +32,8 @@ class CombinedSearchResult extends Equatable {
   /// Nombre de la entidad
   final String name;
 
-  /// Datos adicionales de la entidad
-  final Map<String, dynamic> data;
-
   @override
-  List<Object?> get props => [type, id, name, data];
+  List<Object?> get props => [type, id, name];
 }
 
 abstract class DirectorioState extends Equatable {

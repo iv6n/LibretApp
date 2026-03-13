@@ -17,31 +17,29 @@ class UbicacionesLoading extends UbicacionesState {
 }
 
 class UbicacionesLoaded extends UbicacionesState {
-  final List<LocationEntity> allUbicaciones;
-  final List<LocationEntity> visibleUbicaciones;
-  final bool isSearching;
-  final String searchQuery;
-
   const UbicacionesLoaded({
     required this.allUbicaciones,
     required this.visibleUbicaciones,
     required this.isSearching,
     required this.searchQuery,
   });
+  final List<LocationEntity> allUbicaciones;
+  final List<LocationEntity> visibleUbicaciones;
+  final bool isSearching;
+  final String searchQuery;
 
   @override
   List<Object> get props => [
-        allUbicaciones,
-        visibleUbicaciones,
-        isSearching,
-        searchQuery,
-      ];
+    allUbicaciones,
+    visibleUbicaciones,
+    isSearching,
+    searchQuery,
+  ];
 }
 
 class UbicacionesError extends UbicacionesState {
-  final String message;
-
   const UbicacionesError(this.message);
+  final String message;
 
   @override
   List<Object> get props => [message];

@@ -5,13 +5,6 @@ enum CostType { medication, feeding, labor, transport, investment }
 
 /// Registro de costo asociado al animal.
 class CostRecord extends Equatable {
-  final DateTime date;
-  final CostType type;
-  final double amount;
-  final String? currency;
-  final String? notes;
-  final String? id;
-
   const CostRecord({
     required this.date,
     required this.type,
@@ -20,6 +13,12 @@ class CostRecord extends Equatable {
     this.notes,
     this.id,
   });
+  final DateTime date;
+  final CostType type;
+  final double amount;
+  final String? currency;
+  final String? notes;
+  final String? id;
 
   CostRecord copyWith({
     DateTime? date,

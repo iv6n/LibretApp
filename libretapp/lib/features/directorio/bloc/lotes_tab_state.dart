@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
 abstract class LotesTabState extends Equatable {
   const LotesTabState();
@@ -21,15 +22,15 @@ class LotesTabLoading extends LotesTabState {
 class LotesTabLoaded extends LotesTabState {
   const LotesTabLoaded({required this.lotes, this.filteredLotes});
 
-  final List<dynamic> lotes;
-  final List<dynamic>? filteredLotes;
+  final List<LoteEntity> lotes;
+  final List<LoteEntity>? filteredLotes;
 
   /// Devuelve los lotes a mostrar (filtrados o todos)
-  List<dynamic> get displayLotes => filteredLotes ?? lotes;
+  List<LoteEntity> get displayLotes => filteredLotes ?? lotes;
 
   LotesTabLoaded copyWith({
-    List<dynamic>? lotes,
-    List<dynamic>? filteredLotes,
+    List<LoteEntity>? lotes,
+    List<LoteEntity>? filteredLotes,
   }) {
     return LotesTabLoaded(
       lotes: lotes ?? this.lotes,

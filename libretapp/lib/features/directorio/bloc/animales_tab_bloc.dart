@@ -1,35 +1,39 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
 
 class AnimalesTabBloc extends Bloc<AnimalesTabEvent, AnimalesTabState> {
-  final AnimalRepository repository;
-  StreamSubscription<List<dynamic>>? _subscription;
-
   AnimalesTabBloc(this.repository) : super(const AnimalesTabInitial()) {
     on<LoadAnimalesTab>(_onLoadAnimales);
     on<SearchAnimalesTab>(_onSearchAnimales);
     on<AnimalesTabStreamUpdated>(_onStreamUpdated);
     on<AnimalesTabStreamFailed>(_onStreamFailed);
   }
+  final AnimalRepository repository;
+  StreamSubscription<List<AnimalEntity>>? _subscription;
 
   Future<void> _onLoadAnimales(
     LoadAnimalesTab event,
     Emitter<AnimalesTabState> emit,
   ) async {
-    emit(const AnimalesTabLoading());
+    _emitIfActive(emit, const AnimalesTabLoading());
     try {
       await _subscription?.cancel();
       // Usamos watchAll() para obtener un stream de los animales
       _subscription = repository.watchAll().listen(
         (animales) => add(AnimalesTabStreamUpdated(animales)),
-        onError: (error, _) => add(AnimalesTabStreamFailed(error.toString())),
+        onError: (error, _) {
+          if (!isClosed) {
+            add(AnimalesTabStreamFailed(error.toString()));
+          }
+        },
       );
     } catch (e) {
-      emit(AnimalesTabError('Error al cargar animales: $e'));
+      _emitIfActive(emit, AnimalesTabError('Error al cargar animales: $e'));
     }
   }
 
@@ -37,14 +41,14 @@ class AnimalesTabBloc extends Bloc<AnimalesTabEvent, AnimalesTabState> {
     AnimalesTabStreamUpdated event,
     Emitter<AnimalesTabState> emit,
   ) {
-    emit(AnimalesTabLoaded(animales: event.animales));
+    _emitIfActive(emit, AnimalesTabLoaded(animales: event.animales));
   }
 
   void _onStreamFailed(
     AnimalesTabStreamFailed event,
     Emitter<AnimalesTabState> emit,
   ) {
-    emit(AnimalesTabError(event.error));
+    _emitIfActive(emit, AnimalesTabError(event.error));
   }
 
   void _onSearchAnimales(
@@ -55,32 +59,23 @@ class AnimalesTabBloc extends Bloc<AnimalesTabEvent, AnimalesTabState> {
     if (currentState is! AnimalesTabLoaded) return;
 
     if (event.query.isEmpty) {
-      emit(currentState.copyWith(filteredAnimales: null));
+      _emitIfActive(emit, currentState.copyWith(filteredAnimales: null));
       return;
     }
 
     final filtered = currentState.animales.where((animal) {
-      final nombre = _getAnimalName(animal).toLowerCase();
-      return nombre.contains(event.query.toLowerCase());
+      final normalized = event.query.toLowerCase();
+      final label = '${animal.earTagNumber} ${animal.customName ?? ''}'
+          .toLowerCase();
+      return label.contains(normalized);
     }).toList();
 
-    emit(currentState.copyWith(filteredAnimales: filtered));
+    _emitIfActive(emit, currentState.copyWith(filteredAnimales: filtered));
   }
 
-  String _getAnimalName(dynamic animal) {
-    // Intenta obtener el nombre según la estructura de la entidad Animal
-    if (animal is Map && animal.containsKey('nombre')) {
-      return animal['nombre'] as String? ?? '';
-    }
-    if (animal is Map && animal.containsKey('name')) {
-      return animal['name'] as String? ?? '';
-    }
-    // Intenta acceder a través de reflexión si es necesario
-    try {
-      return animal.toString();
-    } catch (e) {
-      return '';
-    }
+  void _emitIfActive(Emitter<AnimalesTabState> emit, AnimalesTabState state) {
+    if (emit.isDone || isClosed) return;
+    emit(state);
   }
 
   @override

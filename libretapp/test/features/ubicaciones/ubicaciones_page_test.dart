@@ -41,6 +41,12 @@ class _FakeLocationRepository implements LocationRepository {
   Future<void> addWater(String uuid, WaterRecord record) async {}
 
   @override
+  Future<void> addSalt(String uuid, SaltRecord record) async {}
+
+  @override
+  Future<void> addShade(String uuid, ShadeRecord record) async {}
+
+  @override
   Future<void> addPasture(String uuid, PastureRecord record) async {}
 
   @override
@@ -82,7 +88,7 @@ void main() {
             ),
           ],
         ),
-        LocationEntity(
+        const LocationEntity(
           uuid: 'uuid-2',
           name: 'Corral Central',
           type: LocationType.corral,

@@ -1,11 +1,10 @@
 class CacheManager {
-  static final CacheManager _instance = CacheManager._internal();
-
   factory CacheManager() {
     return _instance;
   }
 
   CacheManager._internal();
+  static final CacheManager _instance = CacheManager._internal();
 
   final Map<String, dynamic> _cache = {};
 

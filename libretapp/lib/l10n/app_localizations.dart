@@ -224,6 +224,84 @@ abstract class AppLocalizations {
   /// **'{count, plural, one {{count} animal} other {{count} animales}}'**
   String animalsCount(num count);
 
+  /// No description provided for @animalsSelectionHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantener presionado para seleccionar'**
+  String get animalsSelectionHint;
+
+  /// No description provided for @animalsSelectedCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one {{count} seleccionado} other {{count} seleccionados}}'**
+  String animalsSelectedCount(num count);
+
+  /// No description provided for @animalsSelectVisible.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar visibles ({selected}/{total})'**
+  String animalsSelectVisible(Object selected, Object total);
+
+  /// No description provided for @animalsSelectVisibleSimple.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar visibles'**
+  String get animalsSelectVisibleSimple;
+
+  /// No description provided for @animalsDeselectVisible.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar visibles'**
+  String get animalsDeselectVisible;
+
+  /// No description provided for @animalsSelectionCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get animalsSelectionCancel;
+
+  /// No description provided for @animalsSelectionHiddenCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count, plural, one {{count} seleccionado está oculto por filtros} other {{count} seleccionados están ocultos por filtros}}'**
+  String animalsSelectionHiddenCount(num count);
+
+  /// No description provided for @animalsSelectionAllHiddenWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los seleccionados están ocultos por filtros activos.'**
+  String get animalsSelectionAllHiddenWarning;
+
+  /// No description provided for @animalsBulkMaintenanceAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar mantenimiento ({count})'**
+  String animalsBulkMaintenanceAction(Object count);
+
+  /// No description provided for @animalsBulkMaintenanceError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar: {error}'**
+  String animalsBulkMaintenanceError(Object error);
+
+  /// No description provided for @animalsBulkMaintenanceConfirmTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar mantenimiento'**
+  String get animalsBulkMaintenanceConfirmTitle;
+
+  /// No description provided for @animalsBulkMaintenanceConfirmBody.
+  ///
+  /// In es, this message translates to:
+  /// **'Se aplicará el mismo mantenimiento a {count} animales.'**
+  String animalsBulkMaintenanceConfirmBody(Object count);
+
+  /// No description provided for @animalsBulkMaintenanceConfirmAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar'**
+  String get animalsBulkMaintenanceConfirmAction;
+
   /// No description provided for @stageFilterCalf.
   ///
   /// In es, this message translates to:
@@ -674,6 +752,12 @@ abstract class AppLocalizations {
   /// **'Registros'**
   String get tabRecords;
 
+  /// No description provided for @actionSelect.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar'**
+  String get actionSelect;
+
   /// No description provided for @actionSave.
   ///
   /// In es, this message translates to:
@@ -1117,6 +1201,198 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Evento reproductivo guardado'**
   String get detailFormReproductionSaved;
+
+  /// No description provided for @animalFormLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el formulario de animal'**
+  String get animalFormLoadError;
+
+  /// No description provided for @animalFormCategoryAdjusted.
+  ///
+  /// In es, this message translates to:
+  /// **'Categoría ajustada a Otro para coincidir con la especie'**
+  String get animalFormCategoryAdjusted;
+
+  /// No description provided for @animalFormSpeciesAdjusted.
+  ///
+  /// In es, this message translates to:
+  /// **'Especie ajustada a Bovino para esa categoría'**
+  String get animalFormSpeciesAdjusted;
+
+  /// No description provided for @animalFormNoSelection.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin selección'**
+  String get animalFormNoSelection;
+
+  /// No description provided for @animalFormNoTagTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Animal sin arete'**
+  String get animalFormNoTagTitle;
+
+  /// No description provided for @animalFormNoTagMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Este animal no tiene arete. Se recomienda etiquetarlo para su seguimiento. ¿Deseas guardar de todos modos?'**
+  String get animalFormNoTagMessage;
+
+  /// No description provided for @animalFormUnsupportedAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Acción no soportada desde este formulario'**
+  String get animalFormUnsupportedAction;
+
+  /// No description provided for @animalFormRecordSaveError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar el registro: {error}'**
+  String animalFormRecordSaveError(Object error);
+
+  /// No description provided for @animalFormSaveFirstForRecords.
+  ///
+  /// In es, this message translates to:
+  /// **'Guarda el animal primero para agregar registros'**
+  String get animalFormSaveFirstForRecords;
+
+  /// No description provided for @animalFormInvalidPurchasePrice.
+  ///
+  /// In es, this message translates to:
+  /// **'El precio de compra debe ser un número válido'**
+  String get animalFormInvalidPurchasePrice;
+
+  /// No description provided for @animalFormNoAutoMotherFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontró madre automática; puedes guardar o seleccionar una madre manualmente.'**
+  String get animalFormNoAutoMotherFound;
+
+  /// No description provided for @animalFormEditTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar animal'**
+  String get animalFormEditTitle;
+
+  /// No description provided for @animalFormCreateTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar animal'**
+  String get animalFormCreateTitle;
+
+  /// No description provided for @animalFormNameOrVisualId.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre o ID visual'**
+  String get animalFormNameOrVisualId;
+
+  /// No description provided for @animalFormBreedOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Raza (opcional)'**
+  String get animalFormBreedOptional;
+
+  /// No description provided for @animalFormStatus.
+  ///
+  /// In es, this message translates to:
+  /// **'Estado'**
+  String get animalFormStatus;
+
+  /// No description provided for @animalFormSectionOrigin.
+  ///
+  /// In es, this message translates to:
+  /// **'Origen'**
+  String get animalFormSectionOrigin;
+
+  /// No description provided for @animalFormMotherOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Madre (opcional)'**
+  String get animalFormMotherOptional;
+
+  /// No description provided for @animalFormFatherOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Padre (opcional)'**
+  String get animalFormFatherOptional;
+
+  /// No description provided for @animalFormSelectMother.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar madre'**
+  String get animalFormSelectMother;
+
+  /// No description provided for @animalFormSelectFather.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar padre'**
+  String get animalFormSelectFather;
+
+  /// No description provided for @animalFormNoLocation.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin ubicación'**
+  String get animalFormNoLocation;
+
+  /// No description provided for @animalFormNoBatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin lote'**
+  String get animalFormNoBatch;
+
+  /// No description provided for @animalFormSectionWeightHealth.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso y salud'**
+  String get animalFormSectionWeightHealth;
+
+  /// No description provided for @animalFormWeightOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso (kg) opcional'**
+  String get animalFormWeightOptional;
+
+  /// No description provided for @animalFormSectionNotesPhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Notas y foto'**
+  String get animalFormSectionNotesPhoto;
+
+  /// No description provided for @animalFormOwnerOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Propietario (opcional)'**
+  String get animalFormOwnerOptional;
+
+  /// No description provided for @animalFormPurchasePriceOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio de compra (opcional)'**
+  String get animalFormPurchasePriceOptional;
+
+  /// No description provided for @animalFormRecordsAvailableAfterSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Los accesos de registros estarán disponibles al guardar el animal.'**
+  String get animalFormRecordsAvailableAfterSave;
+
+  /// No description provided for @animalFormRegisterAsCalf.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar como cría (agregar madre automáticamente)'**
+  String get animalFormRegisterAsCalf;
+
+  /// No description provided for @animalFormSaving.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardando...'**
+  String get animalFormSaving;
+
+  /// No description provided for @animalFormSaveAnimal.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar animal'**
+  String get animalFormSaveAnimal;
 }
 
 class _AppLocalizationsDelegate

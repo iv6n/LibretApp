@@ -17,18 +17,16 @@ class EventosLoading extends EventosState {
 }
 
 class EventosLoaded extends EventosState {
-  final List<Evento> eventos;
-
   const EventosLoaded(this.eventos);
+  final List<Evento> eventos;
 
   @override
   List<Object> get props => [eventos];
 }
 
 class EventosError extends EventosState {
-  final String message;
-
   const EventosError(this.message);
+  final String message;
 
   @override
   List<Object> get props => [message];

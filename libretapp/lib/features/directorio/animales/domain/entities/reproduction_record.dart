@@ -8,19 +8,6 @@ enum PregnancyCheckResult { positive, negative, uncertain, notChecked }
 
 /// Registro de evento reproductivo del animal.
 class ReproductionRecord extends Equatable {
-  final DateTime serviceDate;
-  final ServiceType serviceType;
-  final String? maleSireUuid;
-  final String? maleSireIdentifier;
-  final DateTime? pregnancyCheckDate;
-  final PregnancyCheckResult? pregnancyResult;
-  final DateTime? expectedCalvingDate;
-  final DateTime? actualCalvingDate;
-  final String? calvingResult;
-  final String? notes;
-  final String? servicedBy;
-  final String? id;
-
   const ReproductionRecord({
     required this.serviceDate,
     required this.serviceType,
@@ -35,6 +22,18 @@ class ReproductionRecord extends Equatable {
     this.servicedBy,
     this.id,
   });
+  final DateTime serviceDate;
+  final ServiceType serviceType;
+  final String? maleSireUuid;
+  final String? maleSireIdentifier;
+  final DateTime? pregnancyCheckDate;
+  final PregnancyCheckResult? pregnancyResult;
+  final DateTime? expectedCalvingDate;
+  final DateTime? actualCalvingDate;
+  final String? calvingResult;
+  final String? notes;
+  final String? servicedBy;
+  final String? id;
 
   ReproductionRecord copyWith({
     DateTime? serviceDate,

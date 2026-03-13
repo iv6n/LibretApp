@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/directorio/animales/domain/animal_palette.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 
 /// Aggregated data for the animal detail screen.
 class DetailData {

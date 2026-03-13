@@ -1,8 +1,10 @@
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_kind.dart';
 
 part 'isar_location.g.dart';
 
@@ -14,6 +16,10 @@ class IsarLocation {
   late String uuid;
 
   late String name;
+  late String kind;
+  String? parentUuid;
+  List<String> childUuids = [];
+  String? templateUuid;
   late String type;
   late double surfaceArea;
   late int capacity;
@@ -21,13 +27,54 @@ class IsarLocation {
   late String terrainType;
   late String status;
 
+  List<IsarDynamicAttribute> attributes = [];
+
   List<IsarVisitRecord> visits = [];
   List<IsarWaterRecord> waters = [];
+  List<IsarSaltRecord> salts = [];
+  List<IsarShadeRecord> shades = [];
   List<IsarPastureRecord> pastures = [];
   List<IsarSeedingRecord> seedings = [];
   List<IsarIrrigationRecord> irrigations = [];
   List<IsarRainRecord> rains = [];
   List<IsarLocationCostRecord> costs = [];
+}
+
+@embedded
+class IsarDynamicAttribute {
+  late String key;
+  late String label;
+  late String type;
+  String? unit;
+  double? numberValue;
+  bool? boolValue;
+  String? textValue;
+  late DateTime updatedAt;
+  String? source;
+
+  DynamicAttribute toEntity() => DynamicAttribute(
+    key: key,
+    label: label,
+    type: _enumByName(DynamicAttributeType.values, type),
+    unit: unit,
+    numberValue: numberValue,
+    boolValue: boolValue,
+    textValue: textValue,
+    updatedAt: updatedAt,
+    source: source,
+  );
+
+  static IsarDynamicAttribute fromEntity(DynamicAttribute attribute) =>
+      IsarDynamicAttribute()
+        ..key = attribute.key
+        ..label = attribute.label
+        ..type = attribute.type.name
+        ..unit = attribute.unit
+        ..numberValue = attribute.numberValue?.toDouble()
+        ..boolValue = attribute.boolValue
+        ..textValue = attribute.textValue
+        ..updatedAt = attribute.updatedAt
+        ..source = attribute.source;
 }
 
 @embedded
@@ -65,6 +112,42 @@ class IsarWaterRecord {
     ..date = record.date
     ..level = record.level
     ..type = record.type.name
+    ..notes = record.notes;
+}
+
+@embedded
+class IsarSaltRecord {
+  late DateTime date;
+  late double quantityKg;
+  String? notes;
+
+  SaltRecord toEntity() =>
+      SaltRecord(date: date, quantityKg: quantityKg, notes: notes);
+
+  static IsarSaltRecord fromEntity(SaltRecord record) => IsarSaltRecord()
+    ..date = record.date
+    ..quantityKg = record.quantityKg
+    ..notes = record.notes;
+}
+
+@embedded
+class IsarShadeRecord {
+  late DateTime date;
+  late double shadePercent;
+  late String condition;
+  String? notes;
+
+  ShadeRecord toEntity() => ShadeRecord(
+    date: date,
+    shadePercent: shadePercent,
+    condition: condition,
+    notes: notes,
+  );
+
+  static IsarShadeRecord fromEntity(ShadeRecord record) => IsarShadeRecord()
+    ..date = record.date
+    ..shadePercent = record.shadePercent
+    ..condition = record.condition
     ..notes = record.notes;
 }
 
@@ -179,14 +262,21 @@ extension IsarLocationMapper on IsarLocation {
       id: id.isarId,
       uuid: uuid,
       name: name,
+      kind: _enumByName(LocationKind.values, kind),
+      parentUuid: parentUuid,
+      childUuids: List<String>.unmodifiable(childUuids),
+      templateUuid: templateUuid,
       type: _enumByName(LocationType.values, type),
       surfaceArea: surfaceArea,
       capacity: capacity,
       waterSource: waterSource,
       terrainType: terrainType,
       status: status,
+      attributes: attributes.map((e) => e.toEntity()).toList(growable: false),
       visits: visits.map((e) => e.toEntity()).toList(growable: false),
       waters: waters.map((e) => e.toEntity()).toList(growable: false),
+      salts: salts.map((e) => e.toEntity()).toList(growable: false),
+      shades: shades.map((e) => e.toEntity()).toList(growable: false),
       pastures: pastures.map((e) => e.toEntity()).toList(growable: false),
       seedings: seedings.map((e) => e.toEntity()).toList(growable: false),
       irrigations: irrigations.map((e) => e.toEntity()).toList(growable: false),
@@ -201,14 +291,21 @@ extension LocationEntityToIsar on LocationEntity {
     final model = IsarLocation()
       ..uuid = uuid
       ..name = name
+      ..kind = kind.name
+      ..parentUuid = parentUuid
+      ..childUuids = List.of(childUuids)
+      ..templateUuid = templateUuid
       ..type = type.name
       ..surfaceArea = surfaceArea
       ..capacity = capacity
       ..waterSource = waterSource
       ..terrainType = terrainType
       ..status = status
+      ..attributes = attributes.map(IsarDynamicAttribute.fromEntity).toList()
       ..visits = visits.map(IsarVisitRecord.fromEntity).toList()
       ..waters = waters.map(IsarWaterRecord.fromEntity).toList()
+      ..salts = salts.map(IsarSaltRecord.fromEntity).toList()
+      ..shades = shades.map(IsarShadeRecord.fromEntity).toList()
       ..pastures = pastures.map(IsarPastureRecord.fromEntity).toList()
       ..seedings = seedings.map(IsarSeedingRecord.fromEntity).toList()
       ..irrigations = irrigations.map(IsarIrrigationRecord.fromEntity).toList()
@@ -224,8 +321,10 @@ extension LocationEntityToIsar on LocationEntity {
   }
 }
 
-T _enumByName<T extends Enum>(List<T> values, String name) =>
-    values.byName(name);
+T _enumByName<T extends Enum>(List<T> values, String name) => values.firstWhere(
+  (value) => value.name == name,
+  orElse: () => values.first,
+);
 
 extension on Id {
   int? get isarId => this == Isar.autoIncrement ? null : this;

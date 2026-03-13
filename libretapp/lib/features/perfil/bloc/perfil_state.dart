@@ -17,27 +17,24 @@ class PerfilLoading extends PerfilState {
 }
 
 class PerfilLoaded extends PerfilState {
-  final Perfil perfil;
-
   const PerfilLoaded(this.perfil);
+  final Perfil perfil;
 
   @override
   List<Object> get props => [perfil];
 }
 
 class PerfilError extends PerfilState {
-  final String message;
-
   const PerfilError(this.message);
+  final String message;
 
   @override
   List<Object> get props => [message];
 }
 
 class PerfilUpdated extends PerfilState {
-  final Perfil perfil;
-
   const PerfilUpdated(this.perfil);
+  final Perfil perfil;
 
   @override
   List<Object> get props => [perfil];

@@ -6,113 +6,126 @@ typedef Money = double;
 typedef Area = double;
 
 class VisitRecord extends Equatable {
-  final DateTime date;
-  final int animals;
-  final String? notes;
-  final String? user;
-
   const VisitRecord({
     required this.date,
     required this.animals,
     this.notes,
     this.user,
   });
+  final DateTime date;
+  final int animals;
+  final String? notes;
+  final String? user;
 
   @override
   List<Object?> get props => [date, animals, notes, user];
 }
 
 class WaterRecord extends Equatable {
-  final DateTime date;
-  final double level;
-  final WaterType type;
-  final String? notes;
-
   const WaterRecord({
     required this.date,
     required this.level,
     required this.type,
     this.notes,
   });
+  final DateTime date;
+  final double level;
+  final WaterType type;
+  final String? notes;
 
   @override
   List<Object?> get props => [date, level, type, notes];
 }
 
-class PastureRecord extends Equatable {
+class SaltRecord extends Equatable {
+  const SaltRecord({required this.date, required this.quantityKg, this.notes});
   final DateTime date;
-  final String grassType;
-  final String condition;
-  final double carryingCapacity;
+  final double quantityKg;
+  final String? notes;
 
+  @override
+  List<Object?> get props => [date, quantityKg, notes];
+}
+
+class ShadeRecord extends Equatable {
+  const ShadeRecord({
+    required this.date,
+    required this.shadePercent,
+    required this.condition,
+    this.notes,
+  });
+  final DateTime date;
+  final double shadePercent;
+  final String condition;
+  final String? notes;
+
+  @override
+  List<Object?> get props => [date, shadePercent, condition, notes];
+}
+
+class PastureRecord extends Equatable {
   const PastureRecord({
     required this.date,
     required this.grassType,
     required this.condition,
     required this.carryingCapacity,
   });
+  final DateTime date;
+  final String grassType;
+  final String condition;
+  final double carryingCapacity;
 
   @override
   List<Object?> get props => [date, grassType, condition, carryingCapacity];
 }
 
 class SeedingRecord extends Equatable {
-  final DateTime date;
-  final String crop;
-  final Area surface;
-  final Money cost;
-
   const SeedingRecord({
     required this.date,
     required this.crop,
     required this.surface,
     required this.cost,
   });
+  final DateTime date;
+  final String crop;
+  final Area surface;
+  final Money cost;
 
   @override
   List<Object?> get props => [date, crop, surface, cost];
 }
 
 class IrrigationRecord extends Equatable {
-  final DateTime date;
-  final String type;
-  final Duration duration;
-  final Money cost;
-
   const IrrigationRecord({
     required this.date,
     required this.type,
     required this.duration,
     required this.cost,
   });
+  final DateTime date;
+  final String type;
+  final Duration duration;
+  final Money cost;
 
   @override
   List<Object?> get props => [date, type, duration, cost];
 }
 
 class RainRecord extends Equatable {
-  final DateTime date;
-  final double millimeters;
-  final String location;
-
   const RainRecord({
     required this.date,
     required this.millimeters,
     required this.location,
   });
+  final DateTime date;
+  final double millimeters;
+  final String location;
 
   @override
   List<Object?> get props => [date, millimeters, location];
 }
 
 class CostRecord extends Equatable {
-  final DateTime date;
-  final Money maintenance;
-  final Money fences;
-  final Money repairs;
-  final Money labor;
-  final Money total;
-
   const CostRecord({
     required this.date,
     required this.maintenance,
@@ -121,6 +134,12 @@ class CostRecord extends Equatable {
     required this.labor,
     required this.total,
   });
+  final DateTime date;
+  final Money maintenance;
+  final Money fences;
+  final Money repairs;
+  final Money labor;
+  final Money total;
 
   CostRecord copyWith({
     DateTime? date,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/eventos/bloc/eventos_bloc.dart';
 import 'package:libretapp/features/eventos/bloc/eventos_event.dart';
@@ -14,20 +15,18 @@ class EventosView extends StatefulWidget {
   State<EventosView> createState() => _EventosViewState();
 }
 
-class _EventosViewState extends State<EventosView>
-    with SingleTickerProviderStateMixin {
+class _EventosViewState extends State<EventosView> {
   final TextEditingController _searchController = TextEditingController();
   late final FocusNode _searchFocusNode;
   DateTime _visibleDate = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
-  late final TabController _tabController;
   bool _isSearchActive = false;
+  bool _isSearchFieldActive = false;
   CalendarMode _calendarMode = CalendarMode.twoWeeks;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     _searchFocusNode = FocusNode()..addListener(_updateSearchActive);
     _searchController.addListener(_updateSearchActive);
   }
@@ -37,15 +36,7 @@ class _EventosViewState extends State<EventosView>
     _searchController.removeListener(_updateSearchActive);
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _tabController.dispose();
     super.dispose();
-  }
-
-  void _updateSearchActive() {
-    final active =
-        _searchFocusNode.hasFocus || _searchController.text.trim().isNotEmpty;
-    if (active == _isSearchActive) return;
-    setState(() => _isSearchActive = active);
   }
 
   @override
@@ -65,7 +56,46 @@ class _EventosViewState extends State<EventosView>
       child: ShellChromeScope(
         visible: !_isSearchActive,
         child: Scaffold(
-          appBar: AppBar(title: const Text('Eventos'), elevation: 0),
+          appBar: AppBar(
+            title: _isSearchFieldActive
+                ? TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar eventos...',
+                      border: InputBorder.none,
+                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                    style: theme.textTheme.bodyMedium,
+                    onChanged: (_) => setState(() {}),
+                  )
+                : const Text('Eventos'),
+            elevation: 5,
+            centerTitle: false,
+            leading: _isSearchFieldActive
+                ? IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => setState(() {
+                      _isSearchFieldActive = false;
+                      _searchController.clear();
+                      _searchFocusNode.unfocus();
+                    }),
+                  )
+                : null,
+            actions: [
+              if (!_isSearchFieldActive)
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () => setState(() {
+                    _isSearchFieldActive = true;
+                    _searchFocusNode.requestFocus();
+                  }),
+                  tooltip: 'Buscar',
+                ),
+            ],
+          ),
           body: BlocBuilder<EventosBloc, EventosState>(
             builder: (context, state) {
               if (state is EventosLoading) {
@@ -78,11 +108,13 @@ class _EventosViewState extends State<EventosView>
                 return const SizedBox.shrink();
               }
 
-                final filteredEventos = _filterByQuery(state.eventos);
-                final visibleRange = _visibleRange();
-                final eventosVisibles =
-                  _eventosEnRango(filteredEventos, visibleRange);
-                final eventosPorDia = _agruparPorDia(eventosVisibles);
+              final filteredEventos = _filterByQuery(state.eventos);
+              final visibleRange = _visibleRange();
+              final eventosVisibles = _eventosEnRango(
+                filteredEventos,
+                visibleRange,
+              );
+              final eventosPorDia = _agruparPorDia(eventosVisibles);
               final DateTime? selectedDay = _selectedDay;
               final selectedKey = selectedDay != null
                   ? DateTime(
@@ -91,105 +123,97 @@ class _EventosViewState extends State<EventosView>
                       selectedDay.day,
                     )
                   : null;
-              final eventosSeleccionados = selectedKey != null
-                    ? eventosPorDia[selectedKey] ?? const []
-                    : eventosVisibles;
+              final eventosHoy = selectedKey != null
+                  ? eventosPorDia[selectedKey] ?? const []
+                  : const [];
+              final proximosEventos = _proximos(filteredEventos, selectedKey);
 
-                  final proximos = _proximos(filteredEventos, selectedKey);
-
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final double tabHeight = constraints.maxHeight * 0.45;
-
-                  return SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, bottomInset + 2),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 24 + bottomInset,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          EventSearchBar(
-                            controller: _searchController,
-                            focusNode: _searchFocusNode,
-                            onChanged: (_) => setState(() {}),
-                          ),
-                          const SizedBox(height: 8),
-                          EventMonthHeader(
-                            visibleMonth: _visibleDate,
-                            onPrevious: () => _cambiarMes(-1),
-                            onNext: () => _cambiarMes(1),
-                            mode: _calendarMode,
-                            onToggleMode: _toggleMode,
-                          ),
-                          const SizedBox(height: 12),
-                          const _SectionTitle('Calendario'),
-                          const SizedBox(height: 6),
-                          const EventLegend(),
-                          const SizedBox(height: 8),
-                          EventCalendar(
-                            visibleDate: _visibleDate,
-                            mode: _calendarMode,
-                            selectedDay: _selectedDay,
-                            eventosPorDia: eventosPorDia,
-                            onDaySelected: (day) =>
-                                setState(() {
-                              _selectedDay = day;
-                              _visibleDate = day;
-                              _clampSelectionToRange();
-                            }),
-                          ),
-                          const SizedBox(height: 12),
-                          const _SectionTitle('Listado del día'),
-                          TabBar(
-                            controller: _tabController,
-                            labelColor: theme.colorScheme.primary,
-                            unselectedLabelColor:
-                                theme.textTheme.bodyMedium?.color,
-                            indicatorColor: theme.colorScheme.primary,
-                            tabs: const [
-                              Tab(text: 'Pendientes'),
-                              Tab(text: 'Próximos'),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          SizedBox(
-                            height: tabHeight,
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                EventList(
-                                  eventos: eventosSeleccionados,
-                                  emptyLabel: selectedDay == null
-                                      ? 'Selecciona un día para ver detalles'
-                                      : 'Sin pendientes para este día',
-                                  onDelete: (id) => context
-                                      .read<EventosBloc>()
-                                      .add(DeleteEvento(id)),
-                                ),
-                                EventList(
-                                  eventos: proximos,
-                                  emptyLabel:
-                                      'No hay próximos en los siguientes días',
-                                  onDelete: (id) => context
-                                      .read<EventosBloc>()
-                                      .add(DeleteEvento(id)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(7, 4, 7, bottomInset + 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Sección: Calendario
+                    const SizedBox(height: 4),
+                    _CalendarSection(
+                      onToggleMode: _toggleMode,
+                      visibleDate: _visibleDate,
+                      mode: _calendarMode,
+                      selectedDay: _selectedDay,
+                      eventosPorDia: eventosPorDia,
+                      onDaySelected: (day) => setState(() {
+                        _selectedDay = day;
+                        _visibleDate = day;
+                        _clampSelectionToRange();
+                      }),
+                      onPrevious: () => _cambiarMes(-1),
+                      onNext: () => _cambiarMes(1),
                     ),
-                  );
-                },
+                    const SizedBox(height: 5),
+                    const EventLegend(),
+                    const SizedBox(height: 10),
+
+                    // Sección: Eventos de Hoy
+                    const _SectionHeader(title: 'Hoy'),
+                    const SizedBox(height: 8),
+                    if (eventosHoy.isEmpty)
+                      _EmptyState(
+                        icon: Icons.inbox_outlined,
+                        message: selectedDay == null
+                            ? 'Selecciona un día para ver eventos'
+                            : 'Sin eventos para este día',
+                      )
+                    else
+                      Column(
+                        children: eventosHoy
+                            .map(
+                              (e) => EventSummaryCard(
+                                evento: e,
+                                onDelete: () => context.read<EventosBloc>().add(
+                                  DeleteEvento(e.id),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Sección: Próximos Eventos
+                    const _SectionHeader(title: 'Próximos Eventos (14 días)'),
+                    const SizedBox(height: 8),
+                    if (proximosEventos.isEmpty)
+                      const _EmptyState(
+                        icon: Icons.event_outlined,
+                        message: 'No hay próximos eventos',
+                      )
+                    else
+                      Column(
+                        children: proximosEventos
+                            .map(
+                              (e) => EventSummaryCard(
+                                evento: e,
+                                onDelete: () => context.read<EventosBloc>().add(
+                                  DeleteEvento(e.id),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                  ],
+                ),
               );
             },
           ),
         ),
       ),
     );
+  }
+
+  void _updateSearchActive() {
+    final active =
+        _searchFocusNode.hasFocus || _searchController.text.trim().isNotEmpty;
+    if (active == _isSearchActive) return;
+    setState(() => _isSearchActive = active);
   }
 
   List<Evento> _proximos(List<Evento> eventosMes, DateTime? selectedKey) {
@@ -221,8 +245,7 @@ class _EventosViewState extends State<EventosView>
   List<Evento> _eventosEnRango(List<Evento> eventos, DateTimeRange rango) {
     return eventos
         .where(
-          (e) =>
-              !e.fecha.isBefore(rango.start) && !e.fecha.isAfter(rango.end),
+          (e) => !e.fecha.isBefore(rango.start) && !e.fecha.isAfter(rango.end),
         )
         .toList();
   }
@@ -235,7 +258,8 @@ class _EventosViewState extends State<EventosView>
           (e) =>
               e.titulo.toLowerCase().contains(query) ||
               e.tipo.toLowerCase().contains(query) ||
-              e.animalId.toLowerCase().contains(query),
+              e.animalId.toLowerCase().contains(query) ||
+              e.ubicacion.toLowerCase().contains(query),
         )
         .toList();
   }
@@ -243,8 +267,11 @@ class _EventosViewState extends State<EventosView>
   void _cambiarMes(int delta) {
     setState(() {
       if (_calendarMode == CalendarMode.month) {
-        _visibleDate =
-            DateTime(_visibleDate.year, _visibleDate.month + delta, 1);
+        _visibleDate = DateTime(
+          _visibleDate.year,
+          _visibleDate.month + delta,
+          1,
+        );
         _selectedDay = DateTime(_visibleDate.year, _visibleDate.month, 1);
       } else {
         _visibleDate = _visibleDate.add(Duration(days: 14 * delta));
@@ -272,14 +299,30 @@ class _EventosViewState extends State<EventosView>
   DateTimeRange _visibleRange() {
     if (_calendarMode == CalendarMode.month) {
       final start = DateTime(_visibleDate.year, _visibleDate.month, 1);
-      final end = DateTime(_visibleDate.year, _visibleDate.month + 1, 0, 23,
-          59, 59, 999, 999);
+      final end = DateTime(
+        _visibleDate.year,
+        _visibleDate.month + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+        999,
+      );
       return DateTimeRange(start: start, end: end);
     }
 
     final start = _inicioSemana(_visibleDate);
-    final end = start.add(const Duration(days: 13, hours: 23, minutes: 59,
-        seconds: 59, milliseconds: 999, microseconds: 999));
+    final end = start.add(
+      const Duration(
+        days: 13,
+        hours: 23,
+        minutes: 59,
+        seconds: 59,
+        milliseconds: 999,
+        microseconds: 999,
+      ),
+    );
     return DateTimeRange(start: start, end: end);
   }
 
@@ -311,16 +354,147 @@ class _EventosViewState extends State<EventosView>
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
+// Widget: Encabezado de sección
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+      ],
+    );
+  }
+}
+
+// Widget: Sección del Calendario
+class _CalendarSection extends StatelessWidget {
+  const _CalendarSection({
+    required this.visibleDate,
+    required this.mode,
+    required this.selectedDay,
+    required this.eventosPorDia,
+    required this.onDaySelected,
+    required this.onPrevious,
+    required this.onNext,
+    this.onToggleMode,
+  });
+
+  final DateTime visibleDate;
+  final VoidCallback? onToggleMode;
+  final CalendarMode mode;
+  final DateTime? selectedDay;
+  final Map<DateTime, List<Evento>> eventosPorDia;
+  final ValueChanged<DateTime> onDaySelected;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final monthName = DateFormat.yMMMM().format(visibleDate);
+
+    return Column(
+      children: [
+        // Controles de navegación
+        Row(
+          children: [
+            IconButton(
+              onPressed: onPrevious,
+              icon: const Icon(Icons.chevron_left),
+              tooltip: 'Anterior',
+            ),
+            const Expanded(child: SizedBox.shrink()),
+            Center(
+              child: Text(
+                monthName,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const Expanded(child: SizedBox.shrink()),
+            if (onToggleMode != null)
+              OutlinedButton.icon(
+                onPressed: onToggleMode,
+                icon: Icon(
+                  mode == CalendarMode.month
+                      ? Icons.view_week_outlined
+                      : Icons.calendar_month_outlined,
+                  size: 14,
+                ),
+                label: Text(
+                  mode == CalendarMode.month ? '2 semanas' : 'Mes',
+                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 11),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            IconButton(
+              onPressed: onNext,
+              icon: const Icon(Icons.chevron_right),
+              tooltip: 'Siguiente',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Calendario
+        EventCalendar(
+          visibleDate: visibleDate,
+          mode: mode,
+          selectedDay: selectedDay,
+          eventosPorDia: eventosPorDia,
+          onDaySelected: onDaySelected,
+        ),
+      ],
+    );
+  }
+}
+
+// Widget: Estado vacío
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.icon, required this.message});
+
+  final IconData icon;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 36, color: theme.colorScheme.outline),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

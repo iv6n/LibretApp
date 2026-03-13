@@ -8,10 +8,6 @@ import 'animal_event.dart';
 import 'animal_state.dart';
 
 class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
-  final AnimalRepository animalRepository;
-  final LotesRepository lotesRepository;
-  static const _logTag = 'AnimalBloc';
-
   AnimalBloc({required this.animalRepository, required this.lotesRepository})
     : super(AnimalState.initial()) {
     on<LoadAnimals>(_onLoadAnimals);
@@ -30,6 +26,9 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     on<AddCostRecord>(_onAddCostRecord);
     on<AssignAnimalToBatch>(_onAssignAnimalToBatch);
   }
+  final AnimalRepository animalRepository;
+  final LotesRepository lotesRepository;
+  static const _logTag = 'AnimalBloc';
 
   Future<void> _onLoadAnimals(
     LoadAnimals event,

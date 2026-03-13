@@ -12,14 +12,6 @@ enum CommercialRecordType {
 
 /// Registro comercial del animal.
 class CommercialRecord extends Equatable {
-  final DateTime date;
-  final CommercialRecordType type;
-  final double? amount;
-  final String? currency;
-  final String? counterparty;
-  final String? notes;
-  final String? id;
-
   const CommercialRecord({
     required this.date,
     required this.type,
@@ -29,6 +21,13 @@ class CommercialRecord extends Equatable {
     this.notes,
     this.id,
   });
+  final DateTime date;
+  final CommercialRecordType type;
+  final double? amount;
+  final String? currency;
+  final String? counterparty;
+  final String? notes;
+  final String? id;
 
   CommercialRecord copyWith({
     DateTime? date,

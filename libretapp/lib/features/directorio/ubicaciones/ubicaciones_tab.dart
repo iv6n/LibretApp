@@ -41,10 +41,9 @@ class _UbicacionesTabState extends State<UbicacionesTab> {
             itemCount: ubicaciones.length,
             itemBuilder: (context, index) {
               final ubicacion = ubicaciones[index];
-              final nombre = _getUbicacionName(ubicacion);
               return ListTile(
-                title: Text(nombre),
-                subtitle: Text(_getUbicacionDescription(ubicacion)),
+                title: Text(ubicacion.name),
+                subtitle: Text(ubicacion.status),
               );
             },
           );
@@ -53,19 +52,5 @@ class _UbicacionesTabState extends State<UbicacionesTab> {
         return const SizedBox.shrink();
       },
     );
-  }
-
-  String _getUbicacionName(dynamic ubicacion) {
-    if (ubicacion is Map && ubicacion.containsKey('nombre')) {
-      return ubicacion['nombre'] as String? ?? 'Sin nombre';
-    }
-    return 'Ubicación';
-  }
-
-  String _getUbicacionDescription(dynamic ubicacion) {
-    if (ubicacion is Map && ubicacion.containsKey('descripcion')) {
-      return ubicacion['descripcion'] as String? ?? '';
-    }
-    return '';
   }
 }

@@ -46,110 +46,101 @@ class EventCalendar extends StatelessWidget {
               .toList(),
         ),
         const SizedBox(height: 6),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            childAspectRatio: 0.78,
-          ),
-          itemCount: dias.length,
-          itemBuilder: (context, index) {
-            final dia = dias[index];
-            final isDelMes = mode == CalendarMode.month
-                ? dia.month == visibleDate.month
-                : true;
-            final diaKey = DateTime(dia.year, dia.month, dia.day);
-            final eventos = eventosPorDia[diaKey] ?? const [];
-            final esHoy = DateUtils.isSameDay(dia, DateTime.now());
-            final seleccionado =
-                selectedDay != null && DateUtils.isSameDay(dia, selectedDay);
+        SizedBox(
+          height: mode == CalendarMode.month ? 215 : 90,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              childAspectRatio: 1.2,
+            ),
+            itemCount: dias.length,
+            itemBuilder: (context, index) {
+              final dia = dias[index];
+              final isDelMes = mode == CalendarMode.month
+                  ? dia.month == visibleDate.month
+                  : true;
+              final diaKey = DateTime(dia.year, dia.month, dia.day);
+              final eventos = eventosPorDia[diaKey] ?? const [];
+              final esHoy = DateUtils.isSameDay(dia, DateTime.now());
+              final seleccionado =
+                  selectedDay != null && DateUtils.isSameDay(dia, selectedDay);
 
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              margin: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: seleccionado
-                    ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: esHoy
-                      ? theme.colorScheme.primary
-                      : Colors.grey.shade300,
-                  width: esHoy ? 1.4 : 1,
-                ),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(10),
-                onTap: isDelMes ? () => onDaySelected(dia) : null,
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${dia.day}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: isDelMes
-                                  ? theme.colorScheme.onSurface
-                                  : theme.disabledColor,
-                              fontWeight: seleccionado
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                          if (eventos.isNotEmpty)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 2,
-                        children: eventos
-                            .take(3)
-                            .map(
-                              (e) => Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorForTipo(
-                                    e.tipo,
-                                  ).withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  e.titulo,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorForTipo(e.tipo),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.all(1),
+                decoration: BoxDecoration(
+                  color: seleccionado
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: esHoy
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade300,
+                    width: esHoy ? 1.4 : 1,
                   ),
                 ),
-              ),
-            );
-          },
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: isDelMes ? () => onDaySelected(dia) : null,
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${dia.day}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: isDelMes
+                                    ? theme.colorScheme.onSurface
+                                    : theme.disabledColor,
+                                fontWeight: seleccionado
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                            if (eventos.isNotEmpty)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        if (eventos.isNotEmpty)
+                          Wrap(
+                            spacing: 3,
+                            runSpacing: 1,
+                            children: eventos
+                                .take(3)
+                                .map(
+                                  (e) => Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      color: colorForTipo(e.tipo),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );

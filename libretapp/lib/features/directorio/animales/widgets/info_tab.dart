@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
@@ -41,8 +42,12 @@ class _InfoTabState extends State<InfoTab> {
       if (mounted && lote != null) {
         setState(() => _batchName = lote.nombre);
       }
-    } catch (e) {
-      // Silent fail for batch name resolution
+    } catch (e, st) {
+      LoggerService.w(
+        'No se pudo resolver el nombre del lote para ${widget.animal.uuid}: $e',
+        tag: 'InfoTab',
+      );
+      LoggerService.d(st.toString(), tag: 'InfoTab');
     } finally {
       if (mounted) {
         setState(() => _loadingBatchName = false);

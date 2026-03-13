@@ -22,27 +22,33 @@ class AnimalesLoaded extends AnimalesState {
     required this.visibleAnimals,
     this.isSearching = false,
     this.searchQuery = '',
+    this.selectedAnimalUuids = const {},
   });
 
   final List<AnimalEntity> allAnimals;
   final List<AnimalEntity> visibleAnimals;
   final bool isSearching;
   final String searchQuery;
+  final Set<String> selectedAnimalUuids;
 
   // Backward-friendly accessor for existing usages.
   List<AnimalEntity> get animales => visibleAnimals;
+  bool get isSelectionMode => selectedAnimalUuids.isNotEmpty;
+  int get selectedCount => selectedAnimalUuids.length;
 
   AnimalesLoaded copyWith({
     List<AnimalEntity>? allAnimals,
     List<AnimalEntity>? visibleAnimals,
     bool? isSearching,
     String? searchQuery,
+    Set<String>? selectedAnimalUuids,
   }) {
     return AnimalesLoaded(
       allAnimals: allAnimals ?? this.allAnimals,
       visibleAnimals: visibleAnimals ?? this.visibleAnimals,
       isSearching: isSearching ?? this.isSearching,
       searchQuery: searchQuery ?? this.searchQuery,
+      selectedAnimalUuids: selectedAnimalUuids ?? this.selectedAnimalUuids,
     );
   }
 
@@ -52,13 +58,13 @@ class AnimalesLoaded extends AnimalesState {
     visibleAnimals,
     isSearching,
     searchQuery,
+    selectedAnimalUuids,
   ];
 }
 
 class AnimalesError extends AnimalesState {
-  final String message;
-
   const AnimalesError(this.message);
+  final String message;
 
   @override
   List<Object> get props => [message];

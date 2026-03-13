@@ -7,10 +7,6 @@ import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 
 class LotesBloc extends Bloc<LotesEvent, LotesState> {
-  final LotesRepository repository;
-
-  StreamSubscription<List<LoteEntity>>? _subscription;
-
   LotesBloc(this.repository) : super(const LotesInitial()) {
     on<LoadLotes>(_onLoadLotes);
     on<LotesStreamUpdated>(_onStreamUpdated);
@@ -25,29 +21,50 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     on<CloseLote>(_onCloseLote);
     on<ReopenLote>(_onReopenLote);
   }
+  final LotesRepository repository;
+
+  StreamSubscription<List<LoteEntity>>? _subscription;
 
   /// Carga los lotes desde el repositorio
   Future<void> _onLoadLotes(LoadLotes event, Emitter<LotesState> emit) async {
-    emit(const LotesLoading());
+    _emitIfActive(emit, const LotesLoading());
     try {
       await _subscription?.cancel();
       _subscription = repository.watchAll().listen(
         (lotes) => add(LotesStreamUpdated(lotes)),
-        onError: (error, _) => add(LotesStreamFailed(error.toString())),
+        onError: (error, _) {
+          if (!isClosed) {
+            add(LotesStreamFailed(error.toString()));
+          }
+        },
       );
     } catch (e) {
-      emit(LotesError('Error al cargar lotes: $e'));
+      _emitIfActive(emit, LotesError('Error al cargar lotes: $e'));
     }
   }
 
   /// Maneja la actualización del stream de lotes
   void _onStreamUpdated(LotesStreamUpdated event, Emitter<LotesState> emit) {
-    emit(LotesLoaded(lotes: event.lotes));
+    _emitIfActive(emit, LotesLoaded(lotes: event.lotes));
   }
 
   /// Maneja errores del stream de lotes
   void _onStreamFailed(LotesStreamFailed event, Emitter<LotesState> emit) {
-    emit(LotesError(event.error));
+    _emitIfActive(emit, LotesError(event.error));
+  }
+
+  void _emitErrorAndRestore(
+    Emitter<LotesState> emit,
+    String message,
+    List<LoteEntity> lotes,
+  ) {
+    _emitIfActive(emit, LotesError(message));
+    _emitIfActive(emit, LotesLoaded(lotes: lotes));
+  }
+
+  void _emitIfActive(Emitter<LotesState> emit, LotesState nextState) {
+    if (emit.isDone || isClosed) return;
+    emit(nextState);
   }
 
   /// Crea un nuevo lote
@@ -55,7 +72,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     final currentState = state;
     if (currentState is! LotesLoaded) return;
 
-    emit(
+    _emitIfActive(
+      emit,
       LotesActionInProgress(
         action: 'Creando lote...',
         lotes: currentState.lotes,
@@ -70,7 +88,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
       );
 
       final updatedLotes = [...currentState.lotes, newLote];
-      emit(
+      _emitIfActive(
+        emit,
         LotesActionSuccess(
           action: 'create',
           lotes: updatedLotes,
@@ -78,15 +97,9 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         ),
       );
 
-      // Después de un breve delay, transicionar a estado cargado
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al crear lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(emit, 'Error al crear lote: $e', currentState.lotes);
     }
   }
 
@@ -95,7 +108,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     final currentState = state;
     if (currentState is! LotesLoaded) return;
 
-    emit(
+    _emitIfActive(
+      emit,
       LotesActionInProgress(
         action: 'Actualizando lote...',
         lotes: currentState.lotes,
@@ -109,7 +123,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.lote.uuid ? event.lote : l)
           .toList();
 
-      emit(
+      _emitIfActive(
+        emit,
         LotesActionSuccess(
           action: 'update',
           lotes: updatedLotes,
@@ -117,14 +132,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al actualizar lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al actualizar lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -133,7 +147,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     final currentState = state;
     if (currentState is! LotesLoaded) return;
 
-    emit(
+    _emitIfActive(
+      emit,
       LotesActionInProgress(
         action: 'Eliminando lote...',
         lotes: currentState.lotes,
@@ -147,7 +162,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .where((l) => l.uuid != event.uuid)
           .toList();
 
-      emit(
+      _emitIfActive(
+        emit,
         LotesActionSuccess(
           action: 'delete',
           lotes: updatedLotes,
@@ -155,14 +171,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al eliminar lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al eliminar lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -189,12 +204,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.loteUuid ? updatedLote : l)
           .toList();
 
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al agregar animal al lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al agregar animal al lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -206,7 +222,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     final currentState = state;
     if (currentState is! LotesLoaded) return;
 
-    emit(
+    _emitIfActive(
+      emit,
       LotesActionInProgress(
         action: 'Agregando animales al lote...',
         lotes: currentState.lotes,
@@ -228,7 +245,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.loteUuid ? updatedLote : l)
           .toList();
 
-      emit(
+      _emitIfActive(
+        emit,
         LotesActionSuccess(
           action: 'addAnimals',
           lotes: updatedLotes,
@@ -236,14 +254,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al agregar animales al lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al agregar animales al lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -271,12 +288,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.loteUuid ? updatedLote : l)
           .toList();
 
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al remover animal del lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al remover animal del lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -288,7 +306,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     final currentState = state;
     if (currentState is! LotesLoaded) return;
 
-    emit(
+    _emitIfActive(
+      emit,
       LotesActionInProgress(
         action: 'Removiendo animales del lote...',
         lotes: currentState.lotes,
@@ -312,7 +331,8 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.loteUuid ? updatedLote : l)
           .toList();
 
-      emit(
+      _emitIfActive(
+        emit,
         LotesActionSuccess(
           action: 'removeAnimals',
           lotes: updatedLotes,
@@ -321,14 +341,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al remover animales del lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al remover animales del lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -351,12 +370,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.uuid ? closedLote : l)
           .toList();
 
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al cerrar lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al cerrar lote: $e',
+        currentState.lotes,
+      );
     }
   }
 
@@ -376,12 +396,13 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
           .map((l) => l.uuid == event.uuid ? reopenedLote : l)
           .toList();
 
-      emit(LotesLoaded(lotes: updatedLotes));
+      _emitIfActive(emit, LotesLoaded(lotes: updatedLotes));
     } catch (e) {
-      emit(LotesError('Error al reabrir lote: $e'));
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (isClosed) return;
-      emit(LotesLoaded(lotes: currentState.lotes));
+      _emitErrorAndRestore(
+        emit,
+        'Error al reabrir lote: $e',
+        currentState.lotes,
+      );
     }
   }
 

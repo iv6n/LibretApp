@@ -4,8 +4,6 @@ import 'package:libretapp/features/eventos/bloc/eventos_state.dart';
 import 'package:libretapp/features/eventos/data/eventos_repository.dart';
 
 class EventosBloc extends Bloc<EventosEvent, EventosState> {
-  final EventosRepository repository;
-
   EventosBloc(this.repository) : super(const EventosInitial()) {
     on<LoadEventos>(_onLoadEventos);
     on<AddEvento>(_onAddEvento);
@@ -13,6 +11,7 @@ class EventosBloc extends Bloc<EventosEvent, EventosState> {
     on<DeleteEvento>(_onDeleteEvento);
     on<SearchEventos>(_onSearchEventos);
   }
+  final EventosRepository repository;
 
   Future<void> _onLoadEventos(
     LoadEventos event,

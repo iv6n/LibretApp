@@ -8,13 +8,6 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:stream_transform/stream_transform.dart';
 
 class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
-  final AnimalRepository repository;
-
-  StreamSubscription<List<AnimalEntity>>? _subscription;
-  List<AnimalEntity> _latest = const [];
-  String _searchQuery = '';
-  bool _isSearching = false;
-
   AnimalesBloc(this.repository) : super(const AnimalesInitial()) {
     on<LoadAnimales>(_onLoadAnimales);
     on<AnimalesStreamUpdated>(_onStreamUpdated);
@@ -30,7 +23,17 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       transformer: _debounce(const Duration(milliseconds: 260)),
     );
     on<ClearSearch>(_onClearSearch);
+    on<ToggleAnimalSelection>(_onToggleAnimalSelection);
+    on<SelectAllVisibleAnimals>(_onSelectAllVisibleAnimals);
+    on<ClearAnimalSelection>(_onClearAnimalSelection);
   }
+  final AnimalRepository repository;
+
+  StreamSubscription<List<AnimalEntity>>? _subscription;
+  List<AnimalEntity> _latest = const [];
+  String _searchQuery = '';
+  bool _isSearching = false;
+  Set<String> _selectedAnimalUuids = const <String>{};
 
   Future<void> _onLoadAnimales(
     LoadAnimales event,
@@ -45,7 +48,11 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     await _subscription?.cancel();
     _subscription = repository.watchAll().listen(
       (animales) => add(AnimalesStreamUpdated(animales)),
-      onError: (error, _) => add(AnimalesStreamFailed(error.toString())),
+      onError: (error, _) {
+        if (!isClosed) {
+          add(AnimalesStreamFailed(error.toString()));
+        }
+      },
     );
   }
 
@@ -54,6 +61,10 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     Emitter<AnimalesState> emit,
   ) {
     _latest = event.animales;
+    final existingUuids = _latest.map((a) => a.uuid).toSet();
+    _selectedAnimalUuids = _selectedAnimalUuids
+        .where(existingUuids.contains)
+        .toSet();
     final filtered = _applyFilter(_latest, _searchQuery);
     emit(
       AnimalesLoaded(
@@ -61,6 +72,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         visibleAnimals: filtered,
         isSearching: _isSearching,
         searchQuery: _searchQuery,
+        selectedAnimalUuids: _selectedAnimalUuids,
       ),
     );
   }
@@ -79,6 +91,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     try {
       emit(const AnimalesLoading());
       await repository.save(event.animal);
+      await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
     }
@@ -91,6 +104,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     try {
       emit(const AnimalesLoading());
       await repository.update(event.animal);
+      await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
     }
@@ -103,6 +117,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     try {
       emit(const AnimalesLoading());
       await repository.delete(event.id);
+      await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
     }
@@ -120,6 +135,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         visibleAnimals: filtered,
         isSearching: _isSearching,
         searchQuery: _searchQuery,
+        selectedAnimalUuids: _selectedAnimalUuids,
       ),
     );
   }
@@ -137,6 +153,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         visibleAnimals: filtered,
         isSearching: _isSearching,
         searchQuery: _searchQuery,
+        selectedAnimalUuids: _selectedAnimalUuids,
       ),
     );
   }
@@ -150,8 +167,50 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         visibleAnimals: _latest,
         isSearching: _isSearching,
         searchQuery: _searchQuery,
+        selectedAnimalUuids: _selectedAnimalUuids,
       ),
     );
+  }
+
+  void _onToggleAnimalSelection(
+    ToggleAnimalSelection event,
+    Emitter<AnimalesState> emit,
+  ) {
+    final selected = Set<String>.from(_selectedAnimalUuids);
+    if (selected.contains(event.animalUuid)) {
+      selected.remove(event.animalUuid);
+    } else {
+      selected.add(event.animalUuid);
+    }
+    _selectedAnimalUuids = selected;
+    emit(_buildLoadedState());
+  }
+
+  void _onSelectAllVisibleAnimals(
+    SelectAllVisibleAnimals event,
+    Emitter<AnimalesState> emit,
+  ) {
+    final visibleSet = event.visibleAnimalUuids.toSet();
+    if (visibleSet.isEmpty) {
+      return;
+    }
+    final selected = Set<String>.from(_selectedAnimalUuids);
+    final allVisibleSelected = visibleSet.every(selected.contains);
+    if (allVisibleSelected) {
+      selected.removeAll(visibleSet);
+    } else {
+      selected.addAll(visibleSet);
+    }
+    _selectedAnimalUuids = selected;
+    emit(_buildLoadedState());
+  }
+
+  void _onClearAnimalSelection(
+    ClearAnimalSelection event,
+    Emitter<AnimalesState> emit,
+  ) {
+    _selectedAnimalUuids = const <String>{};
+    emit(_buildLoadedState());
   }
 
   Future<void> _onAssignAnimalLocationBatch(
@@ -181,6 +240,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       );
 
       await repository.update(updated);
+      await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
     }
@@ -221,6 +281,27 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         (field) => (field ?? '').toLowerCase().contains(normalized),
       );
     }).toList();
+  }
+
+  AnimalesLoaded _buildLoadedState() {
+    final filtered = _applyFilter(_latest, _searchQuery);
+    return AnimalesLoaded(
+      allAnimals: _latest,
+      visibleAnimals: filtered,
+      isSearching: _isSearching,
+      searchQuery: _searchQuery,
+      selectedAnimalUuids: _selectedAnimalUuids,
+    );
+  }
+
+  Future<void> _refreshLoadedState(Emitter<AnimalesState> emit) async {
+    final animals = await repository.getAll();
+    _latest = animals;
+    final existingUuids = _latest.map((a) => a.uuid).toSet();
+    _selectedAnimalUuids = _selectedAnimalUuids
+        .where(existingUuids.contains)
+        .toSet();
+    emit(_buildLoadedState());
   }
 
   EventTransformer<T> _debounce<T>(Duration duration) {

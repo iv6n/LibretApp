@@ -3,9 +3,10 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 
 class LocationFormSheet extends StatefulWidget {
-  const LocationFormSheet({super.key, this.initial});
+  const LocationFormSheet({super.key, this.initial, this.onSubmit});
 
   final LocationEntity? initial;
+  final ValueChanged<LocationEntity>? onSubmit;
 
   @override
   State<LocationFormSheet> createState() => _LocationFormSheetState();
@@ -243,12 +244,19 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
       status: _status,
       visits: widget.initial?.visits ?? const [],
       waters: widget.initial?.waters ?? const [],
+      salts: widget.initial?.salts ?? const [],
+      shades: widget.initial?.shades ?? const [],
       pastures: widget.initial?.pastures ?? const [],
       seedings: widget.initial?.seedings ?? const [],
       irrigations: widget.initial?.irrigations ?? const [],
       rains: widget.initial?.rains ?? const [],
       costs: widget.initial?.costs ?? const [],
     );
+
+    if (widget.onSubmit != null) {
+      widget.onSubmit!(entity);
+      return;
+    }
 
     Navigator.of(context).pop(entity);
   }

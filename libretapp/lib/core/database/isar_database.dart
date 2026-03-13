@@ -13,11 +13,10 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lot
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class IsarDatabase {
-  static final IsarDatabase _instance = IsarDatabase._internal();
-
   factory IsarDatabase() => _instance;
 
   IsarDatabase._internal();
+  static final IsarDatabase _instance = IsarDatabase._internal();
 
   Isar? _isar;
 

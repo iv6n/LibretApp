@@ -27,6 +27,8 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     );
     on<AddVisitRecordEvent>(_onAddVisit);
     on<AddWaterRecordEvent>(_onAddWater);
+    on<AddSaltRecordEvent>(_onAddSalt);
+    on<AddShadeRecordEvent>(_onAddShade);
     on<AddPastureRecordEvent>(_onAddPasture);
     on<AddSeedingRecordEvent>(_onAddSeeding);
     on<AddIrrigationRecordEvent>(_onAddIrrigation);
@@ -48,7 +50,11 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     await _subscription?.cancel();
     _subscription = repository.watchAll().listen(
       (ubicaciones) => add(UbicacionesStreamUpdated(ubicaciones)),
-      onError: (error, _) => add(UbicacionesStreamFailed(error.toString())),
+      onError: (error, _) {
+        if (!isClosed) {
+          add(UbicacionesStreamFailed(error.toString()));
+        }
+      },
     );
   }
 
@@ -178,6 +184,26 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   ) async {
     await _wrapMutation(
       () => repository.addWater(event.uuid, event.record),
+      emit,
+    );
+  }
+
+  Future<void> _onAddSalt(
+    AddSaltRecordEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addSalt(event.uuid, event.record),
+      emit,
+    );
+  }
+
+  Future<void> _onAddShade(
+    AddShadeRecordEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addShade(event.uuid, event.record),
       emit,
     );
   }

@@ -345,8 +345,7 @@ class _AppShellState extends State<AppShell>
 }
 
 class _NavItem {
+  const _NavItem({required this.routeName, required this.icon});
   final String routeName;
   final IconData icon;
-
-  const _NavItem({required this.routeName, required this.icon});
 }

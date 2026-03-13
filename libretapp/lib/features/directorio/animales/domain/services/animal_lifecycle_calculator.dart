@@ -74,11 +74,10 @@ class AnimalLifecycleCalculator {
 }
 
 class AnimalLifecycleResult {
-  final int ageMonths;
-  final LifeStage lifeStage;
-
   const AnimalLifecycleResult({
     required this.ageMonths,
     required this.lifeStage,
   });
+  final int ageMonths;
+  final LifeStage lifeStage;
 }

@@ -138,7 +138,7 @@ class AppTheme {
         surface: LightColors.surface,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onTertiary: Color(0xFF24170C),
+        onTertiary: const Color(0xFF24170C),
         onSurface: LightColors.textPrimary,
         outline: LightColors.border,
       ),
@@ -194,11 +194,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide(color: AppColors.primary, width: 1.6),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
         ),
         prefixIconColor: LightColors.textMuted,
         suffixIconColor: LightColors.textMuted,
-        labelStyle: TextStyle(color: LightColors.textMuted),
+        labelStyle: const TextStyle(color: LightColors.textMuted),
         hintStyle: const TextStyle(color: LightColors.textMuted),
       ),
       chipTheme: ChipThemeData(
@@ -222,7 +222,7 @@ class AppTheme {
         space: AppSpacing.md,
         color: LightColors.border,
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: LightColors.navBackground,
         selectedItemColor: AppColors.accent,
         unselectedItemColor: LightColors.textSecondary,
@@ -267,16 +267,16 @@ class AppTheme {
         surface: DarkColors.surface,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onTertiary: Color(0xFF24170C),
+        onTertiary: const Color(0xFF24170C),
         onSurface: DarkColors.textPrimary,
         outline: DarkColors.border,
       ),
       scaffoldBackgroundColor: DarkColors.surface,
       extensions: [
         // Shell chrome palette for dark mode.
-        ShellChromeTheme(
+        const ShellChromeTheme(
           navBackground: DarkColors.navBackground,
-          navShadow: const Color(0x66000000),
+          navShadow: Color(0x66000000),
           fabBackground: AppColors.primary,
           fabForeground: Colors.white,
         ),
@@ -320,7 +320,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: BorderSide(color: AppColors.accent, width: 1.6),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.6),
         ),
         prefixIconColor: DarkColors.textMuted,
         suffixIconColor: DarkColors.textMuted,
@@ -348,7 +348,7 @@ class AppTheme {
         space: AppSpacing.md,
         color: DarkColors.border,
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: DarkColors.navBackground,
         selectedItemColor: AppColors.accent,
         unselectedItemColor: DarkColors.textSecondary,

@@ -13,18 +13,16 @@ class LoadPerfil extends PerfilEvent {
 }
 
 class UpdatePerfil extends PerfilEvent {
-  final Perfil perfil;
-
   const UpdatePerfil(this.perfil);
+  final Perfil perfil;
 
   @override
   List<Object> get props => [perfil];
 }
 
 class SavePerfil extends PerfilEvent {
-  final Perfil perfil;
-
   const SavePerfil(this.perfil);
+  final Perfil perfil;
 
   @override
   List<Object> get props => [perfil];

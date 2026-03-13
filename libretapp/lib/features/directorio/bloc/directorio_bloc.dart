@@ -2,20 +2,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_state.dart';
+import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_state.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
 class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
-  final AnimalesTabBloc animalesTabBloc;
-  final LotesTabBloc lotesTabBloc;
-  final UbicacionesTabBloc ubicacionesTabBloc;
-
   DirectorioBloc({
     required this.animalesTabBloc,
     required this.lotesTabBloc,
@@ -27,6 +26,9 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     on<PerformCombinedSearch>(_onPerformCombinedSearch);
     on<ClearSearch>(_onClearSearch);
   }
+  final AnimalesTabBloc animalesTabBloc;
+  final LotesTabBloc lotesTabBloc;
+  final UbicacionesTabBloc ubicacionesTabBloc;
 
   Future<void> _onLoadDirectorioData(
     LoadDirectorioData event,
@@ -87,7 +89,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     if (currentState is! DirectorioLoaded) return;
 
     final results = <CombinedSearchResult>[];
-    final query = event.query.toLowerCase();
+    final seen = <String>{};
+    final query = event.query.trim().toLowerCase();
 
     if (query.isEmpty) {
       emit(currentState.copyWith(searchResults: [], searchQuery: ''));
@@ -98,49 +101,52 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final orders = _getSearchOrder(currentState.activeTabIndex);
 
     for (final order in orders) {
-      if (order == 'animales') {
+      if (order == CombinedSearchType.animal) {
         final animalesState = animalesTabBloc.state;
         if (animalesState is AnimalesTabLoaded) {
           for (final animal in animalesState.animales) {
             if (_matchesQuery(animal, query)) {
-              results.add(
+              _addResultIfNew(
+                seen,
+                results,
                 CombinedSearchResult(
-                  type: 'animal',
+                  type: CombinedSearchType.animal,
                   id: _getId(animal),
                   name: _getAnimalName(animal),
-                  data: _toMap(animal),
                 ),
               );
             }
           }
         }
-      } else if (order == 'lotes') {
+      } else if (order == CombinedSearchType.lote) {
         final lotesState = lotesTabBloc.state;
         if (lotesState is LotesTabLoaded) {
           for (final lote in lotesState.lotes) {
             if (_matchesQuery(lote, query)) {
-              results.add(
+              _addResultIfNew(
+                seen,
+                results,
                 CombinedSearchResult(
-                  type: 'lote',
+                  type: CombinedSearchType.lote,
                   id: _getId(lote),
                   name: _getLoteName(lote),
-                  data: _toMap(lote),
                 ),
               );
             }
           }
         }
-      } else if (order == 'ubicaciones') {
+      } else if (order == CombinedSearchType.ubicacion) {
         final ubicacionesState = ubicacionesTabBloc.state;
         if (ubicacionesState is UbicacionesTabLoaded) {
           for (final ubicacion in ubicacionesState.ubicaciones) {
             if (_matchesQuery(ubicacion, query)) {
-              results.add(
+              _addResultIfNew(
+                seen,
+                results,
                 CombinedSearchResult(
-                  type: 'ubicacion',
+                  type: CombinedSearchType.ubicacion,
                   id: _getId(ubicacion),
                   name: _getUbicacionName(ubicacion),
-                  data: _toMap(ubicacion),
                 ),
               );
             }
@@ -166,25 +172,54 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   }
 
   /// Devuelve el orden de búsqueda según el tab activo
-  List<String> _getSearchOrder(int tabIndex) {
+  List<CombinedSearchType> _getSearchOrder(int tabIndex) {
     switch (tabIndex) {
       case 0: // Animales
-        return ['animales', 'lotes', 'ubicaciones'];
+        return [
+          CombinedSearchType.animal,
+          CombinedSearchType.lote,
+          CombinedSearchType.ubicacion,
+        ];
       case 1: // Lotes
-        return ['lotes', 'animales', 'ubicaciones'];
+        return [
+          CombinedSearchType.lote,
+          CombinedSearchType.animal,
+          CombinedSearchType.ubicacion,
+        ];
       case 2: // Ubicaciones
-        return ['ubicaciones', 'animales', 'lotes'];
+        return [
+          CombinedSearchType.ubicacion,
+          CombinedSearchType.animal,
+          CombinedSearchType.lote,
+        ];
       default:
-        return ['animales', 'lotes', 'ubicaciones'];
+        return [
+          CombinedSearchType.animal,
+          CombinedSearchType.lote,
+          CombinedSearchType.ubicacion,
+        ];
     }
   }
 
-  bool _matchesQuery(dynamic item, String query) {
+  bool _matchesQuery(Object item, String query) {
+    final id = _getId(item).toLowerCase();
+    if (id.contains(query)) return true;
+
     final name = _getName(item).toLowerCase();
     return name.contains(query);
   }
 
-  String _getName(dynamic item) {
+  void _addResultIfNew(
+    Set<String> seen,
+    List<CombinedSearchResult> results,
+    CombinedSearchResult candidate,
+  ) {
+    final key = '${candidate.type.name}:${candidate.id}';
+    if (!seen.add(key)) return;
+    results.add(candidate);
+  }
+
+  String _getName(Object item) {
     final animal = _getAnimalName(item);
     if (animal.isNotEmpty) return animal;
 
@@ -194,42 +229,40 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     return _getUbicacionName(item);
   }
 
-  String _getAnimalName(dynamic animal) {
-    if (animal is Map && animal.containsKey('nombre')) {
-      return animal['nombre'] as String? ?? '';
+  String _getAnimalName(Object animal) {
+    if (animal is AnimalEntity) {
+      return animal.customName?.trim().isNotEmpty == true
+          ? animal.customName!.trim()
+          : animal.earTagNumber;
     }
     return '';
   }
 
-  String _getLoteName(dynamic lote) {
-    if (lote is Map && lote.containsKey('nombre')) {
-      return lote['nombre'] as String? ?? '';
+  String _getLoteName(Object lote) {
+    if (lote is LoteEntity) {
+      return lote.nombre;
     }
     return '';
   }
 
-  String _getUbicacionName(dynamic ubicacion) {
-    if (ubicacion is Map && ubicacion.containsKey('nombre')) {
-      return ubicacion['nombre'] as String? ?? '';
+  String _getUbicacionName(Object ubicacion) {
+    if (ubicacion is LocationEntity) {
+      return ubicacion.name;
     }
     return '';
   }
 
-  String _getId(dynamic item) {
-    if (item is Map && item.containsKey('uuid')) {
-      return item['uuid'] as String? ?? '';
+  String _getId(Object item) {
+    if (item is AnimalEntity) {
+      return item.uuid;
     }
-    if (item is Map && item.containsKey('id')) {
-      return item['id'] as String? ?? '';
+    if (item is LoteEntity) {
+      return item.uuid;
+    }
+    if (item is LocationEntity) {
+      return item.uuid;
     }
     return '';
-  }
-
-  Map<String, dynamic> _toMap(dynamic item) {
-    if (item is Map) {
-      return Map<String, dynamic>.from(item);
-    }
-    return {};
   }
 
   @override

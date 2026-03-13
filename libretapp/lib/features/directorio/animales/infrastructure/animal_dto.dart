@@ -18,72 +18,6 @@ import 'package:libretapp/features/directorio/animales/domain/services/animal_li
 /// Utiliza strings para valores de fecha y enums para permitir serialización
 /// eficiente en JSON y facilitar la sincronización remota.
 class AnimalDto {
-  // ─── IDENTIFICATION ────────────────────────────────────────────────
-  final int? id;
-  final String uuid;
-  final String earTagNumber;
-  final String? visualId;
-  final String? brand;
-  final String? rfidTag;
-  final String? batchId;
-
-  // ─── BIOLOGICAL ────────────────────────────────────────────────────
-  final String species;
-  final String category;
-  final String lifeStage;
-  final String sex;
-  final String breed;
-  final String? sireUuid;
-  final String? damUuid;
-  final int? generation;
-
-  // ─── VITAL ─────────────────────────────────────────────────────────
-  final String birthDate;
-  final int ageMonths;
-
-  // ─── HEALTH ────────────────────────────────────────────────────────
-  final String healthStatus;
-  final int? bodyConditionScore;
-  final bool vaccinated;
-  final bool dewormed;
-  final bool hasVitamins;
-  final bool hasChronicIssues;
-  final String? chronicNotes;
-
-  // ─── REPRODUCTIVE ──────────────────────────────────────────────────
-  final String reproductiveStatus;
-  final String? firstServiceDate;
-  final String? lastServiceDate;
-  final String? expectedCalvingDate;
-
-  // ─── PRODUCTION ────────────────────────────────────────────────────
-  final String productionPurpose;
-  final String productionStage;
-  final String productionSystem;
-  final String? feedType;
-  final double? dailyGainEstimate;
-
-  // ─── LOCATION ──────────────────────────────────────────────────────
-  final String? currentPaddockId;
-  final String? lastMovementDate;
-
-  // ─── MONITORING ────────────────────────────────────────────────────
-  final bool underObservation;
-  final bool requiresAttention;
-  final String riskLevel;
-
-  // ─── MULTIMEDIA ────────────────────────────────────────────────────
-  final String? profilePhoto;
-  final List<String> gallery;
-
-  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
-  final bool synced;
-  final String? remoteId;
-  final String? syncDate;
-  final String? contentHash;
-  final String creationDate;
-  final String lastUpdateDate;
-
   AnimalDto({
     this.id,
     required this.uuid,
@@ -242,6 +176,74 @@ class AnimalDto {
     );
   }
 
+  factory AnimalDto.fromJsonString(String jsonString) =>
+      AnimalDto.fromJson(jsonDecode(jsonString));
+  // ─── IDENTIFICATION ────────────────────────────────────────────────
+  final int? id;
+  final String uuid;
+  final String earTagNumber;
+  final String? visualId;
+  final String? brand;
+  final String? rfidTag;
+  final String? batchId;
+
+  // ─── BIOLOGICAL ────────────────────────────────────────────────────
+  final String species;
+  final String category;
+  final String lifeStage;
+  final String sex;
+  final String breed;
+  final String? sireUuid;
+  final String? damUuid;
+  final int? generation;
+
+  // ─── VITAL ─────────────────────────────────────────────────────────
+  final String birthDate;
+  final int ageMonths;
+
+  // ─── HEALTH ────────────────────────────────────────────────────────
+  final String healthStatus;
+  final int? bodyConditionScore;
+  final bool vaccinated;
+  final bool dewormed;
+  final bool hasVitamins;
+  final bool hasChronicIssues;
+  final String? chronicNotes;
+
+  // ─── REPRODUCTIVE ──────────────────────────────────────────────────
+  final String reproductiveStatus;
+  final String? firstServiceDate;
+  final String? lastServiceDate;
+  final String? expectedCalvingDate;
+
+  // ─── PRODUCTION ────────────────────────────────────────────────────
+  final String productionPurpose;
+  final String productionStage;
+  final String productionSystem;
+  final String? feedType;
+  final double? dailyGainEstimate;
+
+  // ─── LOCATION ──────────────────────────────────────────────────────
+  final String? currentPaddockId;
+  final String? lastMovementDate;
+
+  // ─── MONITORING ────────────────────────────────────────────────────
+  final bool underObservation;
+  final bool requiresAttention;
+  final String riskLevel;
+
+  // ─── MULTIMEDIA ────────────────────────────────────────────────────
+  final String? profilePhoto;
+  final List<String> gallery;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  final bool synced;
+  final String? remoteId;
+  final String? syncDate;
+  final String? contentHash;
+  final String creationDate;
+  final String lastUpdateDate;
+
   AnimalEntity toEntity() {
     final parsedBirthDate = DateTime.parse(birthDate);
     final speciesEnum = _enumByName(Species.values, species);
@@ -361,9 +363,6 @@ class AnimalDto {
   }
 
   String toJsonString() => jsonEncode(toJson());
-
-  factory AnimalDto.fromJsonString(String jsonString) =>
-      AnimalDto.fromJson(jsonDecode(jsonString));
 
   static DateTime? _parseDate(String? value) {
     if (value == null || value.isEmpty) return null;

@@ -75,8 +75,8 @@ Future<void> showLocationBatchSheet(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.route_outlined, color: Colors.blue),
                       SizedBox(width: 8),
                       Text(

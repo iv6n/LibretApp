@@ -3,11 +3,44 @@ import 'package:libretapp/features/directorio/animales/application/bloc/animal_e
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
+typedef HealthRecordSubmit = Future<bool> Function(HealthRecord record);
+
 Future<void> showHealthForm(
   BuildContext context, {
   required String animalUuid,
   required Future<bool> Function(AnimalEvent) dispatchAndAwait,
   required VoidCallback onReload,
+}) async {
+  await _showHealthForm(
+    context,
+    title: null,
+    onSubmit: (record) => dispatchAndAwait(
+      AddHealthRecord(animalUuid: animalUuid, record: record),
+    ),
+    onSaved: onReload,
+  );
+}
+
+Future<void> showBulkHealthForm(
+  BuildContext context, {
+  required int selectedCount,
+  required HealthRecordSubmit onSubmit,
+  required VoidCallback onSaved,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  await _showHealthForm(
+    context,
+    title: '${l10n.detailFormHealthTitle} ($selectedCount)',
+    onSubmit: onSubmit,
+    onSaved: onSaved,
+  );
+}
+
+Future<void> _showHealthForm(
+  BuildContext context, {
+  required String? title,
+  required HealthRecordSubmit onSubmit,
+  required VoidCallback onSaved,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context);
@@ -42,7 +75,7 @@ Future<void> showHealthForm(
                     children: [
                       const Icon(Icons.medical_services, color: Colors.teal),
                       const SizedBox(width: 8),
-                      Text(l10n.detailFormHealthTitle),
+                      Text(title ?? l10n.detailFormHealthTitle),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -187,15 +220,10 @@ Future<void> showHealthForm(
                               ? null
                               : causeCtrl.text.trim(),
                         );
-                        final ok = await dispatchAndAwait(
-                          AddHealthRecord(
-                            animalUuid: animalUuid,
-                            record: record,
-                          ),
-                        );
+                        final ok = await onSubmit(record);
                         if (!context.mounted || !ok) return;
                         navigator.pop();
-                        onReload();
+                        onSaved();
                         messenger.showSnackBar(
                           SnackBar(content: Text(l10n.detailFormHealthSaved)),
                         );

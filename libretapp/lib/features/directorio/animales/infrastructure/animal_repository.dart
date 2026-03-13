@@ -42,6 +42,10 @@ abstract class AnimalRepository {
   // Salud
   Future<List<HealthRecord>> getHealthRecords(String animalUuid);
   Future<HealthRecord> addHealthRecord(String animalUuid, HealthRecord record);
+  Future<void> addHealthRecordToMultiple(
+    List<String> animalUuids,
+    HealthRecord record,
+  );
   Future<void> deleteHealthRecord(String recordId);
 
   // Comercial

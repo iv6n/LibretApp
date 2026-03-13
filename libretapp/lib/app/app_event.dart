@@ -12,9 +12,9 @@ class AppStarted extends AppEvent {
 }
 
 class AppLanguageChanged extends AppEvent {
-  final String languageCode;
-
   const AppLanguageChanged(this.languageCode);
+
+  final String languageCode;
 
   @override
   List<Object> get props => [languageCode];

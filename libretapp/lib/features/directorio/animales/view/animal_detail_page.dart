@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_state.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
-import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Detail page for a single animal.
@@ -43,7 +36,6 @@ class AnimalDetailPage extends StatefulWidget {
 
 class _AnimalDetailPageState extends State<AnimalDetailPage> {
   late Future<DetailData> _future;
-  final _locationRepository = IsarLocationRepository(locator<IsarDatabase>());
 
   @override
   void initState() {
@@ -58,25 +50,31 @@ class _AnimalDetailPageState extends State<AnimalDetailPage> {
     if (animal == null) throw Exception('Animal no encontrado');
 
     final uuid = animal.uuid;
-    final results = await Future.wait([
-      widget.repository.getWeightRecords(uuid),
-      widget.repository.getReproductionRecords(uuid),
-      widget.repository.getProductionRecords(uuid),
-      widget.repository.getHealthRecords(uuid),
-      widget.repository.getCommercialRecords(uuid),
-      widget.repository.getMovementRecords(uuid),
-      widget.repository.getCostRecords(uuid),
-    ]);
+    final weightsFuture = widget.repository.getWeightRecords(uuid);
+    final reproductionsFuture = widget.repository.getReproductionRecords(uuid);
+    final productionsFuture = widget.repository.getProductionRecords(uuid);
+    final healthFuture = widget.repository.getHealthRecords(uuid);
+    final commercialFuture = widget.repository.getCommercialRecords(uuid);
+    final movementsFuture = widget.repository.getMovementRecords(uuid);
+    final costsFuture = widget.repository.getCostRecords(uuid);
+
+    final weights = await weightsFuture;
+    final reproductions = await reproductionsFuture;
+    final productions = await productionsFuture;
+    final health = await healthFuture;
+    final commercial = await commercialFuture;
+    final movements = await movementsFuture;
+    final costs = await costsFuture;
 
     return DetailData(
       animal: animal,
-      weights: results[0] as List<WeightRecord>,
-      reproductions: results[1] as List<ReproductionRecord>,
-      productions: results[2] as List<ProductionRecord>,
-      health: results[3] as List<HealthRecord>,
-      commercial: results[4] as List<CommercialRecord>,
-      movements: results[5] as List<MovementRecord>,
-      costs: results[6] as List<CostRecord>,
+      weights: weights,
+      reproductions: reproductions,
+      productions: productions,
+      health: health,
+      commercial: commercial,
+      movements: movements,
+      costs: costs,
     );
   }
 
@@ -105,24 +103,6 @@ class _AnimalDetailPageState extends State<AnimalDetailPage> {
     return true;
   }
 
-  // ── location / batch sheet ────────────────────────────────────────────
-
-  Future<void> _openLocationBatchSheet(DetailData data) async {
-    final locations = await _locationRepository.getAll();
-    final animals = await widget.repository.getAll();
-
-    if (!mounted) return;
-    await showLocationBatchSheet(
-      context,
-      animal: data.animal,
-      locations: locations,
-      allAnimals: animals,
-      lotesRepository: widget.lotesRepository,
-      dispatchAndAwait: _dispatchAndAwait,
-      onReload: _reload,
-    );
-  }
-
   // ── build ─────────────────────────────────────────────────────────────
 
   @override
@@ -137,6 +117,19 @@ class _AnimalDetailPageState extends State<AnimalDetailPage> {
         appBar: AppBar(
           title: Text(l10n.animalDetailTitle),
           actions: [
+            IconButton(
+              tooltip: 'Editar',
+              onPressed: () async {
+                final saved = await context.pushNamed(
+                  AppRoutes.nameAnimalEditar,
+                  pathParameters: {'uuid': widget.animalUuid},
+                );
+                if (saved == true && mounted) {
+                  _reload();
+                }
+              },
+              icon: const Icon(Icons.edit_outlined),
+            ),
             IconButton(
               tooltip: l10n.detailReload,
               onPressed: _reload,

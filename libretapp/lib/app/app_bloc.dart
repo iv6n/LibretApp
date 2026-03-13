@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
@@ -8,7 +9,9 @@ import 'package:libretapp/features/directorio/animales/infrastructure/services/b
 part 'app_event.dart';
 part 'app_state.dart';
 
+/// Root application BLoC that initializes app-level state and preferences.
 class AppBloc extends Bloc<AppEvent, AppState> {
+  /// Creates the app bloc and wires startup/language handlers.
   AppBloc({SharedPrefsService? prefs})
     : _prefs = prefs ?? locator<SharedPrefsService>(),
       _supportedLanguageCodes = const {'es'},
@@ -28,9 +31,13 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         lotesRepository: locator(),
       );
       await migrationService.migrate();
-    } catch (e) {
-      // Log pero no bloquea el inicio de la app
-      // Silently fail - migration errors don't block app startup
+    } catch (e, st) {
+      // La migracion no bloquea el arranque, pero debe dejar traza para diagnostico.
+      LoggerService.e(
+        'Error durante migracion inicial de lotes: $e',
+        tag: 'AppBloc',
+        stackTrace: st,
+      );
     }
 
     final languageCode = await _resolveInitialLanguage();

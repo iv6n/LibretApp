@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 
 abstract class AnimalesTabEvent extends Equatable {
   const AnimalesTabEvent();
@@ -26,7 +27,7 @@ class SearchAnimalesTab extends AnimalesTabEvent {
 class AnimalesTabStreamUpdated extends AnimalesTabEvent {
   const AnimalesTabStreamUpdated(this.animales);
 
-  final List<dynamic> animales;
+  final List<AnimalEntity> animales;
 
   @override
   List<Object> get props => [animales];

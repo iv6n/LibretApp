@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 class EventLegendItem {
+  const EventLegendItem({required this.color, required this.label});
   final Color color;
   final String label;
-
-  const EventLegendItem({required this.color, required this.label});
 }
 
 const eventTypes = <String>[

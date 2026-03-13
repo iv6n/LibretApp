@@ -35,14 +35,6 @@ enum MovementReason {
 
 /// Registro de movimiento de ubicación del animal.
 class MovementRecord extends Equatable {
-  final String? fromLocation;
-  final String toLocation;
-  final DateTime date;
-  final MovementReason reason;
-  final String? notes;
-  final String? movedBy;
-  final String? id;
-
   const MovementRecord({
     this.fromLocation,
     required this.toLocation,
@@ -52,6 +44,13 @@ class MovementRecord extends Equatable {
     this.movedBy,
     this.id,
   });
+  final String? fromLocation;
+  final String toLocation;
+  final DateTime date;
+  final MovementReason reason;
+  final String? notes;
+  final String? movedBy;
+  final String? id;
 
   MovementRecord copyWith({
     String? fromLocation,

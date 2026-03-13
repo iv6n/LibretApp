@@ -6,26 +6,31 @@ class EventLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Wrap(
-      spacing: 12,
-      runSpacing: 8,
+      spacing: 8,
+      runSpacing: 6,
       children: eventLegendItems
           .map(
             (item) => Chip(
-              backgroundColor: item.color.withValues(alpha: 0.14),
+              backgroundColor: item.color.withValues(alpha: 0.12),
+              padding: const EdgeInsets.symmetric(horizontal: .3, vertical: 2),
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 10,
-                    height: 10,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
                       color: item.color,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(item.label),
+                  const SizedBox(width: 1),
+                  Text(
+                    item.label,
+                    style: theme.textTheme.labelSmall?.copyWith(fontSize: 9),
+                  ),
                 ],
               ),
             ),

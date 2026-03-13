@@ -13,36 +13,32 @@ class LoadEventos extends EventosEvent {
 }
 
 class AddEvento extends EventosEvent {
-  final Evento evento;
-
   const AddEvento(this.evento);
+  final Evento evento;
 
   @override
   List<Object> get props => [evento];
 }
 
 class UpdateEvento extends EventosEvent {
-  final Evento evento;
-
   const UpdateEvento(this.evento);
+  final Evento evento;
 
   @override
   List<Object> get props => [evento];
 }
 
 class DeleteEvento extends EventosEvent {
-  final String id;
-
   const DeleteEvento(this.id);
+  final String id;
 
   @override
   List<Object> get props => [id];
 }
 
 class SearchEventos extends EventosEvent {
-  final String query;
-
   const SearchEventos(this.query);
+  final String query;
 
   @override
   List<Object> get props => [query];

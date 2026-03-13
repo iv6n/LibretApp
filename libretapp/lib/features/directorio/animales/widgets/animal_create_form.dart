@@ -71,8 +71,8 @@ Future<void> showCreateAnimalSheet(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
+                  const Row(
+                    children: [
                       Icon(Icons.pets, color: Colors.green),
                       SizedBox(width: 8),
                       Text(

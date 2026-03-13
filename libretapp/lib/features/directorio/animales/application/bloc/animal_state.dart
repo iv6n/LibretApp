@@ -4,11 +4,6 @@ import 'package:libretapp/features/directorio/animales/domain/entities/animal_en
 enum AnimalStatus { initial, loading, success, failure }
 
 class AnimalState extends Equatable {
-  final AnimalStatus status;
-  final List<AnimalEntity> animals;
-  final AnimalEntity? selectedAnimal;
-  final String? errorMessage;
-
   const AnimalState({
     this.status = AnimalStatus.initial,
     this.animals = const [],
@@ -42,6 +37,10 @@ class AnimalState extends Equatable {
       errorMessage: message,
     );
   }
+  final AnimalStatus status;
+  final List<AnimalEntity> animals;
+  final AnimalEntity? selectedAnimal;
+  final String? errorMessage;
 
   bool get isLoading => status == AnimalStatus.loading;
   bool get isSuccess => status == AnimalStatus.success;

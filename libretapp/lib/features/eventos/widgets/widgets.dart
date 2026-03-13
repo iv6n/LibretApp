@@ -5,4 +5,5 @@ export 'event_legend.dart';
 export 'event_list.dart';
 export 'event_month_header.dart';
 export 'event_search_bar.dart';
+export 'event_summary_card.dart';
 export 'event_style.dart';

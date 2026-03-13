@@ -4,13 +4,12 @@ import 'package:libretapp/features/perfil/bloc/perfil_state.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 
 class PerfilBloc extends Bloc<PerfilEvent, PerfilState> {
-  final PerfilRepository repository;
-
   PerfilBloc(this.repository) : super(const PerfilInitial()) {
     on<LoadPerfil>(_onLoadPerfil);
     on<UpdatePerfil>(_onUpdatePerfil);
     on<SavePerfil>(_onSavePerfil);
   }
+  final PerfilRepository repository;
 
   Future<void> _onLoadPerfil(
     LoadPerfil event,

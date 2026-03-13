@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
@@ -20,11 +22,10 @@ class UbicacionesView extends StatefulWidget {
 }
 
 class _UbicacionesViewState extends State<UbicacionesView> {
-  late final ScrollController _scrollController;
   AnimalRepository? _animalRepository;
   Map<String, int> _animalCounts = <String, int>{};
+  Map<String, double> _averageWeights = <String, double>{};
   String _lastCountsKey = '';
-  bool _isAtTop = true;
 
   @override
   void initState() {
@@ -34,43 +35,56 @@ class _UbicacionesViewState extends State<UbicacionesView> {
         (locator.isRegistered<AnimalRepository>()
             ? locator<AnimalRepository>()
             : null);
-    _scrollController = ScrollController()..addListener(_handleScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
     super.dispose();
-  }
-
-  void _handleScroll() {
-    if (!_scrollController.hasClients) return;
-    final atTop = _scrollController.position.pixels <= 0;
-    if (atTop == _isAtTop) return;
-    setState(() => _isAtTop = atTop);
   }
 
   Future<void> _refreshCounts(List<LocationEntity> locations) async {
     final repository = _animalRepository;
     if (repository == null) {
       if (!mounted) return;
-      setState(() => _animalCounts = <String, int>{});
+      setState(() {
+        _animalCounts = <String, int>{};
+        _averageWeights = <String, double>{};
+      });
       return;
     }
 
     final ids = locations.map((e) => e.uuid).toSet();
     final animals = await repository.getAll();
     final counts = <String, int>{};
+    final weightTotals = <String, double>{};
+    final weightSamples = <String, int>{};
     for (final animal in animals) {
       final locId = animal.currentPaddockId ?? animal.initialLocationId;
       if (locId == null || !ids.contains(locId)) continue;
       counts[locId] = (counts[locId] ?? 0) + 1;
+
+      final weight = animal.weight;
+      if (weight == null) continue;
+      weightTotals[locId] = (weightTotals[locId] ?? 0) + weight;
+      weightSamples[locId] = (weightSamples[locId] ?? 0) + 1;
+    }
+
+    final avgWeights = <String, double>{};
+    for (final entry in weightTotals.entries) {
+      final samples = weightSamples[entry.key] ?? 0;
+      if (samples <= 0) continue;
+      avgWeights[entry.key] = entry.value / samples;
     }
 
     if (!mounted) return;
-    if (mapEquals(_animalCounts, counts)) return;
-    setState(() => _animalCounts = counts);
+    if (mapEquals(_animalCounts, counts) &&
+        mapEquals(_averageWeights, avgWeights)) {
+      return;
+    }
+    setState(() {
+      _animalCounts = counts;
+      _averageWeights = avgWeights;
+    });
   }
 
   void _scheduleRefreshCounts(List<LocationEntity> locations) {
@@ -99,7 +113,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
       label: 'Agregar',
       icon: Icons.add_location_alt_outlined,
       heroTag: 'fab_ubicaciones',
-      onPressed: () => _openForm(context),
+      onPressed: _openCreatePage,
     );
 
     return ShellFabConfigScope(
@@ -110,11 +124,12 @@ class _UbicacionesViewState extends State<UbicacionesView> {
           return ShellChromeScope(
             visible: !isSearching,
             child: Scaffold(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
               body: NestedScrollView(
-                controller: _scrollController,
                 headerSliverBuilder: (context, innerScrolled) => [
                   UbicacionesSearchAppBar(
-                    isAtTop: _isAtTop,
                     onOpenFilters: () => _showFiltersPlaceholder(context),
                   ),
                 ],
@@ -142,6 +157,9 @@ class _UbicacionesViewState extends State<UbicacionesView> {
 
     _scheduleRefreshCounts(state.allUbicaciones);
     final ubicaciones = state.visibleUbicaciones;
+    final allByUuid = {
+      for (final location in state.allUbicaciones) location.uuid: location,
+    };
 
     return RefreshIndicator(
       onRefresh: () async =>
@@ -165,14 +183,22 @@ class _UbicacionesViewState extends State<UbicacionesView> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index.isOdd) {
-                      return const SizedBox(height: 12);
+                      return const SizedBox(height: 14);
                     }
                     final itemIndex = index ~/ 2;
                     final location = ubicaciones[itemIndex];
+                    final parentName = location.parentUuid == null
+                        ? null
+                        : allByUuid[location.parentUuid]?.name;
                     return LocationCard(
                       location: location,
                       animalCount: _animalCounts[location.uuid] ?? 0,
-                      onEdit: () => _openForm(context, initial: location),
+                      averageWeightKg: _averageWeights[location.uuid],
+                      parentName: parentName,
+                      onTap: () => context.push(
+                        AppRoutes.ubicacionDetallePath(location.uuid),
+                      ),
+                      onEdit: () => _openEditPage(location.uuid),
                       onDelete: () => _confirmDelete(context, location),
                     );
                   },
@@ -187,23 +213,15 @@ class _UbicacionesViewState extends State<UbicacionesView> {
     );
   }
 
-  Future<void> _openForm(
-    BuildContext context, {
-    LocationEntity? initial,
-  }) async {
-    final created = await showModalBottomSheet<LocationEntity>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: LocationFormSheet(initial: initial),
-      ),
-    );
+  Future<void> _openCreatePage() async {
+    await context.pushNamed(AppRoutes.nameUbicacionNueva);
+  }
 
-    if (!context.mounted || created == null) return;
-    context.read<UbicacionesBloc>().add(UpsertUbicacion(created));
+  Future<void> _openEditPage(String uuid) async {
+    await context.pushNamed(
+      AppRoutes.nameUbicacionEditar,
+      pathParameters: {'uuid': uuid},
+    );
   }
 
   Future<void> _confirmDelete(
@@ -237,13 +255,8 @@ class _UbicacionesViewState extends State<UbicacionesView> {
 }
 
 class UbicacionesSearchAppBar extends StatefulWidget {
-  const UbicacionesSearchAppBar({
-    super.key,
-    required this.isAtTop,
-    required this.onOpenFilters,
-  });
+  const UbicacionesSearchAppBar({super.key, required this.onOpenFilters});
 
-  final bool isAtTop;
   final VoidCallback onOpenFilters;
 
   @override
@@ -254,7 +267,6 @@ class UbicacionesSearchAppBar extends StatefulWidget {
 class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
   late final TextEditingController _searchController;
   late final FocusNode _focusNode;
-  bool _inlineVisible = true;
 
   @override
   void initState() {
@@ -293,56 +305,17 @@ class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
           });
         }
 
-        final double expandedHeight = isSearching
-            ? kToolbarHeight
-            : (widget.isAtTop ? 106 : kToolbarHeight);
-
-        if (!widget.isAtTop && _inlineVisible) {
-          _updateInlineVisible(0, allowInline: false);
-        }
-
         return SliverAppBar(
           pinned: true,
           floating: true,
           snap: true,
-          expandedHeight: expandedHeight,
+          expandedHeight: kToolbarHeight,
           automaticallyImplyLeading: false,
           titleSpacing: 0,
           title: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: _buildTitleBar(context, theme, isSearching),
           ),
-          flexibleSpace: isSearching || !widget.isAtTop
-              ? null
-              : LayoutBuilder(
-                  builder: (context, constraints) {
-                    final settings = context
-                        .dependOnInheritedWidgetOfExactType<
-                          FlexibleSpaceBarSettings
-                        >();
-                    final minExtent = settings?.minExtent ?? kToolbarHeight;
-                    final maxExtent =
-                        settings?.maxExtent ?? constraints.biggest.height;
-                    final currentExtent = settings?.currentExtent ?? maxExtent;
-                    final denominator = (maxExtent - minExtent);
-                    final t = denominator == 0
-                        ? 1.0
-                        : (currentExtent - minExtent) / denominator;
-                    _updateInlineVisible(t, allowInline: widget.isAtTop);
-                    return Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          child: _inlineVisible
-                              ? _buildInlineSearch(theme)
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
-                    );
-                  },
-                ),
         );
       },
     );
@@ -353,7 +326,7 @@ class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
     ThemeData theme,
     bool isSearching,
   ) {
-    final showSearchIcon = !isSearching && !_inlineVisible;
+    final showSearchIcon = !isSearching;
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
@@ -462,62 +435,12 @@ class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
     );
   }
 
-  Widget _buildInlineSearch(ThemeData theme) {
-    return SizedBox(
-      key: const ValueKey('ubicaciones_inline_search'),
-      height: 44,
-      child: TextField(
-        controller: _searchController,
-        readOnly: true,
-        onTap: () => context.read<UbicacionesBloc>().add(
-          const ToggleSearch(enabled: true),
-        ),
-        decoration: InputDecoration(
-          hintText: 'Buscar ubicaciones',
-          isDense: true,
-          filled: true,
-          fillColor: theme.colorScheme.surface,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: theme.colorScheme.primary,
-              width: 1.6,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _syncController(String value) {
     if (_searchController.text == value) return;
     _searchController.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
     );
-  }
-
-  void _updateInlineVisible(double t, {required bool allowInline}) {
-    final visible = allowInline && t > 0.25;
-    if (visible == _inlineVisible) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() {
-        _inlineVisible = visible;
-      });
-    });
   }
 }
 

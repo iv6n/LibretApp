@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
@@ -52,16 +53,68 @@ final router = GoRouter(
               ),
               routes: [
                 GoRoute(
+                  path: 'animales/nuevo',
+                  name: AppRoutes.nameAnimalNuevo,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: const AnimalFormPage(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'lotes/nuevo',
+                  name: AppRoutes.nameLoteNuevo,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: LoteFormPage(),
+                  ),
+                ),
+                GoRoute(
                   path: 'animales/:uuid',
                   name: AppRoutes.nameAnimalDetalle,
-                  builder: (context, state) {
+                  pageBuilder: (context, state) {
                     final uuid = state.pathParameters['uuid'] ?? '';
-                    return BlocProvider(
-                      create: (_) => AnimalBloc(
-                        animalRepository: locator<AnimalRepository>(),
-                        lotesRepository: locator<LotesRepository>(),
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: BlocProvider(
+                        create: (_) => AnimalBloc(
+                          animalRepository: locator<AnimalRepository>(),
+                          lotesRepository: locator<LotesRepository>(),
+                        ),
+                        child: AnimalDetailPage(animalUuid: uuid),
                       ),
-                      child: AnimalDetailPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/editar',
+                  name: AppRoutes.nameAnimalEditar,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'lotes/:uuid/editar',
+                  name: AppRoutes.nameLoteEditar,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: LoteFormPage(loteUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'lotes/:uuid',
+                  name: AppRoutes.nameLoteDetalle,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: LoteDetailPage(loteUuid: uuid),
                     );
                   },
                 ),
@@ -93,6 +146,38 @@ final router = GoRouter(
               path: AppRoutes.ubicaciones,
               name: AppRoutes.nameUbicaciones,
               builder: (context, state) => UbicacionesPage(),
+              routes: [
+                GoRoute(
+                  path: 'nueva',
+                  name: AppRoutes.nameUbicacionNueva,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: const LocationFormPage(),
+                  ),
+                ),
+                GoRoute(
+                  path: ':uuid',
+                  name: AppRoutes.nameUbicacionDetalle,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: LocationDetailPage(locationUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: ':uuid/editar',
+                  name: AppRoutes.nameUbicacionEditar,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: LocationFormPage(locationUuid: uuid),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -109,3 +194,30 @@ final router = GoRouter(
     ),
   ],
 );
+
+CustomTransitionPage<void> _buildOverlayDetailPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      );
+    },
+  );
+}

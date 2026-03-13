@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
@@ -21,7 +23,7 @@ class _LotesListViewState extends State<LotesListView> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
-    context.read<LotesBloc>().add(LoadLotes());
+    context.read<LotesBloc>().add(const LoadLotes());
   }
 
   @override
@@ -30,16 +32,41 @@ class _LotesListViewState extends State<LotesListView> {
     super.dispose();
   }
 
-  void _openCreateLoteSheet() {
-    final l10n = AppLocalizations.of(context);
-    showCreateLoteSheet(context, l10n);
+  Future<void> _openCreateLotePage() async {
+    await context.pushNamed(AppRoutes.nameLoteNuevo);
   }
 
   void _openLoteDetail(LoteEntity lote) {
-    // TODO: Implementar navegación a detalles del lote
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Lote: ${lote.nombre}')));
+    context.pushNamed(
+      AppRoutes.nameLoteDetalle,
+      pathParameters: {'uuid': lote.uuid},
+    );
+  }
+
+  Future<void> _confirmDeleteLote(LoteEntity lote) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar lote'),
+        content: Text(
+          '¿Deseas borrar "${lote.nombre}"? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true && mounted) {
+      context.read<LotesBloc>().add(DeleteLote(lote.uuid));
+    }
   }
 
   @override
@@ -53,7 +80,7 @@ class _LotesListViewState extends State<LotesListView> {
       label: 'Agregar Lote',
       icon: Icons.add,
       heroTag: 'fab_lotes',
-      onPressed: _openCreateLoteSheet,
+      onPressed: _openCreateLotePage,
     );
 
     return ShellFabConfigScope(
@@ -100,7 +127,7 @@ class _LotesListViewState extends State<LotesListView> {
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        SliverToBoxAdapter(child: const SizedBox(height: 8)),
+        const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverPadding(
           padding: EdgeInsets.fromLTRB(10, 2, 10, listBottomPadding),
           sliver: SliverList(
@@ -112,10 +139,10 @@ class _LotesListViewState extends State<LotesListView> {
                   lote: lote,
                   onTap: () => _openLoteDetail(lote),
                   onEdit: () {
-                    // TODO: Implementar edición de lote
+                    _openLoteDetail(lote);
                   },
                   onDelete: () {
-                    // TODO: Implementar eliminación de lote con confirmación
+                    _confirmDeleteLote(lote);
                   },
                 ),
               );

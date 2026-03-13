@@ -3,35 +3,41 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_state.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class UbicacionesTabBloc
     extends Bloc<UbicacionesTabEvent, UbicacionesTabState> {
-  final LocationRepository repository;
-  StreamSubscription<List<dynamic>>? _subscription;
-
   UbicacionesTabBloc(this.repository) : super(const UbicacionesTabInitial()) {
     on<LoadUbicacionesTab>(_onLoadUbicaciones);
     on<SearchUbicacionesTab>(_onSearchUbicaciones);
     on<UbicacionesTabStreamUpdated>(_onStreamUpdated);
     on<UbicacionesTabStreamFailed>(_onStreamFailed);
   }
+  final LocationRepository repository;
+  StreamSubscription<List<LocationEntity>>? _subscription;
 
   Future<void> _onLoadUbicaciones(
     LoadUbicacionesTab event,
     Emitter<UbicacionesTabState> emit,
   ) async {
-    emit(const UbicacionesTabLoading());
+    _emitIfActive(emit, const UbicacionesTabLoading());
     try {
       await _subscription?.cancel();
       // Usamos watchAll() para obtener un stream de las ubicaciones
       _subscription = repository.watchAll().listen(
         (ubicaciones) => add(UbicacionesTabStreamUpdated(ubicaciones)),
-        onError: (error, _) =>
-            add(UbicacionesTabStreamFailed(error.toString())),
+        onError: (error, _) {
+          if (!isClosed) {
+            add(UbicacionesTabStreamFailed(error.toString()));
+          }
+        },
       );
     } catch (e) {
-      emit(UbicacionesTabError('Error al cargar ubicaciones: $e'));
+      _emitIfActive(
+        emit,
+        UbicacionesTabError('Error al cargar ubicaciones: $e'),
+      );
     }
   }
 
@@ -39,14 +45,14 @@ class UbicacionesTabBloc
     UbicacionesTabStreamUpdated event,
     Emitter<UbicacionesTabState> emit,
   ) {
-    emit(UbicacionesTabLoaded(ubicaciones: event.ubicaciones));
+    _emitIfActive(emit, UbicacionesTabLoaded(ubicaciones: event.ubicaciones));
   }
 
   void _onStreamFailed(
     UbicacionesTabStreamFailed event,
     Emitter<UbicacionesTabState> emit,
   ) {
-    emit(UbicacionesTabError(event.error));
+    _emitIfActive(emit, UbicacionesTabError(event.error));
   }
 
   void _onSearchUbicaciones(
@@ -57,30 +63,24 @@ class UbicacionesTabBloc
     if (currentState is! UbicacionesTabLoaded) return;
 
     if (event.query.isEmpty) {
-      emit(currentState.copyWith(filteredUbicaciones: null));
+      _emitIfActive(emit, currentState.copyWith(filteredUbicaciones: null));
       return;
     }
 
     final filtered = currentState.ubicaciones.where((ubicacion) {
-      final nombre = _getUbicacionName(ubicacion).toLowerCase();
+      final nombre = ubicacion.name.toLowerCase();
       return nombre.contains(event.query.toLowerCase());
     }).toList();
 
-    emit(currentState.copyWith(filteredUbicaciones: filtered));
+    _emitIfActive(emit, currentState.copyWith(filteredUbicaciones: filtered));
   }
 
-  String _getUbicacionName(dynamic ubicacion) {
-    if (ubicacion is Map && ubicacion.containsKey('nombre')) {
-      return ubicacion['nombre'] as String? ?? '';
-    }
-    if (ubicacion is Map && ubicacion.containsKey('name')) {
-      return ubicacion['name'] as String? ?? '';
-    }
-    try {
-      return ubicacion.toString();
-    } catch (e) {
-      return '';
-    }
+  void _emitIfActive(
+    Emitter<UbicacionesTabState> emit,
+    UbicacionesTabState state,
+  ) {
+    if (emit.isDone || isClosed) return;
+    emit(state);
   }
 
   @override

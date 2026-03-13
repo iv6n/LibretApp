@@ -9,7 +9,7 @@ Future<void> showCreateAnimalSheet(
   // Stub implementation
   await showModalBottomSheet(
     context: context,
-    builder: (context) => SizedBox(
+    builder: (context) => const SizedBox(
       height: 200,
       child: Center(child: Text('Create Animal Sheet')),
     ),

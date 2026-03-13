@@ -15,16 +15,6 @@ enum HealthRecordType {
 
 /// Registro de evento de salud del animal.
 class HealthRecord extends Equatable {
-  final DateTime date;
-  final HealthRecordType type;
-  final String product;
-  final String? dose;
-  final String? appliedBy;
-  final String? notes;
-  final DateTime? nextDueDate;
-  final String? cause;
-  final String? id;
-
   const HealthRecord({
     required this.date,
     required this.type,
@@ -36,6 +26,15 @@ class HealthRecord extends Equatable {
     this.cause,
     this.id,
   });
+  final DateTime date;
+  final HealthRecordType type;
+  final String product;
+  final String? dose;
+  final String? appliedBy;
+  final String? notes;
+  final DateTime? nextDueDate;
+  final String? cause;
+  final String? id;
 
   HealthRecord copyWith({
     DateTime? date,

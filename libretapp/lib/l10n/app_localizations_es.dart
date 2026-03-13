@@ -80,6 +80,70 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get animalsSelectionHint => 'Mantener presionado para seleccionar';
+
+  @override
+  String animalsSelectedCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seleccionados',
+      one: '$count seleccionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String animalsSelectVisible(Object selected, Object total) {
+    return 'Seleccionar visibles ($selected/$total)';
+  }
+
+  @override
+  String get animalsSelectVisibleSimple => 'Seleccionar visibles';
+
+  @override
+  String get animalsDeselectVisible => 'Quitar visibles';
+
+  @override
+  String get animalsSelectionCancel => 'Cancelar';
+
+  @override
+  String animalsSelectionHiddenCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count seleccionados están ocultos por filtros',
+      one: '$count seleccionado está oculto por filtros',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get animalsSelectionAllHiddenWarning =>
+      'Todos los seleccionados están ocultos por filtros activos.';
+
+  @override
+  String animalsBulkMaintenanceAction(Object count) {
+    return 'Agregar mantenimiento ($count)';
+  }
+
+  @override
+  String animalsBulkMaintenanceError(Object error) {
+    return 'No se pudo guardar: $error';
+  }
+
+  @override
+  String get animalsBulkMaintenanceConfirmTitle => 'Confirmar mantenimiento';
+
+  @override
+  String animalsBulkMaintenanceConfirmBody(Object count) {
+    return 'Se aplicará el mismo mantenimiento a $count animales.';
+  }
+
+  @override
+  String get animalsBulkMaintenanceConfirmAction => 'Continuar';
+
+  @override
   String get stageFilterCalf => 'Becerros';
 
   @override
@@ -313,6 +377,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tabRecords => 'Registros';
 
   @override
+  String get actionSelect => 'Seleccionar';
+
+  @override
   String get actionSave => 'Guardar';
 
   @override
@@ -533,4 +600,111 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailFormReproductionSaved => 'Evento reproductivo guardado';
+
+  @override
+  String get animalFormLoadError => 'No se pudo cargar el formulario de animal';
+
+  @override
+  String get animalFormCategoryAdjusted =>
+      'Categoría ajustada a Otro para coincidir con la especie';
+
+  @override
+  String get animalFormSpeciesAdjusted =>
+      'Especie ajustada a Bovino para esa categoría';
+
+  @override
+  String get animalFormNoSelection => 'Sin selección';
+
+  @override
+  String get animalFormNoTagTitle => 'Animal sin arete';
+
+  @override
+  String get animalFormNoTagMessage =>
+      'Este animal no tiene arete. Se recomienda etiquetarlo para su seguimiento. ¿Deseas guardar de todos modos?';
+
+  @override
+  String get animalFormUnsupportedAction =>
+      'Acción no soportada desde este formulario';
+
+  @override
+  String animalFormRecordSaveError(Object error) {
+    return 'No se pudo guardar el registro: $error';
+  }
+
+  @override
+  String get animalFormSaveFirstForRecords =>
+      'Guarda el animal primero para agregar registros';
+
+  @override
+  String get animalFormInvalidPurchasePrice =>
+      'El precio de compra debe ser un número válido';
+
+  @override
+  String get animalFormNoAutoMotherFound =>
+      'No se encontró madre automática; puedes guardar o seleccionar una madre manualmente.';
+
+  @override
+  String get animalFormEditTitle => 'Editar animal';
+
+  @override
+  String get animalFormCreateTitle => 'Agregar animal';
+
+  @override
+  String get animalFormNameOrVisualId => 'Nombre o ID visual';
+
+  @override
+  String get animalFormBreedOptional => 'Raza (opcional)';
+
+  @override
+  String get animalFormStatus => 'Estado';
+
+  @override
+  String get animalFormSectionOrigin => 'Origen';
+
+  @override
+  String get animalFormMotherOptional => 'Madre (opcional)';
+
+  @override
+  String get animalFormFatherOptional => 'Padre (opcional)';
+
+  @override
+  String get animalFormSelectMother => 'Seleccionar madre';
+
+  @override
+  String get animalFormSelectFather => 'Seleccionar padre';
+
+  @override
+  String get animalFormNoLocation => 'Sin ubicación';
+
+  @override
+  String get animalFormNoBatch => 'Sin lote';
+
+  @override
+  String get animalFormSectionWeightHealth => 'Peso y salud';
+
+  @override
+  String get animalFormWeightOptional => 'Peso (kg) opcional';
+
+  @override
+  String get animalFormSectionNotesPhoto => 'Notas y foto';
+
+  @override
+  String get animalFormOwnerOptional => 'Propietario (opcional)';
+
+  @override
+  String get animalFormPurchasePriceOptional => 'Precio de compra (opcional)';
+
+  @override
+  String get animalFormRecordsAvailableAfterSave =>
+      'Los accesos de registros estarán disponibles al guardar el animal.';
+
+  @override
+  String get animalFormRegisterAsCalf =>
+      'Registrar como cría (agregar madre automáticamente)';
+
+  @override
+  String get animalFormSaving => 'Guardando...';
+
+  @override
+  String get animalFormSaveAnimal => 'Guardar animal';
 }

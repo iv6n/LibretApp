@@ -6,16 +6,15 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 /// Crea LoteEntity para cada nombre de lote único si no existen
 /// y actualiza animals.batchUuid para apuntar a la entidad correspondiente
 class BatchMigrationService {
-  static const _logTag = 'BatchMigrationService';
-
-  final AnimalRepository _animalRepository;
-  final LotesRepository _lotesRepository;
-
   BatchMigrationService({
     required AnimalRepository animalRepository,
     required LotesRepository lotesRepository,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository;
+  static const _logTag = 'BatchMigrationService';
+
+  final AnimalRepository _animalRepository;
+  final LotesRepository _lotesRepository;
 
   /// Ejecutar la migración
   /// Retorna true si se ejecutó migración, false si ya estaba completada

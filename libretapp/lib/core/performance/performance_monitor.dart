@@ -35,11 +35,10 @@ class PerformanceSpan {
 }
 
 class PerformanceMonitor {
-  static final PerformanceMonitor _instance = PerformanceMonitor._internal();
-
   factory PerformanceMonitor() => _instance;
 
   PerformanceMonitor._internal();
+  static final PerformanceMonitor _instance = PerformanceMonitor._internal();
 
   final Map<String, Stopwatch> _stopwatches = {};
   final Map<String, DateTime> _startTimes = {};

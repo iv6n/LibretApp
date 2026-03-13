@@ -5,13 +5,6 @@ enum WeightMethod { scale, estimated }
 
 /// Registro de peso del animal.
 class WeightRecord extends Equatable {
-  final DateTime date;
-  final double weight;
-  final WeightMethod method;
-  final String? measuredBy;
-  final String? notes;
-  final String? id;
-
   const WeightRecord({
     required this.date,
     required this.weight,
@@ -20,6 +13,12 @@ class WeightRecord extends Equatable {
     this.notes,
     this.id,
   });
+  final DateTime date;
+  final double weight;
+  final WeightMethod method;
+  final String? measuredBy;
+  final String? notes;
+  final String? id;
 
   WeightRecord copyWith({
     DateTime? date,

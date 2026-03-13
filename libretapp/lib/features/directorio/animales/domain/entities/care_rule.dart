@@ -14,19 +14,6 @@ enum CareType {
 
 /// Regla de manejo o sanidad que define cada cuanto aplicar una tarea.
 class CareRule extends Equatable {
-  final String id;
-  final String name;
-  final CareType type;
-  final int intervalDays;
-  final int? minIntervalDays;
-  final int? maxIntervalDays;
-  final int? leadTimeDays;
-  final Species? species;
-  final Sex? sex;
-  final int? minAgeMonths;
-  final int? maxAgeMonths;
-  final bool mandatory;
-
   const CareRule({
     required this.id,
     required this.name,
@@ -41,6 +28,18 @@ class CareRule extends Equatable {
     this.maxAgeMonths,
     this.mandatory = true,
   });
+  final String id;
+  final String name;
+  final CareType type;
+  final int intervalDays;
+  final int? minIntervalDays;
+  final int? maxIntervalDays;
+  final int? leadTimeDays;
+  final Species? species;
+  final Sex? sex;
+  final int? minAgeMonths;
+  final int? maxAgeMonths;
+  final bool mandatory;
 
   CareRule copyWith({
     String? id,

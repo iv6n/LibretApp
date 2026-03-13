@@ -4,20 +4,6 @@ import 'package:equatable/equatable.dart';
 /// Un lote es una agrupación lógica de animales con propósitos organizacionales,
 /// como seguimiento de vacunaciones, registros de producción, o campañas sanitarias.
 class LoteEntity extends Equatable {
-  final int? id;
-  final String uuid;
-  final String nombre;
-  final String? descripcion;
-  final List<String> animalUuids; // UUIDs de animales en el lote
-  final DateTime fechaCreacion;
-  final DateTime? fechaCierre;
-  final bool activo;
-  final String? notas;
-  final DateTime lastUpdateDate;
-  final bool synced;
-  final String? remoteId;
-  final DateTime? syncDate;
-
   const LoteEntity({
     this.id,
     required this.uuid,
@@ -33,6 +19,19 @@ class LoteEntity extends Equatable {
     this.remoteId,
     this.syncDate,
   });
+  final int? id;
+  final String uuid;
+  final String nombre;
+  final String? descripcion;
+  final List<String> animalUuids; // UUIDs de animales en el lote
+  final DateTime fechaCreacion;
+  final DateTime? fechaCierre;
+  final bool activo;
+  final String? notas;
+  final DateTime lastUpdateDate;
+  final bool synced;
+  final String? remoteId;
+  final DateTime? syncDate;
 
   /// Crea una copia con cambios especificados
   LoteEntity copyWith({

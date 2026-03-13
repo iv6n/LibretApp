@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
@@ -46,8 +47,31 @@ class IsarLocationRepository implements LocationRepository {
           .where()
           .uuidEqualTo(location.uuid)
           .findFirst();
+      final previousParent = existing?.parentUuid;
       final model = location.toIsar(existing?.id);
       await isar.isarLocations.put(model);
+
+      if (previousParent != location.parentUuid && previousParent != null) {
+        final oldParent = await isar.isarLocations
+            .where()
+            .uuidEqualTo(previousParent)
+            .findFirst();
+        if (oldParent != null) {
+          oldParent.childUuids.remove(location.uuid);
+          await isar.isarLocations.put(oldParent);
+        }
+      }
+
+      if (location.parentUuid != null) {
+        final parent = await isar.isarLocations
+            .where()
+            .uuidEqualTo(location.parentUuid!)
+            .findFirst();
+        if (parent != null && !parent.childUuids.contains(location.uuid)) {
+          parent.childUuids.add(location.uuid);
+          await isar.isarLocations.put(parent);
+        }
+      }
     });
   }
 
@@ -55,6 +79,21 @@ class IsarLocationRepository implements LocationRepository {
   Future<void> deleteByUuid(String uuid) async {
     final isar = await _database.initialize();
     await isar.writeTxn(() async {
+      final location = await isar.isarLocations
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (location?.parentUuid != null) {
+        final parent = await isar.isarLocations
+            .where()
+            .uuidEqualTo(location!.parentUuid!)
+            .findFirst();
+        if (parent != null) {
+          parent.childUuids.remove(uuid);
+          await isar.isarLocations.put(parent);
+        }
+      }
+
       final deleted = await isar.isarLocations.deleteByUuid(uuid);
       LoggerService.i(
         'Ubicacion borrada: $uuid -> $deleted',
@@ -74,6 +113,20 @@ class IsarLocationRepository implements LocationRepository {
   Future<void> addWater(String uuid, WaterRecord record) async {
     await _modify(uuid, (location) {
       location.waters.add(IsarWaterRecord.fromEntity(record));
+    });
+  }
+
+  @override
+  Future<void> addSalt(String uuid, SaltRecord record) async {
+    await _modify(uuid, (location) {
+      location.salts.add(IsarSaltRecord.fromEntity(record));
+    });
+  }
+
+  @override
+  Future<void> addShade(String uuid, ShadeRecord record) async {
+    await _modify(uuid, (location) {
+      location.shades.add(IsarShadeRecord.fromEntity(record));
     });
   }
 
@@ -136,12 +189,37 @@ class IsarLocationRepository implements LocationRepository {
       LocationEntity(
         uuid: 'monte',
         name: 'Monte',
+        parentUuid: 'rancho-trabajo',
         type: LocationType.potrero,
         surfaceArea: 45.8,
         capacity: 120,
         waterSource: 'Arroyo natural',
         terrainType: 'Montañoso con pastizal',
         status: 'activo',
+        attributes: [
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 68,
+            unit: '%',
+          ),
+          DynamicAttribute.number(
+            key: 'pastura',
+            label: 'Pastura',
+            value: 80,
+            unit: '%',
+          ),
+          DynamicAttribute.integer(
+            key: 'animales',
+            label: 'Animales',
+            value: 98,
+          ),
+          DynamicAttribute.number(
+            key: 'capacidad',
+            label: 'Capacidad',
+            value: 120,
+          ),
+        ],
         visits: [
           VisitRecord(
             date: now.subtract(const Duration(days: 4)),
@@ -160,6 +238,20 @@ class IsarLocationRepository implements LocationRepository {
             level: 68,
             type: WaterType.pozo,
             notes: 'Nivel adecuado post-lluvia',
+          ),
+        ],
+        salts: [
+          SaltRecord(
+            date: now.subtract(const Duration(days: 3)),
+            quantityKg: 120,
+            notes: 'Mineralizada, repuesto reciente',
+          ),
+        ],
+        shades: [
+          ShadeRecord(
+            date: now.subtract(const Duration(days: 5)),
+            shadePercent: 45,
+            condition: 'Árboles nativos, sombra moderada',
           ),
         ],
         pastures: [
@@ -191,12 +283,37 @@ class IsarLocationRepository implements LocationRepository {
       LocationEntity(
         uuid: 'potrero',
         name: 'Potrero',
+        parentUuid: 'rancho-trabajo',
         type: LocationType.potrero,
         surfaceArea: 32.5,
         capacity: 95,
         waterSource: 'Perforación con molino',
         terrainType: 'Plano con ligeras depresiones',
         status: 'activo',
+        attributes: [
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 75,
+            unit: '%',
+          ),
+          DynamicAttribute.number(
+            key: 'pastura',
+            label: 'Pastura',
+            value: 78,
+            unit: '%',
+          ),
+          DynamicAttribute.integer(
+            key: 'animales',
+            label: 'Animales',
+            value: 78,
+          ),
+          DynamicAttribute.number(
+            key: 'capacidad',
+            label: 'Capacidad',
+            value: 95,
+          ),
+        ],
         visits: [
           VisitRecord(
             date: now.subtract(const Duration(days: 1)),
@@ -220,6 +337,20 @@ class IsarLocationRepository implements LocationRepository {
             level: 75,
             type: WaterType.pozo,
             notes: 'Sistema automático en funcionamiento',
+          ),
+        ],
+        salts: [
+          SaltRecord(
+            date: now.subtract(const Duration(days: 2)),
+            quantityKg: 80,
+            notes: 'Bloques parciales, reponer en 4 días',
+          ),
+        ],
+        shades: [
+          ShadeRecord(
+            date: now.subtract(const Duration(days: 6)),
+            shadePercent: 35,
+            condition: 'Malla sombra parcial, buen estado',
           ),
         ],
         pastures: [
@@ -250,14 +381,233 @@ class IsarLocationRepository implements LocationRepository {
         ],
       ),
       LocationEntity(
+        uuid: 'milpa-alfalfa',
+        name: 'Milpa Alfalfa Norte',
+        parentUuid: 'rancho-trabajo',
+        type: LocationType.siembra,
+        surfaceArea: 18.2,
+        capacity: 0,
+        waterSource: 'Canal de riego',
+        terrainType: 'Franco arcilloso',
+        status: 'activo',
+        attributes: [
+          DynamicAttribute.number(
+            key: 'crecimiento_pct',
+            label: 'Crecimiento',
+            value: 74,
+            unit: '%',
+          ),
+          DynamicAttribute.text(
+            key: 'ciclo_cosecha',
+            label: 'Ciclo de cosecha',
+            value: '65 días',
+          ),
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 81,
+            unit: '%',
+          ),
+        ],
+        visits: [
+          VisitRecord(
+            date: now.subtract(const Duration(days: 2)),
+            animals: 0,
+            notes: 'Revisión de brote parejo',
+          ),
+        ],
+        seedings: [
+          SeedingRecord(
+            date: now.subtract(const Duration(days: 34)),
+            crop: 'Alfalfa',
+            surface: 18.2,
+            cost: 6400,
+          ),
+        ],
+        irrigations: [
+          IrrigationRecord(
+            date: now.subtract(const Duration(days: 1)),
+            type: 'Aspersión',
+            duration: const Duration(hours: 3),
+            cost: 180,
+          ),
+          IrrigationRecord(
+            date: now.subtract(const Duration(days: 6)),
+            type: 'Aspersión',
+            duration: const Duration(hours: 2, minutes: 30),
+            cost: 160,
+          ),
+        ],
+        rains: [
+          RainRecord(
+            date: now.subtract(const Duration(days: 3)),
+            millimeters: 16,
+            location: 'Milpa Alfalfa Norte',
+          ),
+        ],
+        costs: [
+          CostRecord(
+            date: now.subtract(const Duration(days: 5)),
+            maintenance: 90,
+            fences: 0,
+            repairs: 40,
+            labor: 220,
+            total: 350,
+          ),
+        ],
+      ),
+      LocationEntity(
+        uuid: 'corral-engorda',
+        name: 'Corral de Engorda',
+        parentUuid: 'rancho-trabajo',
+        type: LocationType.corral,
+        surfaceArea: 5.4,
+        capacity: 64,
+        waterSource: 'Bebedero automático',
+        terrainType: 'Concreto con cama seca',
+        status: 'activo',
+        attributes: [
+          DynamicAttribute.number(
+            key: 'ganancia_diaria',
+            label: 'Ganancia diaria',
+            value: 1.35,
+            unit: 'kg/día',
+          ),
+          DynamicAttribute.text(
+            key: 'dieta',
+            label: 'Dieta',
+            value: 'Finalización 14% proteína + silo',
+          ),
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 88,
+            unit: '%',
+          ),
+        ],
+        visits: [
+          VisitRecord(
+            date: now.subtract(const Duration(days: 1)),
+            animals: 42,
+            notes: 'Monitoreo de consumo y lote de salida',
+          ),
+          VisitRecord(
+            date: now.subtract(const Duration(days: 7)),
+            animals: 39,
+            notes: 'Ajuste de dieta de finalización',
+          ),
+        ],
+        waters: [
+          WaterRecord(
+            date: now.subtract(const Duration(days: 1)),
+            level: 88,
+            type: WaterType.pila,
+            notes: 'Línea de bebederos presurizada',
+          ),
+        ],
+        costs: [
+          CostRecord(
+            date: now.subtract(const Duration(days: 3)),
+            maintenance: 120,
+            fences: 0,
+            repairs: 65,
+            labor: 140,
+            total: 325,
+          ),
+        ],
+      ),
+      LocationEntity(
+        uuid: 'almacen-equipo',
+        name: 'Almacén de Equipo',
+        parentUuid: 'rancho-trabajo',
+        type: LocationType.rancho,
+        surfaceArea: 1.2,
+        capacity: 0,
+        waterSource: 'No aplica',
+        terrainType: 'Nave techada',
+        status: 'activo',
+        attributes: [
+          DynamicAttribute.text(
+            key: 'equipos',
+            label: 'Equipo principal',
+            value: 'Monturas, piolas, herramienta y herrajes',
+          ),
+          DynamicAttribute.integer(
+            key: 'inventario_total',
+            label: 'Piezas',
+            value: 127,
+          ),
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 0,
+            unit: '%',
+          ),
+        ],
+        visits: [
+          VisitRecord(
+            date: now.subtract(const Duration(days: 3)),
+            animals: 0,
+            notes: 'Inventario semanal de equipo de trabajo',
+          ),
+        ],
+        costs: [
+          CostRecord(
+            date: now.subtract(const Duration(days: 12)),
+            maintenance: 180,
+            fences: 0,
+            repairs: 240,
+            labor: 120,
+            total: 540,
+          ),
+        ],
+      ),
+      LocationEntity(
         uuid: 'rancho-trabajo',
         name: 'Rancho',
+        childUuids: const [
+          'monte',
+          'potrero',
+          'milpa-alfalfa',
+          'corral-engorda',
+          'almacen-equipo',
+        ],
         type: LocationType.rancho,
         surfaceArea: 8.5,
         capacity: 50,
         waterSource: 'Tanque elevado + perforación',
         terrainType: 'Compactado - acceso vehicular',
         status: 'activo',
+        attributes: [
+          DynamicAttribute.number(
+            key: 'agua',
+            label: 'Agua disponible',
+            value: 92,
+            unit: '%',
+          ),
+          DynamicAttribute.number(
+            key: 'sombra',
+            label: 'Sombra',
+            value: 60,
+            unit: '%',
+          ),
+          DynamicAttribute.integer(
+            key: 'animales',
+            label: 'Animales',
+            value: 32,
+          ),
+          DynamicAttribute.number(
+            key: 'capacidad',
+            label: 'Capacidad',
+            value: 50,
+          ),
+          DynamicAttribute.number(
+            key: 'inventario_alimento',
+            label: 'Inventario alimento',
+            value: 18,
+            unit: 'bultos',
+          ),
+        ],
         visits: [
           VisitRecord(
             date: now.subtract(const Duration(days: 0)),
@@ -276,6 +626,20 @@ class IsarLocationRepository implements LocationRepository {
             level: 92,
             type: WaterType.pila,
             notes: 'Tanque lleno - suficiente para operaciones',
+          ),
+        ],
+        salts: [
+          SaltRecord(
+            date: now.subtract(const Duration(days: 4)),
+            quantityKg: 40,
+            notes: 'Bloques en corral, consumo moderado',
+          ),
+        ],
+        shades: [
+          ShadeRecord(
+            date: now.subtract(const Duration(days: 1)),
+            shadePercent: 60,
+            condition: 'Techos y árboles, buena cobertura',
           ),
         ],
         pastures: [

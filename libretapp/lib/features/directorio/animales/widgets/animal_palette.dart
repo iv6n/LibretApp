@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 
-/// Centralized stage colors to keep a single palette across the app.
+/// Centralized stage colors for animal UI components.
 class AnimalPalette {
-  static const Color calf = Color(0xFFE08A3F); // naranja más sólido
-  static const Color heifer = Color(0xFF5C46C5); // violeta profundo
-  static const Color cow = Color(0xFFD14F86); // rosa intenso
-  static const Color bull = Color(0xFF157A9C); // azul ganado
-  static const Color youngBull = Color(0xFF1D8FB0); // azul medio
-  static const Color steer = Color(0xFF2F8C5E); // verde sólido
-  static const Color horse = Color(0xFFE0AE1F); // amarillo más cálido
-  static const Color donkey = Color(0xFF7A828C); // gris contrastado
-  static const Color mule = Color(0xFF8B623A); // café profundo
-  static const Color fallback = Color(0xFF2F8C5E);
+  static const Color calf = Color(0xFFE08A3F);
+  static const Color heifer = Color(0xFF5C46C5);
+  static const Color cow = Color(0xFFD14F86);
+  static const Color bull = Color(0xFF157A9C);
+  static const Color youngBull = Color(0xFF1D8FB0);
+  static const Color steer = Color(0xFF2F8C5E);
+  static const Color horse = Color(0xFFE0AE1F);
+  static const Color donkey = Color(0xFF7A828C);
+  static const Color mule = Color(0xFF8B623A);
 
   static Color stageColor(LifeStage stage) {
     switch (stage) {

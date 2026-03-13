@@ -41,10 +41,9 @@ class _LotesTabState extends State<LotesTab> {
             itemCount: lotes.length,
             itemBuilder: (context, index) {
               final lote = lotes[index];
-              final nombre = _getLoteName(lote);
               return ListTile(
-                title: Text(nombre),
-                subtitle: Text(_getLoteDescription(lote)),
+                title: Text(lote.nombre),
+                subtitle: Text(lote.descripcion ?? ''),
               );
             },
           );
@@ -53,19 +52,5 @@ class _LotesTabState extends State<LotesTab> {
         return const SizedBox.shrink();
       },
     );
-  }
-
-  String _getLoteName(dynamic lote) {
-    if (lote is Map && lote.containsKey('nombre')) {
-      return lote['nombre'] as String? ?? 'Sin nombre';
-    }
-    return 'Lote';
-  }
-
-  String _getLoteDescription(dynamic lote) {
-    if (lote is Map && lote.containsKey('descripcion')) {
-      return lote['descripcion'] as String? ?? '';
-    }
-    return '';
   }
 }

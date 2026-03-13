@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 
 abstract class AnimalesTabState extends Equatable {
   const AnimalesTabState();
@@ -21,15 +22,15 @@ class AnimalesTabLoading extends AnimalesTabState {
 class AnimalesTabLoaded extends AnimalesTabState {
   const AnimalesTabLoaded({required this.animales, this.filteredAnimales});
 
-  final List<dynamic> animales;
-  final List<dynamic>? filteredAnimales;
+  final List<AnimalEntity> animales;
+  final List<AnimalEntity>? filteredAnimales;
 
   /// Devuelve los animales a mostrar (filtrados o todos)
-  List<dynamic> get displayAnimales => filteredAnimales ?? animales;
+  List<AnimalEntity> get displayAnimales => filteredAnimales ?? animales;
 
   AnimalesTabLoaded copyWith({
-    List<dynamic>? animales,
-    List<dynamic>? filteredAnimales,
+    List<AnimalEntity>? animales,
+    List<AnimalEntity>? filteredAnimales,
   }) {
     return AnimalesTabLoaded(
       animales: animales ?? this.animales,

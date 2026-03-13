@@ -36,61 +36,6 @@ import '../enums/species.dart';
 /// - Ovino (sheep): Similar a bovino, con adaptaciones menores
 /// - Nuevas especies: Agregar a enum Species y documentar campos relevantes
 class AnimalEntity extends Equatable {
-  final int? id;
-  final String uuid;
-  final String earTagNumber;
-  final String? customName;
-  final String? visualId;
-  final String? brand;
-  final String? rfidTag;
-  final String? batchUuid;
-  @Deprecated('Use batchUuid instead. This field is always null.')
-  final String? batchId = null;
-  final Species species;
-  final Category category;
-  final LifeStage lifeStage;
-  final Sex sex;
-  final String breed;
-  final DateTime birthDate;
-  final int ageMonths;
-  final double? weight;
-  final String? sireUuid;
-  final String? damUuid;
-  final int? generation;
-  final HealthStatus healthStatus;
-  final int? bodyConditionScore;
-  final bool vaccinated;
-  final bool dewormed;
-  final bool hasVitamins;
-  final bool hasChronicIssues;
-  final String? chronicNotes;
-  final ReproductiveStatus reproductiveStatus;
-  final DateTime? firstServiceDate;
-  final DateTime? lastServiceDate;
-  final DateTime? expectedCalvingDate;
-  final ProductionPurpose productionPurpose;
-  final ProductionStage productionStage;
-  final ProductionSystem productionSystem;
-  final String? feedType;
-  final double? dailyGainEstimate;
-  final String? currentPaddockId;
-  final String? initialLocationId;
-  final DateTime? lastMovementDate;
-  final bool underObservation;
-  final bool requiresAttention;
-  final RiskLevel riskLevel;
-  final String? profilePhoto;
-  final List<String> gallery;
-  final String? owner;
-  final double? purchasePrice;
-  final AnimalStatus status;
-  final bool synced;
-  final String? remoteId;
-  final DateTime? syncDate;
-  final String? contentHash;
-  final DateTime creationDate;
-  final DateTime lastUpdateDate;
-
   const AnimalEntity({
     this.id,
     required this.uuid,
@@ -145,6 +90,60 @@ class AnimalEntity extends Equatable {
     required this.creationDate,
     required this.lastUpdateDate,
   });
+  final int? id;
+  final String uuid;
+  final String earTagNumber;
+  final String? customName;
+  final String? visualId;
+  final String? brand;
+  final String? rfidTag;
+  final String? batchUuid;
+  @Deprecated('Use batchUuid instead. This field is always null.')
+  final String? batchId = null;
+  final Species species;
+  final Category category;
+  final LifeStage lifeStage;
+  final Sex sex;
+  final String breed;
+  final DateTime birthDate;
+  final int ageMonths;
+  final double? weight;
+  final String? sireUuid;
+  final String? damUuid;
+  final int? generation;
+  final HealthStatus healthStatus;
+  final int? bodyConditionScore;
+  final bool vaccinated;
+  final bool dewormed;
+  final bool hasVitamins;
+  final bool hasChronicIssues;
+  final String? chronicNotes;
+  final ReproductiveStatus reproductiveStatus;
+  final DateTime? firstServiceDate;
+  final DateTime? lastServiceDate;
+  final DateTime? expectedCalvingDate;
+  final ProductionPurpose productionPurpose;
+  final ProductionStage productionStage;
+  final ProductionSystem productionSystem;
+  final String? feedType;
+  final double? dailyGainEstimate;
+  final String? currentPaddockId;
+  final String? initialLocationId;
+  final DateTime? lastMovementDate;
+  final bool underObservation;
+  final bool requiresAttention;
+  final RiskLevel riskLevel;
+  final String? profilePhoto;
+  final List<String> gallery;
+  final String? owner;
+  final double? purchasePrice;
+  final AnimalStatus status;
+  final bool synced;
+  final String? remoteId;
+  final DateTime? syncDate;
+  final String? contentHash;
+  final DateTime creationDate;
+  final DateTime lastUpdateDate;
 
   AnimalEntity copyWith({
     int? id,
