@@ -412,14 +412,23 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
       bloc = null;
     }
     if (bloc == null) {
-      if (mounted) {
+      try {
+        if (event is AddAnimal) {
+          await _animalRepository.save(event.animal);
+          return true;
+        }
+        if (event is UpdateAnimal) {
+          await _animalRepository.update(event.animal);
+          return true;
+        }
+        _showMessage(AppLocalizations.of(context).animalFormUnsupportedAction);
+        return false;
+      } catch (e) {
         _showMessage(
-          AppLocalizations.of(context).animalFormRecordSaveError(
-            'No se encontro AnimalesBloc en contexto',
-          ),
+          AppLocalizations.of(context).animalFormRecordSaveError('$e'),
         );
+        return false;
       }
-      return false;
     }
     final activeBloc = bloc;
     final future = activeBloc.stream
