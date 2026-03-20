@@ -488,7 +488,7 @@ class TagChip extends StatelessWidget {
     super.key,
     required this.label,
     required this.color,
-    this.alpha = 0.50,
+    this.alpha = 0.80,
   });
 
   final String label;
