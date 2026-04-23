@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de registro de salud del animal.
 enum HealthRecordType {
@@ -14,27 +14,24 @@ enum HealthRecordType {
 }
 
 /// Registro de evento de salud del animal.
-class HealthRecord extends Equatable {
+class HealthRecord extends TimestampedRecord {
   const HealthRecord({
-    required this.date,
+    required super.date,
     required this.type,
     required this.product,
     this.dose,
     this.appliedBy,
-    this.notes,
+    super.notes,
     this.nextDueDate,
     this.cause,
-    this.id,
+    super.id,
   });
-  final DateTime date;
   final HealthRecordType type;
   final String product;
   final String? dose;
   final String? appliedBy;
-  final String? notes;
   final DateTime? nextDueDate;
   final String? cause;
-  final String? id;
 
   HealthRecord copyWith({
     DateTime? date,
@@ -62,14 +59,12 @@ class HealthRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-    date,
+    ...super.props,
     type,
     product,
     dose,
     appliedBy,
-    notes,
     nextDueDate,
     cause,
-    id,
   ];
 }

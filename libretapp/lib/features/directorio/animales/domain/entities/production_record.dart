@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de registro productivo.
 enum ProductionRecordType {
@@ -11,23 +11,20 @@ enum ProductionRecordType {
 }
 
 /// Registro productivo para un animal.
-class ProductionRecord extends Equatable {
+class ProductionRecord extends TimestampedRecord {
   const ProductionRecord({
-    required this.date,
+    required super.date,
     required this.type,
     this.value,
     this.unit,
     this.score,
-    this.notes,
-    this.id,
+    super.notes,
+    super.id,
   });
-  final DateTime date;
   final ProductionRecordType type;
   final double? value;
   final String? unit;
   final int? score;
-  final String? notes;
-  final String? id;
 
   ProductionRecord copyWith({
     DateTime? date,
@@ -50,5 +47,5 @@ class ProductionRecord extends Equatable {
   }
 
   @override
-  List<Object?> get props => [date, type, value, unit, score, notes, id];
+  List<Object?> get props => [...super.props, type, value, unit, score];
 }

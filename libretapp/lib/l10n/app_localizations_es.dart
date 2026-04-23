@@ -467,6 +467,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormWeightMethodEstimated => 'Estimado';
 
   @override
+  String get detailFormAnimalRequired => 'Selecciona un animal primero';
+
+  @override
+  String get detailFormNumberInvalid => 'Ingresa un número válido';
+
+  @override
+  String get detailFormAmountPositive => 'El valor debe ser mayor que cero';
+
+  @override
   String get detailFormWeightErrorInvalid => 'Ingresa un peso válido';
 
   @override
@@ -486,6 +495,25 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailFormProductionScore => 'Puntaje/BCS';
+
+  @override
+  String get detailFormProductionValueRequired =>
+      'Ingresa un valor para este tipo de registro';
+
+  @override
+  String get detailFormProductionScoreRequired =>
+      'Ingresa un puntaje para condición corporal';
+
+  @override
+  String get detailFormProductionScoreInvalid => 'Ingresa un puntaje válido';
+
+  @override
+  String get detailFormProductionScoreRange =>
+      'El puntaje debe estar entre 0 y 9';
+
+  @override
+  String get detailFormProductionDataRequired =>
+      'Agrega al menos un dato para guardar el registro';
 
   @override
   String get detailFormProductionSaved => 'Registro productivo guardado';
@@ -515,6 +543,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormHealthProductRequired => 'Producto requerido';
 
   @override
+  String get detailFormHealthNextAfterDate =>
+      'La próxima fecha no puede ser anterior a la fecha del registro';
+
+  @override
   String get detailFormHealthSaved => 'Registro sanitario guardado';
 
   @override
@@ -531,6 +563,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailFormCommercialCounterparty => 'Contraparte';
+
+  @override
+  String get detailFormCommercialAmountRequired =>
+      'Monto requerido para este tipo de registro';
 
   @override
   String get detailFormCommercialSaved => 'Registro comercial guardado';
@@ -552,6 +588,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailFormMovementToRequired => 'Destino requerido';
+
+  @override
+  String get detailFormMovementDifferentLocations =>
+      'La ubicación de origen y destino no pueden ser iguales';
 
   @override
   String get detailFormMovementSaved => 'Movimiento guardado';
@@ -599,6 +639,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormReproductionNotes => 'Notas (opcional)';
 
   @override
+  String get detailFormReproductionExpectedAfterDate =>
+      'La fecha probable de parto no puede ser anterior a la fecha de servicio';
+
+  @override
   String get detailFormReproductionSaved => 'Evento reproductivo guardado';
 
   @override
@@ -621,6 +665,9 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get animalFormNoTagMessage =>
       'Este animal no tiene arete. Se recomienda etiquetarlo para su seguimiento. ¿Deseas guardar de todos modos?';
+
+  @override
+  String get animalFormDuplicateEarTag => 'Ya existe un animal con ese arete';
 
   @override
   String get animalFormUnsupportedAction =>
@@ -654,6 +701,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get animalFormBreedOptional => 'Raza (opcional)';
+
+  @override
+  String get animalFormUnknownBreed => 'Desconocido';
 
   @override
   String get animalFormStatus => 'Estado';
@@ -707,4 +757,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get animalFormSaveAnimal => 'Guardar animal';
+
+  @override
+  String get detailQuickActionsTitle => 'Agregar registro';
+
+  @override
+  String get detailNoRecordsYet => 'Sin registros aún';
+
+  @override
+  String get detailNoRecordsHint =>
+      'Usa el botón + para agregar el primer registro de este animal.';
 }

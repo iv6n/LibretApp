@@ -467,6 +467,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormWeightMethodEstimated => 'Estimated';
 
   @override
+  String get detailFormAnimalRequired => 'Select an animal first';
+
+  @override
+  String get detailFormNumberInvalid => 'Enter a valid number';
+
+  @override
+  String get detailFormAmountPositive => 'The value must be greater than zero';
+
+  @override
   String get detailFormWeightErrorInvalid => 'Enter a valid weight';
 
   @override
@@ -486,6 +495,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailFormProductionScore => 'Score/BCS';
+
+  @override
+  String get detailFormProductionValueRequired =>
+      'Enter a value for this record type';
+
+  @override
+  String get detailFormProductionScoreRequired =>
+      'Enter a score for body condition';
+
+  @override
+  String get detailFormProductionScoreInvalid => 'Enter a valid score';
+
+  @override
+  String get detailFormProductionScoreRange =>
+      'The score must be between 0 and 9';
+
+  @override
+  String get detailFormProductionDataRequired =>
+      'Add at least one data point to save the record';
 
   @override
   String get detailFormProductionSaved => 'Production record saved';
@@ -515,6 +543,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormHealthProductRequired => 'Product is required';
 
   @override
+  String get detailFormHealthNextAfterDate =>
+      'The next date cannot be before the record date';
+
+  @override
   String get detailFormHealthSaved => 'Health record saved';
 
   @override
@@ -531,6 +563,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailFormCommercialCounterparty => 'Counterparty';
+
+  @override
+  String get detailFormCommercialAmountRequired =>
+      'Amount is required for this record type';
 
   @override
   String get detailFormCommercialSaved => 'Commercial record saved';
@@ -552,6 +588,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailFormMovementToRequired => 'Destination is required';
+
+  @override
+  String get detailFormMovementDifferentLocations =>
+      'From and to locations cannot be the same';
 
   @override
   String get detailFormMovementSaved => 'Movement saved';
@@ -599,6 +639,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormReproductionNotes => 'Notes (optional)';
 
   @override
+  String get detailFormReproductionExpectedAfterDate =>
+      'Expected calving date cannot be before service date';
+
+  @override
   String get detailFormReproductionSaved => 'Reproduction event saved';
 
   @override
@@ -621,6 +665,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get animalFormNoTagMessage =>
       'This animal has no ear tag. Tagging is recommended for tracking. Do you want to save anyway?';
+
+  @override
+  String get animalFormDuplicateEarTag =>
+      'An animal with this ear tag already exists';
 
   @override
   String get animalFormUnsupportedAction => 'Unsupported action from this form';
@@ -653,6 +701,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get animalFormBreedOptional => 'Breed (optional)';
+
+  @override
+  String get animalFormUnknownBreed => 'Unknown';
 
   @override
   String get animalFormStatus => 'Status';
@@ -706,4 +757,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get animalFormSaveAnimal => 'Save animal';
+
+  @override
+  String get detailQuickActionsTitle => 'Add record';
+
+  @override
+  String get detailNoRecordsYet => 'No records yet';
+
+  @override
+  String get detailNoRecordsHint =>
+      'Use the + button to add the first record for this animal.';
 }

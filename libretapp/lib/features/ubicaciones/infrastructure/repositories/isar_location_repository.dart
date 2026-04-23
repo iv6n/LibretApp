@@ -1,6 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
@@ -17,7 +18,6 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Stream<List<LocationEntity>> watchAll() async* {
     final isar = await _database.initialize();
-    await _ensureSeed(isar);
     yield* isar.isarLocations
         .where()
         .watch(fireImmediately: true)
@@ -27,7 +27,6 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Future<List<LocationEntity>> getAll() async {
     final isar = await _database.initialize();
-    await _ensureSeed(isar);
     final items = await isar.isarLocations.where().findAll();
     return items.map((e) => e.toEntity()).toList(growable: false);
   }
@@ -162,6 +161,105 @@ class IsarLocationRepository implements LocationRepository {
   Future<void> addCost(String uuid, CostRecord record) async {
     await _modify(uuid, (location) {
       location.costs.add(IsarLocationCostRecord.fromEntity(record));
+    });
+  }
+
+  @override
+  Future<void> addCrop(String locationUuid, CropRecord crop) async {
+    await _modify(locationUuid, (location) {
+      location.crops.add(IsarCropRecord.fromEntity(crop));
+    });
+  }
+
+  @override
+  Future<void> updateCrop(String locationUuid, CropRecord crop) async {
+    await _modify(locationUuid, (location) {
+      final index = location.crops.indexWhere((c) => c.uuid == crop.uuid);
+      if (index == -1) {
+        throw StateError('Cultivo ${crop.uuid} no encontrado');
+      }
+      location.crops[index] = IsarCropRecord.fromEntity(crop);
+    });
+  }
+
+  @override
+  Future<void> deleteCrop(String locationUuid, String cropUuid) async {
+    await _modify(locationUuid, (location) {
+      location.crops.removeWhere((c) => c.uuid == cropUuid);
+    });
+  }
+
+  @override
+  Future<void> addHarvest(
+    String locationUuid,
+    String cropUuid,
+    HarvestRecord record,
+  ) async {
+    await _modifyCrop(locationUuid, cropUuid, (crop) {
+      crop.harvests.add(IsarHarvestRecord.fromEntity(record));
+    });
+  }
+
+  @override
+  Future<void> addCropWatering(
+    String locationUuid,
+    String cropUuid,
+    CropWateringRecord record,
+  ) async {
+    await _modifyCrop(locationUuid, cropUuid, (crop) {
+      crop.waterings.add(IsarCropWateringRecord.fromEntity(record));
+      crop.lastWateredDate = record.date;
+    });
+  }
+
+  @override
+  Future<void> addCropHealth(
+    String locationUuid,
+    String cropUuid,
+    CropHealthRecord record,
+  ) async {
+    await _modifyCrop(locationUuid, cropUuid, (crop) {
+      crop.healthRecords.add(IsarCropHealthRecord.fromEntity(record));
+    });
+  }
+
+  @override
+  Future<void> addCropTask(
+    String locationUuid,
+    String cropUuid,
+    CropTask task,
+  ) async {
+    await _modifyCrop(locationUuid, cropUuid, (crop) {
+      crop.tasks.add(IsarCropTask.fromEntity(task));
+    });
+  }
+
+  @override
+  Future<void> completeCropTask(
+    String locationUuid,
+    String cropUuid,
+    String taskUuid,
+  ) async {
+    await _modifyCrop(locationUuid, cropUuid, (crop) {
+      final index = crop.tasks.indexWhere((t) => t.uuid == taskUuid);
+      if (index == -1) {
+        throw StateError('Tarea $taskUuid no encontrada');
+      }
+      crop.tasks[index].completed = true;
+    });
+  }
+
+  Future<void> _modifyCrop(
+    String locationUuid,
+    String cropUuid,
+    void Function(IsarCropRecord) updater,
+  ) async {
+    await _modify(locationUuid, (location) {
+      final crop = location.crops.where((c) => c.uuid == cropUuid).firstOrNull;
+      if (crop == null) {
+        throw StateError('Cultivo $cropUuid no encontrado');
+      }
+      updater(crop);
     });
   }
 

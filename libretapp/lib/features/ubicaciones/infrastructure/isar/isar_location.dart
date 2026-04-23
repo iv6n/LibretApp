@@ -1,7 +1,11 @@
 import 'package:isar/isar.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_kind.dart';
@@ -38,6 +42,7 @@ class IsarLocation {
   List<IsarIrrigationRecord> irrigations = [];
   List<IsarRainRecord> rains = [];
   List<IsarLocationCostRecord> costs = [];
+  List<IsarCropRecord> crops = [];
 }
 
 @embedded
@@ -256,6 +261,159 @@ class IsarLocationCostRecord {
         ..total = record.total;
 }
 
+@embedded
+class IsarHarvestRecord {
+  late DateTime date;
+  late double yieldKg;
+  late int qualityRating;
+  String? notes;
+
+  HarvestRecord toEntity() => HarvestRecord(
+    date: date,
+    yieldKg: yieldKg,
+    qualityRating: qualityRating,
+    notes: notes,
+  );
+
+  static IsarHarvestRecord fromEntity(HarvestRecord record) =>
+      IsarHarvestRecord()
+        ..date = record.date
+        ..yieldKg = record.yieldKg
+        ..qualityRating = record.qualityRating
+        ..notes = record.notes;
+}
+
+@embedded
+class IsarCropWateringRecord {
+  late DateTime date;
+  late double amountLiters;
+  late String method;
+  String? notes;
+
+  CropWateringRecord toEntity() => CropWateringRecord(
+    date: date,
+    amountLiters: amountLiters,
+    method: method,
+    notes: notes,
+  );
+
+  static IsarCropWateringRecord fromEntity(CropWateringRecord record) =>
+      IsarCropWateringRecord()
+        ..date = record.date
+        ..amountLiters = record.amountLiters
+        ..method = record.method
+        ..notes = record.notes;
+}
+
+@embedded
+class IsarCropHealthRecord {
+  late DateTime date;
+  late String issue;
+  late String treatment;
+  late String severity;
+  String? notes;
+
+  CropHealthRecord toEntity() => CropHealthRecord(
+    date: date,
+    issue: issue,
+    treatment: treatment,
+    severity: severity,
+    notes: notes,
+  );
+
+  static IsarCropHealthRecord fromEntity(CropHealthRecord record) =>
+      IsarCropHealthRecord()
+        ..date = record.date
+        ..issue = record.issue
+        ..treatment = record.treatment
+        ..severity = record.severity
+        ..notes = record.notes;
+}
+
+@embedded
+class IsarCropTask {
+  late String uuid;
+  late String type;
+  late DateTime dueDate;
+  late bool completed;
+  String? notes;
+
+  CropTask toEntity() => CropTask(
+    uuid: uuid,
+    type: _enumByName(CropTaskType.values, type),
+    dueDate: dueDate,
+    completed: completed,
+    notes: notes,
+  );
+
+  static IsarCropTask fromEntity(CropTask task) => IsarCropTask()
+    ..uuid = task.uuid
+    ..type = task.type.name
+    ..dueDate = task.dueDate
+    ..completed = task.completed
+    ..notes = task.notes;
+}
+
+@embedded
+class IsarCropRecord {
+  late String uuid;
+  late String cropName;
+  late String variety;
+  late DateTime plantingDate;
+  DateTime? expectedHarvestDate;
+  late String growthStage;
+  late int wateringFrequencyDays;
+  DateTime? lastWateredDate;
+  late String status;
+  late double surface;
+  String? notes;
+  List<IsarHarvestRecord> harvests = [];
+  List<IsarCropWateringRecord> waterings = [];
+  List<IsarCropHealthRecord> healthRecords = [];
+  List<IsarCropTask> tasks = [];
+
+  CropRecord toEntity() => CropRecord(
+    uuid: uuid,
+    cropName: cropName,
+    variety: variety,
+    plantingDate: plantingDate,
+    expectedHarvestDate: expectedHarvestDate,
+    growthStage: _enumByName(CropGrowthStage.values, growthStage),
+    wateringFrequencyDays: wateringFrequencyDays,
+    lastWateredDate: lastWateredDate,
+    status: _enumByName(CropStatus.values, status),
+    surface: surface,
+    notes: notes,
+    harvests: harvests.map((e) => e.toEntity()).toList(growable: false),
+    waterings: waterings.map((e) => e.toEntity()).toList(growable: false),
+    healthRecords: healthRecords
+        .map((e) => e.toEntity())
+        .toList(growable: false),
+    tasks: tasks.map((e) => e.toEntity()).toList(growable: false),
+  );
+
+  static IsarCropRecord fromEntity(CropRecord record) => IsarCropRecord()
+    ..uuid = record.uuid
+    ..cropName = record.cropName
+    ..variety = record.variety
+    ..plantingDate = record.plantingDate
+    ..expectedHarvestDate = record.expectedHarvestDate
+    ..growthStage = record.growthStage.name
+    ..wateringFrequencyDays = record.wateringFrequencyDays
+    ..lastWateredDate = record.lastWateredDate
+    ..status = record.status.name
+    ..surface = record.surface
+    ..notes = record.notes
+    ..harvests = record.harvests.map(IsarHarvestRecord.fromEntity).toList()
+    ..waterings = record.waterings
+        .map(IsarCropWateringRecord.fromEntity)
+        .toList()
+    ..healthRecords = record.healthRecords
+        .map(IsarCropHealthRecord.fromEntity)
+        .toList()
+    ..tasks = record.tasks.map(IsarCropTask.fromEntity).toList();
+}
+
 extension IsarLocationMapper on IsarLocation {
   LocationEntity toEntity() {
     return LocationEntity(
@@ -282,6 +440,7 @@ extension IsarLocationMapper on IsarLocation {
       irrigations: irrigations.map((e) => e.toEntity()).toList(growable: false),
       rains: rains.map((e) => e.toEntity()).toList(growable: false),
       costs: costs.map((e) => e.toEntity()).toList(growable: false),
+      crops: crops.map((e) => e.toEntity()).toList(growable: false),
     );
   }
 }
@@ -310,7 +469,8 @@ extension LocationEntityToIsar on LocationEntity {
       ..seedings = seedings.map(IsarSeedingRecord.fromEntity).toList()
       ..irrigations = irrigations.map(IsarIrrigationRecord.fromEntity).toList()
       ..rains = rains.map(IsarRainRecord.fromEntity).toList()
-      ..costs = costs.map(IsarLocationCostRecord.fromEntity).toList();
+      ..costs = costs.map(IsarLocationCostRecord.fromEntity).toList()
+      ..crops = crops.map(IsarCropRecord.fromEntity).toList();
 
     if (existingId != null && existingId != Isar.autoIncrement) {
       model.id = existingId;

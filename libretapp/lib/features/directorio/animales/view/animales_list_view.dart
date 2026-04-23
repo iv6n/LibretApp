@@ -22,6 +22,7 @@ class AnimalesListView extends StatefulWidget {
 
 class _AnimalesListViewState extends State<AnimalesListView>
     with TickerProviderStateMixin {
+  static const double _listFabClearance = -39;
   late final AnimalesListController _animalController;
   late final AnimalRepository _animalRepository;
   late final ScrollController _scrollController;
@@ -79,17 +80,16 @@ class _AnimalesListViewState extends State<AnimalesListView>
             final bottomInset = ShellInsets.bottomSafePadding(context);
             final listBottomPadding = (isSelectionMode && !keyboardVisible)
                 ? MediaQuery.of(context).padding.bottom + 112
-                : bottomInset + 2;
+                : bottomInset + _listFabClearance;
 
             final fabConfig = isSelectionMode
                 ? null
                 : ShellFabConfig(
                     id: 'animales',
-                    label: 'Agregar',
+                    label: 'Registrar',
                     icon: Icons.add,
                     heroTag: 'fab_animales',
-                    onPressed: () =>
-                        context.pushNamed(AppRoutes.nameAnimalNuevo),
+                    onPressed: () => context.pushNamed(AppRoutes.nameRegistro),
                   );
 
             return PopScope(
@@ -260,6 +260,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     final selectedUuids = state.selectedAnimalUuids.toList(growable: false);
     if (selectedUuids.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
+    final animalesBloc = context.read<AnimalesBloc>();
     final shouldContinue = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -280,6 +281,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
       ),
     );
     if (shouldContinue != true) return;
+    if (!mounted) return;
 
     await showBulkHealthForm(
       context,
@@ -303,7 +305,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
         }
       },
       onSaved: () {
-        context.read<AnimalesBloc>().add(const ClearAnimalSelection());
+        animalesBloc.add(const ClearAnimalSelection());
       },
     );
   }
@@ -414,6 +416,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
         (animal) => _CenteredSection(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: AnimalCard(
+            key: ValueKey('card_${animal.uuid}'),
             animal: animal,
             location: locationResolver(animal),
             isSelected: state.selectedAnimalUuids.contains(animal.uuid),

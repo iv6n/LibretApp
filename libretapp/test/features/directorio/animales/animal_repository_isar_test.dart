@@ -175,6 +175,130 @@ void main() {
     },
     skip: !_canRunIsarNative(),
   );
+
+  test(
+    'persists and reads all supported animal record types',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPrefs = await SharedPreferences.getInstance();
+
+      final repository = AnimalRepositoryIsar(
+        IsarDatabase(),
+        SharedPrefsService(sharedPrefs),
+        _FakeAnimalRemoteDataSource(),
+      );
+
+      await repository.clearAll();
+
+      final animal = _buildAnimal(
+        uuid: 'records-isar-1',
+        earTag: 'TAG-REC-001',
+        breed: 'Cebu',
+      );
+      await repository.save(animal);
+
+      final now = DateTime(2025, 6, 1);
+
+      await repository.addWeightRecord(
+        animal.uuid,
+        WeightRecord(
+          date: DateTime(2025, 6, 1),
+          weight: 412.5,
+          method: WeightMethod.scale,
+          notes: 'Pesaje inicial',
+        ),
+      );
+
+      await repository.addHealthRecord(
+        animal.uuid,
+        HealthRecord(
+          date: DateTime(2025, 6, 1),
+          type: HealthRecordType.vaccine,
+          product: 'Vacuna A',
+          notes: 'Dosis completa',
+        ),
+      );
+
+      await repository.addProductionRecord(
+        animal.uuid,
+        ProductionRecord(
+          date: DateTime(2025, 6, 1),
+          type: ProductionRecordType.production,
+          value: 12.3,
+          unit: 'L',
+        ),
+      );
+
+      await repository.addReproductionRecord(
+        animal.uuid,
+        ReproductionRecord(
+          serviceDate: now,
+          serviceType: ServiceType.naturalService,
+          maleSireIdentifier: 'TORO-01',
+        ),
+      );
+
+      await repository.addMovementRecord(
+        animal.uuid,
+        MovementRecord(
+          fromLocation: 'Potrero 1',
+          toLocation: 'Potrero 2',
+          date: DateTime(2025, 6, 1),
+          reason: MovementReason.relocation,
+        ),
+      );
+
+      await repository.addCommercialRecord(
+        animal.uuid,
+        CommercialRecord(
+          date: DateTime(2025, 6, 1),
+          type: CommercialRecordType.purchase,
+          amount: 1500,
+          currency: 'USD',
+        ),
+      );
+
+      await repository.addCostRecord(
+        animal.uuid,
+        CostRecord(
+          date: DateTime(2025, 6, 1),
+          type: CostType.feeding,
+          amount: 280,
+          currency: 'USD',
+        ),
+      );
+
+      final weights = await repository.getWeightRecords(animal.uuid);
+      final health = await repository.getHealthRecords(animal.uuid);
+      final production = await repository.getProductionRecords(animal.uuid);
+      final reproduction = await repository.getReproductionRecords(animal.uuid);
+      final movements = await repository.getMovementRecords(animal.uuid);
+      final commercial = await repository.getCommercialRecords(animal.uuid);
+      final costs = await repository.getCostRecords(animal.uuid);
+
+      expect(weights, hasLength(1));
+      expect(weights.first.weight, 412.5);
+
+      expect(health, hasLength(1));
+      expect(health.first.product, 'Vacuna A');
+
+      expect(production, hasLength(1));
+      expect(production.first.value, 12.3);
+
+      expect(reproduction, hasLength(1));
+      expect(reproduction.first.maleSireIdentifier, 'TORO-01');
+
+      expect(movements, hasLength(1));
+      expect(movements.first.toLocation, 'Potrero 2');
+
+      expect(commercial, hasLength(1));
+      expect(commercial.first.amount, 1500);
+
+      expect(costs, hasLength(1));
+      expect(costs.first.amount, 280);
+    },
+    skip: !_canRunIsarNative(),
+  );
 }
 
 bool _canRunIsarNative() {

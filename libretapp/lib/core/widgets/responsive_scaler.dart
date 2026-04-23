@@ -5,10 +5,22 @@ class ResponsiveScaler extends StatelessWidget {
 
   final Widget child;
 
+  static const double _phoneBaseWidth = 390; // iPhone 12 baseline
+  static const double _tabletBreakpoint = 600;
+  static const double _desktopBreakpoint = 1200;
+
   double _scaleForWidth(double width) {
-    const double baseWidth = 390; // iPhone 12 baseline
-    final scale = width / baseWidth;
-    return scale.clamp(0.9, 1.15).toDouble();
+    if (width >= _desktopBreakpoint) {
+      // Desktop: no text scaling adjustment
+      return 1.0;
+    } else if (width >= _tabletBreakpoint) {
+      // Tablet: slight scale reduction to fit more content
+      return (width / _tabletBreakpoint).clamp(0.95, 1.05).toDouble();
+    } else {
+      // Phone: scale relative to baseline
+      final scale = width / _phoneBaseWidth;
+      return scale.clamp(0.85, 1.15).toDouble();
+    }
   }
 
   @override

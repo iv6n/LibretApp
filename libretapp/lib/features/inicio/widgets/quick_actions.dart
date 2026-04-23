@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/inicio/widgets/quick_action_button.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class QuickActions extends StatelessWidget {
   const QuickActions({super.key});
@@ -18,7 +19,7 @@ class QuickActions extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.flash_on, color: Colors.orange),
+                const Icon(Icons.flash_on, color: AppColors.accent),
                 const SizedBox(width: 8),
                 Text(
                   'Accesos rápidos',
@@ -37,20 +38,25 @@ class QuickActions extends StatelessWidget {
                   onTap: () => context.push(AppRoutes.animales),
                 ),
                 QuickActionButton(
-                  icon: Icons.favorite,
-                  label: 'Reproducción',
-                  onTap: () => context.push(AppRoutes.animales),
+                  icon: Icons.event_available,
+                  label: 'Nuevo evento',
+                  onTap: () => context.push(AppRoutes.eventos),
                 ),
                 QuickActionButton(
-                  icon: Icons.vaccines,
-                  label: 'Salud',
-                  onTap: () => context.push(AppRoutes.animales),
+                  icon: Icons.fmd_good,
+                  label: 'Ubicaciones',
+                  onTap: () => context.push(AppRoutes.ubicaciones),
+                ),
+                QuickActionButton(
+                  icon: Icons.groups,
+                  label: 'Gestionar lotes',
+                  onTap: () => context.push(AppRoutes.directorio),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              'Toca una opción y elige el animal en la lista para registrar.',
+              'Abre un módulo clave y continúa el flujo operativo sin navegar por múltiples pantallas.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),

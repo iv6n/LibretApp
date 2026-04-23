@@ -86,7 +86,6 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Stream<List<AnimalEntity>> watchAll() async* {
     final isar = await _isar;
-    await _seedIfEmpty(isar);
     yield* isar.isarAnimals
         .where()
         .watch(fireImmediately: true)
@@ -98,7 +97,6 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<List<AnimalEntity>> getAll() async {
     final isar = await _isar;
-    await _seedIfEmpty(isar);
     final records = await isar.isarAnimals.where().findAll();
     return records.map((e) => e.toEntity()).toList(growable: false);
   }

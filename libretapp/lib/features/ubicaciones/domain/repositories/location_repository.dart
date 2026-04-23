@@ -1,3 +1,4 @@
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 
@@ -16,4 +17,30 @@ abstract class LocationRepository {
   Future<void> addIrrigation(String uuid, IrrigationRecord record);
   Future<void> addRain(String uuid, RainRecord record);
   Future<void> addCost(String uuid, CostRecord record);
+
+  // Crop management
+  Future<void> addCrop(String locationUuid, CropRecord crop);
+  Future<void> updateCrop(String locationUuid, CropRecord crop);
+  Future<void> deleteCrop(String locationUuid, String cropUuid);
+  Future<void> addHarvest(
+    String locationUuid,
+    String cropUuid,
+    HarvestRecord record,
+  );
+  Future<void> addCropWatering(
+    String locationUuid,
+    String cropUuid,
+    CropWateringRecord record,
+  );
+  Future<void> addCropHealth(
+    String locationUuid,
+    String cropUuid,
+    CropHealthRecord record,
+  );
+  Future<void> addCropTask(String locationUuid, String cropUuid, CropTask task);
+  Future<void> completeCropTask(
+    String locationUuid,
+    String cropUuid,
+    String taskUuid,
+  );
 }

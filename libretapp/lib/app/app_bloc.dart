@@ -4,6 +4,8 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/features/eventos/data/eventos_repository.dart';
+import 'package:libretapp/features/eventos/data/eventos_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
 
 part 'app_event.dart';
@@ -24,6 +26,9 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   final Set<String> _supportedLanguageCodes;
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
+    await _purgeEventsOnce();
+    await _syncAutomaticReminders();
+
     // Ejecutar migración de lotes si es necesaria
     try {
       final migrationService = BatchMigrationService(
@@ -42,6 +47,44 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
     final languageCode = await _resolveInitialLanguage();
     emit(AppReady(languageCode: languageCode));
+  }
+
+  Future<void> _purgeEventsOnce() async {
+    final alreadyDone = _prefs.getBool(PrefsKeys.eventsInitialPurgeV1Done);
+    if (alreadyDone == true) return;
+
+    try {
+      final eventosRepository = locator<EventosRepository>();
+      await eventosRepository.clearAll();
+      await _prefs.setBool(PrefsKeys.eventsInitialPurgeV1Done, true);
+      LoggerService.i(
+        'Limpieza inicial de eventos aplicada (v1)',
+        tag: 'AppBloc',
+      );
+    } catch (e, st) {
+      LoggerService.e(
+        'Error al limpiar eventos iniciales: $e',
+        tag: 'AppBloc',
+        stackTrace: st,
+      );
+    }
+  }
+
+  Future<void> _syncAutomaticReminders() async {
+    try {
+      final syncService = locator<EventosReminderSyncService>();
+      final generated = await syncService.sync();
+      LoggerService.i(
+        'Recordatorios automáticos sincronizados: $generated',
+        tag: 'AppBloc',
+      );
+    } catch (e, st) {
+      LoggerService.e(
+        'Error al sincronizar recordatorios automáticos: $e',
+        tag: 'AppBloc',
+        stackTrace: st,
+      );
+    }
   }
 
   Future<void> _onLanguageChanged(

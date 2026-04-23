@@ -5,6 +5,7 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
+import 'package:libretapp/core/constants/ui_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
@@ -17,13 +18,13 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     on<ToggleSearch>(_onToggleSearch);
     on<SearchQueryChanged>(
       _onSearchQueryChanged,
-      transformer: _debounce(const Duration(milliseconds: 260)),
+      transformer: _debounce(UiConstants.searchDebounceDuration),
     );
     on<ClearSearch>(_onClearSearch);
     // Compatibility with older calls using SearchUbicaciones.
     on<SearchUbicaciones>(
       _onSearchUbicaciones,
-      transformer: _debounce(const Duration(milliseconds: 260)),
+      transformer: _debounce(UiConstants.searchDebounceDuration),
     );
     on<AddVisitRecordEvent>(_onAddVisit);
     on<AddWaterRecordEvent>(_onAddWater);
@@ -34,6 +35,14 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     on<AddIrrigationRecordEvent>(_onAddIrrigation);
     on<AddRainRecordEvent>(_onAddRain);
     on<AddCostRecordEvent>(_onAddCost);
+    on<AddCropEvent>(_onAddCrop);
+    on<UpdateCropEvent>(_onUpdateCrop);
+    on<DeleteCropEvent>(_onDeleteCrop);
+    on<AddHarvestRecordEvent>(_onAddHarvest);
+    on<AddCropWateringEvent>(_onAddCropWatering);
+    on<AddCropHealthEvent>(_onAddCropHealth);
+    on<AddCropTaskEvent>(_onAddCropTask);
+    on<CompleteCropTaskEvent>(_onCompleteCropTask);
   }
 
   final LocationRepository repository;
@@ -254,6 +263,106 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   ) async {
     await _wrapMutation(
       () => repository.addCost(event.uuid, event.record),
+      emit,
+    );
+  }
+
+  Future<void> _onAddCrop(
+    AddCropEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addCrop(event.locationUuid, event.crop),
+      emit,
+    );
+  }
+
+  Future<void> _onUpdateCrop(
+    UpdateCropEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.updateCrop(event.locationUuid, event.crop),
+      emit,
+    );
+  }
+
+  Future<void> _onDeleteCrop(
+    DeleteCropEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.deleteCrop(event.locationUuid, event.cropUuid),
+      emit,
+    );
+  }
+
+  Future<void> _onAddHarvest(
+    AddHarvestRecordEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addHarvest(
+        event.locationUuid,
+        event.cropUuid,
+        event.record,
+      ),
+      emit,
+    );
+  }
+
+  Future<void> _onAddCropWatering(
+    AddCropWateringEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addCropWatering(
+        event.locationUuid,
+        event.cropUuid,
+        event.record,
+      ),
+      emit,
+    );
+  }
+
+  Future<void> _onAddCropHealth(
+    AddCropHealthEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addCropHealth(
+        event.locationUuid,
+        event.cropUuid,
+        event.record,
+      ),
+      emit,
+    );
+  }
+
+  Future<void> _onAddCropTask(
+    AddCropTaskEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addCropTask(
+        event.locationUuid,
+        event.cropUuid,
+        event.task,
+      ),
+      emit,
+    );
+  }
+
+  Future<void> _onCompleteCropTask(
+    CompleteCropTaskEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.completeCropTask(
+        event.locationUuid,
+        event.cropUuid,
+        event.taskUuid,
+      ),
       emit,
     );
   }

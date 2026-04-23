@@ -1,126 +1,277 @@
+import 'dart:io';
+import 'dart:math' show max;
+import 'dart:ui' show lerpDouble;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
-class DetailHeader extends StatelessWidget {
-  const DetailHeader({super.key, required this.animal});
+// ── Constants ───────────────────────────────────────────────────────────
+const double _kExpandedHeight = 280.0;
+const double _kPhotoExpanded = 64.0;
+const double _kPhotoCollapsed = 34.0;
+const double _kRadiusExpanded = 18.0;
+const double _kNameExpandedFont = 18.0;
+const double _kNameCollapsedFont = 16.0;
+
+/// Collapsible header delegate used inside a [SliverAppBar.flexibleSpace].
+///
+/// Uses a single avatar+name widget that morphs position and size while
+/// collapsing, avoiding jumps between separate expanded/collapsed widgets.
+class CollapsibleAnimalHeader extends StatelessWidget {
+  const CollapsibleAnimalHeader({super.key, required this.animal});
 
   final AnimalEntity animal;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final color = detailStageColor(animal.lifeStage);
+    final stageColor = detailStageColor(animal.lifeStage);
     final riskColor = detailColorFromHex(animal.riskLevel.hexColor);
     final healthColor = detailColorFromHex(animal.healthStatus.hexColor);
     final asset = stageAsset(animal.lifeStage);
     final sexoSymbol = animal.sex == Sex.male ? '♂' : '♀';
+    final hasPhoto =
+        animal.profilePhoto != null && animal.profilePhoto!.isNotEmpty;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.85),
-            color.withValues(alpha: 0.65),
-          ],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(18),
-          bottomRight: Radius.circular(18),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, _) {
+        // Read the FlexibleSpaceBarSettings ancestor to derive collapse %.
+        final settings = context
+            .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+        final double t; // 0 = expanded, 1 = collapsed
+        if (settings != null) {
+          final deltaExtent = settings.maxExtent - settings.minExtent;
+          t = deltaExtent > 0
+              ? (1.0 -
+                        (settings.currentExtent - settings.minExtent) /
+                            deltaExtent)
+                    .clamp(0.0, 1.0)
+              : 0.0;
+        } else {
+          t = 0.0;
+        }
+
+        // ── Derived values ──────────────────────────────────────────────
+        final tPosition = Curves.easeInOutCubic.transform(t);
+        final tSize = Curves.easeOutCubic.transform(t);
+        final tFastFade = Curves.easeOut.transform((t / 0.45).clamp(0.0, 1.0));
+        final tSubtitleFade = Curves.easeOut.transform(
+          (t / 0.35).clamp(0.0, 1.0),
+        );
+        final tChipFade = Curves.easeOut.transform((t / 0.55).clamp(0.0, 1.0));
+
+        final safeTop = MediaQuery.paddingOf(context).top;
+        final photoSize = lerpDouble(_kPhotoExpanded, _kPhotoCollapsed, tSize)!;
+        final photoRadius = lerpDouble(_kRadiusExpanded, photoSize / 2, tSize)!;
+        final titleFontSize = lerpDouble(
+          _kNameExpandedFont,
+          _kNameCollapsedFont,
+          tSize,
+        )!;
+        final badgeOpacity = (1.0 - tFastFade).clamp(0.0, 1.0);
+        final subtitleOpacity = (1.0 - tSubtitleFade).clamp(0.0, 1.0);
+        final chipOpacity = (1.0 - tChipFade).clamp(0.0, 1.0);
+        final borderRadius = _kRadiusExpanded * (1.0 - t);
+
+        // Start under toolbar in expanded mode, end next to back arrow.
+        final startX = 16.0;
+        final endX = 72.0;
+        final startY = safeTop + kToolbarHeight + 8;
+        final endY = safeTop + (kToolbarHeight - photoSize) / 2;
+        final rowX = lerpDouble(startX, endX, tPosition)!;
+        final rowY = lerpDouble(startY, endY, tPosition)!;
+        final rowRight = lerpDouble(16.0, 120.0, tPosition)!;
+
+        // ── Gradient background ─────────────────────────────────────────
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [stageColor, stageColor.withValues(alpha: 0.85)],
+            ),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(borderRadius),
+              bottomRight: Radius.circular(borderRadius),
+            ),
+          ),
+          child: Stack(
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    asset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Icon(Icons.pets, size: 30, color: color),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Positioned(
+                left: rowX,
+                right: rowRight,
+                top: rowY,
+                child: Row(
                   children: [
-                    Text(
-                      animal.visualId ?? l10n.valueNotAssigned,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                    _AnimalPhoto(
+                      size: photoSize,
+                      radius: photoRadius,
+                      stageColor: stageColor,
+                      asset: asset,
+                      hasPhoto: hasPhoto,
+                      photoPath: animal.profilePhoto,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            animal.visualId ?? l10n.valueNotAssigned,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: titleFontSize,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (subtitleOpacity > 0) ...[
+                            SizedBox(height: 3 * subtitleOpacity),
+                            Opacity(
+                              opacity: subtitleOpacity,
+                              child: Text(
+                                '${l10n.labelEarTag} ${animal.earTagNumber}  ·  ${animal.lifeStage.displayName}',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${l10n.labelEarTag} ${animal.earTagNumber}  ·  ${animal.lifeStage.displayName}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                    if (chipOpacity > 0) ...[
+                      const SizedBox(width: 6),
+                      Opacity(
+                        opacity: chipOpacity,
+                        child: BadgeChip(
+                          label: '${animal.sex.displayName} $sexoSymbol',
+                          color: Colors.white,
+                          textColor: stageColor,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
-              BadgeChip(
-                label: '${animal.sex.displayName} $sexoSymbol',
-                color: Colors.white,
-                textColor: color,
-              ),
+              if (badgeOpacity > 0)
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  top: safeTop + kToolbarHeight + _kPhotoExpanded + 26,
+                  child: Opacity(
+                    opacity: badgeOpacity,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        BadgeChip(
+                          label:
+                              '${l10n.animalHealth}: ${animal.healthStatus.displayName}',
+                          color: Colors.white.withValues(alpha: 0.14),
+                          textColor: Colors.white,
+                          borderColor: healthColor,
+                        ),
+                        BadgeChip(
+                          label: l10n.animalRisk(animal.riskLevel.displayName),
+                          color: Colors.white.withValues(alpha: 0.14),
+                          textColor: Colors.white,
+                          borderColor: riskColor,
+                        ),
+                        if (animal.requiresAttention)
+                          BadgeChip(
+                            label: l10n.animalRequiresAttention,
+                            color: Colors.red.withValues(alpha: 0.14),
+                            textColor: Colors.white,
+                            borderColor: Colors.red,
+                          ),
+                        if (animal.underObservation)
+                          BadgeChip(
+                            label: l10n.animalUnderObservation,
+                            color: Colors.orange.withValues(alpha: 0.14),
+                            textColor: Colors.white,
+                            borderColor: Colors.orange,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              BadgeChip(
-                label:
-                    '${l10n.animalHealth}: ${animal.healthStatus.displayName}',
-                color: Colors.white.withValues(alpha: 0.14),
-                textColor: Colors.white,
-                borderColor: healthColor,
-              ),
-              BadgeChip(
-                label: l10n.animalRisk(animal.riskLevel.displayName),
-                color: Colors.white.withValues(alpha: 0.14),
-                textColor: Colors.white,
-                borderColor: riskColor,
-              ),
-              if (animal.requiresAttention)
-                BadgeChip(
-                  label: l10n.animalRequiresAttention,
-                  color: Colors.red.withValues(alpha: 0.14),
-                  textColor: Colors.white,
-                  borderColor: Colors.red,
-                ),
-              if (animal.underObservation)
-                BadgeChip(
-                  label: l10n.animalUnderObservation,
-                  color: Colors.orange.withValues(alpha: 0.14),
-                  textColor: Colors.white,
-                  borderColor: Colors.orange,
-                ),
-            ],
+        );
+      },
+    );
+  }
+}
+
+/// The expanded height the [SliverAppBar] should use.
+double get animalHeaderExpandedHeight => _kExpandedHeight;
+
+// ── Private helpers ─────────────────────────────────────────────────────
+
+class _AnimalPhoto extends StatelessWidget {
+  const _AnimalPhoto({
+    required this.size,
+    required this.radius,
+    required this.stageColor,
+    required this.asset,
+    required this.hasPhoto,
+    this.photoPath,
+  });
+
+  final double size;
+  final double radius;
+  final Color stageColor;
+  final String asset;
+  final bool hasPhoto;
+  final String? photoPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(max(0, radius - 2)),
+        child: hasPhoto
+            ? Image.file(
+                File(photoPath!),
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => _assetFallback(),
+              )
+            : _assetFallback(),
+      ),
+    );
+  }
+
+  Widget _assetFallback() {
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      errorBuilder: (c, e, s) =>
+          Icon(Icons.pets, size: size * 0.45, color: stageColor),
     );
   }
 }

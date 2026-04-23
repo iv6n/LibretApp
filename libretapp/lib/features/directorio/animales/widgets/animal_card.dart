@@ -445,7 +445,7 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tonedColor = _mutedColor(color, strength: 0.34);
     final bool isGreenTone =
-        tonedColor.green > tonedColor.red && tonedColor.green > tonedColor.blue;
+        tonedColor.g > tonedColor.r && tonedColor.g > tonedColor.b;
     final bool useStrongBg = emphasizeGreen && isGreenTone;
     final Color strongTone = Color.alphaBlend(
       Colors.black.withValues(alpha: 0.2),

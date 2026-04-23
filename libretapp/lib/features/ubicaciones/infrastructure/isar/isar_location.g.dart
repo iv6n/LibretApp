@@ -39,100 +39,106 @@ const IsarLocationSchema = CollectionSchema(
       type: IsarType.objectList,
       target: r'IsarLocationCostRecord',
     ),
-    r'irrigations': PropertySchema(
+    r'crops': PropertySchema(
       id: 4,
+      name: r'crops',
+      type: IsarType.objectList,
+      target: r'IsarCropRecord',
+    ),
+    r'irrigations': PropertySchema(
+      id: 5,
       name: r'irrigations',
       type: IsarType.objectList,
       target: r'IsarIrrigationRecord',
     ),
     r'kind': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'kind',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
     r'parentUuid': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'parentUuid',
       type: IsarType.string,
     ),
     r'pastures': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'pastures',
       type: IsarType.objectList,
       target: r'IsarPastureRecord',
     ),
     r'rains': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'rains',
       type: IsarType.objectList,
       target: r'IsarRainRecord',
     ),
     r'salts': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'salts',
       type: IsarType.objectList,
       target: r'IsarSaltRecord',
     ),
     r'seedings': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'seedings',
       type: IsarType.objectList,
       target: r'IsarSeedingRecord',
     ),
     r'shades': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'shades',
       type: IsarType.objectList,
       target: r'IsarShadeRecord',
     ),
     r'status': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'status',
       type: IsarType.string,
     ),
     r'surfaceArea': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'surfaceArea',
       type: IsarType.double,
     ),
     r'templateUuid': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'templateUuid',
       type: IsarType.string,
     ),
     r'terrainType': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'terrainType',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'type',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'visits': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'visits',
       type: IsarType.objectList,
       target: r'IsarVisitRecord',
     ),
     r'waterSource': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'waterSource',
       type: IsarType.string,
     ),
     r'waters': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'waters',
       type: IsarType.objectList,
       target: r'IsarWaterRecord',
@@ -169,7 +175,12 @@ const IsarLocationSchema = CollectionSchema(
     r'IsarSeedingRecord': IsarSeedingRecordSchema,
     r'IsarIrrigationRecord': IsarIrrigationRecordSchema,
     r'IsarRainRecord': IsarRainRecordSchema,
-    r'IsarLocationCostRecord': IsarLocationCostRecordSchema
+    r'IsarLocationCostRecord': IsarLocationCostRecordSchema,
+    r'IsarCropRecord': IsarCropRecordSchema,
+    r'IsarHarvestRecord': IsarHarvestRecordSchema,
+    r'IsarCropWateringRecord': IsarCropWateringRecordSchema,
+    r'IsarCropHealthRecord': IsarCropHealthRecordSchema,
+    r'IsarCropTask': IsarCropTaskSchema
   },
   getId: _isarLocationGetId,
   getLinks: _isarLocationGetLinks,
@@ -206,6 +217,15 @@ int _isarLocationEstimateSize(
       final value = object.costs[i];
       bytesCount +=
           IsarLocationCostRecordSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.crops.length * 3;
+  {
+    final offsets = allOffsets[IsarCropRecord]!;
+    for (var i = 0; i < object.crops.length; i++) {
+      final value = object.crops[i];
+      bytesCount +=
+          IsarCropRecordSchema.estimateSize(value, offsets, allOffsets);
     }
   }
   bytesCount += 3 + object.irrigations.length * 3;
@@ -322,60 +342,66 @@ void _isarLocationSerialize(
     IsarLocationCostRecordSchema.serialize,
     object.costs,
   );
-  writer.writeObjectList<IsarIrrigationRecord>(
+  writer.writeObjectList<IsarCropRecord>(
     offsets[4],
+    allOffsets,
+    IsarCropRecordSchema.serialize,
+    object.crops,
+  );
+  writer.writeObjectList<IsarIrrigationRecord>(
+    offsets[5],
     allOffsets,
     IsarIrrigationRecordSchema.serialize,
     object.irrigations,
   );
-  writer.writeString(offsets[5], object.kind);
-  writer.writeString(offsets[6], object.name);
-  writer.writeString(offsets[7], object.parentUuid);
+  writer.writeString(offsets[6], object.kind);
+  writer.writeString(offsets[7], object.name);
+  writer.writeString(offsets[8], object.parentUuid);
   writer.writeObjectList<IsarPastureRecord>(
-    offsets[8],
+    offsets[9],
     allOffsets,
     IsarPastureRecordSchema.serialize,
     object.pastures,
   );
   writer.writeObjectList<IsarRainRecord>(
-    offsets[9],
+    offsets[10],
     allOffsets,
     IsarRainRecordSchema.serialize,
     object.rains,
   );
   writer.writeObjectList<IsarSaltRecord>(
-    offsets[10],
+    offsets[11],
     allOffsets,
     IsarSaltRecordSchema.serialize,
     object.salts,
   );
   writer.writeObjectList<IsarSeedingRecord>(
-    offsets[11],
+    offsets[12],
     allOffsets,
     IsarSeedingRecordSchema.serialize,
     object.seedings,
   );
   writer.writeObjectList<IsarShadeRecord>(
-    offsets[12],
+    offsets[13],
     allOffsets,
     IsarShadeRecordSchema.serialize,
     object.shades,
   );
-  writer.writeString(offsets[13], object.status);
-  writer.writeDouble(offsets[14], object.surfaceArea);
-  writer.writeString(offsets[15], object.templateUuid);
-  writer.writeString(offsets[16], object.terrainType);
-  writer.writeString(offsets[17], object.type);
-  writer.writeString(offsets[18], object.uuid);
+  writer.writeString(offsets[14], object.status);
+  writer.writeDouble(offsets[15], object.surfaceArea);
+  writer.writeString(offsets[16], object.templateUuid);
+  writer.writeString(offsets[17], object.terrainType);
+  writer.writeString(offsets[18], object.type);
+  writer.writeString(offsets[19], object.uuid);
   writer.writeObjectList<IsarVisitRecord>(
-    offsets[19],
+    offsets[20],
     allOffsets,
     IsarVisitRecordSchema.serialize,
     object.visits,
   );
-  writer.writeString(offsets[20], object.waterSource);
+  writer.writeString(offsets[21], object.waterSource);
   writer.writeObjectList<IsarWaterRecord>(
-    offsets[21],
+    offsets[22],
     allOffsets,
     IsarWaterRecordSchema.serialize,
     object.waters,
@@ -405,68 +431,75 @@ IsarLocation _isarLocationDeserialize(
         IsarLocationCostRecord(),
       ) ??
       [];
+  object.crops = reader.readObjectList<IsarCropRecord>(
+        offsets[4],
+        IsarCropRecordSchema.deserialize,
+        allOffsets,
+        IsarCropRecord(),
+      ) ??
+      [];
   object.id = id;
   object.irrigations = reader.readObjectList<IsarIrrigationRecord>(
-        offsets[4],
+        offsets[5],
         IsarIrrigationRecordSchema.deserialize,
         allOffsets,
         IsarIrrigationRecord(),
       ) ??
       [];
-  object.kind = reader.readString(offsets[5]);
-  object.name = reader.readString(offsets[6]);
-  object.parentUuid = reader.readStringOrNull(offsets[7]);
+  object.kind = reader.readString(offsets[6]);
+  object.name = reader.readString(offsets[7]);
+  object.parentUuid = reader.readStringOrNull(offsets[8]);
   object.pastures = reader.readObjectList<IsarPastureRecord>(
-        offsets[8],
+        offsets[9],
         IsarPastureRecordSchema.deserialize,
         allOffsets,
         IsarPastureRecord(),
       ) ??
       [];
   object.rains = reader.readObjectList<IsarRainRecord>(
-        offsets[9],
+        offsets[10],
         IsarRainRecordSchema.deserialize,
         allOffsets,
         IsarRainRecord(),
       ) ??
       [];
   object.salts = reader.readObjectList<IsarSaltRecord>(
-        offsets[10],
+        offsets[11],
         IsarSaltRecordSchema.deserialize,
         allOffsets,
         IsarSaltRecord(),
       ) ??
       [];
   object.seedings = reader.readObjectList<IsarSeedingRecord>(
-        offsets[11],
+        offsets[12],
         IsarSeedingRecordSchema.deserialize,
         allOffsets,
         IsarSeedingRecord(),
       ) ??
       [];
   object.shades = reader.readObjectList<IsarShadeRecord>(
-        offsets[12],
+        offsets[13],
         IsarShadeRecordSchema.deserialize,
         allOffsets,
         IsarShadeRecord(),
       ) ??
       [];
-  object.status = reader.readString(offsets[13]);
-  object.surfaceArea = reader.readDouble(offsets[14]);
-  object.templateUuid = reader.readStringOrNull(offsets[15]);
-  object.terrainType = reader.readString(offsets[16]);
-  object.type = reader.readString(offsets[17]);
-  object.uuid = reader.readString(offsets[18]);
+  object.status = reader.readString(offsets[14]);
+  object.surfaceArea = reader.readDouble(offsets[15]);
+  object.templateUuid = reader.readStringOrNull(offsets[16]);
+  object.terrainType = reader.readString(offsets[17]);
+  object.type = reader.readString(offsets[18]);
+  object.uuid = reader.readString(offsets[19]);
   object.visits = reader.readObjectList<IsarVisitRecord>(
-        offsets[19],
+        offsets[20],
         IsarVisitRecordSchema.deserialize,
         allOffsets,
         IsarVisitRecord(),
       ) ??
       [];
-  object.waterSource = reader.readString(offsets[20]);
+  object.waterSource = reader.readString(offsets[21]);
   object.waters = reader.readObjectList<IsarWaterRecord>(
-        offsets[21],
+        offsets[22],
         IsarWaterRecordSchema.deserialize,
         allOffsets,
         IsarWaterRecord(),
@@ -503,6 +536,14 @@ P _isarLocationDeserializeProp<P>(
           ) ??
           []) as P;
     case 4:
+      return (reader.readObjectList<IsarCropRecord>(
+            offset,
+            IsarCropRecordSchema.deserialize,
+            allOffsets,
+            IsarCropRecord(),
+          ) ??
+          []) as P;
+    case 5:
       return (reader.readObjectList<IsarIrrigationRecord>(
             offset,
             IsarIrrigationRecordSchema.deserialize,
@@ -510,13 +551,13 @@ P _isarLocationDeserializeProp<P>(
             IsarIrrigationRecord(),
           ) ??
           []) as P;
-    case 5:
-      return (reader.readString(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
+      return (reader.readStringOrNull(offset)) as P;
+    case 9:
       return (reader.readObjectList<IsarPastureRecord>(
             offset,
             IsarPastureRecordSchema.deserialize,
@@ -524,7 +565,7 @@ P _isarLocationDeserializeProp<P>(
             IsarPastureRecord(),
           ) ??
           []) as P;
-    case 9:
+    case 10:
       return (reader.readObjectList<IsarRainRecord>(
             offset,
             IsarRainRecordSchema.deserialize,
@@ -532,7 +573,7 @@ P _isarLocationDeserializeProp<P>(
             IsarRainRecord(),
           ) ??
           []) as P;
-    case 10:
+    case 11:
       return (reader.readObjectList<IsarSaltRecord>(
             offset,
             IsarSaltRecordSchema.deserialize,
@@ -540,7 +581,7 @@ P _isarLocationDeserializeProp<P>(
             IsarSaltRecord(),
           ) ??
           []) as P;
-    case 11:
+    case 12:
       return (reader.readObjectList<IsarSeedingRecord>(
             offset,
             IsarSeedingRecordSchema.deserialize,
@@ -548,7 +589,7 @@ P _isarLocationDeserializeProp<P>(
             IsarSeedingRecord(),
           ) ??
           []) as P;
-    case 12:
+    case 13:
       return (reader.readObjectList<IsarShadeRecord>(
             offset,
             IsarShadeRecordSchema.deserialize,
@@ -556,19 +597,19 @@ P _isarLocationDeserializeProp<P>(
             IsarShadeRecord(),
           ) ??
           []) as P;
-    case 13:
-      return (reader.readString(offset)) as P;
     case 14:
-      return (reader.readDouble(offset)) as P;
-    case 15:
-      return (reader.readStringOrNull(offset)) as P;
-    case 16:
       return (reader.readString(offset)) as P;
+    case 15:
+      return (reader.readDouble(offset)) as P;
+    case 16:
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
       return (reader.readString(offset)) as P;
     case 19:
+      return (reader.readString(offset)) as P;
+    case 20:
       return (reader.readObjectList<IsarVisitRecord>(
             offset,
             IsarVisitRecordSchema.deserialize,
@@ -576,9 +617,9 @@ P _isarLocationDeserializeProp<P>(
             IsarVisitRecord(),
           ) ??
           []) as P;
-    case 20:
-      return (reader.readString(offset)) as P;
     case 21:
+      return (reader.readString(offset)) as P;
+    case 22:
       return (reader.readObjectList<IsarWaterRecord>(
             offset,
             IsarWaterRecordSchema.deserialize,
@@ -1236,6 +1277,95 @@ extension IsarLocationQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.listLength(
         r'costs',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
+      cropsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'crops',
         lower,
         includeLower,
         upper,
@@ -3343,6 +3473,13 @@ extension IsarLocationQueryObject
     });
   }
 
+  QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition> cropsElement(
+      FilterQuery<IsarCropRecord> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'crops');
+    });
+  }
+
   QueryBuilder<IsarLocation, IsarLocation, QAfterFilterCondition>
       irrigationsElement(FilterQuery<IsarIrrigationRecord> q) {
     return QueryBuilder.apply(this, (query) {
@@ -3811,6 +3948,13 @@ extension IsarLocationQueryProperty
       costsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'costs');
+    });
+  }
+
+  QueryBuilder<IsarLocation, List<IsarCropRecord>, QQueryOperations>
+      cropsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'crops');
     });
   }
 
@@ -9235,3 +9379,4147 @@ extension IsarLocationCostRecordQueryFilter on QueryBuilder<
 
 extension IsarLocationCostRecordQueryObject on QueryBuilder<
     IsarLocationCostRecord, IsarLocationCostRecord, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarHarvestRecordSchema = Schema(
+  name: r'IsarHarvestRecord',
+  id: -2819452623243949075,
+  properties: {
+    r'date': PropertySchema(
+      id: 0,
+      name: r'date',
+      type: IsarType.dateTime,
+    ),
+    r'notes': PropertySchema(
+      id: 1,
+      name: r'notes',
+      type: IsarType.string,
+    ),
+    r'qualityRating': PropertySchema(
+      id: 2,
+      name: r'qualityRating',
+      type: IsarType.long,
+    ),
+    r'yieldKg': PropertySchema(
+      id: 3,
+      name: r'yieldKg',
+      type: IsarType.double,
+    )
+  },
+  estimateSize: _isarHarvestRecordEstimateSize,
+  serialize: _isarHarvestRecordSerialize,
+  deserialize: _isarHarvestRecordDeserialize,
+  deserializeProp: _isarHarvestRecordDeserializeProp,
+);
+
+int _isarHarvestRecordEstimateSize(
+  IsarHarvestRecord object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  return bytesCount;
+}
+
+void _isarHarvestRecordSerialize(
+  IsarHarvestRecord object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDateTime(offsets[0], object.date);
+  writer.writeString(offsets[1], object.notes);
+  writer.writeLong(offsets[2], object.qualityRating);
+  writer.writeDouble(offsets[3], object.yieldKg);
+}
+
+IsarHarvestRecord _isarHarvestRecordDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarHarvestRecord();
+  object.date = reader.readDateTime(offsets[0]);
+  object.notes = reader.readStringOrNull(offsets[1]);
+  object.qualityRating = reader.readLong(offsets[2]);
+  object.yieldKg = reader.readDouble(offsets[3]);
+  return object;
+}
+
+P _isarHarvestRecordDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDateTime(offset)) as P;
+    case 1:
+      return (reader.readStringOrNull(offset)) as P;
+    case 2:
+      return (reader.readLong(offset)) as P;
+    case 3:
+      return (reader.readDouble(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarHarvestRecordQueryFilter
+    on QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QFilterCondition> {
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      dateEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      dateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      dateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      dateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'date',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      qualityRatingEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'qualityRating',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      qualityRatingGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'qualityRating',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      qualityRatingLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'qualityRating',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      qualityRatingBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'qualityRating',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      yieldKgEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'yieldKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      yieldKgGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'yieldKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      yieldKgLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'yieldKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QAfterFilterCondition>
+      yieldKgBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'yieldKg',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+}
+
+extension IsarHarvestRecordQueryObject
+    on QueryBuilder<IsarHarvestRecord, IsarHarvestRecord, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarCropWateringRecordSchema = Schema(
+  name: r'IsarCropWateringRecord',
+  id: -6371652591961779063,
+  properties: {
+    r'amountLiters': PropertySchema(
+      id: 0,
+      name: r'amountLiters',
+      type: IsarType.double,
+    ),
+    r'date': PropertySchema(
+      id: 1,
+      name: r'date',
+      type: IsarType.dateTime,
+    ),
+    r'method': PropertySchema(
+      id: 2,
+      name: r'method',
+      type: IsarType.string,
+    ),
+    r'notes': PropertySchema(
+      id: 3,
+      name: r'notes',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _isarCropWateringRecordEstimateSize,
+  serialize: _isarCropWateringRecordSerialize,
+  deserialize: _isarCropWateringRecordDeserialize,
+  deserializeProp: _isarCropWateringRecordDeserializeProp,
+);
+
+int _isarCropWateringRecordEstimateSize(
+  IsarCropWateringRecord object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.method.length * 3;
+  {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  return bytesCount;
+}
+
+void _isarCropWateringRecordSerialize(
+  IsarCropWateringRecord object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDouble(offsets[0], object.amountLiters);
+  writer.writeDateTime(offsets[1], object.date);
+  writer.writeString(offsets[2], object.method);
+  writer.writeString(offsets[3], object.notes);
+}
+
+IsarCropWateringRecord _isarCropWateringRecordDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarCropWateringRecord();
+  object.amountLiters = reader.readDouble(offsets[0]);
+  object.date = reader.readDateTime(offsets[1]);
+  object.method = reader.readString(offsets[2]);
+  object.notes = reader.readStringOrNull(offsets[3]);
+  return object;
+}
+
+P _isarCropWateringRecordDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDouble(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarCropWateringRecordQueryFilter on QueryBuilder<
+    IsarCropWateringRecord, IsarCropWateringRecord, QFilterCondition> {
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> amountLitersEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'amountLiters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> amountLitersGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'amountLiters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> amountLitersLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'amountLiters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> amountLitersBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'amountLiters',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> dateEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> dateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> dateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> dateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'date',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'method',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+          QAfterFilterCondition>
+      methodContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'method',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+          QAfterFilterCondition>
+      methodMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'method',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'method',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> methodIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'method',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+          QAfterFilterCondition>
+      notesContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+          QAfterFilterCondition>
+      notesMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropWateringRecord, IsarCropWateringRecord,
+      QAfterFilterCondition> notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension IsarCropWateringRecordQueryObject on QueryBuilder<
+    IsarCropWateringRecord, IsarCropWateringRecord, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarCropHealthRecordSchema = Schema(
+  name: r'IsarCropHealthRecord',
+  id: 8748027585962574527,
+  properties: {
+    r'date': PropertySchema(
+      id: 0,
+      name: r'date',
+      type: IsarType.dateTime,
+    ),
+    r'issue': PropertySchema(
+      id: 1,
+      name: r'issue',
+      type: IsarType.string,
+    ),
+    r'notes': PropertySchema(
+      id: 2,
+      name: r'notes',
+      type: IsarType.string,
+    ),
+    r'severity': PropertySchema(
+      id: 3,
+      name: r'severity',
+      type: IsarType.string,
+    ),
+    r'treatment': PropertySchema(
+      id: 4,
+      name: r'treatment',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _isarCropHealthRecordEstimateSize,
+  serialize: _isarCropHealthRecordSerialize,
+  deserialize: _isarCropHealthRecordDeserialize,
+  deserializeProp: _isarCropHealthRecordDeserializeProp,
+);
+
+int _isarCropHealthRecordEstimateSize(
+  IsarCropHealthRecord object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.issue.length * 3;
+  {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.severity.length * 3;
+  bytesCount += 3 + object.treatment.length * 3;
+  return bytesCount;
+}
+
+void _isarCropHealthRecordSerialize(
+  IsarCropHealthRecord object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDateTime(offsets[0], object.date);
+  writer.writeString(offsets[1], object.issue);
+  writer.writeString(offsets[2], object.notes);
+  writer.writeString(offsets[3], object.severity);
+  writer.writeString(offsets[4], object.treatment);
+}
+
+IsarCropHealthRecord _isarCropHealthRecordDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarCropHealthRecord();
+  object.date = reader.readDateTime(offsets[0]);
+  object.issue = reader.readString(offsets[1]);
+  object.notes = reader.readStringOrNull(offsets[2]);
+  object.severity = reader.readString(offsets[3]);
+  object.treatment = reader.readString(offsets[4]);
+  return object;
+}
+
+P _isarCropHealthRecordDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDateTime(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarCropHealthRecordQueryFilter on QueryBuilder<IsarCropHealthRecord,
+    IsarCropHealthRecord, QFilterCondition> {
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> dateEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> dateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> dateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> dateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'date',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'issue',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      issueContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'issue',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      issueMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'issue',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'issue',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> issueIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'issue',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      notesContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      notesMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'severity',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      severityContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'severity',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      severityMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'severity',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'severity',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> severityIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'severity',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'treatment',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      treatmentContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'treatment',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+          QAfterFilterCondition>
+      treatmentMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'treatment',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'treatment',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropHealthRecord, IsarCropHealthRecord,
+      QAfterFilterCondition> treatmentIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'treatment',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension IsarCropHealthRecordQueryObject on QueryBuilder<IsarCropHealthRecord,
+    IsarCropHealthRecord, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarCropTaskSchema = Schema(
+  name: r'IsarCropTask',
+  id: 4913124924029002277,
+  properties: {
+    r'completed': PropertySchema(
+      id: 0,
+      name: r'completed',
+      type: IsarType.bool,
+    ),
+    r'dueDate': PropertySchema(
+      id: 1,
+      name: r'dueDate',
+      type: IsarType.dateTime,
+    ),
+    r'notes': PropertySchema(
+      id: 2,
+      name: r'notes',
+      type: IsarType.string,
+    ),
+    r'type': PropertySchema(
+      id: 3,
+      name: r'type',
+      type: IsarType.string,
+    ),
+    r'uuid': PropertySchema(
+      id: 4,
+      name: r'uuid',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _isarCropTaskEstimateSize,
+  serialize: _isarCropTaskSerialize,
+  deserialize: _isarCropTaskDeserialize,
+  deserializeProp: _isarCropTaskDeserializeProp,
+);
+
+int _isarCropTaskEstimateSize(
+  IsarCropTask object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.type.length * 3;
+  bytesCount += 3 + object.uuid.length * 3;
+  return bytesCount;
+}
+
+void _isarCropTaskSerialize(
+  IsarCropTask object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeBool(offsets[0], object.completed);
+  writer.writeDateTime(offsets[1], object.dueDate);
+  writer.writeString(offsets[2], object.notes);
+  writer.writeString(offsets[3], object.type);
+  writer.writeString(offsets[4], object.uuid);
+}
+
+IsarCropTask _isarCropTaskDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarCropTask();
+  object.completed = reader.readBool(offsets[0]);
+  object.dueDate = reader.readDateTime(offsets[1]);
+  object.notes = reader.readStringOrNull(offsets[2]);
+  object.type = reader.readString(offsets[3]);
+  object.uuid = reader.readString(offsets[4]);
+  return object;
+}
+
+P _isarCropTaskDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readBool(offset)) as P;
+    case 1:
+      return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarCropTaskQueryFilter
+    on QueryBuilder<IsarCropTask, IsarCropTask, QFilterCondition> {
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      completedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'completed',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      dueDateEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dueDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      dueDateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dueDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      dueDateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dueDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      dueDateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dueDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> notesMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      typeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'type',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      typeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> typeMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'type',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      typeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      typeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'type',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      uuidGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      uuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition> uuidMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'uuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      uuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropTask, IsarCropTask, QAfterFilterCondition>
+      uuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
+}
+
+extension IsarCropTaskQueryObject
+    on QueryBuilder<IsarCropTask, IsarCropTask, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const IsarCropRecordSchema = Schema(
+  name: r'IsarCropRecord',
+  id: 967913043555112612,
+  properties: {
+    r'cropName': PropertySchema(
+      id: 0,
+      name: r'cropName',
+      type: IsarType.string,
+    ),
+    r'expectedHarvestDate': PropertySchema(
+      id: 1,
+      name: r'expectedHarvestDate',
+      type: IsarType.dateTime,
+    ),
+    r'growthStage': PropertySchema(
+      id: 2,
+      name: r'growthStage',
+      type: IsarType.string,
+    ),
+    r'harvests': PropertySchema(
+      id: 3,
+      name: r'harvests',
+      type: IsarType.objectList,
+      target: r'IsarHarvestRecord',
+    ),
+    r'healthRecords': PropertySchema(
+      id: 4,
+      name: r'healthRecords',
+      type: IsarType.objectList,
+      target: r'IsarCropHealthRecord',
+    ),
+    r'lastWateredDate': PropertySchema(
+      id: 5,
+      name: r'lastWateredDate',
+      type: IsarType.dateTime,
+    ),
+    r'notes': PropertySchema(
+      id: 6,
+      name: r'notes',
+      type: IsarType.string,
+    ),
+    r'plantingDate': PropertySchema(
+      id: 7,
+      name: r'plantingDate',
+      type: IsarType.dateTime,
+    ),
+    r'status': PropertySchema(
+      id: 8,
+      name: r'status',
+      type: IsarType.string,
+    ),
+    r'surface': PropertySchema(
+      id: 9,
+      name: r'surface',
+      type: IsarType.double,
+    ),
+    r'tasks': PropertySchema(
+      id: 10,
+      name: r'tasks',
+      type: IsarType.objectList,
+      target: r'IsarCropTask',
+    ),
+    r'uuid': PropertySchema(
+      id: 11,
+      name: r'uuid',
+      type: IsarType.string,
+    ),
+    r'variety': PropertySchema(
+      id: 12,
+      name: r'variety',
+      type: IsarType.string,
+    ),
+    r'wateringFrequencyDays': PropertySchema(
+      id: 13,
+      name: r'wateringFrequencyDays',
+      type: IsarType.long,
+    ),
+    r'waterings': PropertySchema(
+      id: 14,
+      name: r'waterings',
+      type: IsarType.objectList,
+      target: r'IsarCropWateringRecord',
+    )
+  },
+  estimateSize: _isarCropRecordEstimateSize,
+  serialize: _isarCropRecordSerialize,
+  deserialize: _isarCropRecordDeserialize,
+  deserializeProp: _isarCropRecordDeserializeProp,
+);
+
+int _isarCropRecordEstimateSize(
+  IsarCropRecord object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.cropName.length * 3;
+  bytesCount += 3 + object.growthStage.length * 3;
+  bytesCount += 3 + object.harvests.length * 3;
+  {
+    final offsets = allOffsets[IsarHarvestRecord]!;
+    for (var i = 0; i < object.harvests.length; i++) {
+      final value = object.harvests[i];
+      bytesCount +=
+          IsarHarvestRecordSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.healthRecords.length * 3;
+  {
+    final offsets = allOffsets[IsarCropHealthRecord]!;
+    for (var i = 0; i < object.healthRecords.length; i++) {
+      final value = object.healthRecords[i];
+      bytesCount +=
+          IsarCropHealthRecordSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  {
+    final value = object.notes;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  bytesCount += 3 + object.status.length * 3;
+  bytesCount += 3 + object.tasks.length * 3;
+  {
+    final offsets = allOffsets[IsarCropTask]!;
+    for (var i = 0; i < object.tasks.length; i++) {
+      final value = object.tasks[i];
+      bytesCount += IsarCropTaskSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  bytesCount += 3 + object.uuid.length * 3;
+  bytesCount += 3 + object.variety.length * 3;
+  bytesCount += 3 + object.waterings.length * 3;
+  {
+    final offsets = allOffsets[IsarCropWateringRecord]!;
+    for (var i = 0; i < object.waterings.length; i++) {
+      final value = object.waterings[i];
+      bytesCount +=
+          IsarCropWateringRecordSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
+  return bytesCount;
+}
+
+void _isarCropRecordSerialize(
+  IsarCropRecord object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeString(offsets[0], object.cropName);
+  writer.writeDateTime(offsets[1], object.expectedHarvestDate);
+  writer.writeString(offsets[2], object.growthStage);
+  writer.writeObjectList<IsarHarvestRecord>(
+    offsets[3],
+    allOffsets,
+    IsarHarvestRecordSchema.serialize,
+    object.harvests,
+  );
+  writer.writeObjectList<IsarCropHealthRecord>(
+    offsets[4],
+    allOffsets,
+    IsarCropHealthRecordSchema.serialize,
+    object.healthRecords,
+  );
+  writer.writeDateTime(offsets[5], object.lastWateredDate);
+  writer.writeString(offsets[6], object.notes);
+  writer.writeDateTime(offsets[7], object.plantingDate);
+  writer.writeString(offsets[8], object.status);
+  writer.writeDouble(offsets[9], object.surface);
+  writer.writeObjectList<IsarCropTask>(
+    offsets[10],
+    allOffsets,
+    IsarCropTaskSchema.serialize,
+    object.tasks,
+  );
+  writer.writeString(offsets[11], object.uuid);
+  writer.writeString(offsets[12], object.variety);
+  writer.writeLong(offsets[13], object.wateringFrequencyDays);
+  writer.writeObjectList<IsarCropWateringRecord>(
+    offsets[14],
+    allOffsets,
+    IsarCropWateringRecordSchema.serialize,
+    object.waterings,
+  );
+}
+
+IsarCropRecord _isarCropRecordDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = IsarCropRecord();
+  object.cropName = reader.readString(offsets[0]);
+  object.expectedHarvestDate = reader.readDateTimeOrNull(offsets[1]);
+  object.growthStage = reader.readString(offsets[2]);
+  object.harvests = reader.readObjectList<IsarHarvestRecord>(
+        offsets[3],
+        IsarHarvestRecordSchema.deserialize,
+        allOffsets,
+        IsarHarvestRecord(),
+      ) ??
+      [];
+  object.healthRecords = reader.readObjectList<IsarCropHealthRecord>(
+        offsets[4],
+        IsarCropHealthRecordSchema.deserialize,
+        allOffsets,
+        IsarCropHealthRecord(),
+      ) ??
+      [];
+  object.lastWateredDate = reader.readDateTimeOrNull(offsets[5]);
+  object.notes = reader.readStringOrNull(offsets[6]);
+  object.plantingDate = reader.readDateTime(offsets[7]);
+  object.status = reader.readString(offsets[8]);
+  object.surface = reader.readDouble(offsets[9]);
+  object.tasks = reader.readObjectList<IsarCropTask>(
+        offsets[10],
+        IsarCropTaskSchema.deserialize,
+        allOffsets,
+        IsarCropTask(),
+      ) ??
+      [];
+  object.uuid = reader.readString(offsets[11]);
+  object.variety = reader.readString(offsets[12]);
+  object.wateringFrequencyDays = reader.readLong(offsets[13]);
+  object.waterings = reader.readObjectList<IsarCropWateringRecord>(
+        offsets[14],
+        IsarCropWateringRecordSchema.deserialize,
+        allOffsets,
+        IsarCropWateringRecord(),
+      ) ??
+      [];
+  return object;
+}
+
+P _isarCropRecordDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readString(offset)) as P;
+    case 1:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readObjectList<IsarHarvestRecord>(
+            offset,
+            IsarHarvestRecordSchema.deserialize,
+            allOffsets,
+            IsarHarvestRecord(),
+          ) ??
+          []) as P;
+    case 4:
+      return (reader.readObjectList<IsarCropHealthRecord>(
+            offset,
+            IsarCropHealthRecordSchema.deserialize,
+            allOffsets,
+            IsarCropHealthRecord(),
+          ) ??
+          []) as P;
+    case 5:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
+      return (reader.readDateTime(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readDouble(offset)) as P;
+    case 10:
+      return (reader.readObjectList<IsarCropTask>(
+            offset,
+            IsarCropTaskSchema.deserialize,
+            allOffsets,
+            IsarCropTask(),
+          ) ??
+          []) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readLong(offset)) as P;
+    case 14:
+      return (reader.readObjectList<IsarCropWateringRecord>(
+            offset,
+            IsarCropWateringRecordSchema.deserialize,
+            allOffsets,
+            IsarCropWateringRecord(),
+          ) ??
+          []) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+extension IsarCropRecordQueryFilter
+    on QueryBuilder<IsarCropRecord, IsarCropRecord, QFilterCondition> {
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'cropName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'cropName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'cropName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'cropName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      cropNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'cropName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expectedHarvestDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expectedHarvestDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expectedHarvestDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expectedHarvestDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expectedHarvestDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      expectedHarvestDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expectedHarvestDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'growthStage',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'growthStage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'growthStage',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'growthStage',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      growthStageIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'growthStage',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'harvests',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'healthRecords',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lastWateredDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lastWateredDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastWateredDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastWateredDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastWateredDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      lastWateredDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastWateredDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      notesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      plantingDateEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'plantingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      plantingDateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'plantingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      plantingDateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'plantingDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      plantingDateBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'plantingDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'status',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'status',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'status',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      statusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'status',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      surfaceEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'surface',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      surfaceGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'surface',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      surfaceLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'surface',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      surfaceBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'surface',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'tasks',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'uuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      uuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'variety',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'variety',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'variety',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'variety',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      varietyIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'variety',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringFrequencyDaysEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'wateringFrequencyDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringFrequencyDaysGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'wateringFrequencyDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringFrequencyDaysLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'wateringFrequencyDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringFrequencyDaysBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'wateringFrequencyDays',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'waterings',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+}
+
+extension IsarCropRecordQueryObject
+    on QueryBuilder<IsarCropRecord, IsarCropRecord, QFilterCondition> {
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      harvestsElement(FilterQuery<IsarHarvestRecord> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'harvests');
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      healthRecordsElement(FilterQuery<IsarCropHealthRecord> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'healthRecords');
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      tasksElement(FilterQuery<IsarCropTask> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'tasks');
+    });
+  }
+
+  QueryBuilder<IsarCropRecord, IsarCropRecord, QAfterFilterCondition>
+      wateringsElement(FilterQuery<IsarCropWateringRecord> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'waterings');
+    });
+  }
+}

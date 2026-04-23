@@ -1,0 +1,9 @@
+export 'view/registro_page.dart';
+export 'view/registro_sanitario_page.dart';
+export 'view/registro_peso_page.dart';
+export 'view/registro_produccion_page.dart';
+export 'view/registro_reproduccion_page.dart';
+export 'view/registro_comercial_page.dart';
+export 'view/registro_movimiento_page.dart';
+export 'view/registro_costo_page.dart';
+export 'widgets/animal_selector.dart';

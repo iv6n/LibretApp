@@ -932,6 +932,24 @@ abstract class AppLocalizations {
   /// **'Estimado'**
   String get detailFormWeightMethodEstimated;
 
+  /// No description provided for @detailFormAnimalRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona un animal primero'**
+  String get detailFormAnimalRequired;
+
+  /// No description provided for @detailFormNumberInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un número válido'**
+  String get detailFormNumberInvalid;
+
+  /// No description provided for @detailFormAmountPositive.
+  ///
+  /// In es, this message translates to:
+  /// **'El valor debe ser mayor que cero'**
+  String get detailFormAmountPositive;
+
   /// No description provided for @detailFormWeightErrorInvalid.
   ///
   /// In es, this message translates to:
@@ -973,6 +991,36 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Puntaje/BCS'**
   String get detailFormProductionScore;
+
+  /// No description provided for @detailFormProductionValueRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un valor para este tipo de registro'**
+  String get detailFormProductionValueRequired;
+
+  /// No description provided for @detailFormProductionScoreRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un puntaje para condición corporal'**
+  String get detailFormProductionScoreRequired;
+
+  /// No description provided for @detailFormProductionScoreInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un puntaje válido'**
+  String get detailFormProductionScoreInvalid;
+
+  /// No description provided for @detailFormProductionScoreRange.
+  ///
+  /// In es, this message translates to:
+  /// **'El puntaje debe estar entre 0 y 9'**
+  String get detailFormProductionScoreRange;
+
+  /// No description provided for @detailFormProductionDataRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Agrega al menos un dato para guardar el registro'**
+  String get detailFormProductionDataRequired;
 
   /// No description provided for @detailFormProductionSaved.
   ///
@@ -1028,6 +1076,12 @@ abstract class AppLocalizations {
   /// **'Producto requerido'**
   String get detailFormHealthProductRequired;
 
+  /// No description provided for @detailFormHealthNextAfterDate.
+  ///
+  /// In es, this message translates to:
+  /// **'La próxima fecha no puede ser anterior a la fecha del registro'**
+  String get detailFormHealthNextAfterDate;
+
   /// No description provided for @detailFormHealthSaved.
   ///
   /// In es, this message translates to:
@@ -1063,6 +1117,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Contraparte'**
   String get detailFormCommercialCounterparty;
+
+  /// No description provided for @detailFormCommercialAmountRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto requerido para este tipo de registro'**
+  String get detailFormCommercialAmountRequired;
 
   /// No description provided for @detailFormCommercialSaved.
   ///
@@ -1105,6 +1165,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Destino requerido'**
   String get detailFormMovementToRequired;
+
+  /// No description provided for @detailFormMovementDifferentLocations.
+  ///
+  /// In es, this message translates to:
+  /// **'La ubicación de origen y destino no pueden ser iguales'**
+  String get detailFormMovementDifferentLocations;
 
   /// No description provided for @detailFormMovementSaved.
   ///
@@ -1196,6 +1262,12 @@ abstract class AppLocalizations {
   /// **'Notas (opcional)'**
   String get detailFormReproductionNotes;
 
+  /// No description provided for @detailFormReproductionExpectedAfterDate.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha probable de parto no puede ser anterior a la fecha de servicio'**
+  String get detailFormReproductionExpectedAfterDate;
+
   /// No description provided for @detailFormReproductionSaved.
   ///
   /// In es, this message translates to:
@@ -1237,6 +1309,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Este animal no tiene arete. Se recomienda etiquetarlo para su seguimiento. ¿Deseas guardar de todos modos?'**
   String get animalFormNoTagMessage;
+
+  /// No description provided for @animalFormDuplicateEarTag.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe un animal con ese arete'**
+  String get animalFormDuplicateEarTag;
 
   /// No description provided for @animalFormUnsupportedAction.
   ///
@@ -1291,6 +1369,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Raza (opcional)'**
   String get animalFormBreedOptional;
+
+  /// No description provided for @animalFormUnknownBreed.
+  ///
+  /// In es, this message translates to:
+  /// **'Desconocido'**
+  String get animalFormUnknownBreed;
 
   /// No description provided for @animalFormStatus.
   ///
@@ -1393,6 +1477,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Guardar animal'**
   String get animalFormSaveAnimal;
+
+  /// No description provided for @detailQuickActionsTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar registro'**
+  String get detailQuickActionsTitle;
+
+  /// No description provided for @detailNoRecordsYet.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin registros aún'**
+  String get detailNoRecordsYet;
+
+  /// No description provided for @detailNoRecordsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Usa el botón + para agregar el primer registro de este animal.'**
+  String get detailNoRecordsHint;
 }
 
 class _AppLocalizationsDelegate

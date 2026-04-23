@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class QuickActionButton extends StatelessWidget {
   const QuickActionButton({
@@ -20,20 +21,20 @@ class QuickActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.green.shade50,
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green.shade100),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.24)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.green.shade800),
+            Icon(icon, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
               label,
               style: Theme.of(
                 context,
-              ).textTheme.labelLarge?.copyWith(color: Colors.green.shade900),
+              ).textTheme.labelLarge?.copyWith(color: AppColors.primaryDark),
             ),
           ],
         ),

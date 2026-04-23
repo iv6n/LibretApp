@@ -5,6 +5,7 @@ import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/core/constants/ui_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
@@ -20,7 +21,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     on<ToggleSearch>(_onToggleSearch);
     on<SearchQueryChanged>(
       _onSearchQueryChanged,
-      transformer: _debounce(const Duration(milliseconds: 260)),
+      transformer: _debounce(UiConstants.searchDebounceDuration),
     );
     on<ClearSearch>(_onClearSearch);
     on<ToggleAnimalSelection>(_onToggleAnimalSelection);
@@ -40,11 +41,6 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     Emitter<AnimalesState> emit,
   ) async {
     emit(const AnimalesLoading());
-    try {
-      await repository.refreshFromRemote(force: event.forceRefresh);
-    } catch (e) {
-      emit(AnimalesError('No se pudo sincronizar: $e'));
-    }
     await _subscription?.cancel();
     _subscription = repository.watchAll().listen(
       (animales) => add(AnimalesStreamUpdated(animales)),

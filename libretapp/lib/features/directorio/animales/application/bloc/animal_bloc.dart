@@ -1,4 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/security/ports/sensitive_logger_port.dart';
+import 'package:libretapp/core/security/services/secure_logger_service.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -8,8 +11,16 @@ import 'animal_event.dart';
 import 'animal_state.dart';
 
 class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
-  AnimalBloc({required this.animalRepository, required this.lotesRepository})
-    : super(AnimalState.initial()) {
+  AnimalBloc({
+    required this.animalRepository,
+    required this.lotesRepository,
+    SensitiveLoggerPort? sensitiveLogger,
+  }) : _sensitiveLogger =
+           sensitiveLogger ??
+           (locator.isRegistered<SensitiveLoggerPort>()
+               ? locator<SensitiveLoggerPort>()
+               : SecureLoggerService()),
+       super(AnimalState.initial()) {
     on<LoadAnimals>(_onLoadAnimals);
     on<AddAnimal>(_onAddAnimal);
     on<UpdateAnimal>(_onUpdateAnimal);
@@ -28,6 +39,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
   }
   final AnimalRepository animalRepository;
   final LotesRepository lotesRepository;
+  final SensitiveLoggerPort _sensitiveLogger;
   static const _logTag = 'AnimalBloc';
 
   Future<void> _onLoadAnimals(
@@ -67,7 +79,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
   }
 
   Future<void> _onAddAnimal(AddAnimal event, Emitter<AnimalState> emit) async {
-    LoggerService.d('Agregar animal ${event.animal.uuid}', tag: _logTag);
+    _sensitiveLogger.info('Agregar animal ${event.animal.uuid}', tag: _logTag);
     try {
       emit(AnimalState.loading());
       await animalRepository.save(event.animal);
@@ -78,7 +90,10 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
           selectedAnimal: state.selectedAnimal,
         ),
       );
-      LoggerService.i('Animal agregado ${event.animal.uuid}', tag: _logTag);
+      _sensitiveLogger.info(
+        'Animal agregado ${event.animal.uuid}',
+        tag: _logTag,
+      );
     } catch (e, st) {
       LoggerService.e(
         'Error al agregar animal: $e',
@@ -99,7 +114,10 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     UpdateAnimal event,
     Emitter<AnimalState> emit,
   ) async {
-    LoggerService.d('Actualizar animal ${event.animal.uuid}', tag: _logTag);
+    _sensitiveLogger.info(
+      'Actualizar animal ${event.animal.uuid}',
+      tag: _logTag,
+    );
     try {
       emit(AnimalState.loading());
       await animalRepository.update(event.animal);
@@ -108,7 +126,10 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
           ? event.animal
           : state.selectedAnimal;
       emit(AnimalState.success(animals: updated, selectedAnimal: selected));
-      LoggerService.i('Animal actualizado ${event.animal.uuid}', tag: _logTag);
+      _sensitiveLogger.info(
+        'Animal actualizado ${event.animal.uuid}',
+        tag: _logTag,
+      );
     } catch (e, st) {
       LoggerService.e(
         'Error al actualizar animal: $e',
@@ -130,14 +151,20 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     Emitter<AnimalState> emit,
   ) async {
     try {
-      LoggerService.d('Seleccionar animal ${event.animalUuid}', tag: _logTag);
+      _sensitiveLogger.info(
+        'Seleccionar animal ${event.animalUuid}',
+        tag: _logTag,
+      );
       final selected = state.animals.firstWhere(
         (animal) => animal.uuid == event.animalUuid,
         orElse: () =>
             throw Exception('Animal no encontrado: ${event.animalUuid}'),
       );
       emit(state.selectAnimal(selected));
-      LoggerService.i('Animal seleccionado ${selected.uuid}', tag: _logTag);
+      _sensitiveLogger.info(
+        'Animal seleccionado ${selected.uuid}',
+        tag: _logTag,
+      );
     } catch (e, st) {
       LoggerService.e(
         'Error al seleccionar animal: $e',
@@ -172,7 +199,10 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
           selectedAnimal: state.selectedAnimal,
         ),
       );
-      LoggerService.i('Animal sincronizado ${event.animalUuid}', tag: _logTag);
+      _sensitiveLogger.info(
+        'Animal sincronizado ${event.animalUuid}',
+        tag: _logTag,
+      );
     } catch (e, st) {
       LoggerService.e(
         'Error al sincronizar animal: $e',

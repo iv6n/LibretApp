@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_kind.dart';
@@ -29,6 +30,7 @@ class LocationEntity extends Equatable {
     this.irrigations = const [],
     this.rains = const [],
     this.costs = const [],
+    this.crops = const [],
   });
   final int? id;
   final String uuid;
@@ -53,6 +55,7 @@ class LocationEntity extends Equatable {
   final List<IrrigationRecord> irrigations;
   final List<RainRecord> rains;
   final List<CostRecord> costs;
+  final List<CropRecord> crops;
 
   LocationEntity copyWith({
     int? id,
@@ -78,6 +81,7 @@ class LocationEntity extends Equatable {
     List<IrrigationRecord>? irrigations,
     List<RainRecord>? rains,
     List<CostRecord>? costs,
+    List<CropRecord>? crops,
   }) {
     return LocationEntity(
       id: id ?? this.id,
@@ -103,6 +107,7 @@ class LocationEntity extends Equatable {
       irrigations: irrigations ?? this.irrigations,
       rains: rains ?? this.rains,
       costs: costs ?? this.costs,
+      crops: crops ?? this.crops,
     );
   }
 
@@ -131,5 +136,6 @@ class LocationEntity extends Equatable {
     irrigations,
     rains,
     costs,
+    crops,
   ];
 }

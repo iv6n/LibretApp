@@ -125,6 +125,11 @@ class RainRecord extends Equatable {
   List<Object?> get props => [date, millimeters, location];
 }
 
+// NOTE: This CostRecord shares its name with the animal CostRecord in
+// features/directorio/animales/domain/entities/cost_record.dart.
+// If both are needed in the same file, use a prefix import:
+//   import '...' as location;
+//   location.CostRecord(...)
 class CostRecord extends Equatable {
   const CostRecord({
     required this.date,

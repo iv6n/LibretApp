@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/advisor/livestock_advisor.dart';
+import 'package:libretapp/core/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -8,6 +10,7 @@ Future<void> showMovementForm(
   required String animalUuid,
   required Future<bool> Function(AnimalEvent) dispatchAndAwait,
   required VoidCallback onReload,
+  AnimalEntity? animal,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context);
@@ -118,6 +121,25 @@ Future<void> showMovementForm(
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (animal != null) ...[
+                    Builder(
+                      builder: (_) {
+                        final previewRecord = MovementRecord(
+                          id: null,
+                          fromLocation: null,
+                          toLocation: '',
+                          date: date,
+                          reason: reason,
+                        );
+                        final tips = LivestockAdvisor.forMovement(
+                          animal,
+                          previewRecord,
+                        );
+                        return AdvisorTipsPanel(tips: tips);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

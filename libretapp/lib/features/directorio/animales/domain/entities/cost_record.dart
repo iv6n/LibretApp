@@ -1,24 +1,21 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de costo por animal.
 enum CostType { medication, feeding, labor, transport, investment }
 
 /// Registro de costo asociado al animal.
-class CostRecord extends Equatable {
+class CostRecord extends TimestampedRecord {
   const CostRecord({
-    required this.date,
+    required super.date,
     required this.type,
     required this.amount,
     this.currency,
-    this.notes,
-    this.id,
+    super.notes,
+    super.id,
   });
-  final DateTime date;
   final CostType type;
   final double amount;
   final String? currency;
-  final String? notes;
-  final String? id;
 
   CostRecord copyWith({
     DateTime? date,
@@ -39,5 +36,5 @@ class CostRecord extends Equatable {
   }
 
   @override
-  List<Object?> get props => [date, type, amount, currency, notes, id];
+  List<Object?> get props => [...super.props, type, amount, currency];
 }

@@ -34,7 +34,7 @@ void main() async {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        // Slight tint keeps the nav bar legible while staying edge-to-edge.
+        // Slight tint keeps the nav bar legible while stayi0ng edge-to-edge.
         systemNavigationBarColor: Colors.transparent,
         systemNavigationBarDividerColor: Colors.transparent,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,

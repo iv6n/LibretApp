@@ -18,6 +18,54 @@ class RecordsTab extends StatelessWidget {
     final fabBottomPadding = ShellInsets.fabDockPadding(context);
     // Use the larger of content inset and FAB dock to keep items clear.
     final listBottomPadding = max(bottomInset + 2, fabBottomPadding + 8);
+
+    final hasAnyRecords =
+        data.weights.isNotEmpty ||
+        data.productions.isNotEmpty ||
+        data.health.isNotEmpty ||
+        data.reproductions.isNotEmpty ||
+        data.commercial.isNotEmpty ||
+        data.movements.isNotEmpty ||
+        data.costs.isNotEmpty;
+
+    if (!hasAnyRecords) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.note_add_outlined,
+                size: 64,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.detailNoRecordsYet,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.detailNoRecordsHint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       key: const PageStorageKey('records_scroll'),
       padding: EdgeInsets.fromLTRB(14, 14, 14, listBottomPadding),
@@ -47,7 +95,7 @@ class RecordsTab extends StatelessWidget {
             children: data.productions
                 .map(
                   (r) => RecordTile(
-                    title: '${fmtDate(r.date)} · ${r.type.name}',
+                    title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle: [
                       if (r.value != null)
                         '${l10n.detailRecordsValue}: ${r.value} ${r.unit ?? ''}',
@@ -65,7 +113,7 @@ class RecordsTab extends StatelessWidget {
             children: data.health
                 .map(
                   (r) => RecordTile(
-                    title: '${fmtDate(r.date)} · ${r.type.name}',
+                    title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle: [
                       r.product,
                       if (r.dose != null) '${l10n.detailRecordsDose} ${r.dose}',
@@ -83,8 +131,21 @@ class RecordsTab extends StatelessWidget {
             children: data.reproductions
                 .map(
                   (r) => RecordTile(
-                    title: '${fmtDate(r.serviceDate)} · ${r.serviceType.name}',
-                    subtitle: r.notes ?? r.maleSireIdentifier ?? '',
+                    title:
+                        '${fmtDate(r.serviceDate)} · ${r.serviceType.displayName}',
+                    subtitle: [
+                      if (r.maleSireIdentifier != null)
+                        'Padre: ${r.maleSireIdentifier}',
+                      if (r.pregnancyResult != null &&
+                          r.pregnancyResult != PregnancyCheckResult.notChecked)
+                        'Preñez: ${r.pregnancyResult!.displayName}',
+                      if (r.expectedCalvingDate != null)
+                        'Parto esperado: ${fmtDate(r.expectedCalvingDate!)}',
+                      if (r.actualCalvingDate != null)
+                        'Parto real: ${fmtDate(r.actualCalvingDate!)}',
+                      if (r.calvingResult != null) r.calvingResult!,
+                      if (r.notes != null) r.notes!,
+                    ].where((e) => e.isNotEmpty).join(' · '),
                   ),
                 )
                 .toList(),
@@ -95,7 +156,7 @@ class RecordsTab extends StatelessWidget {
             children: data.commercial
                 .map(
                   (r) => RecordTile(
-                    title: '${fmtDate(r.date)} · ${r.type.name}',
+                    title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle: [
                       if (r.amount != null)
                         '${l10n.detailRecordsAmount}: ${r.amount} ${r.currency ?? ''}',
@@ -129,7 +190,7 @@ class RecordsTab extends StatelessWidget {
             children: data.costs
                 .map(
                   (r) => RecordTile(
-                    title: '${fmtDate(r.date)} · ${r.type.name}',
+                    title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle:
                         '${l10n.detailRecordsAmount}: ${r.amount} ${r.currency ?? ''}${r.notes != null ? ' · ${r.notes}' : ''}',
                   ),

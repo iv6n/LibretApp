@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
-import 'package:libretapp/theme/theme.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
@@ -107,7 +107,7 @@ class _AppShellState extends State<AppShell>
                 ),
               )
             : null,
-        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: _chromeVisible
             ? AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
@@ -115,7 +115,7 @@ class _AppShellState extends State<AppShell>
                 switchOutCurve: Curves.easeIn,
                 child: AppShellFab(
                   config: _fabConfig,
-                  dockPadding: _fabDockPadding(context, lift: -40),
+                  dockPadding: _fabDockPadding(context, lift: -34),
                   backgroundColor: shellTheme?.fabBackground ?? accent,
                   foregroundColor: shellTheme?.fabForeground ?? Colors.white,
                 ),
@@ -187,14 +187,13 @@ class _AppShellState extends State<AppShell>
     _lastIndex = index;
     final cached = _fabCache[index];
     final cachedChrome = _chromeCache[index];
-    setState(() {
-      final allowedFab = _isFabAllowed(index) ? cached : null;
-      _fabConfig = allowedFab;
-      _fabOwnerIndex = allowedFab == null ? null : index;
-      _chromeVisible = cachedChrome ?? true;
-      _chromeOwnerIndex = cachedChrome == null ? null : index;
-      _fabVersion++;
-    });
+    // This method is called from build(), so avoid setState here.
+    final allowedFab = _isFabAllowed(index) ? cached : null;
+    _fabConfig = allowedFab;
+    _fabOwnerIndex = allowedFab == null ? null : index;
+    _chromeVisible = cachedChrome ?? true;
+    _chromeOwnerIndex = cachedChrome == null ? null : index;
+    _fabVersion++;
     _logFab(
       cached == null
           ? 'No cached FAB for tab $index, cleared.'
@@ -288,7 +287,7 @@ class _AppShellState extends State<AppShell>
     }
   }
 
-  bool _isFabAllowed(int index) => index != 3 && index != 5;
+  bool _isFabAllowed(int index) => index != 1 && index != 4;
 
   void _updateChromeVisibility(bool visible) {
     final needsUpdate =
@@ -302,7 +301,12 @@ class _AppShellState extends State<AppShell>
   }
 
   void _onCentralTap(BuildContext context) {
-    widget.navigationShell.goBranch(2, initialLocation: true);
+    final isHome = widget.navigationShell.currentIndex == 2;
+    if (isHome) {
+      context.push(AppRoutes.registro);
+    } else {
+      widget.navigationShell.goBranch(2, initialLocation: true);
+    }
   }
 
   double _bodyBottomInset(BuildContext context) {
@@ -346,6 +350,7 @@ class _AppShellState extends State<AppShell>
 
 class _NavItem {
   const _NavItem({required this.routeName, required this.icon});
+
   final String routeName;
   final IconData icon;
 }

@@ -392,6 +392,108 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'allows empty ear tag for non-cattle species without warning dialog',
+      (tester) async {
+        final now = DateTime(2025, 1, 1);
+        final animalRepo = _FakeAnimalRepository(
+          allAnimals: [_animal(uuid: 'a-1', sex: Sex.female, updatedAt: now)],
+        );
+        final lotesRepo = _FakeLotesRepository(activeLotes: const []);
+        final locationRepo = _FakeLocationRepository(allLocations: const []);
+
+        locator
+          ..registerSingleton<AnimalRepository>(animalRepo)
+          ..registerSingleton<LotesRepository>(lotesRepo)
+          ..registerSingleton<LocationRepository>(locationRepo);
+
+        await tester.pumpWidget(_testApp(const AnimalFormPage()));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(DropdownButtonFormField<Species>));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Équido').last);
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(find.text('Guardar animal'));
+        await tester.tap(find.text('Guardar animal'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Animal sin arete'), findsNothing);
+        expect(animalRepo.saveCallCount, 1);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('blocks save when ear tag is duplicated', (tester) async {
+      final now = DateTime(2025, 1, 1);
+      final animalRepo = _FakeAnimalRepository(
+        allAnimals: [
+          _animal(
+            uuid: 'existing-1',
+            sex: Sex.female,
+            updatedAt: now,
+          ).copyWith(earTagNumber: 'DUP-001'),
+        ],
+      );
+      final lotesRepo = _FakeLotesRepository(activeLotes: const []);
+      final locationRepo = _FakeLocationRepository(allLocations: const []);
+
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(lotesRepo)
+        ..registerSingleton<LocationRepository>(locationRepo);
+
+      await tester.pumpWidget(_testApp(const AnimalFormPage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Número de arete'),
+        'dup-001',
+      );
+
+      await tester.ensureVisible(find.text('Guardar animal'));
+      await tester.tap(find.text('Guardar animal'));
+      await tester.pumpAndSettle();
+
+      expect(animalRepo.saveCallCount, 0);
+      expect(find.text('Ya existe un animal con ese arete'), findsOneWidget);
+      expect(find.text('Agregar animal'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('defaults breed to unknown when field is empty', (
+      tester,
+    ) async {
+      final now = DateTime(2025, 1, 1);
+      final animalRepo = _FakeAnimalRepository(
+        allAnimals: [_animal(uuid: 'a-1', sex: Sex.female, updatedAt: now)],
+      );
+      final lotesRepo = _FakeLotesRepository(activeLotes: const []);
+      final locationRepo = _FakeLocationRepository(allLocations: const []);
+
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(lotesRepo)
+        ..registerSingleton<LocationRepository>(locationRepo);
+
+      await tester.pumpWidget(_testApp(const AnimalFormPage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Número de arete'),
+        'TAG-NOBREED-001',
+      );
+
+      await tester.ensureVisible(find.text('Guardar animal'));
+      await tester.tap(find.text('Guardar animal'));
+      await tester.pumpAndSettle();
+
+      expect(animalRepo.saveCallCount, 1);
+      expect(animalRepo.savedAnimals.last.breed, 'Desconocido');
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

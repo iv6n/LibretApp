@@ -17,6 +17,12 @@ class SharedPrefsService {
     await _prefs.setInt(key, value);
   }
 
+  bool? getBool(String key) => _prefs.getBool(key);
+
+  Future<void> setBool(String key, bool value) async {
+    await _prefs.setBool(key, value);
+  }
+
   DateTime? getDateTime(String key) {
     final millis = _prefs.getInt(key);
     if (millis == null) return null;
@@ -25,5 +31,9 @@ class SharedPrefsService {
 
   Future<void> setDateTime(String key, DateTime value) async {
     await _prefs.setInt(key, value.millisecondsSinceEpoch);
+  }
+
+  Future<void> remove(String key) async {
+    await _prefs.remove(key);
   }
 }

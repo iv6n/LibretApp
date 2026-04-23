@@ -8,11 +8,16 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
+import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
 
 class LocationDetailPage extends StatefulWidget {
   const LocationDetailPage({
@@ -112,6 +117,32 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                         onShade: () => _showShadeSheet(location),
                         onPasture: () => _showPastureSheet(location),
                         onCost: () => _showCostSheet(location),
+                      ),
+                      if (_hasUpcomingTasks(location)) ...[
+                        const SizedBox(height: 12),
+                        _UpcomingTasksCard(
+                          location: location,
+                          onComplete: (cropUuid, taskUuid) =>
+                              _completeCropTask(location, cropUuid, taskUuid),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      _CropsSection(
+                        location: location,
+                        onAddCrop: () => _showCropFormSheet(location),
+                        onEditCrop: (crop) =>
+                            _showCropFormSheet(location, initial: crop),
+                        onDeleteCrop: (crop) =>
+                            _confirmDeleteCrop(location, crop),
+                        onWaterCrop: (crop) =>
+                            _showCropWateringSheet(location, crop),
+                        onHarvestCrop: (crop) =>
+                            _showHarvestSheet(location, crop),
+                        onHealthCrop: (crop) =>
+                            _showCropHealthSheet(location, crop),
+                        onAddTask: (crop) => _showCropTaskSheet(location, crop),
+                        onCompleteTask: (crop, taskUuid) =>
+                            _completeCropTask(location, crop.uuid, taskUuid),
                       ),
                       if (_hasRecords(location)) ...[
                         const SizedBox(height: 12),
@@ -315,6 +346,139 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     }
   }
 
+  // ── Crop handlers ──────────────────────────────────────────────────────
+
+  Future<void> _showCropFormSheet(
+    LocationEntity location, {
+    CropRecord? initial,
+  }) async {
+    final crop = await showModalBottomSheet<CropRecord>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) =>
+          CropFormSheet(locationName: location.name, initial: initial),
+    );
+
+    if (crop != null) {
+      if (initial != null) {
+        await _locationRepository.updateCrop(location.uuid, crop);
+      } else {
+        await _locationRepository.addCrop(location.uuid, crop);
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteCrop(
+    LocationEntity location,
+    CropRecord crop,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar cultivo'),
+        content: Text(
+          '¿Deseas borrar "${crop.cropName}"? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      await _locationRepository.deleteCrop(location.uuid, crop.uuid);
+    }
+  }
+
+  Future<void> _showCropWateringSheet(
+    LocationEntity location,
+    CropRecord crop,
+  ) async {
+    final record = await showModalBottomSheet<CropWateringRecord>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => CropWateringFormSheet(cropName: crop.cropName),
+    );
+
+    if (record != null) {
+      await _locationRepository.addCropWatering(
+        location.uuid,
+        crop.uuid,
+        record,
+      );
+    }
+  }
+
+  Future<void> _showHarvestSheet(
+    LocationEntity location,
+    CropRecord crop,
+  ) async {
+    final record = await showModalBottomSheet<HarvestRecord>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => HarvestFormSheet(cropName: crop.cropName),
+    );
+
+    if (record != null) {
+      await _locationRepository.addHarvest(location.uuid, crop.uuid, record);
+    }
+  }
+
+  Future<void> _showCropHealthSheet(
+    LocationEntity location,
+    CropRecord crop,
+  ) async {
+    final record = await showModalBottomSheet<CropHealthRecord>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => CropHealthFormSheet(cropName: crop.cropName),
+    );
+
+    if (record != null) {
+      await _locationRepository.addCropHealth(location.uuid, crop.uuid, record);
+    }
+  }
+
+  Future<void> _showCropTaskSheet(
+    LocationEntity location,
+    CropRecord crop,
+  ) async {
+    final task = await showModalBottomSheet<CropTask>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => CropTaskFormSheet(cropName: crop.cropName),
+    );
+
+    if (task != null) {
+      await _locationRepository.addCropTask(location.uuid, crop.uuid, task);
+    }
+  }
+
+  Future<void> _completeCropTask(
+    LocationEntity location,
+    String cropUuid,
+    String taskUuid,
+  ) async {
+    await _locationRepository.completeCropTask(
+      location.uuid,
+      cropUuid,
+      taskUuid,
+    );
+  }
+
+  bool _hasUpcomingTasks(LocationEntity l) {
+    return l.crops.any(
+      (c) => c.status == CropStatus.active && c.tasks.any((t) => !t.completed),
+    );
+  }
+
   bool _hasRecords(LocationEntity l) =>
       l.visits.isNotEmpty ||
       l.waters.isNotEmpty ||
@@ -324,7 +488,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
       l.seedings.isNotEmpty ||
       l.irrigations.isNotEmpty ||
       l.rains.isNotEmpty ||
-      l.costs.isNotEmpty;
+      l.costs.isNotEmpty ||
+      l.crops.isNotEmpty;
 
   bool _isWarehouse(LocationEntity l) =>
       l.type.name.toLowerCase() == 'almacen' || l.type == LocationType.rancho;
@@ -361,7 +526,7 @@ class _LocationHeader extends StatelessWidget {
             Text(
               'Última actualización ${location.costs.isNotEmpty ? location.costs.last.date : 'N/D'}',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onPrimary.withOpacity(0.7),
+                color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 6),
@@ -442,7 +607,7 @@ class _LocationHeader extends StatelessWidget {
                                   '${_capitalize(location.type.name)} • ${location.terrainType}',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onPrimary
-                                        .withOpacity(0.85),
+                                        .withValues(alpha: 0.85),
                                   ),
                                 ),
                               ],
@@ -545,7 +710,7 @@ class _InfoPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withOpacity(0.2),
+        color: theme.colorScheme.surface.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -584,7 +749,7 @@ class _MiniMapPlaceholder extends StatelessWidget {
           Positioned.fill(
             child: Icon(
               Icons.map_outlined,
-              color: theme.colorScheme.primary.withOpacity(0.2),
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
               size: 80,
             ),
           ),
@@ -1185,6 +1350,7 @@ class _LocationRecords extends StatelessWidget {
                 ),
                 _RecordCount(label: 'Lluvia', count: location.rains.length),
                 _RecordCount(label: 'Costos', count: location.costs.length),
+                _RecordCount(label: 'Cultivos', count: location.crops.length),
               ],
             ),
           ],
@@ -1272,7 +1438,7 @@ class _InventoryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1282,7 +1448,7 @@ class _InventoryTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: barColor.withOpacity(0.18),
+                backgroundColor: barColor.withValues(alpha: 0.18),
                 child: Icon(icon, color: barColor),
               ),
               const SizedBox(width: 10),
@@ -1379,6 +1545,554 @@ class _ConditionRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Upcoming Tasks Card ─────────────────────────────────────────────────
+
+class _UpcomingTasksCard extends StatelessWidget {
+  const _UpcomingTasksCard({required this.location, required this.onComplete});
+
+  final LocationEntity location;
+  final void Function(String cropUuid, String taskUuid) onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+
+    // Collect all pending tasks across active crops
+    final allTasks = <({CropRecord crop, CropTask task})>[];
+    for (final crop in location.crops) {
+      if (crop.status != CropStatus.active) continue;
+      for (final task in crop.tasks) {
+        if (!task.completed) {
+          allTasks.add((crop: crop, task: task));
+        }
+      }
+      // Auto-generate watering alert if overdue
+      if (crop.isOverdueForWatering) {
+        allTasks.add((
+          crop: crop,
+          task: CropTask(
+            uuid: 'auto-water-${crop.uuid}',
+            type: CropTaskType.water,
+            dueDate: crop.nextWateringDate ?? now,
+            notes: 'Riego atrasado',
+          ),
+        ));
+      }
+      // Harvest approaching alert
+      final daysLeft = crop.daysUntilHarvest;
+      if (daysLeft != null && daysLeft <= 7 && daysLeft >= 0) {
+        allTasks.add((
+          crop: crop,
+          task: CropTask(
+            uuid: 'auto-harvest-${crop.uuid}',
+            type: CropTaskType.harvest,
+            dueDate: crop.expectedHarvestDate ?? now,
+            notes: '$daysLeft días para cosecha',
+          ),
+        ));
+      }
+    }
+
+    allTasks.sort((a, b) => a.task.dueDate.compareTo(b.task.dueDate));
+
+    if (allTasks.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      color: theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.pending_actions_outlined,
+                  color: theme.colorScheme.tertiary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tareas pendientes',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ...allTasks.take(8).map((entry) {
+              final isOverdue = entry.task.dueDate.isBefore(now);
+              final isAuto = entry.task.uuid.startsWith('auto-');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    if (!isAuto)
+                      InkWell(
+                        onTap: () =>
+                            onComplete(entry.crop.uuid, entry.task.uuid),
+                        child: Icon(
+                          Icons.check_circle_outline,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
+                    else
+                      Icon(
+                        isOverdue
+                            ? Icons.warning_amber_outlined
+                            : Icons.info_outline,
+                        size: 20,
+                        color: isOverdue
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.tertiary,
+                      ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${entry.task.type.displayName} — ${entry.crop.cropName}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isOverdue ? theme.colorScheme.error : null,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${entry.task.dueDate.day}/${entry.task.dueDate.month}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: isOverdue
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Crops Section ───────────────────────────────────────────────────────
+
+class _CropsSection extends StatelessWidget {
+  const _CropsSection({
+    required this.location,
+    required this.onAddCrop,
+    required this.onEditCrop,
+    required this.onDeleteCrop,
+    required this.onWaterCrop,
+    required this.onHarvestCrop,
+    required this.onHealthCrop,
+    required this.onAddTask,
+    required this.onCompleteTask,
+  });
+
+  final LocationEntity location;
+  final VoidCallback onAddCrop;
+  final ValueChanged<CropRecord> onEditCrop;
+  final ValueChanged<CropRecord> onDeleteCrop;
+  final ValueChanged<CropRecord> onWaterCrop;
+  final ValueChanged<CropRecord> onHarvestCrop;
+  final ValueChanged<CropRecord> onHealthCrop;
+  final ValueChanged<CropRecord> onAddTask;
+  final void Function(CropRecord crop, String taskUuid) onCompleteTask;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeCrops = location.crops
+        .where((c) => c.status == CropStatus.active)
+        .toList();
+    final pastCrops = location.crops
+        .where((c) => c.status != CropStatus.active)
+        .toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Cultivos (${location.crops.length})',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: onAddCrop,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nuevo'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (location.crops.isEmpty) const Text('Sin cultivos registrados'),
+            if (activeCrops.isNotEmpty) ...[
+              Text(
+                'Activos',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...activeCrops.map(
+                (crop) => _CropTile(
+                  crop: crop,
+                  onEdit: () => onEditCrop(crop),
+                  onDelete: () => onDeleteCrop(crop),
+                  onWater: () => onWaterCrop(crop),
+                  onHarvest: () => onHarvestCrop(crop),
+                  onHealth: () => onHealthCrop(crop),
+                  onAddTask: () => onAddTask(crop),
+                  onCompleteTask: (taskUuid) => onCompleteTask(crop, taskUuid),
+                ),
+              ),
+            ],
+            if (pastCrops.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Anteriores',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...pastCrops.map(
+                (crop) => _CropTile(
+                  crop: crop,
+                  onEdit: () => onEditCrop(crop),
+                  onDelete: () => onDeleteCrop(crop),
+                  onWater: null,
+                  onHarvest: null,
+                  onHealth: null,
+                  onAddTask: null,
+                  onCompleteTask: null,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CropTile extends StatelessWidget {
+  const _CropTile({
+    required this.crop,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onWater,
+    required this.onHarvest,
+    required this.onHealth,
+    required this.onAddTask,
+    required this.onCompleteTask,
+  });
+
+  final CropRecord crop;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback? onWater;
+  final VoidCallback? onHarvest;
+  final VoidCallback? onHealth;
+  final VoidCallback? onAddTask;
+  final ValueChanged<String>? onCompleteTask;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isActive = crop.status == CropStatus.active;
+    final overdue = crop.isOverdueForWatering;
+    final daysLeft = crop.daysUntilHarvest;
+    final pendingTasks = crop.tasks.where((t) => !t.completed).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        border: overdue
+            ? Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5))
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: isActive
+                    ? theme.colorScheme.primary.withValues(alpha: 0.15)
+                    : theme.colorScheme.surfaceContainerHighest,
+                child: Icon(
+                  Icons.eco_outlined,
+                  color: isActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      crop.cropName +
+                          (crop.variety.isNotEmpty ? ' (${crop.variety})' : ''),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${crop.growthStage.displayName} • ${crop.status.displayName}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      onEdit();
+                    case 'delete':
+                      onDelete();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Editar')),
+                  const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Timeline info
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              _CropInfoChip(
+                icon: Icons.calendar_today_outlined,
+                label:
+                    'Siembra: ${crop.plantingDate.day}/${crop.plantingDate.month}/${crop.plantingDate.year}',
+              ),
+              if (crop.expectedHarvestDate != null)
+                _CropInfoChip(
+                  icon: Icons.event_outlined,
+                  label: daysLeft != null && daysLeft >= 0
+                      ? 'Cosecha en $daysLeft días'
+                      : 'Cosecha: ${crop.expectedHarvestDate!.day}/${crop.expectedHarvestDate!.month}',
+                  isWarning: daysLeft != null && daysLeft <= 7,
+                ),
+              if (crop.lastWateredDate != null)
+                _CropInfoChip(
+                  icon: Icons.water_drop_outlined,
+                  label: overdue
+                      ? 'Riego atrasado'
+                      : 'Regado: ${crop.lastWateredDate!.day}/${crop.lastWateredDate!.month}',
+                  isError: overdue,
+                ),
+              if (crop.lastWateredDate == null && isActive)
+                const _CropInfoChip(
+                  icon: Icons.water_drop_outlined,
+                  label: 'Sin riego registrado',
+                  isError: true,
+                ),
+              if (crop.surface > 0)
+                _CropInfoChip(
+                  icon: Icons.straighten_outlined,
+                  label: '${crop.surface.toStringAsFixed(1)} ha',
+                ),
+              if (crop.totalYieldKg > 0)
+                _CropInfoChip(
+                  icon: Icons.scale_outlined,
+                  label: '${crop.totalYieldKg.toStringAsFixed(1)} kg cosechado',
+                ),
+              _CropInfoChip(
+                icon: Icons.water_drop,
+                label: 'Riegos: ${crop.waterings.length}',
+              ),
+              if (crop.harvests.isNotEmpty)
+                _CropInfoChip(
+                  icon: Icons.agriculture_outlined,
+                  label: 'Cosechas: ${crop.harvests.length}',
+                ),
+              if (crop.healthRecords.isNotEmpty)
+                _CropInfoChip(
+                  icon: Icons.bug_report_outlined,
+                  label: 'Salud: ${crop.healthRecords.length}',
+                ),
+            ],
+          ),
+
+          // Pending tasks
+          if (pendingTasks.isNotEmpty && isActive) ...[
+            const SizedBox(height: 8),
+            ...pendingTasks
+                .take(3)
+                .map(
+                  (task) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        InkWell(
+                          onTap: () => onCompleteTask?.call(task.uuid),
+                          child: Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                            color: task.isOverdue
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${task.type.displayName} — ${task.dueDate.day}/${task.dueDate.month}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: task.isOverdue
+                                  ? theme.colorScheme.error
+                                  : null,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+
+          // Action buttons
+          if (isActive) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _CropActionChip(
+                  icon: Icons.water_drop_outlined,
+                  label: 'Regar',
+                  onPressed: onWater,
+                ),
+                _CropActionChip(
+                  icon: Icons.agriculture_outlined,
+                  label: 'Cosechar',
+                  onPressed: onHarvest,
+                ),
+                _CropActionChip(
+                  icon: Icons.bug_report_outlined,
+                  label: 'Salud',
+                  onPressed: onHealth,
+                ),
+                _CropActionChip(
+                  icon: Icons.add_task_outlined,
+                  label: 'Tarea',
+                  onPressed: onAddTask,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CropInfoChip extends StatelessWidget {
+  const _CropInfoChip({
+    required this.icon,
+    required this.label,
+    this.isWarning = false,
+    this.isError = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isWarning;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = isError
+        ? theme.colorScheme.error
+        : isWarning
+        ? Colors.orange
+        : theme.colorScheme.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isError
+            ? theme.colorScheme.errorContainer.withValues(alpha: 0.3)
+            : isWarning
+            ? Colors.orange.withValues(alpha: 0.1)
+            : theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CropActionChip extends StatelessWidget {
+  const _CropActionChip({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      avatar: Icon(icon, size: 16),
+      label: Text(label),
+      onPressed: onPressed,
     );
   }
 }
@@ -1705,7 +2419,7 @@ class _RecordCount extends StatelessWidget {
           radius: 12,
           backgroundColor: Theme.of(
             context,
-          ).colorScheme.primary.withOpacity(0.12),
+          ).colorScheme.primary.withValues(alpha: 0.12),
           child: Text(
             '$count',
             style: TextStyle(

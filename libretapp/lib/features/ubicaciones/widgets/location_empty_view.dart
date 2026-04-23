@@ -4,7 +4,9 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 
 class LocationEmptyView extends StatelessWidget {
-  const LocationEmptyView({super.key});
+  const LocationEmptyView({super.key, required this.onCreate});
+
+  final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,12 @@ class LocationEmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add_location_alt_outlined),
+              label: const Text('Crear ubicación'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
               onPressed: () =>
                   context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
               icon: const Icon(Icons.refresh),

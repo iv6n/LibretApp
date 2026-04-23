@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
@@ -23,201 +21,145 @@ class QuickActionsFab extends StatelessWidget {
   final VoidCallback onAddMovement;
   final VoidCallback onAddCost;
 
+  void _showActionsSheet(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final actions = [
+      _QuickAction(Icons.monitor_weight, l10n.detailActionWeight, onAddWeight),
+      _QuickAction(
+        Icons.favorite,
+        l10n.detailActionReproduction,
+        onAddReproduction,
+      ),
+      _QuickAction(
+        Icons.analytics,
+        l10n.detailActionProduction,
+        onAddProduction,
+      ),
+      _QuickAction(
+        Icons.medical_services,
+        l10n.detailActionHealth,
+        onAddHealth,
+      ),
+      _QuickAction(Icons.store, l10n.detailActionCommercial, onAddCommercial),
+      _QuickAction(Icons.route, l10n.detailActionMovement, onAddMovement),
+      _QuickAction(Icons.payments, l10n.detailActionCost, onAddCost),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.detailQuickActionsTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                GridView.count(
+                  crossAxisCount: 4,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 0.85,
+                  children: actions
+                      .map(
+                        (a) => _ActionTile(
+                          icon: a.icon,
+                          label: a.label,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            a.onPressed();
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return ExpandableFab(
-      distance: 78,
-      children: [
-        _ActionButton(
-          icon: Icons.monitor_weight,
-          label: l10n.detailActionWeight,
-          onPressed: onAddWeight,
-        ),
-        _ActionButton(
-          icon: Icons.favorite,
-          label: l10n.detailActionReproduction,
-          onPressed: onAddReproduction,
-        ),
-        _ActionButton(
-          icon: Icons.analytics,
-          label: l10n.detailActionProduction,
-          onPressed: onAddProduction,
-        ),
-        _ActionButton(
-          icon: Icons.medical_services,
-          label: l10n.detailActionHealth,
-          onPressed: onAddHealth,
-        ),
-        _ActionButton(
-          icon: Icons.store,
-          label: l10n.detailActionCommercial,
-          onPressed: onAddCommercial,
-        ),
-        _ActionButton(
-          icon: Icons.route,
-          label: l10n.detailActionMovement,
-          onPressed: onAddMovement,
-        ),
-        _ActionButton(
-          icon: Icons.payments,
-          label: l10n.detailActionCost,
-          onPressed: onAddCost,
-        ),
-      ],
+    return FloatingActionButton(
+      heroTag: 'fab-main',
+      onPressed: () => _showActionsSheet(context),
+      child: const Icon(Icons.add),
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
+class _QuickAction {
+  const _QuickAction(this.icon, this.label, this.onPressed);
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
     required this.icon,
     required this.label,
-    required this.onPressed,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton.small(
-          heroTag: label,
-          onPressed: onPressed,
-          child: Icon(icon),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 11)),
-      ],
-    );
-  }
-}
-
-/// Expandable FAB for multiple quick actions.
-class ExpandableFab extends StatefulWidget {
-  const ExpandableFab({
-    super.key,
-    required this.distance,
-    required this.children,
-  });
-
-  final double distance;
-  final List<Widget> children;
-
-  @override
-  State<ExpandableFab> createState() => _ExpandableFabState();
-}
-
-class _ExpandableFabState extends State<ExpandableFab>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _expandAnimation;
-  bool _open = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _expandAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.fastOutSlowIn,
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _toggle() {
-    setState(() {
-      _open = !_open;
-      if (_open) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 56,
-      height: 56,
-      child: Stack(
-        alignment: Alignment.bottomRight,
-        clipBehavior: Clip.none,
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ..._buildExpandingActionButtons(),
-          FloatingActionButton(
-            heroTag: 'fab-main',
-            onPressed: _toggle,
-            child: AnimatedIcon(
-              icon: AnimatedIcons.menu_close,
-              progress: _controller,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
             ),
+            child: Icon(icon, color: theme.colorScheme.onPrimaryContainer),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
-    );
-  }
-
-  List<Widget> _buildExpandingActionButtons() {
-    final children = <Widget>[];
-    final count = widget.children.length;
-    for (var i = 0; i < count; i++) {
-      children.add(
-        _ExpandingActionButton(
-          directionInDegrees: 270 - (i * 90),
-          maxDistance: widget.distance,
-          progress: _expandAnimation,
-          child: widget.children[i],
-        ),
-      );
-    }
-    return children;
-  }
-}
-
-class _ExpandingActionButton extends StatelessWidget {
-  const _ExpandingActionButton({
-    required this.directionInDegrees,
-    required this.maxDistance,
-    required this.progress,
-    required this.child,
-  });
-
-  final double directionInDegrees;
-  final double maxDistance;
-  final Animation<double> progress;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final angleInRadians = directionInDegrees * (3.1415926 / 180.0);
-    return AnimatedBuilder(
-      animation: progress,
-      builder: (context, child) {
-        final offset = Offset(
-          maxDistance * progress.value * cos(angleInRadians),
-          maxDistance * progress.value * sin(angleInRadians),
-        );
-        return Positioned(
-          right: 4 + offset.dx,
-          bottom: 4 + offset.dy,
-          child: FadeTransition(opacity: progress, child: child),
-        );
-      },
-      child: child,
     );
   }
 }

@@ -6,6 +6,7 @@ class DashboardCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.count,
+    this.accentColor,
     super.key,
   });
 
@@ -13,9 +14,12 @@ class DashboardCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String count;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
+    final color = accentColor ?? Theme.of(context).colorScheme.primary;
+
     return Card(
       elevation: 4,
       child: Padding(
@@ -25,10 +29,10 @@ class DashboardCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.shade50,
+                color: color.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.green, size: 32),
+              child: Icon(icon, color: color, size: 32),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -44,15 +48,12 @@ class DashboardCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.green.shade100,
+                color: color.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 count,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green.shade700,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, color: color),
               ),
             ),
           ],

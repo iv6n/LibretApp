@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
@@ -42,7 +43,7 @@ class IsarDatabase {
         IsarLocationSchema,
       ],
       directory: dir.path,
-      inspector: true,
+      inspector: kDebugMode,
       name: 'libretapp_db',
     );
 
@@ -62,5 +63,25 @@ class IsarDatabase {
       await _isar!.close();
       LoggerService.i('Isar cerrado', tag: 'IsarDatabase');
     }
+  }
+
+  Future<void> clearAllCollections() async {
+    final db = isar;
+    await db.writeTxn(() async {
+      await db.isarAnimals.clear();
+      await db.isarWeightRecords.clear();
+      await db.isarReproductionRecords.clear();
+      await db.isarProductionRecords.clear();
+      await db.isarHealthRecords.clear();
+      await db.isarCostRecords.clear();
+      await db.isarCommercialRecords.clear();
+      await db.isarMovementRecords.clear();
+      await db.isarLotes.clear();
+      await db.isarLocations.clear();
+    });
+    LoggerService.w(
+      'Todas las colecciones Isar fueron limpiadas',
+      tag: 'IsarDatabase',
+    );
   }
 }

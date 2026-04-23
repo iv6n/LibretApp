@@ -105,3 +105,68 @@ List<String> uniqueBatches(List<AnimalEntity> animals) {
   batches.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   return batches;
 }
+
+// ── Display name extensions for record-type enums ───────────────────
+
+extension ProductionRecordTypeDisplay on ProductionRecordType {
+  String get displayName => switch (this) {
+    ProductionRecordType.weighing => 'Pesaje',
+    ProductionRecordType.weightGain => 'Ganancia de peso',
+    ProductionRecordType.production => 'Producción',
+    ProductionRecordType.bodyConditionScore => 'Condición corporal',
+    ProductionRecordType.fatteningStart => 'Inicio de engorde',
+    ProductionRecordType.fatteningEnd => 'Fin de engorde',
+  };
+}
+
+extension HealthRecordTypeDisplay on HealthRecordType {
+  String get displayName => switch (this) {
+    HealthRecordType.vaccine => 'Vacuna',
+    HealthRecordType.deworming => 'Desparasitación',
+    HealthRecordType.tickBath => 'Baño garrapaticida',
+    HealthRecordType.vitamins => 'Vitaminas',
+    HealthRecordType.treatment => 'Tratamiento',
+    HealthRecordType.disease => 'Enfermedad',
+    HealthRecordType.death => 'Muerte',
+    HealthRecordType.checkup => 'Chequeo',
+    HealthRecordType.other => 'Otro',
+  };
+}
+
+extension CommercialRecordTypeDisplay on CommercialRecordType {
+  String get displayName => switch (this) {
+    CommercialRecordType.purchase => 'Compra',
+    CommercialRecordType.sale => 'Venta',
+    CommercialRecordType.ownershipChange => 'Cambio de propietario',
+    CommercialRecordType.priceUpdate => 'Actualización de precio',
+    CommercialRecordType.writeOffSale => 'Baja por venta',
+    CommercialRecordType.writeOffDeath => 'Baja por muerte',
+  };
+}
+
+extension CostTypeDisplay on CostType {
+  String get displayName => switch (this) {
+    CostType.medication => 'Medicamento',
+    CostType.feeding => 'Alimentación',
+    CostType.labor => 'Mano de obra',
+    CostType.transport => 'Transporte',
+    CostType.investment => 'Inversión',
+  };
+}
+
+extension ServiceTypeDisplay on ServiceType {
+  String get displayName => switch (this) {
+    ServiceType.naturalService => 'Monta natural',
+    ServiceType.artificialInsemination => 'Inseminación artificial',
+    ServiceType.ivf => 'Fecundación in vitro',
+  };
+}
+
+extension PregnancyCheckResultDisplay on PregnancyCheckResult {
+  String get displayName => switch (this) {
+    PregnancyCheckResult.positive => 'Positivo',
+    PregnancyCheckResult.negative => 'Negativo',
+    PregnancyCheckResult.uncertain => 'Incierto',
+    PregnancyCheckResult.notChecked => 'No chequeado',
+  };
+}

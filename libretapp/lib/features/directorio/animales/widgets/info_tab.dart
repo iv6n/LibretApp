@@ -294,6 +294,7 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -301,7 +302,9 @@ class InfoRow extends StatelessWidget {
           width: 160,
           child: Text(
             label,
-            style: textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -310,7 +313,7 @@ class InfoRow extends StatelessWidget {
             value,
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: accent ?? Colors.black87,
+              color: accent ?? colorScheme.onSurface,
             ),
           ),
         ),
@@ -338,7 +341,7 @@ class BoolRow extends StatelessWidget {
             '$label: ${value ? l10n.booleanYes : l10n.booleanNo}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 
@@ -150,4 +151,83 @@ class AddCostRecordEvent extends UbicacionesEvent {
 
   @override
   List<Object> get props => [uuid, record];
+}
+
+// ── Crop management events ──────────────────────────────────────────────
+
+class AddCropEvent extends UbicacionesEvent {
+  const AddCropEvent(this.locationUuid, this.crop);
+  final String locationUuid;
+  final CropRecord crop;
+
+  @override
+  List<Object> get props => [locationUuid, crop];
+}
+
+class UpdateCropEvent extends UbicacionesEvent {
+  const UpdateCropEvent(this.locationUuid, this.crop);
+  final String locationUuid;
+  final CropRecord crop;
+
+  @override
+  List<Object> get props => [locationUuid, crop];
+}
+
+class DeleteCropEvent extends UbicacionesEvent {
+  const DeleteCropEvent(this.locationUuid, this.cropUuid);
+  final String locationUuid;
+  final String cropUuid;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid];
+}
+
+class AddHarvestRecordEvent extends UbicacionesEvent {
+  const AddHarvestRecordEvent(this.locationUuid, this.cropUuid, this.record);
+  final String locationUuid;
+  final String cropUuid;
+  final HarvestRecord record;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid, record];
+}
+
+class AddCropWateringEvent extends UbicacionesEvent {
+  const AddCropWateringEvent(this.locationUuid, this.cropUuid, this.record);
+  final String locationUuid;
+  final String cropUuid;
+  final CropWateringRecord record;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid, record];
+}
+
+class AddCropHealthEvent extends UbicacionesEvent {
+  const AddCropHealthEvent(this.locationUuid, this.cropUuid, this.record);
+  final String locationUuid;
+  final String cropUuid;
+  final CropHealthRecord record;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid, record];
+}
+
+class AddCropTaskEvent extends UbicacionesEvent {
+  const AddCropTaskEvent(this.locationUuid, this.cropUuid, this.task);
+  final String locationUuid;
+  final String cropUuid;
+  final CropTask task;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid, task];
+}
+
+class CompleteCropTaskEvent extends UbicacionesEvent {
+  const CompleteCropTaskEvent(this.locationUuid, this.cropUuid, this.taskUuid);
+  final String locationUuid;
+  final String cropUuid;
+  final String taskUuid;
+
+  @override
+  List<Object> get props => [locationUuid, cropUuid, taskUuid];
 }

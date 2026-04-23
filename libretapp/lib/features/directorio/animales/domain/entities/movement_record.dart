@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Motivos del movimiento del animal.
 enum MovementReason {
@@ -34,23 +34,20 @@ enum MovementReason {
 }
 
 /// Registro de movimiento de ubicación del animal.
-class MovementRecord extends Equatable {
+class MovementRecord extends TimestampedRecord {
   const MovementRecord({
     this.fromLocation,
     required this.toLocation,
-    required this.date,
+    required super.date,
     required this.reason,
-    this.notes,
+    super.notes,
     this.movedBy,
-    this.id,
+    super.id,
   });
   final String? fromLocation;
   final String toLocation;
-  final DateTime date;
   final MovementReason reason;
-  final String? notes;
   final String? movedBy;
-  final String? id;
 
   MovementRecord copyWith({
     String? fromLocation,
@@ -74,12 +71,10 @@ class MovementRecord extends Equatable {
 
   @override
   List<Object?> get props => [
+    ...super.props,
     fromLocation,
     toLocation,
-    date,
     reason,
-    notes,
     movedBy,
-    id,
   ];
 }

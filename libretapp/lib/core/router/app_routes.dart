@@ -14,6 +14,14 @@ class AppRoutes {
   static const ubicacionDetalle = '/ubicaciones/:uuid';
   static const ubicacionEditar = '/ubicaciones/:uuid/editar';
   static const perfil = '/perfil';
+  static const registro = '/registro';
+  static const registroSanitario = '/registro/sanitario';
+  static const registroPeso = '/registro/peso';
+  static const registroProduccion = '/registro/produccion';
+  static const registroReproduccion = '/registro/reproduccion';
+  static const registroComercial = '/registro/comercial';
+  static const registroMovimiento = '/registro/movimiento';
+  static const registroCosto = '/registro/costo';
 
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
@@ -30,6 +38,14 @@ class AppRoutes {
   static const nameUbicacionDetalle = 'ubicacion_detalle';
   static const nameUbicacionEditar = 'ubicacion_editar';
   static const namePerfil = 'perfil';
+  static const nameRegistro = 'registro';
+  static const nameRegistroSanitario = 'registro_sanitario';
+  static const nameRegistroPeso = 'registro_peso';
+  static const nameRegistroProduccion = 'registro_produccion';
+  static const nameRegistroReproduccion = 'registro_reproduccion';
+  static const nameRegistroComercial = 'registro_comercial';
+  static const nameRegistroMovimiento = 'registro_movimiento';
+  static const nameRegistroCosto = 'registro_costo';
 
   static String animalNuevoPath() => '/directorio/animales/nuevo';
   static String animalDetallePath(String uuid) => '/directorio/animales/$uuid';

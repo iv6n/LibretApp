@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:libretapp/core/services/prefs_keys.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
 
 abstract class EventosRepository {
@@ -6,90 +10,52 @@ abstract class EventosRepository {
   Future<void> saveEvento(Evento evento);
   Future<void> deleteEvento(String id);
   Future<void> updateEvento(Evento evento);
+  Future<void> replaceAll(List<Evento> eventos);
+  Future<void> clearAll();
 }
 
 class EventosRepositoryImpl implements EventosRepository {
-  final List<Evento> _mockStore = [
-    Evento(
-      id: 'evt-1',
-      titulo: 'Vacunación clostridios',
-      descripcion: 'Refuerzo para vaquillas nuevas',
-      fecha: DateTime.now().add(const Duration(days: 2)),
-      tipo: 'Vacunación',
-      animalId: 'uuid-rosario',
-      ubicacion: 'potrero-b',
-    ),
-    Evento(
-      id: 'evt-2',
-      titulo: 'Pesaje terminación',
-      descripcion: 'Control de ganado en feedlot',
-      fecha: DateTime.now().add(const Duration(days: 1)),
-      tipo: 'Pesaje',
-      animalId: 'uuid-trueno',
-      ubicacion: 'feedlot-1',
-    ),
-    Evento(
-      id: 'evt-3',
-      titulo: 'Ecografía preñez',
-      descripcion: 'Confirmar gestación en Pampa',
-      fecha: DateTime.now().add(const Duration(days: 4)),
-      tipo: 'Reproducción',
-      animalId: 'uuid-pampa',
-      ubicacion: 'potrero-b',
-    ),
-    Evento(
-      id: 'evt-4',
-      titulo: 'Control mastitis',
-      descripcion: 'Revisión y tratamiento cerda Luna',
-      fecha: DateTime.now().add(const Duration(days: 3)),
-      tipo: 'Salud',
-      animalId: 'uuid-cerdita',
-      ubicacion: 'feedlot-1',
-    ),
-    Evento(
-      id: 'evt-5',
-      titulo: 'Revisión cascos',
-      descripcion: 'Limpiar y revisar caballos de trabajo',
-      fecha: DateTime.now().add(const Duration(days: 6)),
-      tipo: 'Mantenimiento',
-      animalId: 'uuid-potro',
-      ubicacion: 'rancho-trabajo',
-    ),
-    Evento(
-      id: 'evt-6',
-      titulo: 'Rotación potrero D',
-      descripcion: 'Mover lotes en observación',
-      fecha: DateTime.now().add(const Duration(days: -1)),
-      tipo: 'Movimiento',
-      animalId: 'uuid-gaia',
-      ubicacion: 'potrero-d',
-    ),
-    Evento(
-      id: 'evt-7',
-      titulo: 'Cambio bebederos',
-      descripcion: 'Limpieza y clorado',
-      fecha: DateTime.now().add(const Duration(days: 5)),
-      tipo: 'Mantenimiento',
-      animalId: 'uuid-gallina',
-      ubicacion: 'gallinero-central',
-    ),
-    Evento(
-      id: 'evt-8',
-      titulo: 'Pesaje cabras pre-parto',
-      descripcion: 'Verificar condición de Lira',
-      fecha: DateTime.now().add(const Duration(days: 5)),
-      tipo: 'Pesaje',
-      animalId: 'uuid-lira',
-      ubicacion: 'potrero-c',
-    ),
-  ];
+  EventosRepositoryImpl(this._prefs);
+
+  final SharedPrefsService _prefs;
+
+  List<Evento>? _cache;
+
+  List<Evento> _sort(List<Evento> eventos) {
+    eventos.sort((a, b) => a.fecha.compareTo(b.fecha));
+    return eventos;
+  }
+
+  Future<List<Evento>> _load() async {
+    if (_cache != null) {
+      return _sort(List<Evento>.from(_cache!));
+    }
+
+    final raw = _prefs.getString(PrefsKeys.eventsStorage);
+    if (raw == null || raw.isEmpty) {
+      _cache = <Evento>[];
+      return <Evento>[];
+    }
+
+    final decoded = jsonDecode(raw) as List<dynamic>;
+    final eventos = decoded
+        .map((e) => Evento.fromJson(e as Map<String, dynamic>))
+        .toList(growable: true);
+
+    _cache = eventos;
+    return _sort(List<Evento>.from(eventos));
+  }
+
+  Future<void> _persist(List<Evento> eventos) async {
+    _cache = List<Evento>.from(eventos);
+    final json = jsonEncode(eventos.map((e) => e.toJson()).toList());
+    await _prefs.setString(PrefsKeys.eventsStorage, json);
+  }
 
   @override
   Future<List<Evento>> fetchEventos() async {
-    // Simula una llamada a base de datos
-    await Future.delayed(const Duration(milliseconds: 250));
-    _mockStore.sort((a, b) => a.fecha.compareTo(b.fecha));
-    return List.unmodifiable(_mockStore);
+    final eventos = await _load();
+    return List.unmodifiable(eventos);
   }
 
   @override
@@ -100,22 +66,41 @@ class EventosRepositoryImpl implements EventosRepository {
 
   @override
   Future<void> saveEvento(Evento evento) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    _mockStore.add(evento);
+    final eventos = await _load();
+    final index = eventos.indexWhere((e) => e.id == evento.id);
+    if (index == -1) {
+      eventos.add(evento);
+    } else {
+      eventos[index] = evento;
+    }
+    await _persist(_sort(eventos));
   }
 
   @override
   Future<void> deleteEvento(String id) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    _mockStore.removeWhere((e) => e.id == id);
+    final eventos = await _load();
+    eventos.removeWhere((e) => e.id == id);
+    await _persist(_sort(eventos));
   }
 
   @override
   Future<void> updateEvento(Evento evento) async {
-    await Future.delayed(const Duration(milliseconds: 150));
-    final index = _mockStore.indexWhere((e) => e.id == evento.id);
+    final eventos = await _load();
+    final index = eventos.indexWhere((e) => e.id == evento.id);
     if (index != -1) {
-      _mockStore[index] = evento;
+      eventos[index] = evento;
+      await _persist(_sort(eventos));
     }
+  }
+
+  @override
+  Future<void> replaceAll(List<Evento> eventos) async {
+    await _persist(_sort(List<Evento>.from(eventos)));
+  }
+
+  @override
+  Future<void> clearAll() async {
+    _cache = <Evento>[];
+    await _prefs.remove(PrefsKeys.eventsStorage);
   }
 }

@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de evento comercial.
 enum CommercialRecordType {
@@ -11,23 +11,20 @@ enum CommercialRecordType {
 }
 
 /// Registro comercial del animal.
-class CommercialRecord extends Equatable {
+class CommercialRecord extends TimestampedRecord {
   const CommercialRecord({
-    required this.date,
+    required super.date,
     required this.type,
     this.amount,
     this.currency,
     this.counterparty,
-    this.notes,
-    this.id,
+    super.notes,
+    super.id,
   });
-  final DateTime date;
   final CommercialRecordType type;
   final double? amount;
   final String? currency;
   final String? counterparty;
-  final String? notes;
-  final String? id;
 
   CommercialRecord copyWith({
     DateTime? date,
@@ -51,12 +48,10 @@ class CommercialRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-    date,
+    ...super.props,
     type,
     amount,
     currency,
     counterparty,
-    notes,
-    id,
   ];
 }

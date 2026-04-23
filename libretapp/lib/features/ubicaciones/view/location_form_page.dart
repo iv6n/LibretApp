@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -81,22 +82,14 @@ class _LocationFormPageState extends State<LocationFormPage> {
     try {
       await _repository.upsert(value);
       if (!mounted) return;
-      UbicacionesBloc? bloc;
-      try {
-        bloc = BlocProvider.of<UbicacionesBloc>(context, listen: false);
-      } catch (_) {
-        bloc = null;
-      }
-      bloc?.add(const LoadUbicaciones());
+      context.read<UbicacionesBloc>().add(const LoadUbicaciones());
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _saving = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo guardar la ubicación: $e')),
-      );
+      context.showErrorSnackBar('No se pudo guardar la ubicación: $e');
     }
   }
 }

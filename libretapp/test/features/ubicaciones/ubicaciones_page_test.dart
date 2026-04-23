@@ -4,6 +4,7 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_page.dart';
 
@@ -60,6 +61,50 @@ class _FakeLocationRepository implements LocationRepository {
 
   @override
   Future<void> addCost(String uuid, CostRecord record) async {}
+
+  @override
+  Future<void> addCrop(String locationUuid, CropRecord crop) async {}
+
+  @override
+  Future<void> updateCrop(String locationUuid, CropRecord crop) async {}
+
+  @override
+  Future<void> deleteCrop(String locationUuid, String cropUuid) async {}
+
+  @override
+  Future<void> addHarvest(
+    String locationUuid,
+    String cropUuid,
+    HarvestRecord record,
+  ) async {}
+
+  @override
+  Future<void> addCropWatering(
+    String locationUuid,
+    String cropUuid,
+    CropWateringRecord record,
+  ) async {}
+
+  @override
+  Future<void> addCropHealth(
+    String locationUuid,
+    String cropUuid,
+    CropHealthRecord record,
+  ) async {}
+
+  @override
+  Future<void> addCropTask(
+    String locationUuid,
+    String cropUuid,
+    CropTask task,
+  ) async {}
+
+  @override
+  Future<void> completeCropTask(
+    String locationUuid,
+    String cropUuid,
+    String taskUuid,
+  ) async {}
 }
 
 void main() {

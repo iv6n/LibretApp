@@ -1,24 +1,21 @@
-import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Métodos de medición de peso.
 enum WeightMethod { scale, estimated }
 
 /// Registro de peso del animal.
-class WeightRecord extends Equatable {
+class WeightRecord extends TimestampedRecord {
   const WeightRecord({
-    required this.date,
+    required super.date,
     required this.weight,
     required this.method,
     this.measuredBy,
-    this.notes,
-    this.id,
+    super.notes,
+    super.id,
   });
-  final DateTime date;
   final double weight;
   final WeightMethod method;
   final String? measuredBy;
-  final String? notes;
-  final String? id;
 
   WeightRecord copyWith({
     DateTime? date,
@@ -39,5 +36,5 @@ class WeightRecord extends Equatable {
   }
 
   @override
-  List<Object?> get props => [date, weight, method, measuredBy, notes, id];
+  List<Object?> get props => [...super.props, weight, method, measuredBy];
 }

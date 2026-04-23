@@ -18,6 +18,28 @@ class Evento extends Equatable {
   final String animalId;
   final String ubicacion;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'titulo': titulo,
+    'descripcion': descripcion,
+    'fecha': fecha.toIso8601String(),
+    'tipo': tipo,
+    'animalId': animalId,
+    'ubicacion': ubicacion,
+  };
+
+  static Evento fromJson(Map<String, dynamic> json) {
+    return Evento(
+      id: json['id'] as String,
+      titulo: json['titulo'] as String,
+      descripcion: json['descripcion'] as String,
+      fecha: DateTime.parse(json['fecha'] as String),
+      tipo: json['tipo'] as String,
+      animalId: json['animalId'] as String,
+      ubicacion: json['ubicacion'] as String,
+    );
+  }
+
   @override
   List<Object> get props => [
     id,

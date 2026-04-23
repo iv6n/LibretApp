@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
@@ -61,9 +62,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
 
     if (!mounted) return false;
     if (nextState is LotesError) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(nextState.message)));
+      context.showErrorSnackBar(nextState.message);
       return false;
     }
 
@@ -73,11 +72,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
   Future<void> _submit({LoteEntity? current}) async {
     final nombre = _nombreController.text.trim();
     if (nombre.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa un nombre para el lote'),
-        ),
-      );
+      context.showErrorSnackBar('Por favor ingresa un nombre para el lote');
       return;
     }
 
@@ -89,9 +84,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
     if (widget.isEdit) {
       if (current == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se encontró el lote para editar')),
-          );
+          context.showErrorSnackBar('No se encontró el lote para editar');
         }
         setState(() {
           _saving = false;

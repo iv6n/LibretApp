@@ -103,6 +103,12 @@ class _UbicacionesViewState extends State<UbicacionesView> {
     ).showSnackBar(const SnackBar(content: Text('Filtros próximamente')));
   }
 
+  void _showSuccessMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = ShellInsets.bottomSafePadding(context);
@@ -110,10 +116,10 @@ class _UbicacionesViewState extends State<UbicacionesView> {
 
     final fabConfig = ShellFabConfig(
       id: 'ubicaciones',
-      label: 'Agregar',
-      icon: Icons.add_location_alt_outlined,
+      label: 'Registrar',
+      icon: Icons.add,
       heroTag: 'fab_ubicaciones',
-      onPressed: _openCreatePage,
+      onPressed: _openPrimaryActionsMenu,
     );
 
     return ShellFabConfigScope(
@@ -173,7 +179,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
               hasScrollBody: false,
               child: _CenteredSection(
                 padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
-                child: const LocationEmptyView(),
+                child: LocationEmptyView(onCreate: _openCreatePage),
               ),
             )
           else
@@ -214,14 +220,77 @@ class _UbicacionesViewState extends State<UbicacionesView> {
   }
 
   Future<void> _openCreatePage() async {
-    await context.pushNamed(AppRoutes.nameUbicacionNueva);
+    final created = await context.pushNamed<bool>(AppRoutes.nameUbicacionNueva);
+    if (!mounted || created != true) return;
+    _showSuccessMessage('Ubicación creada correctamente');
   }
 
   Future<void> _openEditPage(String uuid) async {
-    await context.pushNamed(
+    final updated = await context.pushNamed<bool>(
       AppRoutes.nameUbicacionEditar,
       pathParameters: {'uuid': uuid},
     );
+    if (!mounted || updated != true) return;
+    _showSuccessMessage('Ubicación actualizada correctamente');
+  }
+
+  Future<void> _openPrimaryActionsMenu() async {
+    final action = await showModalBottomSheet<_UbicacionesPrimaryAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.add_location_alt_outlined),
+                  title: const Text('Agregar ubicación'),
+                  subtitle: const Text('Crear una nueva ubicación en el mapa'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_UbicacionesPrimaryAction.createLocation),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.build_circle_outlined),
+                  title: const Text('Registrar mantenimiento'),
+                  subtitle: const Text('Abrir eventos de mantenimiento'),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_UbicacionesPrimaryAction.maintenance),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.swap_horiz_outlined),
+                  title: const Text('Registrar asignación / movimiento'),
+                  subtitle: const Text(
+                    'Asignar o mover animales entre ubicaciones',
+                  ),
+                  onTap: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_UbicacionesPrimaryAction.assignment),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _UbicacionesPrimaryAction.createLocation:
+        await _openCreatePage();
+        break;
+      case _UbicacionesPrimaryAction.maintenance:
+        await context.push(AppRoutes.eventos);
+        break;
+      case _UbicacionesPrimaryAction.assignment:
+        await context.pushNamed(AppRoutes.nameRegistroMovimiento);
+        break;
+    }
   }
 
   Future<void> _confirmDelete(
@@ -457,3 +526,5 @@ class _CenteredSection extends StatelessWidget {
     );
   }
 }
+
+enum _UbicacionesPrimaryAction { createLocation, maintenance, assignment }

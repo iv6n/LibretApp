@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
@@ -370,11 +371,7 @@ class _CreateLoteSheetState extends State<_CreateLoteSheet> {
   void _submitForm() {
     final nombre = _nombreController.text.trim();
     if (nombre.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa un nombre para el lote'),
-        ),
-      );
+      context.showErrorSnackBar('Por favor ingresa un nombre para el lote');
       return;
     }
 

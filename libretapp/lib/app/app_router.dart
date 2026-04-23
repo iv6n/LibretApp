@@ -7,6 +7,7 @@ import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/eventos/eventos.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
+import 'package:libretapp/features/registro/registro.dart';
 import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
 
 final router = GoRouter(
@@ -136,7 +137,12 @@ final router = GoRouter(
             GoRoute(
               path: AppRoutes.inicio,
               name: AppRoutes.nameInicio,
-              builder: (context, state) => const InicioPage(),
+              builder: (context, state) => BlocProvider(
+                create: (_) =>
+                    InicioBloc(locator<InicioDashboardService>())
+                      ..add(const LoadInicio()),
+                child: const InicioPage(),
+              ),
             ),
           ],
         ),
@@ -192,6 +198,70 @@ final router = GoRouter(
         ),
       ],
     ),
+    GoRoute(
+      path: AppRoutes.registro,
+      name: AppRoutes.nameRegistro,
+      pageBuilder: (context, state) =>
+          _buildOverlayDetailPage(state: state, child: const RegistroPage()),
+      routes: [
+        GoRoute(
+          path: 'sanitario',
+          name: AppRoutes.nameRegistroSanitario,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroSanitarioPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'peso',
+          name: AppRoutes.nameRegistroPeso,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroPesoPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'produccion',
+          name: AppRoutes.nameRegistroProduccion,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroProduccionPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'reproduccion',
+          name: AppRoutes.nameRegistroReproduccion,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroReproduccionPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'comercial',
+          name: AppRoutes.nameRegistroComercial,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroComercialPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'movimiento',
+          name: AppRoutes.nameRegistroMovimiento,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroMovimientoPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'costo',
+          name: AppRoutes.nameRegistroCosto,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroCostoPage(),
+          ),
+        ),
+      ],
+    ),
   ],
 );
 
@@ -202,8 +272,8 @@ CustomTransitionPage<void> _buildOverlayDetailPage({
   return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
-    transitionDuration: const Duration(milliseconds: 260),
-    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionDuration: UiConstants.modalTransitionDuration,
+    reverseTransitionDuration: UiConstants.modalReverseTransitionDuration,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,

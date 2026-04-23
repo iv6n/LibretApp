@@ -3,6 +3,8 @@ class PrefsKeys {
 
   static const animalsHash = 'animals.hash';
   static const animalsLastSync = 'animals.lastSync';
+  static const eventsStorage = 'events.storage';
+  static const eventsInitialPurgeV1Done = 'events.initialPurge.v1.done';
   static const appLanguage = 'app.language';
   static const appTheme = 'app.theme';
 }

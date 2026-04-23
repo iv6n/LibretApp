@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart'
     show AnimalEvent, AddHealthRecord, AddProductionRecord, AddWeightRecord;
-import 'package:libretapp/features/directorio/animales/bloc/animales_bloc.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart';
-import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -212,6 +209,28 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
     return double.tryParse(normalized);
   }
 
+  Future<bool> _isEarTagDuplicated({
+    required String earTag,
+    String? excludeUuid,
+  }) async {
+    final normalized = earTag.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final animals = await _animalRepository.getAll();
+    for (final animal in animals) {
+      if (excludeUuid != null && animal.uuid == excludeUuid) {
+        continue;
+      }
+      final candidate = animal.earTagNumber.trim().toLowerCase();
+      if (candidate.isNotEmpty && candidate == normalized) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void _showMessage(String message) {
     ScaffoldMessenger.of(
       context,
@@ -405,55 +424,31 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
   }
 
   Future<bool> _dispatchAndAwait(AnimalesEvent event) async {
-    AnimalesBloc? bloc;
+    // Save directly via the repository instead of dispatching through the bloc.
+    // The Isar watchAll() stream will fire after the write and deliver a single
+    // AnimalesStreamUpdated → AnimalesLoaded emission to the AnimalesBloc.
+    // Routing the save through the bloc caused a double-emit (one from
+    // _refreshLoadedState, one from the stream) that raced with the page-pop
+    // transition and triggered an _InactiveElements assertion in the framework.
     try {
-      bloc = context.read<AnimalesBloc>();
-    } catch (_) {
-      bloc = null;
-    }
-    if (bloc == null) {
-      try {
-        if (event is AddAnimal) {
-          await _animalRepository.save(event.animal);
-          return true;
-        }
-        if (event is UpdateAnimal) {
-          await _animalRepository.update(event.animal);
-          return true;
-        }
-        _showMessage(AppLocalizations.of(context).animalFormUnsupportedAction);
-        return false;
-      } catch (e) {
-        _showMessage(
-          AppLocalizations.of(context).animalFormRecordSaveError('$e'),
-        );
-        return false;
+      if (event is AddAnimal) {
+        await _animalRepository.save(event.animal);
+        return true;
       }
-    }
-    final activeBloc = bloc;
-    final future = activeBloc.stream
-        .skip(1)
-        .firstWhere(
-          (state) => state is! AnimalesLoading,
-          orElse: () => activeBloc.state,
-        )
-        .timeout(const Duration(seconds: 6), onTimeout: () => activeBloc.state);
-    activeBloc.add(event);
-    final nextState = await future;
-    if (!mounted) return false;
-    if (nextState is AnimalesError) {
-      _showMessage(nextState.message);
+      if (event is UpdateAnimal) {
+        await _animalRepository.update(event.animal);
+        return true;
+      }
+      if (!mounted) return false;
+      _showMessage(AppLocalizations.of(context).animalFormUnsupportedAction);
       return false;
-    }
-    if (nextState is AnimalesLoading) {
+    } catch (e) {
+      if (!mounted) return false;
       _showMessage(
-        AppLocalizations.of(context).animalFormRecordSaveError(
-          'No se pudo confirmar actualizacion de lista',
-        ),
+        AppLocalizations.of(context).animalFormRecordSaveError('$e'),
       );
       return false;
     }
-    return nextState is AnimalesLoaded;
   }
 
   Future<bool> _dispatchRecordAndAwait(AnimalEvent event) async {
@@ -608,24 +603,40 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
   Future<void> _submit() async {
     if (_saving) return;
 
+    final l10n = AppLocalizations.of(context);
     final earTag = _earTagCtrl.text.trim();
-    final breed = _normalizedText(_breedCtrl.text) ?? 'Sin raza';
-    if (earTag.isEmpty) {
+    final breed =
+        _normalizedText(_breedCtrl.text) ?? l10n.animalFormUnknownBreed;
+    final resolvedSpecies = _registerAsCalf ? Species.cattle : _species;
+    final resolvedCategory = _registerAsCalf ? Category.calf : _category;
+
+    if (earTag.isEmpty && resolvedSpecies == Species.cattle) {
       final accepted = await _askEarTagWarning();
       if (!accepted) {
         return;
       }
     }
 
+    if (earTag.isNotEmpty) {
+      final duplicated = await _isEarTagDuplicated(
+        earTag: earTag,
+        excludeUuid: _editingAnimal?.uuid,
+      );
+      if (duplicated) {
+        _showMessage(l10n.animalFormDuplicateEarTag);
+        return;
+      }
+    }
+
     final parsedWeight = _parseOptionalDouble(_weightCtrl.text);
     if (_weightCtrl.text.trim().isNotEmpty && parsedWeight == null) {
-      _showMessage(AppLocalizations.of(context).detailFormWeightErrorInvalid);
+      _showMessage(l10n.detailFormWeightErrorInvalid);
       return;
     }
 
     final parsedPurchase = _parseOptionalDouble(_purchaseCtrl.text);
     if (_purchaseCtrl.text.trim().isNotEmpty && parsedPurchase == null) {
-      _showMessage(AppLocalizations.of(context).animalFormInvalidPurchasePrice);
+      _showMessage(l10n.animalFormInvalidPurchasePrice);
       return;
     }
 
@@ -633,8 +644,6 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
       _saving = true;
     });
 
-    final resolvedSpecies = _registerAsCalf ? Species.cattle : _species;
-    final resolvedCategory = _registerAsCalf ? Category.calf : _category;
     final resolvedDamUuid = _registerAsCalf
         ? (_selectedDamUuid ?? _findAutoDamCandidate()?.uuid)
         : _selectedDamUuid;
@@ -642,7 +651,7 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
     if (_registerAsCalf &&
         _selectedDamUuid == null &&
         resolvedDamUuid == null) {
-      _showMessage(AppLocalizations.of(context).animalFormNoAutoMotherFound);
+      _showMessage(l10n.animalFormNoAutoMotherFound);
     }
 
     final lifecycle = AnimalLifecycleCalculator.calculate(
@@ -656,7 +665,7 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
 
     try {
       if (widget.isEdit && _editingAnimal == null) {
-        _showMessage(AppLocalizations.of(context).detailNotFound);
+        _showMessage(l10n.detailNotFound);
         return;
       }
 
@@ -758,7 +767,10 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
     }
 
     if (!mounted || !saved) return;
-    Navigator.of(context).pop(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    });
   }
 
   @override
@@ -1304,9 +1316,9 @@ class _AnimalFormPageState extends State<AnimalFormPage> {
                             TextField(
                               controller: _notesCtrl,
                               maxLines: 3,
-                              decoration: const InputDecoration(
-                                labelText: 'Notas',
-                                border: OutlineInputBorder(),
+                              decoration: InputDecoration(
+                                labelText: l10n.fieldNotes,
+                                border: const OutlineInputBorder(),
                               ),
                             ),
                             const SizedBox(height: 8),

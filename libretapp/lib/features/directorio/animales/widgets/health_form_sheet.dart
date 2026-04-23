@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/advisor/livestock_advisor.dart';
+import 'package:libretapp/core/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -10,6 +12,7 @@ Future<void> showHealthForm(
   required String animalUuid,
   required Future<bool> Function(AnimalEvent) dispatchAndAwait,
   required VoidCallback onReload,
+  AnimalEntity? animal,
 }) async {
   await _showHealthForm(
     context,
@@ -18,6 +21,7 @@ Future<void> showHealthForm(
       AddHealthRecord(animalUuid: animalUuid, record: record),
     ),
     onSaved: onReload,
+    animal: animal,
   );
 }
 
@@ -41,6 +45,7 @@ Future<void> _showHealthForm(
   required String? title,
   required HealthRecordSubmit onSubmit,
   required VoidCallback onSaved,
+  AnimalEntity? animal,
 }) async {
   final messenger = ScaffoldMessenger.of(context);
   final navigator = Navigator.of(context);
@@ -187,6 +192,23 @@ Future<void> _showHealthForm(
                     maxLines: 2,
                   ),
                   const SizedBox(height: 16),
+                  if (animal != null) ...[
+                    Builder(
+                      builder: (_) {
+                        final previewRecord = HealthRecord(
+                          date: date,
+                          type: type,
+                          product: '',
+                        );
+                        final tips = LivestockAdvisor.forHealth(
+                          animal,
+                          previewRecord,
+                        );
+                        return AdvisorTipsPanel(tips: tips);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

@@ -27,21 +27,38 @@ class AppShellFab extends StatelessWidget {
     final chrome = Theme.of(context).extension<ShellChromeTheme>();
     final fabBackground = chrome?.fabBackground ?? backgroundColor;
     final fabForeground = chrome?.fabForeground ?? foregroundColor;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final minFabWidth = (screenWidth * 0.40).clamp(106.0, 202.0).toDouble();
 
     return Padding(
       key: ValueKey('fab_${fabConfig.id}'),
       padding: EdgeInsets.only(bottom: dockPadding),
-      child: SizedBox(
-        height: 46,
-        child: FloatingActionButton.extended(
-          heroTag: fabConfig.heroTag ?? 'shell_fab',
-          backgroundColor: fabBackground,
-          foregroundColor: fabForeground,
-          elevation: 1.5,
-          onPressed: fabConfig.onPressed,
-          extendedPadding: const EdgeInsets.symmetric(horizontal: 18),
-          icon: Icon(fabConfig.icon, size: 20),
-          label: Text(fabConfig.label),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: minFabWidth),
+        child: SizedBox(
+          height: 40,
+          child: FloatingActionButton.extended(
+            heroTag: fabConfig.heroTag ?? 'shell_fab',
+            backgroundColor: fabBackground,
+            foregroundColor: fabForeground,
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: fabForeground.withValues(alpha: 0.12),
+                width: 1,
+              ),
+            ),
+            elevation: 1,
+            onPressed: fabConfig.onPressed,
+            extendedPadding: const EdgeInsets.symmetric(horizontal: 10),
+            icon: Icon(fabConfig.icon, size: 20),
+            label: Text(
+              fabConfig.label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
+              ),
+            ),
+          ),
         ),
       ),
     );
