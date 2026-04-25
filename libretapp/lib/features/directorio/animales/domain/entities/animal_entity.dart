@@ -19,12 +19,17 @@ import '../enums/species.dart';
 ///
 /// **Campos Organizados por Categoría:**
 /// - **Identificación**: id, uuid, earTagNumber, customName, visualId, brand, rfidTag, batchUuid
-/// - **Biológica**: species, category, lifeStage, sex, breed, generation, sireUuid, damUuid
+/// - **Biológica**: species, category, lifeStage, sex, breed, crossBreed, generation, sireUuid, damUuid
 /// - **Vital**: birthDate, ageMonths, weight, status
 /// - **Salud**: healthStatus, bodyConditionScore, vaccinated, dewormed, hasVitamins,
 ///   hasChronicIssues, chronicNotes, underObservation, requiresAttention, riskLevel
 /// - **Reproductiva**: reproductiveStatus, firstServiceDate, lastServiceDate, expectedCalvingDate
 /// - **Producción**: productionPurpose, productionStage, productionSystem, feedType, dailyGainEstimate
+/// - **Registro**: coatColor, distinguishingMarks, notes, originType, provenance,
+///   crossBreedType, sireBreed, damBreed, bloodPercentage, genealogicalRegistry,
+///   originNotes, housingType, shadingAvailability, animalWaterSource,
+///   approximateDensity, locationNotes, feedFrequency, feedSupplements,
+///   feedNotes, earTagColor
 /// - **Ubicación**: currentPaddockId, initialLocationId, lastMovementDate
 /// - **Multimedia**: profilePhoto, gallery
 /// - **Propietario**: owner, purchasePrice
@@ -50,6 +55,7 @@ class AnimalEntity extends Equatable {
     required this.lifeStage,
     required this.sex,
     required this.breed,
+    this.crossBreed,
     required this.birthDate,
     required this.ageMonths,
     this.weight,
@@ -72,6 +78,26 @@ class AnimalEntity extends Equatable {
     required this.productionSystem,
     this.feedType,
     this.dailyGainEstimate,
+    this.coatColor,
+    this.distinguishingMarks,
+    this.notes,
+    this.originType,
+    this.provenance,
+    this.crossBreedType,
+    this.sireBreed,
+    this.damBreed,
+    this.bloodPercentage,
+    this.genealogicalRegistry,
+    this.originNotes,
+    this.housingType,
+    this.shadingAvailability,
+    this.animalWaterSource,
+    this.approximateDensity,
+    this.locationNotes,
+    this.feedFrequency,
+    this.feedSupplements,
+    this.feedNotes,
+    this.earTagColor,
     this.currentPaddockId,
     this.initialLocationId,
     this.lastMovementDate,
@@ -105,6 +131,7 @@ class AnimalEntity extends Equatable {
   final LifeStage lifeStage;
   final Sex sex;
   final String breed;
+  final String? crossBreed;
   final DateTime birthDate;
   final int ageMonths;
   final double? weight;
@@ -127,6 +154,26 @@ class AnimalEntity extends Equatable {
   final ProductionSystem productionSystem;
   final String? feedType;
   final double? dailyGainEstimate;
+  final String? coatColor;
+  final String? distinguishingMarks;
+  final String? notes;
+  final String? originType;
+  final String? provenance;
+  final String? crossBreedType;
+  final String? sireBreed;
+  final String? damBreed;
+  final int? bloodPercentage;
+  final String? genealogicalRegistry;
+  final String? originNotes;
+  final String? housingType;
+  final String? shadingAvailability;
+  final String? animalWaterSource;
+  final String? approximateDensity;
+  final String? locationNotes;
+  final String? feedFrequency;
+  final String? feedSupplements;
+  final String? feedNotes;
+  final String? earTagColor;
   final String? currentPaddockId;
   final String? initialLocationId;
   final DateTime? lastMovementDate;
@@ -161,6 +208,7 @@ class AnimalEntity extends Equatable {
     LifeStage? lifeStage,
     Sex? sex,
     String? breed,
+    String? crossBreed,
     DateTime? birthDate,
     int? ageMonths,
     double? weight,
@@ -183,6 +231,26 @@ class AnimalEntity extends Equatable {
     ProductionSystem? productionSystem,
     String? feedType,
     double? dailyGainEstimate,
+    String? coatColor,
+    String? distinguishingMarks,
+    String? notes,
+    String? originType,
+    String? provenance,
+    String? crossBreedType,
+    String? sireBreed,
+    String? damBreed,
+    int? bloodPercentage,
+    String? genealogicalRegistry,
+    String? originNotes,
+    String? housingType,
+    String? shadingAvailability,
+    String? animalWaterSource,
+    String? approximateDensity,
+    String? locationNotes,
+    String? feedFrequency,
+    String? feedSupplements,
+    String? feedNotes,
+    String? earTagColor,
     String? currentPaddockId,
     String? initialLocationId,
     DateTime? lastMovementDate,
@@ -215,6 +283,7 @@ class AnimalEntity extends Equatable {
       lifeStage: lifeStage ?? this.lifeStage,
       sex: sex ?? this.sex,
       breed: breed ?? this.breed,
+      crossBreed: crossBreed ?? this.crossBreed,
       birthDate: birthDate ?? this.birthDate,
       ageMonths: ageMonths ?? this.ageMonths,
       weight: weight ?? this.weight,
@@ -237,6 +306,26 @@ class AnimalEntity extends Equatable {
       productionSystem: productionSystem ?? this.productionSystem,
       feedType: feedType ?? this.feedType,
       dailyGainEstimate: dailyGainEstimate ?? this.dailyGainEstimate,
+      coatColor: coatColor ?? this.coatColor,
+      distinguishingMarks: distinguishingMarks ?? this.distinguishingMarks,
+      notes: notes ?? this.notes,
+      originType: originType ?? this.originType,
+      provenance: provenance ?? this.provenance,
+      crossBreedType: crossBreedType ?? this.crossBreedType,
+      sireBreed: sireBreed ?? this.sireBreed,
+      damBreed: damBreed ?? this.damBreed,
+      bloodPercentage: bloodPercentage ?? this.bloodPercentage,
+      genealogicalRegistry: genealogicalRegistry ?? this.genealogicalRegistry,
+      originNotes: originNotes ?? this.originNotes,
+      housingType: housingType ?? this.housingType,
+      shadingAvailability: shadingAvailability ?? this.shadingAvailability,
+      animalWaterSource: animalWaterSource ?? this.animalWaterSource,
+      approximateDensity: approximateDensity ?? this.approximateDensity,
+      locationNotes: locationNotes ?? this.locationNotes,
+      feedFrequency: feedFrequency ?? this.feedFrequency,
+      feedSupplements: feedSupplements ?? this.feedSupplements,
+      feedNotes: feedNotes ?? this.feedNotes,
+      earTagColor: earTagColor ?? this.earTagColor,
       currentPaddockId: currentPaddockId ?? this.currentPaddockId,
       initialLocationId: initialLocationId ?? this.initialLocationId,
       lastMovementDate: lastMovementDate ?? this.lastMovementDate,
@@ -272,6 +361,7 @@ class AnimalEntity extends Equatable {
     lifeStage,
     sex,
     breed,
+    crossBreed,
     birthDate,
     ageMonths,
     weight,
@@ -294,6 +384,26 @@ class AnimalEntity extends Equatable {
     productionSystem,
     feedType,
     dailyGainEstimate,
+    coatColor,
+    distinguishingMarks,
+    notes,
+    originType,
+    provenance,
+    crossBreedType,
+    sireBreed,
+    damBreed,
+    bloodPercentage,
+    genealogicalRegistry,
+    originNotes,
+    housingType,
+    shadingAvailability,
+    animalWaterSource,
+    approximateDensity,
+    locationNotes,
+    feedFrequency,
+    feedSupplements,
+    feedNotes,
+    earTagColor,
     currentPaddockId,
     initialLocationId,
     lastMovementDate,

@@ -58,7 +58,7 @@ final router = GoRouter(
                   name: AppRoutes.nameAnimalNuevo,
                   pageBuilder: (context, state) => _buildOverlayDetailPage(
                     state: state,
-                    child: const AnimalFormPage(),
+                    child: const RegisterAnimalPage(),
                   ),
                 ),
                 GoRoute(

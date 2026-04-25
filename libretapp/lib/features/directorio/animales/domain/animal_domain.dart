@@ -10,6 +10,7 @@ export 'enums/animal_status.dart';
 export 'enums/category.dart';
 export 'enums/health_status.dart';
 export 'enums/life_stage.dart';
+export 'enums/origin_type.dart';
 export 'enums/production_purpose.dart';
 export 'enums/reproductive_status.dart';
 export 'enums/risk_level.dart';

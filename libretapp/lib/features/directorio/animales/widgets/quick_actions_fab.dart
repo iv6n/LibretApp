@@ -11,6 +11,7 @@ class QuickActionsFab extends StatelessWidget {
     required this.onAddCommercial,
     required this.onAddMovement,
     required this.onAddCost,
+    this.accentColor,
   });
 
   final VoidCallback onAddWeight;
@@ -20,6 +21,7 @@ class QuickActionsFab extends StatelessWidget {
   final VoidCallback onAddCommercial;
   final VoidCallback onAddMovement;
   final VoidCallback onAddCost;
+  final Color? accentColor;
 
   void _showActionsSheet(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -109,7 +111,12 @@ class QuickActionsFab extends StatelessWidget {
     return FloatingActionButton(
       heroTag: 'fab-main',
       onPressed: () => _showActionsSheet(context),
-      child: const Icon(Icons.add),
+      backgroundColor: accentColor ?? const Color(0xFF6B4CE6),
+      foregroundColor: Colors.white,
+      elevation: 8,
+      highlightElevation: 12,
+      shape: const CircleBorder(),
+      child: const Icon(Icons.add, size: 30),
     );
   }
 }

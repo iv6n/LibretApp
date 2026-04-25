@@ -8,15 +8,14 @@ import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.da
 import 'package:libretapp/l10n/app_localizations.dart';
 
 // ── Constants ───────────────────────────────────────────────────────────
-const double _kExpandedHeight = 280.0;
-const double _kPhotoExpanded = 64.0;
-const double _kPhotoCollapsed = 34.0;
-const double _kRadiusExpanded = 18.0;
+const double _kExpandedHeight = 175.0;
+const double _kPhotoExpanded = 76.0;
+const double _kPhotoCollapsed = 32.0;
+const double _kRadiusExpanded = 20.0;
 const double _kNameExpandedFont = 18.0;
 const double _kNameCollapsedFont = 16.0;
 
 /// Collapsible header delegate used inside a [SliverAppBar.flexibleSpace].
-///
 /// Uses a single avatar+name widget that morphs position and size while
 /// collapsing, avoiding jumps between separate expanded/collapsed widgets.
 class CollapsibleAnimalHeader extends StatelessWidget {
@@ -56,11 +55,11 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         // ── Derived values ──────────────────────────────────────────────
         final tPosition = Curves.easeInOutCubic.transform(t);
         final tSize = Curves.easeOutCubic.transform(t);
-        final tFastFade = Curves.easeOut.transform((t / 0.45).clamp(0.0, 1.0));
+        final tFastFade = Curves.easeOut.transform((t / 0.42).clamp(0.0, 1.0));
         final tSubtitleFade = Curves.easeOut.transform(
-          (t / 0.35).clamp(0.0, 1.0),
+          (t / 0.34).clamp(0.0, 1.0),
         );
-        final tChipFade = Curves.easeOut.transform((t / 0.55).clamp(0.0, 1.0));
+        final tChipFade = Curves.easeOut.transform((t / 0.52).clamp(0.0, 1.0));
 
         final safeTop = MediaQuery.paddingOf(context).top;
         final photoSize = lerpDouble(_kPhotoExpanded, _kPhotoCollapsed, tSize)!;
@@ -73,16 +72,20 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         final badgeOpacity = (1.0 - tFastFade).clamp(0.0, 1.0);
         final subtitleOpacity = (1.0 - tSubtitleFade).clamp(0.0, 1.0);
         final chipOpacity = (1.0 - tChipFade).clamp(0.0, 1.0);
+        final subtitleMaxLines = t < 0.18 ? 2 : 1;
+        final subtitleText = t < 0.18
+            ? '${l10n.labelEarTag}: ${animal.earTagNumber}\n${animal.lifeStage.displayName}'
+            : '${l10n.labelEarTag}: ${animal.earTagNumber} · ${animal.lifeStage.displayName}';
         final borderRadius = _kRadiusExpanded * (1.0 - t);
 
         // Start under toolbar in expanded mode, end next to back arrow.
-        final startX = 16.0;
-        final endX = 72.0;
-        final startY = safeTop + kToolbarHeight + 8;
+        final startX = 15.0;
+        final endX = 70.0;
+        final startY = safeTop + kToolbarHeight + 28;
         final endY = safeTop + (kToolbarHeight - photoSize) / 2;
         final rowX = lerpDouble(startX, endX, tPosition)!;
         final rowY = lerpDouble(startY, endY, tPosition)!;
-        final rowRight = lerpDouble(16.0, 120.0, tPosition)!;
+        final rowRight = lerpDouble(16.0, 106.0, tPosition)!;
 
         // ── Gradient background ─────────────────────────────────────────
         return Container(
@@ -102,7 +105,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
               Positioned(
                 left: rowX,
                 right: rowRight,
-                top: rowY,
+                top: rowY - 35,
                 child: Row(
                   children: [
                     _AnimalPhoto(
@@ -124,25 +127,27 @@ class CollapsibleAnimalHeader extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w800,
                                   fontSize: titleFontSize,
                                 ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (subtitleOpacity > 0) ...[
-                            SizedBox(height: 3 * subtitleOpacity),
+                            SizedBox(height: 4 * subtitleOpacity),
                             Opacity(
                               opacity: subtitleOpacity,
                               child: Text(
-                                '${l10n.labelEarTag} ${animal.earTagNumber}  ·  ${animal.lifeStage.displayName}',
+                                subtitleText,
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
                                       color: Colors.white.withValues(
                                         alpha: 0.9,
                                       ),
                                     ),
-                                maxLines: 1,
+                                maxLines: subtitleMaxLines,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -166,9 +171,9 @@ class CollapsibleAnimalHeader extends StatelessWidget {
               ),
               if (badgeOpacity > 0)
                 Positioned(
-                  left: 16,
-                  right: 16,
-                  top: safeTop + kToolbarHeight + _kPhotoExpanded + 26,
+                  left: 100,
+                  right: 24,
+                  top: safeTop + kToolbarHeight + _kPhotoExpanded - 6,
                   child: Opacity(
                     opacity: badgeOpacity,
                     child: Wrap(
@@ -244,24 +249,55 @@ class _AnimalPhoto extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(color: Colors.white, width: 2.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(max(0, radius - 2)),
-        child: hasPhoto
-            ? Image.file(
-                File(photoPath!),
-                fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => _assetFallback(),
-              )
-            : _assetFallback(),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(max(0, radius - 2)),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: hasPhoto
+                  ? Image.file(
+                      File(photoPath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => _assetFallback(),
+                    )
+                  : _assetFallback(),
+            ),
+          ),
+          if (size > 64)
+            Positioned(
+              right: -4,
+              bottom: -4,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF56D27A),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.check, color: Colors.white, size: 16),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -293,7 +329,7 @@ class BadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(20),
@@ -307,6 +343,7 @@ class BadgeChip extends StatelessWidget {
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: textColor,
           fontWeight: FontWeight.w700,
+          fontSize: 12,
         ),
       ),
     );

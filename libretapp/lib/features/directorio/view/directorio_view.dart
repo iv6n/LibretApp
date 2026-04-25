@@ -301,7 +301,13 @@ class _DirectorioViewState extends State<DirectorioView>
                               ),
                               style: const TextStyle(color: Colors.white),
                             )
-                          : Text(_showLotesTab ? 'Directorio' : 'Animales'),
+                          : Text(
+                              _showLotesTab ? 'Directorio' : 'Animales',
+                              style: const TextStyle(
+                                fontSize: 21.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                       actions: isAnimalSelectionMode
                           ? const []
                           : !_isSearching

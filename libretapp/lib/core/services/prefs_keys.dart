@@ -7,4 +7,5 @@ class PrefsKeys {
   static const eventsInitialPurgeV1Done = 'events.initialPurge.v1.done';
   static const appLanguage = 'app.language';
   static const appTheme = 'app.theme';
+  static const animalWizardDraft = 'animal.wizard.draft';
 }

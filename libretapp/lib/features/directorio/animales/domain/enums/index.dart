@@ -2,6 +2,7 @@ export 'animal_status.dart';
 export 'category.dart';
 export 'health_status.dart';
 export 'life_stage.dart';
+export 'origin_type.dart';
 export 'production_purpose.dart';
 export 'production_stage.dart';
 export 'production_system.dart';

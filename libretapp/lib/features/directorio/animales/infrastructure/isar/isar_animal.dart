@@ -26,6 +26,11 @@ part 'isar_animal.g.dart';
 /// - Salud: healthStatus, bodyConditionScore, vaccinated, dewormed, hasVitamins, hasChronicIssues, chronicNotes
 /// - Reproductiva: reproductiveStatus, firstServiceDate, lastServiceDate, expectedCalvingDate
 /// - Producción: productionPurpose, productionStage, productionSystem, feedType, dailyGainEstimate
+/// - Registro: coatColor, distinguishingMarks, notes, originType, provenance,
+///   crossBreedType, sireBreed, damBreed, bloodPercentage, genealogicalRegistry,
+///   originNotes, housingType, shadingAvailability, animalWaterSource,
+///   approximateDensity, locationNotes, feedFrequency, feedSupplements,
+///   feedNotes, earTagColor
 /// - Ubicación: currentPaddockId, initialLocationId, lastMovementDate
 /// - Monitoreo: underObservation, requiresAttention, riskLevel
 /// - Multimedia: profilePhoto, gallery
@@ -54,6 +59,7 @@ class IsarAnimal {
   late String lifeStage;
   late String sex;
   late String breed;
+  String? crossBreed;
   String? sireUuid;
   String? damUuid;
   int? generation;
@@ -85,6 +91,28 @@ class IsarAnimal {
   late String productionSystem = 'unknown';
   String? feedType;
   double? dailyGainEstimate;
+
+  // ─── REGISTRATION FLOW ────────────────────────────────────────────
+  String? coatColor;
+  String? distinguishingMarks;
+  String? notes;
+  String? originType;
+  String? provenance;
+  String? crossBreedType;
+  String? sireBreed;
+  String? damBreed;
+  int? bloodPercentage;
+  String? genealogicalRegistry;
+  String? originNotes;
+  String? housingType;
+  String? shadingAvailability;
+  String? animalWaterSource;
+  String? approximateDensity;
+  String? locationNotes;
+  String? feedFrequency;
+  String? feedSupplements;
+  String? feedNotes;
+  String? earTagColor;
 
   // ─── LOCATION ──────────────────────────────────────────────────────
   String? currentPaddockId;
@@ -135,6 +163,7 @@ extension IsarAnimalMapper on IsarAnimal {
       lifeStage: _enumByName(LifeStage.values, lifeStage),
       sex: _enumByName(Sex.values, sex),
       breed: breed,
+      crossBreed: crossBreed,
       birthDate: birthDate,
       ageMonths: ageMonths,
       weight: weight,
@@ -163,6 +192,26 @@ extension IsarAnimalMapper on IsarAnimal {
       productionSystem: _enumByName(ProductionSystem.values, productionSystem),
       feedType: feedType,
       dailyGainEstimate: dailyGainEstimate,
+      coatColor: coatColor,
+      distinguishingMarks: distinguishingMarks,
+      notes: notes,
+      originType: originType,
+      provenance: provenance,
+      crossBreedType: crossBreedType,
+      sireBreed: sireBreed,
+      damBreed: damBreed,
+      bloodPercentage: bloodPercentage,
+      genealogicalRegistry: genealogicalRegistry,
+      originNotes: originNotes,
+      housingType: housingType,
+      shadingAvailability: shadingAvailability,
+      animalWaterSource: animalWaterSource,
+      approximateDensity: approximateDensity,
+      locationNotes: locationNotes,
+      feedFrequency: feedFrequency,
+      feedSupplements: feedSupplements,
+      feedNotes: feedNotes,
+      earTagColor: earTagColor,
       currentPaddockId: currentPaddockId,
       initialLocationId: initialLocationId,
       lastMovementDate: lastMovementDate,
@@ -205,6 +254,7 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..lifeStage = lifeStage.name
       ..sex = sex.name
       ..breed = breed
+      ..crossBreed = crossBreed
       ..sireUuid = sireUuid
       ..damUuid = damUuid
       ..generation = generation
@@ -232,6 +282,27 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..productionSystem = productionSystem.name
       ..feedType = feedType
       ..dailyGainEstimate = dailyGainEstimate
+      // ─── REGISTRATION FLOW ────────────────────────────────────────
+      ..coatColor = coatColor
+      ..distinguishingMarks = distinguishingMarks
+      ..notes = notes
+      ..originType = originType
+      ..provenance = provenance
+      ..crossBreedType = crossBreedType
+      ..sireBreed = sireBreed
+      ..damBreed = damBreed
+      ..bloodPercentage = bloodPercentage
+      ..genealogicalRegistry = genealogicalRegistry
+      ..originNotes = originNotes
+      ..housingType = housingType
+      ..shadingAvailability = shadingAvailability
+      ..animalWaterSource = animalWaterSource
+      ..approximateDensity = approximateDensity
+      ..locationNotes = locationNotes
+      ..feedFrequency = feedFrequency
+      ..feedSupplements = feedSupplements
+      ..feedNotes = feedNotes
+      ..earTagColor = earTagColor
       // ─── LOCATION ──────────────────────────────────────────────────
       ..currentPaddockId = currentPaddockId
       ..initialLocationId = initialLocationId
