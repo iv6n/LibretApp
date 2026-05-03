@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_index.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/mock/mock_data_seeder.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,7 @@ void main() async {
     final startupSpan = PerformanceMonitor().startSpan('app.startup');
     LoggerService.i('Iniciando configuración de LibretApp', tag: 'Main');
     await setupLocator();
+    await seedMockAnimals();
 
     const enableTracing = kDebugMode || kProfileMode;
     if (enableTracing) {

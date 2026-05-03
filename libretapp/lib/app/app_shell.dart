@@ -30,13 +30,6 @@ class _AppShellState extends State<AppShell>
   static const bool _fabLogEnabled = true;
   int _fabVersion = 0;
   final Map<int, ShellFabConfig> _fabCache = <int, ShellFabConfig>{};
-
-  ShellFabConfig? _fabConfig;
-  int? _fabOwnerIndex;
-  int _lastIndex = -1;
-
-  bool _chromeVisible = true;
-  int? _chromeOwnerIndex;
   final Map<int, bool> _chromeCache = <int, bool>{};
 
   final List<_NavItem> _navItems = const [
@@ -51,7 +44,10 @@ class _AppShellState extends State<AppShell>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final selectedIndex = widget.navigationShell.currentIndex;
-    _ensureFabResetOnIndexChange(selectedIndex);
+    final routePath = GoRouterState.of(context).uri.path;
+    final chromeVisible =
+        !_isOverlayRoute(routePath) && _chromeForIndex(selectedIndex);
+    final fabConfig = _fabForIndex(selectedIndex);
     final accent = Theme.of(context).colorScheme.primary;
     final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
 
@@ -67,7 +63,7 @@ class _AppShellState extends State<AppShell>
     final isHomeSelected = selectedIndex == 2;
 
     return ShellChromeVisibility(
-      visible: _chromeVisible,
+      visible: chromeVisible,
       child: Scaffold(
         extendBody: true,
         body: Stack(
@@ -83,7 +79,7 @@ class _AppShellState extends State<AppShell>
             ),
           ],
         ),
-        bottomNavigationBar: _chromeVisible
+        bottomNavigationBar: chromeVisible
             ? SafeArea(
                 top: false,
                 child: AppBottomNavBar(
@@ -108,13 +104,13 @@ class _AppShellState extends State<AppShell>
               )
             : null,
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: _chromeVisible
+        floatingActionButton: chromeVisible
             ? AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 switchInCurve: Curves.easeOut,
                 switchOutCurve: Curves.easeIn,
                 child: AppShellFab(
-                  config: _fabConfig,
+                  config: fabConfig,
                   dockPadding: _fabDockPadding(context, lift: -34),
                   backgroundColor: shellTheme?.fabBackground ?? accent,
                   foregroundColor: shellTheme?.fabForeground ?? Colors.white,
@@ -123,6 +119,17 @@ class _AppShellState extends State<AppShell>
             : null,
       ),
     );
+  }
+
+  int get _activeIndex => widget.navigationShell.currentIndex;
+
+  ShellFabConfig? _fabForIndex(int index) {
+    if (!_isFabAllowed(index)) return null;
+    return _fabCache[index];
+  }
+
+  bool _chromeForIndex(int index) {
+    return _chromeCache[index] ?? true;
   }
 
   Widget _buildCenterButton(
@@ -181,26 +188,6 @@ class _AppShellState extends State<AppShell>
     );
   }
 
-  void _ensureFabResetOnIndexChange(int index) {
-    if (_lastIndex == index) return;
-    _logFab('Tab change $_lastIndex -> $index (owner: $_fabOwnerIndex)');
-    _lastIndex = index;
-    final cached = _fabCache[index];
-    final cachedChrome = _chromeCache[index];
-    // This method is called from build(), so avoid setState here.
-    final allowedFab = _isFabAllowed(index) ? cached : null;
-    _fabConfig = allowedFab;
-    _fabOwnerIndex = allowedFab == null ? null : index;
-    _chromeVisible = cachedChrome ?? true;
-    _chromeOwnerIndex = cachedChrome == null ? null : index;
-    _fabVersion++;
-    _logFab(
-      cached == null
-          ? 'No cached FAB for tab $index, cleared.'
-          : 'Restored cached FAB for tab $index id=${cached.id}',
-    );
-  }
-
   @override
   void updateFab(ShellFabConfig? config) => _updateFab(config);
 
@@ -212,14 +199,13 @@ class _AppShellState extends State<AppShell>
 
   @override
   void removeChromeVisibility(bool visible) {
-    final shouldRestore = !visible || !_chromeVisible;
+    final index = _activeIndex;
+    final shouldRestore = !visible || !_chromeForIndex(index);
     if (!shouldRestore) return;
     void restore() {
       if (!mounted) return;
       setState(() {
-        _chromeVisible = true;
-        _chromeOwnerIndex = null;
-        _chromeCache.remove(_lastIndex);
+        _chromeCache.remove(index);
       });
     }
 
@@ -235,68 +221,89 @@ class _AppShellState extends State<AppShell>
   }
 
   void _updateFab(ShellFabConfig? config) {
-    if (!_isFabAllowed(_lastIndex)) {
-      if (_fabConfig != null) {
+    final index = _activeIndex;
+    if (!_isFabAllowed(index)) {
+      if (_fabCache.containsKey(index)) {
         setState(() {
-          _fabConfig = null;
-          _fabOwnerIndex = null;
-          _fabCache.remove(_lastIndex);
+          _fabVersion++;
+          _fabCache.remove(index);
         });
       }
       return;
     }
-    final needsUpdate = config != _fabConfig || _fabOwnerIndex != _lastIndex;
-    if (!needsUpdate) return;
+    final current = _fabCache[index];
+    if (current == config) return;
     setState(() {
       _fabVersion++;
-      _fabConfig = config;
-      _fabOwnerIndex = config == null ? null : _lastIndex;
       if (config == null) {
-        _fabCache.remove(_lastIndex);
+        _fabCache.remove(index);
       } else {
-        _fabCache[_lastIndex] = config;
+        _fabCache[index] = config;
       }
     });
-    _logFab('Set FAB v$_fabVersion owner=$_fabOwnerIndex id=${config?.id}');
+    _logFab('Set FAB v$_fabVersion index=$index id=${config?.id}');
   }
 
   void _removeFab(ShellFabConfig? config) {
-    if (_fabConfig == null) return;
-    if (config == null || _fabConfig?.id == config.id) {
-      if (!mounted) return;
-      // Defer setState to a safe time if we're in a frame callback
-      final phase = WidgetsBinding.instance.schedulerPhase;
-      if (phase == SchedulerPhase.idle ||
-          phase == SchedulerPhase.postFrameCallbacks) {
-        setState(() {
-          _fabConfig = null;
-          _fabOwnerIndex = null;
-          _fabCache.remove(_lastIndex);
-        });
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          setState(() {
-            _fabConfig = null;
-            _fabOwnerIndex = null;
-            _fabCache.remove(_lastIndex);
-          });
-        });
+    final targetEntries = <int>[];
+    if (config == null) {
+      final active = _activeIndex;
+      if (_fabCache.containsKey(active)) {
+        targetEntries.add(active);
       }
-      _logFab('Removed FAB id=${config?.id}');
+    } else {
+      _fabCache.forEach((index, cached) {
+        if (cached.id == config.id) {
+          targetEntries.add(index);
+        }
+      });
     }
+    if (targetEntries.isEmpty) return;
+    if (!mounted) return;
+    void removeEntries() {
+      if (!mounted) return;
+      setState(() {
+        _fabVersion++;
+        for (final index in targetEntries) {
+          _fabCache.remove(index);
+        }
+      });
+    }
+
+    // Defer setState to a safe time if we're in a frame callback.
+    final phase = WidgetsBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.idle ||
+        phase == SchedulerPhase.postFrameCallbacks) {
+      removeEntries();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => removeEntries());
+    }
+    _logFab('Removed FAB id=${config?.id} indexes=$targetEntries');
   }
 
   bool _isFabAllowed(int index) => index != 1 && index != 4;
 
+  /// Returns true for overlay/detail routes where the shell chrome
+  /// (bottom nav + FAB) should be hidden immediately — before the
+  /// ShellChromeScope post-frame callback fires.
+  bool _isOverlayRoute(String path) {
+    // Matches any path containing a known overlay segment.
+    return path.contains('/animales/') ||
+        path.endsWith('/animales/nuevo') ||
+        path.endsWith('/lotes/nuevo') ||
+        path.contains('/lotes/') ||
+        path.endsWith('/ubicaciones/nueva') ||
+        path.contains('/ubicaciones/') ||
+        path == AppRoutes.registro ||
+        path.startsWith('${AppRoutes.registro}/');
+  }
+
   void _updateChromeVisibility(bool visible) {
-    final needsUpdate =
-        _chromeVisible != visible || _chromeOwnerIndex != _lastIndex;
-    if (!needsUpdate) return;
+    final index = _activeIndex;
+    final current = _chromeForIndex(index);
+    if (current == visible) return;
     setState(() {
-      _chromeVisible = visible;
-      _chromeOwnerIndex = _lastIndex;
-      _chromeCache[_lastIndex] = visible;
+      _chromeCache[index] = visible;
     });
   }
 

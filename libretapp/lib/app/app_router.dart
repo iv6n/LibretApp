@@ -5,6 +5,7 @@ import 'package:libretapp/app/app_shell.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/eventos/eventos.dart';
+import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
 import 'package:libretapp/features/registro/registro.dart';
@@ -93,7 +94,7 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalFormPage(animalUuid: uuid),
+                      child: RegisterAnimalPage(animalUuid: uuid),
                     );
                   },
                 ),
@@ -260,7 +261,29 @@ final router = GoRouter(
             child: const RegistroCostoPage(),
           ),
         ),
+        GoRoute(
+          path: 'ingreso',
+          name: AppRoutes.nameRegistroIngreso,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroIngresoPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'gasto-general',
+          name: AppRoutes.nameRegistroGastoGeneral,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const RegistroGastoGeneralPage(),
+          ),
+        ),
       ],
+    ),
+    GoRoute(
+      path: AppRoutes.finanzas,
+      name: AppRoutes.nameFinanzas,
+      pageBuilder: (context, state) =>
+          _buildOverlayDetailPage(state: state, child: const FinanzasPage()),
     ),
   ],
 );

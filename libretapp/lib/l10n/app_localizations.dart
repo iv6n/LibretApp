@@ -305,68 +305,68 @@ abstract class AppLocalizations {
   /// No description provided for @stageFilterCalf.
   ///
   /// In es, this message translates to:
-  /// **'Becerros'**
-  String get stageFilterCalf;
+  /// **'{count, plural, one {Becerro} other {Becerros}}'**
+  String stageFilterCalf(num count);
 
   /// No description provided for @stageFilterHeifer.
   ///
   /// In es, this message translates to:
-  /// **'Vaquilla'**
-  String get stageFilterHeifer;
+  /// **'{count, plural, one {Vaquilla} other {Vaquillas}}'**
+  String stageFilterHeifer(num count);
 
   /// No description provided for @stageFilterYoungBull.
   ///
   /// In es, this message translates to:
-  /// **'Torete'**
-  String get stageFilterYoungBull;
+  /// **'{count, plural, one {Torete} other {Toretes}}'**
+  String stageFilterYoungBull(num count);
 
   /// No description provided for @stageFilterSteer.
   ///
   /// In es, this message translates to:
-  /// **'Novillo'**
-  String get stageFilterSteer;
+  /// **'{count, plural, one {Novillo} other {Novillos}}'**
+  String stageFilterSteer(num count);
 
   /// No description provided for @stageFilterCow.
   ///
   /// In es, this message translates to:
-  /// **'Vaca'**
-  String get stageFilterCow;
+  /// **'{count, plural, one {Vaca} other {Vacas}}'**
+  String stageFilterCow(num count);
 
   /// No description provided for @stageFilterBull.
   ///
   /// In es, this message translates to:
-  /// **'Toro'**
-  String get stageFilterBull;
+  /// **'{count, plural, one {Toro} other {Toros}}'**
+  String stageFilterBull(num count);
 
   /// No description provided for @stageFilterColt.
   ///
   /// In es, this message translates to:
-  /// **'Potro/Potranca'**
-  String get stageFilterColt;
+  /// **'{count, plural, one {Potro/Potranca} other {Potros/Potrancas}}'**
+  String stageFilterColt(num count);
 
   /// No description provided for @stageFilterHorse.
   ///
   /// In es, this message translates to:
-  /// **'Caballo'**
-  String get stageFilterHorse;
+  /// **'{count, plural, one {Caballo} other {Caballos}}'**
+  String stageFilterHorse(num count);
 
   /// No description provided for @stageFilterMare.
   ///
   /// In es, this message translates to:
-  /// **'Yegua'**
-  String get stageFilterMare;
+  /// **'{count, plural, one {Yegua} other {Yeguas}}'**
+  String stageFilterMare(num count);
 
   /// No description provided for @stageFilterDonkey.
   ///
   /// In es, this message translates to:
-  /// **'Burro/Burra'**
-  String get stageFilterDonkey;
+  /// **'{count, plural, one {Burro/Burra} other {Burros/Burras}}'**
+  String stageFilterDonkey(num count);
 
   /// No description provided for @stageFilterMule.
   ///
   /// In es, this message translates to:
-  /// **'Mula'**
-  String get stageFilterMule;
+  /// **'{count, plural, one {Mula} other {Mulas}}'**
+  String stageFilterMule(num count);
 
   /// No description provided for @animalRequiresAttention.
   ///
@@ -1369,6 +1369,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Raza (opcional)'**
   String get animalFormBreedOptional;
+
+  /// No description provided for @animalFormCrossBreedOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Raza 2 / Cruce (opcional)'**
+  String get animalFormCrossBreedOptional;
+
+  /// No description provided for @animalFormAgeMonthsOptional.
+  ///
+  /// In es, this message translates to:
+  /// **'Edad aprox. (meses)'**
+  String get animalFormAgeMonthsOptional;
 
   /// No description provided for @animalFormUnknownBreed.
   ///

@@ -22,6 +22,8 @@ import 'package:libretapp/features/eventos/data/eventos_repository.dart';
 import 'package:libretapp/features/eventos/data/eventos_reminder_sync_service.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
+import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
+import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -147,5 +149,8 @@ Future<void> setupLocator() async {
         perfilRepository: locator<PerfilRepository>(),
       ),
     )
-    ..registerLazySingleton<PerfilRepository>(() => PerfilRepositoryImpl());
+    ..registerLazySingleton<PerfilRepository>(() => PerfilRepositoryImpl())
+    ..registerLazySingleton<FinanzasRepository>(
+      () => IsarFinanzasRepository(locator<IsarDatabase>()),
+    );
 }

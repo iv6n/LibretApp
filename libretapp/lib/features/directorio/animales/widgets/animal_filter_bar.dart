@@ -26,41 +26,46 @@ class AnimalFilterBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final chips = <_StageChipConfig>[
-      _StageChipConfig(l10n.stageFilterCalf, [
+      _StageChipConfig((c) => l10n.stageFilterCalf(c), [
         LifeStage.calf,
         LifeStage.calfMale,
         LifeStage.calfFemale,
       ], AnimalPalette.stageColor(LifeStage.calf)),
-      _StageChipConfig(l10n.stageFilterHeifer, [
-        LifeStage.heifer,
-      ], AnimalPalette.stageColor(LifeStage.heifer)),
-      _StageChipConfig(l10n.stageFilterYoungBull, [
-        LifeStage.youngBull,
-      ], AnimalPalette.stageColor(LifeStage.youngBull)),
-      _StageChipConfig(l10n.stageFilterSteer, [
+      _StageChipConfig(
+        (c) => l10n.stageFilterHeifer(c),
+        [LifeStage.heifer],
+        AnimalPalette.stageColor(LifeStage.heifer),
+      ),
+      _StageChipConfig(
+        (c) => l10n.stageFilterYoungBull(c),
+        [LifeStage.youngBull],
+        AnimalPalette.stageColor(LifeStage.youngBull),
+      ),
+      _StageChipConfig((c) => l10n.stageFilterSteer(c), [
         LifeStage.steer,
       ], AnimalPalette.stageColor(LifeStage.steer)),
-      _StageChipConfig(l10n.stageFilterCow, [
+      _StageChipConfig((c) => l10n.stageFilterCow(c), [
         LifeStage.cow,
       ], AnimalPalette.stageColor(LifeStage.cow)),
-      _StageChipConfig(l10n.stageFilterBull, [
+      _StageChipConfig((c) => l10n.stageFilterBull(c), [
         LifeStage.bull,
       ], AnimalPalette.stageColor(LifeStage.bull)),
-      _StageChipConfig(l10n.stageFilterColt, [
+      _StageChipConfig((c) => l10n.stageFilterColt(c), [
         LifeStage.colt,
         LifeStage.filly,
       ], AnimalPalette.stageColor(LifeStage.colt)),
-      _StageChipConfig(l10n.stageFilterHorse, [
+      _StageChipConfig((c) => l10n.stageFilterHorse(c), [
         LifeStage.horse,
       ], AnimalPalette.stageColor(LifeStage.horse)),
-      _StageChipConfig(l10n.stageFilterMare, [
+      _StageChipConfig((c) => l10n.stageFilterMare(c), [
         LifeStage.mare,
       ], AnimalPalette.stageColor(LifeStage.mare)),
-      _StageChipConfig(l10n.stageFilterDonkey, [
-        LifeStage.donkey,
-        LifeStage.donkeyFemale,
-      ], AnimalPalette.stageColor(LifeStage.donkey)),
-      _StageChipConfig(l10n.stageFilterMule, [
+      _StageChipConfig(
+        (c) => l10n.stageFilterDonkey(c),
+        [LifeStage.donkey, LifeStage.donkeyFemale],
+        AnimalPalette.stageColor(LifeStage.donkey),
+      ),
+      _StageChipConfig((c) => l10n.stageFilterMule(c), [
         LifeStage.mule,
       ], AnimalPalette.stageColor(LifeStage.mule)),
     ];
@@ -154,7 +159,7 @@ class AnimalFilterBar extends StatelessWidget {
 
     return FilterChip(
       label: Text(
-        config.label,
+        config.labelResolver(2),
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
       selected: isSelected,
@@ -180,9 +185,9 @@ class AnimalFilterBar extends StatelessWidget {
 }
 
 class _StageChipConfig {
-  _StageChipConfig(this.label, this.stages, this.color);
+  _StageChipConfig(this.labelResolver, this.stages, this.color);
 
-  final String label;
+  final String Function(int count) labelResolver;
   final List<LifeStage> stages;
   final Color color;
 }

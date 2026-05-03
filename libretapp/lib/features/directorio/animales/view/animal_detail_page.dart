@@ -219,7 +219,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
 
     // Extra top padding for the rounded-card effect (purple shows through the
     // rounded corners above the white surface).
-    const double tabBarTopRadius = 16.0;
+    const double tabBarTopRadius = 19.0;
     // Total height = radius overlap + actual tab bar height.
     const double tabBarHeight = tabBarTopRadius + 48.0;
 
@@ -340,16 +340,16 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
     return Stack(
       children: [
         // Purple fill behind the rounded corners so the cutout looks correct.
-        Positioned.fill(child: ColoredBox(color: purple)),
+        const Positioned.fill(child: ColoredBox(color: Colors.transparent)),
         // White card that sits on top with rounded top corners.
         Positioned.fill(
           top: topRadius, // push it down so only the rounded arch is clipped
-          child: ColoredBox(color: Colors.white),
+          child: ColoredBox(color: const Color.fromARGB(255, 240, 239, 239)),
         ),
         // The actual rounded container wrapping the TabBar.
         Positioned.fill(
           child: Material(
-            color: Colors.white,
+            color: const Color.fromARGB(255, 240, 239, 239),
             borderRadius: BorderRadius.only(topLeft: radius, topRight: radius),
             // Subtle shadow for depth when pinned.
             elevation: overlapsContent ? 2 : 0,

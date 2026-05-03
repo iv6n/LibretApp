@@ -144,37 +144,125 @@ class AppLocalizationsEs extends AppLocalizations {
   String get animalsBulkMaintenanceConfirmAction => 'Continuar';
 
   @override
-  String get stageFilterCalf => 'Becerros';
+  String stageFilterCalf(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Becerros',
+      one: 'Becerro',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterHeifer => 'Vaquilla';
+  String stageFilterHeifer(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vaquillas',
+      one: 'Vaquilla',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterYoungBull => 'Torete';
+  String stageFilterYoungBull(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toretes',
+      one: 'Torete',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterSteer => 'Novillo';
+  String stageFilterSteer(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Novillos',
+      one: 'Novillo',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterCow => 'Vaca';
+  String stageFilterCow(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vacas',
+      one: 'Vaca',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterBull => 'Toro';
+  String stageFilterBull(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toros',
+      one: 'Toro',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterColt => 'Potro/Potranca';
+  String stageFilterColt(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Potros/Potrancas',
+      one: 'Potro/Potranca',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterHorse => 'Caballo';
+  String stageFilterHorse(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Caballos',
+      one: 'Caballo',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterMare => 'Yegua';
+  String stageFilterMare(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Yeguas',
+      one: 'Yegua',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterDonkey => 'Burro/Burra';
+  String stageFilterDonkey(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Burros/Burras',
+      one: 'Burro/Burra',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get stageFilterMule => 'Mula';
+  String stageFilterMule(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mulas',
+      one: 'Mula',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get animalRequiresAttention => 'Requiere atención';
@@ -701,6 +789,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get animalFormBreedOptional => 'Raza (opcional)';
+
+  @override
+  String get animalFormCrossBreedOptional => 'Raza 2 / Cruce (opcional)';
+
+  @override
+  String get animalFormAgeMonthsOptional => 'Edad aprox. (meses)';
 
   @override
   String get animalFormUnknownBreed => 'Desconocido';

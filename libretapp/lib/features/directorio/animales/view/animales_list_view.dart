@@ -23,11 +23,15 @@ class AnimalesListView extends StatefulWidget {
 class _AnimalesListViewState extends State<AnimalesListView>
     with TickerProviderStateMixin {
   static const double _listFabClearance = -39;
+  static const double _nearListEndThreshold = 96;
   late final AnimalesListController _animalController;
   late final AnimalRepository _animalRepository;
   late final ScrollController _scrollController;
   late final TabController _tabController;
   bool _isAtTop = true;
+  bool _isNearListEnd = true;
+  bool _isScrollingUp = false;
+  double _lastScrollOffset = 0;
 
   @override
   void initState() {
@@ -51,14 +55,44 @@ class _AnimalesListViewState extends State<AnimalesListView>
   }
 
   void _handleScroll() {
-    if (!_scrollController.hasClients) return;
-    final atTop = _scrollController.positions.isNotEmpty
-        ? _scrollController.position.pixels <= 0
-        : true;
-    if (atTop == _isAtTop) return;
+    if (!mounted || !_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final offset = position.pixels;
+    final atTop = offset <= 0;
+    final canScroll = position.maxScrollExtent > 0;
+    final isNearListEnd = !canScroll
+        ? true
+        : (position.maxScrollExtent - offset) <= _nearListEndThreshold;
+
+    bool isScrollingUp = _isScrollingUp;
+    if (offset > _lastScrollOffset + 1) {
+      isScrollingUp = false;
+    } else if (offset < _lastScrollOffset - 1) {
+      isScrollingUp = true;
+    }
+
+    final hasChanged =
+        atTop != _isAtTop ||
+        isNearListEnd != _isNearListEnd ||
+        isScrollingUp != _isScrollingUp;
+
+    _lastScrollOffset = offset;
+    if (!hasChanged) return;
+
     setState(() {
       _isAtTop = atTop;
+      _isNearListEnd = isNearListEnd;
+      _isScrollingUp = isScrollingUp;
     });
+  }
+
+  Future<void> _scrollToTop() async {
+    if (!_scrollController.hasClients) return;
+    await _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _openAnimalDetail(AnimalEntity animal) {
@@ -75,14 +109,17 @@ class _AnimalesListViewState extends State<AnimalesListView>
           builder: (context, state) {
             final isSelectionMode =
                 state is AnimalesLoaded && state.isSelectionMode;
-            final keyboardVisible =
-                MediaQuery.of(context).viewInsets.bottom > 0;
+            final isKeyboardFullyHidden =
+                MediaQuery.of(context).viewInsets.bottom == 0;
             final bottomInset = ShellInsets.bottomSafePadding(context);
-            final listBottomPadding = (isSelectionMode && !keyboardVisible)
+            final listBottomPadding = (isSelectionMode && isKeyboardFullyHidden)
                 ? MediaQuery.of(context).padding.bottom + 112
                 : bottomInset + _listFabClearance;
 
-            final fabConfig = isSelectionMode
+            final showRegisterFab =
+                isKeyboardFullyHidden &&
+                (state is! AnimalesLoaded || _isScrollingUp || _isNearListEnd);
+            final fabConfig = isSelectionMode || !showRegisterFab
                 ? null
                 : ShellFabConfig(
                     id: 'animales',
@@ -137,7 +174,8 @@ class _AnimalesListViewState extends State<AnimalesListView>
             .where((animal) => state.selectedAnimalUuids.contains(animal.uuid))
             .length;
 
-        final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+        final isKeyboardFullyHidden =
+            MediaQuery.of(context).viewInsets.bottom == 0;
 
         return Stack(
           children: [
@@ -149,6 +187,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                       const LoadAnimales(forceRefresh: true),
                     ),
                     child: ListView(
+                      controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: EdgeInsets.fromLTRB(4, 0, 4, listBottomPadding),
                       children: _buildListContent(
@@ -171,11 +210,27 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 ),
               ],
             ),
-            if (state.isSelectionMode && !keyboardVisible)
+            if (!state.isSelectionMode &&
+                !state.isSearching &&
+                isKeyboardFullyHidden &&
+                !_isAtTop &&
+                (_isScrollingUp || _isNearListEnd))
+              Positioned(
+                right: 32,
+                bottom: ShellInsets.fabDockPadding(context, lift: -34),
+                child: FloatingActionButton.small(
+                  elevation: 2,
+
+                  heroTag: 'fab_animales_scroll_top',
+                  onPressed: _scrollToTop,
+                  child: const Icon(Icons.keyboard_arrow_up),
+                ),
+              ),
+            if (state.isSelectionMode && isKeyboardFullyHidden)
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: MediaQuery.of(context).padding.bottom + 12,
+                bottom: MediaQuery.of(context).padding.bottom,
                 child: _buildSelectionActions(
                   state: state,
                   l10n: l10n,
@@ -374,10 +429,16 @@ class _AnimalesListViewState extends State<AnimalesListView>
     }
 
     return [
+      Divider(
+        height: 2,
+        thickness: 1,
+        color: theme.dividerColor.withValues(alpha: 0.4),
+      ),
+      const SizedBox(height: 2),
       Padding(
         padding: const EdgeInsets.fromLTRB(2, 0, 0, 2),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _stageFilterChips(
               l10n: l10n,
@@ -470,41 +531,43 @@ Widget _stageFilterChips({
 }) {
   final hasStageFilters = selectedStages.isNotEmpty;
   final configs = <_StageChipConfig>[
-    _StageChipConfig(l10n.stageFilterCalf, [
+    _StageChipConfig((c) => l10n.stageFilterCalf(c), [
       LifeStage.calf,
       LifeStage.calfMale,
       LifeStage.calfFemale,
     ], AnimalPalette.stageColor(LifeStage.calf)),
-    _StageChipConfig(l10n.stageFilterHeifer, [
+    _StageChipConfig((c) => l10n.stageFilterHeifer(c), [
       LifeStage.heifer,
     ], AnimalPalette.stageColor(LifeStage.heifer)),
-    _StageChipConfig(l10n.stageFilterYoungBull, [
-      LifeStage.youngBull,
-    ], AnimalPalette.stageColor(LifeStage.youngBull)),
-    _StageChipConfig(l10n.stageFilterSteer, [
+    _StageChipConfig(
+      (c) => l10n.stageFilterYoungBull(c),
+      [LifeStage.youngBull],
+      AnimalPalette.stageColor(LifeStage.youngBull),
+    ),
+    _StageChipConfig((c) => l10n.stageFilterSteer(c), [
       LifeStage.steer,
     ], AnimalPalette.stageColor(LifeStage.steer)),
-    _StageChipConfig(l10n.stageFilterCow, [
+    _StageChipConfig((c) => l10n.stageFilterCow(c), [
       LifeStage.cow,
     ], AnimalPalette.stageColor(LifeStage.cow)),
-    _StageChipConfig(l10n.stageFilterBull, [
+    _StageChipConfig((c) => l10n.stageFilterBull(c), [
       LifeStage.bull,
     ], AnimalPalette.stageColor(LifeStage.bull)),
-    _StageChipConfig(l10n.stageFilterColt, [
+    _StageChipConfig((c) => l10n.stageFilterColt(c), [
       LifeStage.colt,
       LifeStage.filly,
     ], AnimalPalette.stageColor(LifeStage.colt)),
-    _StageChipConfig(l10n.stageFilterHorse, [
+    _StageChipConfig((c) => l10n.stageFilterHorse(c), [
       LifeStage.horse,
     ], AnimalPalette.stageColor(LifeStage.horse)),
-    _StageChipConfig(l10n.stageFilterMare, [
+    _StageChipConfig((c) => l10n.stageFilterMare(c), [
       LifeStage.mare,
     ], AnimalPalette.stageColor(LifeStage.mare)),
-    _StageChipConfig(l10n.stageFilterDonkey, [
+    _StageChipConfig((c) => l10n.stageFilterDonkey(c), [
       LifeStage.donkey,
       LifeStage.donkeyFemale,
     ], AnimalPalette.stageColor(LifeStage.donkey)),
-    _StageChipConfig(l10n.stageFilterMule, [
+    _StageChipConfig((c) => l10n.stageFilterMule(c), [
       LifeStage.mule,
     ], AnimalPalette.stageColor(LifeStage.mule)),
   ].where((cfg) => cfg.stages.any(availableStages.contains)).toList();
@@ -512,7 +575,7 @@ Widget _stageFilterChips({
   if (configs.isEmpty) return const SizedBox.shrink();
 
   return SizedBox(
-    height: 44,
+    height: 38,
     child: Row(
       children: [
         Expanded(
@@ -537,7 +600,7 @@ Widget _stageFilterChips({
               final count = config.stages
                   .map((s) => stageCounts[s] ?? 0)
                   .fold<int>(0, (a, b) => a + b);
-              final label = count > 0 ? '${config.label} $count' : config.label;
+              final chipLabel = config.labelResolver(count);
               final neutralBg = theme.colorScheme.surfaceContainerHighest;
               final neutralText = theme.colorScheme.onSurface.withValues(
                 alpha: 0.74,
@@ -549,15 +612,50 @@ Widget _stageFilterChips({
                   : theme.colorScheme.outlineVariant.withValues(alpha: 0.45);
 
               return ChoiceChip(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                 label: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: labelColor,
-                    ),
+                  padding: const EdgeInsets.only(left: 0, right: 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        chipLabel.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11.45,
+                          fontWeight: FontWeight.w600,
+                          color: labelColor,
+                        ),
+                      ),
+                      if (count > 0) ...[
+                        const SizedBox(width: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 239, 239, 241),
+                            borderRadius: BorderRadius.circular(10),
+                            border: isSelected
+                                ? null
+                                : Border.all(
+                                    color: theme.colorScheme.outlineVariant
+                                        .withValues(alpha: 0.6),
+                                    width: 0.5,
+                                  ),
+                          ),
+                          child: Text(
+                            '$count',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? color : neutralText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 selected: isSelected,
@@ -758,9 +856,9 @@ class _AnimalesSearchAppBarState extends State<AnimalesSearchAppBar> {
 }
 
 class _StageChipConfig {
-  _StageChipConfig(this.label, this.stages, this.color);
+  _StageChipConfig(this.labelResolver, this.stages, this.color);
 
-  final String label;
+  final String Function(int count) labelResolver;
   final List<LifeStage> stages;
   final Color color;
 }

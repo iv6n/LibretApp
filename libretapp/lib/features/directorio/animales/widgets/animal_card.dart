@@ -42,19 +42,22 @@ class AnimalCard extends StatelessWidget {
     final breedLabel = animal.breed.isNotEmpty
         ? animal.breed
         : animal.species.displayName;
-    final secondaryLabel = (animal.visualId ?? '').isNotEmpty
+    final secondaryLabel = (animal.customName ?? '').isNotEmpty
+        ? animal.customName!
+        : (animal.visualId ?? '').isNotEmpty
         ? animal.visualId!
         : (animal.breed.isNotEmpty ? animal.breed : animal.species.displayName);
     final ageMonths = animal.ageMonths;
     final ageYears = ageMonths ~/ 12;
     final ageRemainderMonths = ageMonths % 12;
     final ageLabel = ageYears > 0
-        ? [
-            '$ageYears año${ageYears == 1 ? '' : 's'}',
-            if (ageRemainderMonths > 0)
-              '$ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}',
-          ].join(' ')
-        : '$ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}';
+        ? ageRemainderMonths == 0
+              ? '$ageYears año${ageYears == 1 ? '' : 's'}'
+              : '$ageYears año${ageYears == 1 ? '' : 's'} $ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}'
+        : _ageLabelUnderOneYear(
+            birthDate: animal.birthDate,
+            ageMonths: ageRemainderMonths,
+          );
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -113,12 +116,12 @@ class AnimalCard extends StatelessWidget {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(color: headerColor),
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       _Avatar(
                         borderColor: avatarBorderColor,
@@ -132,20 +135,33 @@ class AnimalCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    animal.earTagNumber,
-                                    style: textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 20,
+                                  child: FormattedEarTag(
+                                    earTag: animal.earTagNumber,
+                                    prefixStyle: textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
                                       color: headerPrimaryTextColor,
                                       letterSpacing: -0.45,
                                       height: 1.05,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    separatorStyle: textTheme.titleLarge
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                          fontSize: 20,
+                                          color: headerPrimaryTextColor,
+                                          letterSpacing: 1.8,
+                                          height: 1.05,
+                                        ),
+                                    suffixStyle: textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 18,
+                                      color: headerPrimaryTextColor,
+                                      letterSpacing: -0.45,
+                                      height: 1.05,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -191,9 +207,9 @@ class AnimalCard extends StatelessWidget {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 SizedBox(
                                   child: Text(
@@ -208,6 +224,14 @@ class AnimalCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  child: TagChip(
+                                    fontSize: 10,
+                                    label: stageLabel.toUpperCase(),
+                                    color: stageColor,
+                                  ),
+                                ),
                                 const Spacer(),
                                 SizedBox(
                                   child: Padding(
@@ -215,7 +239,7 @@ class AnimalCard extends StatelessWidget {
                                     child: Text(
                                       ageLabel,
                                       style: textTheme.titleSmall?.copyWith(
-                                        fontSize: 14,
+                                        fontSize: 12,
                                         color: headerSecondaryTextColor,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -227,18 +251,19 @@ class AnimalCard extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 7),
+                            const SizedBox(height: 4),
                             Wrap(
                               spacing: 5,
                               runSpacing: 3,
                               children: [
-                                TagChip(label: stageLabel, color: stageColor),
                                 TagChip(
-                                  label: breedLabel,
+                                  fontSize: 11,
+                                  label: breedLabel.toUpperCase(),
                                   color: purposeChipColor,
                                 ),
                                 TagChip(
-                                  label: purposeLabel,
+                                  fontSize: 11,
+                                  label: purposeLabel.toUpperCase(),
                                   color: purposeChipColor,
                                 ),
                               ],
@@ -263,7 +288,7 @@ class AnimalCard extends StatelessWidget {
                   ),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
               child: Row(
                 children: [
                   SizedBox(
@@ -489,11 +514,13 @@ class TagChip extends StatelessWidget {
     required this.label,
     required this.color,
     this.alpha = 0.80,
+    this.fontSize = 12,
   });
 
   final String label;
   final Color color;
   final double alpha;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +530,7 @@ class TagChip extends StatelessWidget {
     final bgColor = tonedColor.withValues(alpha: alpha);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(18),
@@ -517,7 +544,7 @@ class TagChip extends StatelessWidget {
         style: TextStyle(
           color: textColor,
           fontWeight: FontWeight.w800,
-          fontSize: 12,
+          fontSize: fontSize,
         ),
       ),
     );
@@ -606,6 +633,104 @@ Color colorFromHex(String hex) {
 Color _mutedColor(Color color, {double strength = 0.4}) {
   final mutedBase = Color.lerp(color, const Color(0xFF9AA7B5), strength);
   return mutedBase ?? color;
+}
+
+String _ageLabelUnderOneYear({
+  required DateTime birthDate,
+  required int ageMonths,
+}) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final birth = DateTime(birthDate.year, birthDate.month, birthDate.day);
+  final safeMonths = ageMonths < 0 ? 0 : ageMonths;
+
+  if (birth.isAfter(today)) {
+    return '0 meses';
+  }
+
+  var monthAnchor = _addMonthsClamped(birth, safeMonths);
+  var monthsForLabel = safeMonths;
+
+  while (monthAnchor.isAfter(today) && monthsForLabel > 0) {
+    monthsForLabel -= 1;
+    monthAnchor = _addMonthsClamped(birth, monthsForLabel);
+  }
+
+  final days = today.difference(monthAnchor).inDays;
+  final monthText = '$monthsForLabel mes${monthsForLabel == 1 ? '' : 'es'}';
+
+  if (days <= 0) {
+    return monthText;
+  }
+
+  if (monthsForLabel == 0) {
+    return '$days día${days == 1 ? '' : 's'}';
+  }
+
+  return '$monthText $days día${days == 1 ? '' : 's'}';
+}
+
+DateTime _addMonthsClamped(DateTime date, int monthsToAdd) {
+  final totalMonths = date.month - 1 + monthsToAdd;
+  final targetYear = date.year + (totalMonths ~/ 12);
+  final targetMonth = (totalMonths % 12) + 1;
+  final maxDay = _daysInMonth(targetYear, targetMonth);
+  final targetDay = date.day > maxDay ? maxDay : date.day;
+  return DateTime(targetYear, targetMonth, targetDay);
+}
+
+int _daysInMonth(int year, int month) {
+  final firstDayNextMonth = month == 12
+      ? DateTime(year + 1, 1, 1)
+      : DateTime(year, month + 1, 1);
+  return firstDayNextMonth.subtract(const Duration(days: 1)).day;
+}
+
+String normalizeEarTag(String input) {
+  return input.replaceAll(RegExp(r'[^0-9]'), '');
+}
+
+class FormattedEarTag extends StatelessWidget {
+  const FormattedEarTag({
+    super.key,
+    required this.earTag,
+    required this.prefixStyle,
+    required this.separatorStyle,
+    required this.suffixStyle,
+  });
+
+  final String earTag;
+  final TextStyle? prefixStyle;
+  final TextStyle? separatorStyle;
+  final TextStyle? suffixStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final digits = normalizeEarTag(earTag);
+    if (digits.length != 12) {
+      return Text(
+        earTag,
+        style: suffixStyle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    final prefix = digits.substring(0, 8);
+    final suffix = digits.substring(8, 12);
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$prefix ', style: prefixStyle),
+          TextSpan(text: '-', style: separatorStyle),
+          TextSpan(text: suffix, style: suffixStyle),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
 }
 
 String _purposeShortLabel(ProductionPurpose purpose) {

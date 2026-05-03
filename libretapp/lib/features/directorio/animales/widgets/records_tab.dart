@@ -5,6 +5,7 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class RecordsTab extends StatelessWidget {
   const RecordsTab({super.key, required this.data});
@@ -68,7 +69,7 @@ class RecordsTab extends StatelessWidget {
 
     return SingleChildScrollView(
       key: const PageStorageKey('records_scroll'),
-      padding: EdgeInsets.fromLTRB(14, 14, 14, listBottomPadding),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, listBottomPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -217,24 +218,54 @@ class RecordSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (children.isEmpty) return const SizedBox.shrink();
     return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.35)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: colorScheme.onPrimary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 8),
-            ...children,
+            const SizedBox(height: 10),
+            for (var index = 0; index < children.length; index++) ...[
+              children[index],
+              if (index != children.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(
+                    height: 1,
+                    color: Theme.of(
+                      context,
+                    ).dividerColor.withValues(alpha: 0.7),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
@@ -250,12 +281,26 @@ class RecordTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+      title: Text(
+        title,
+        style: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
+        ),
+      ),
       subtitle: subtitle != null && subtitle!.isNotEmpty
-          ? Text(subtitle!)
+          ? Text(
+              subtitle!,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            )
           : null,
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class QuickActionsFab extends StatelessWidget {
   const QuickActionsFab({
@@ -78,25 +79,31 @@ class QuickActionsFab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                GridView.count(
-                  crossAxisCount: 4,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 0.85,
-                  children: actions
-                      .map(
-                        (a) => _ActionTile(
-                          icon: a.icon,
-                          label: a.label,
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            a.onPressed();
-                          },
-                        ),
-                      )
-                      .toList(),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 380;
+                    final columns = compact ? 3 : 4;
+                    return GridView.count(
+                      crossAxisCount: columns,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: compact ? 0.94 : 0.85,
+                      children: actions
+                          .map(
+                            (a) => _ActionTile(
+                              icon: a.icon,
+                              label: a.label,
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                a.onPressed();
+                              },
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -108,11 +115,17 @@ class QuickActionsFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final shellChrome = theme.extension<ShellChromeTheme>();
     return FloatingActionButton(
       heroTag: 'fab-main',
       onPressed: () => _showActionsSheet(context),
-      backgroundColor: accentColor ?? const Color(0xFF6B4CE6),
-      foregroundColor: Colors.white,
+      backgroundColor:
+          accentColor ??
+          shellChrome?.fabBackground ??
+          theme.colorScheme.tertiary,
+      foregroundColor:
+          shellChrome?.fabForeground ?? theme.colorScheme.onTertiary,
       elevation: 8,
       highlightElevation: 12,
       shape: const CircleBorder(),

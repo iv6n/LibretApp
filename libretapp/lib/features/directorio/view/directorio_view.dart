@@ -26,6 +26,8 @@ class DirectorioView extends StatefulWidget {
 
 class _DirectorioViewState extends State<DirectorioView>
     with TickerProviderStateMixin {
+  static const _animalesTabKey = ValueKey<String>('directorio_animales_tab');
+  static const _lotesTabKey = ValueKey<String>('directorio_lotes_tab');
   late TabController _tabController;
   late TextEditingController _searchController;
   late FocusNode _searchFocusNode;
@@ -304,7 +306,7 @@ class _DirectorioViewState extends State<DirectorioView>
                           : Text(
                               _showLotesTab ? 'Directorio' : 'Animales',
                               style: const TextStyle(
-                                fontSize: 21.5,
+                                fontSize: 23,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -315,9 +317,29 @@ class _DirectorioViewState extends State<DirectorioView>
                               IconButton(
                                 icon: const Icon(Icons.search),
                                 onPressed: _toggleSearch,
+                                style: IconButton.styleFrom(
+                                  shape: CircleBorder(
+                                    side: BorderSide(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                ),
                               ),
                               PopupMenuButton<String>(
                                 icon: const Icon(Icons.more_vert),
+                                style: ButtonStyle(
+                                  shape: WidgetStateProperty.all(
+                                    CircleBorder(
+                                      side: BorderSide(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                                 onSelected: (value) {
                                   if (value == 'theme') {
                                     _toggleTheme();
@@ -408,15 +430,19 @@ class _DirectorioViewState extends State<DirectorioView>
   Widget _buildTabContent() {
     final children = [
       // Animales Tab
-      BlocProvider<AnimalesTabBloc>.value(
-        value: context.read<AnimalesTabBloc>(),
-        child: const AnimalesListView(),
+      KeyedSubtree(
+        key: _animalesTabKey,
+        child: BlocProvider<AnimalesTabBloc>.value(
+          value: context.read<AnimalesTabBloc>(),
+          child: const AnimalesListView(),
+        ),
       ),
-      BlocProvider<LotesTabBloc>.value(
-        value: context.read<LotesTabBloc>(),
-        child: _showLotesTab
-            ? const LotesListView()
-            : const Center(child: Text('Tab de lotes desactivado')),
+      KeyedSubtree(
+        key: _lotesTabKey,
+        child: BlocProvider<LotesTabBloc>.value(
+          value: context.read<LotesTabBloc>(),
+          child: const LotesListView(),
+        ),
       ),
     ];
 

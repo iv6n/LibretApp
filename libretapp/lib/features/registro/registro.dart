@@ -6,4 +6,6 @@ export 'view/registro_reproduccion_page.dart';
 export 'view/registro_comercial_page.dart';
 export 'view/registro_movimiento_page.dart';
 export 'view/registro_costo_page.dart';
+export 'view/registro_ingreso_page.dart';
+export 'view/registro_gasto_general_page.dart';
 export 'widgets/animal_selector.dart';

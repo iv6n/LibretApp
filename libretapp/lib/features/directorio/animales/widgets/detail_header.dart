@@ -36,7 +36,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, _) {
-        // Read the FlexibleSpaceBarSettings ancestor to derive collapse %.
+        // Read the FlexibleSpaceBarSettings ancestor to frive collapse %.
         final settings = context
             .dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
         final double t; // 0 = expanded, 1 = collapsed
@@ -55,11 +55,15 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         // ── Derived values ──────────────────────────────────────────────
         final tPosition = Curves.easeInOutCubic.transform(t);
         final tSize = Curves.easeOutCubic.transform(t);
-        final tFastFade = Curves.easeOut.transform((t / 0.42).clamp(0.0, 1.0));
-        final tSubtitleFade = Curves.easeOut.transform(
-          (t / 0.34).clamp(0.0, 1.0),
+        final tFastFade = Curves.easeInOut.transform(
+          ((t - 0.02) / 0.5).clamp(0.0, 1.0),
         );
-        final tChipFade = Curves.easeOut.transform((t / 0.52).clamp(0.0, 1.0));
+        final tSubtitleFade = Curves.easeInOutCubic.transform(
+          ((t - 0.05) / 0.46).clamp(0.0, 1.0),
+        );
+        final tChipFade = Curves.easeInOutCubic.transform(
+          ((t - 0.06) / 0.58).clamp(0.0, 1.0),
+        );
 
         final safeTop = MediaQuery.paddingOf(context).top;
         final photoSize = lerpDouble(_kPhotoExpanded, _kPhotoCollapsed, tSize)!;
@@ -72,10 +76,15 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         final badgeOpacity = (1.0 - tFastFade).clamp(0.0, 1.0);
         final subtitleOpacity = (1.0 - tSubtitleFade).clamp(0.0, 1.0);
         final chipOpacity = (1.0 - tChipFade).clamp(0.0, 1.0);
-        final subtitleMaxLines = t < 0.18 ? 2 : 1;
-        final subtitleText = t < 0.18
-            ? '${l10n.labelEarTag}: ${animal.earTagNumber}\n${animal.lifeStage.displayName}'
-            : '${l10n.labelEarTag}: ${animal.earTagNumber} · ${animal.lifeStage.displayName}';
+        final subtitleText =
+            '${l10n.labelEarTag}: ${animal.earTagNumber} · ${animal.lifeStage.displayName}';
+        final displayName = (() {
+          final customName = animal.customName?.trim();
+          if (customName != null && customName.isNotEmpty) return customName;
+          final visualId = animal.visualId?.trim();
+          if (visualId != null && visualId.isNotEmpty) return visualId;
+          return animal.earTagNumber;
+        })();
         final borderRadius = _kRadiusExpanded * (1.0 - t);
 
         // Start under toolbar in expanded mode, end next to back arrow.
@@ -85,6 +94,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         final endY = safeTop + (kToolbarHeight - photoSize) / 2;
         final rowX = lerpDouble(startX, endX, tPosition)!;
         final rowY = lerpDouble(startY, endY, tPosition)!;
+        final double rowTop = max(safeTop + 8.0, rowY - 35).toDouble();
         final rowRight = lerpDouble(16.0, 106.0, tPosition)!;
 
         // ── Gradient background ─────────────────────────────────────────
@@ -105,7 +115,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
               Positioned(
                 left: rowX,
                 right: rowRight,
-                top: rowY - 35,
+                top: rowTop,
                 child: Row(
                   children: [
                     _AnimalPhoto(
@@ -123,7 +133,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            animal.visualId ?? l10n.valueNotAssigned,
+                            displayName,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   color: Colors.white,
@@ -147,7 +157,7 @@ class CollapsibleAnimalHeader extends StatelessWidget {
                                         alpha: 0.9,
                                       ),
                                     ),
-                                maxLines: subtitleMaxLines,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -161,8 +171,9 @@ class CollapsibleAnimalHeader extends StatelessWidget {
                         opacity: chipOpacity,
                         child: BadgeChip(
                           label: '${animal.sex.displayName} $sexoSymbol',
-                          color: Colors.white,
-                          textColor: stageColor,
+                          color: Colors.white.withValues(alpha: 0.96),
+                          textColor: stageColor.withValues(alpha: 0.95),
+                          borderColor: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                     ],

@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class InfoTab extends StatefulWidget {
   const InfoTab({
@@ -79,7 +80,7 @@ class _InfoTabState extends State<InfoTab> {
 
     return SingleChildScrollView(
       key: const PageStorageKey('info_scroll'),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
+      padding: EdgeInsets.fromLTRB(16, 14, 16, listBottomPadding),
       child: Column(
         children: [
           InfoSection(
@@ -318,48 +319,56 @@ class InfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final accentColor = accent ?? Theme.of(context).colorScheme.primary;
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.35)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: accentColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 18),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF172232),
-                    fontSize: 18,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             for (var index = 0; index < children.length; index++)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Column(
                   children: [
                     children[index],
                     if (index != children.length - 1)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 11),
+                        child: Divider(
+                          height: 1,
+                          color: Theme.of(
+                            context,
+                          ).dividerColor.withValues(alpha: 0.7),
+                        ),
                       ),
                   ],
                 ),
@@ -404,40 +413,48 @@ class InfoRow extends StatelessWidget {
           value,
           style: textTheme.titleSmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       );
     } else {
       valueWidget = Text(
         value,
-        style: textTheme.titleLarge?.copyWith(
+        style: textTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w800,
           color: accent ?? colorScheme.onSurface,
-          fontSize: 16,
+          height: 1.28,
         ),
       );
     }
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 22, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 10),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            icon,
+            size: 22,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.86),
+          ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           flex: 9,
           child: Text(
             label,
-            style: textTheme.titleLarge?.copyWith(
+            style: textTheme.titleMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
-              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              height: 1.3,
             ),
           ),
         ),
         const SizedBox(width: 14),
         Expanded(
           flex: 10,
-          child: Align(alignment: Alignment.centerLeft, child: valueWidget),
+          child: Align(alignment: Alignment.topLeft, child: valueWidget),
         ),
       ],
     );
@@ -458,24 +475,29 @@ class BoolRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     final color = value ? const Color(0xFF1A9F4E) : const Color(0xFFE24A4A);
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 22,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            icon,
+            size: 22,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.86),
+          ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           flex: 9,
           child: Text(
             label,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 15,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+              height: 1.3,
             ),
           ),
         ),

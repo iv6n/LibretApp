@@ -11,6 +11,8 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
+import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
+import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class IsarDatabase {
@@ -41,6 +43,8 @@ class IsarDatabase {
         IsarMovementRecordSchema,
         IsarLoteSchema,
         IsarLocationSchema,
+        IsarIncomeRecordSchema,
+        IsarGeneralExpenseRecordSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode,
@@ -78,6 +82,8 @@ class IsarDatabase {
       await db.isarMovementRecords.clear();
       await db.isarLotes.clear();
       await db.isarLocations.clear();
+      await db.isarIncomeRecords.clear();
+      await db.isarGeneralExpenseRecords.clear();
     });
     LoggerService.w(
       'Todas las colecciones Isar fueron limpiadas',

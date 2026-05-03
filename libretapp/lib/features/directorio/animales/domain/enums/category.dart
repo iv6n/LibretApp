@@ -2,6 +2,7 @@
 enum Category {
   calf,
   heifer,
+  youngBull,
   steer,
   cow,
   bull,
@@ -15,6 +16,8 @@ enum Category {
         return 'Cría';
       case Category.heifer:
         return 'Novilla';
+      case Category.youngBull:
+        return 'Torete';
       case Category.steer:
         return 'Novillo';
       case Category.cow:

@@ -1,0 +1,9 @@
+export 'application/finanzas_cubit.dart';
+export 'application/finanzas_state.dart';
+export 'domain/entities/animal_profitability.dart';
+export 'domain/entities/financial_period_summary.dart';
+export 'domain/entities/general_expense_record.dart';
+export 'domain/entities/income_record.dart';
+export 'domain/repositories/finanzas_repository.dart';
+export 'infrastructure/isar_finanzas_repository.dart';
+export 'view/finanzas_page.dart';
