@@ -1,3 +1,6 @@
+/// core › advisor › livestock_tip — data class for a single advisor tip.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Categoría temática del consejo ganadero.

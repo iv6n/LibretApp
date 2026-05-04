@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_event \u2014 events for AnimalesBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 

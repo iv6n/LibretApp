@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_search_bar \u2014 search bar for filtering events.
+library;
+
 import 'package:flutter/material.dart';
 
 class EventSearchBar extends StatelessWidget {

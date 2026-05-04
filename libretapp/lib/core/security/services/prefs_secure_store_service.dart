@@ -1,3 +1,6 @@
+/// core › security › services › prefs_secure_store_service — encrypted SharedPreferences key-value store.
+library;
+
 import 'package:libretapp/core/security/ports/secure_store_port.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 

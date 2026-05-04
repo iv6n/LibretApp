@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a widgets \u203a location_card \u2014 card widget for displaying a location.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';

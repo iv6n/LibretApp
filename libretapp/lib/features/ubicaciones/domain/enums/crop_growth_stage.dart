@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a enums \u203a crop_growth_stage \u2014 enum for crop growth stages.
+library;
+
 enum CropGrowthStage {
   planted,
   germinating,

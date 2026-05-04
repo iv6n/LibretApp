@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a directorio_bloc \u2014 top-level BLoC for the directorio feature.
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';

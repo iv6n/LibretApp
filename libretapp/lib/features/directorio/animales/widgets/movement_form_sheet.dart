@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a movement_form_sheet \u2014 bottom sheet form for movement records.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/advisor/livestock_advisor.dart';
 import 'package:libretapp/core/advisor/widgets/advisor_tips_panel.dart';

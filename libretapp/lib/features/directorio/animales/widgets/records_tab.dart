@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a records_tab \u2014 records tab on the animal detail page.
+library;
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';

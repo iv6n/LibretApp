@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a movement_record \u2014 entity for an animal movement record.
+library;
+
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Motivos del movimiento del animal.

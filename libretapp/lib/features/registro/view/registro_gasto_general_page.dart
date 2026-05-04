@@ -1,7 +1,11 @@
+﻿/// features \u203a registro \u203a view \u203a registro_gasto_general_page \u2014 page for recording a general expense.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_cubit.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 
@@ -66,9 +70,9 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
     );
 
     try {
-      final cubit = context.read<FinanzasCubit?>();
-      if (cubit != null) {
-        await cubit.addExpense(record);
+      final finanzasBloc = context.read<FinanzasBloc?>();
+      if (finanzasBloc != null) {
+        finanzasBloc.add(AddExpense(record));
       } else {
         await locator<FinanzasRepository>().addExpense(record);
       }

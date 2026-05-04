@@ -1,3 +1,9 @@
+/// core › mock › mock_data_seeder — seeds the local Isar DB with demo data.
+///
+/// Used in development/testing to populate a fresh install with sample animals
+/// and records.
+library;
+
 import 'dart:math';
 
 import 'package:libretapp/core/di/injection.dart';

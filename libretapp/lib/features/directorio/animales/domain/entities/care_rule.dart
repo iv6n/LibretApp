@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a care_rule \u2014 entity representing an animal care rule.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';

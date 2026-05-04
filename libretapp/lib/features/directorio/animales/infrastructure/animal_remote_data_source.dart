@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_remote_data_source \u2014 remote data source interface for animals.
+library;
+
 import 'dart:convert';
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';

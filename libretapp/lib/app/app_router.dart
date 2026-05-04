@@ -1,3 +1,8 @@
+/// app › app_router — configures GoRouter for the entire application.
+///
+/// Defines all named routes, shell routes, and redirect logic.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

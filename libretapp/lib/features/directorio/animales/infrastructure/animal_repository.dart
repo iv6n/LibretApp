@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository \u2014 abstract AnimalRepository port.
+library;
+
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';

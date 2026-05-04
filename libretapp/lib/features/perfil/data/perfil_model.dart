@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a data \u203a perfil_model \u2014 data model for the user profile.
+library;
+
 import 'package:equatable/equatable.dart';
 
 class Perfil extends Equatable {

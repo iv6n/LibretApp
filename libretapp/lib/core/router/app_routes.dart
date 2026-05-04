@@ -1,3 +1,7 @@
+/// core › router › app_routes — named route constants for GoRouter.
+library;
+
+/// Holds all named route paths used by GoRouter throughout the application.
 class AppRoutes {
   static const directorio = '/directorio';
   static const inicio = '/';

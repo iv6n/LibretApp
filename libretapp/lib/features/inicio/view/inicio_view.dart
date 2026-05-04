@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a view \u203a inicio_view \u2014 main view for the home dashboard.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -96,6 +99,8 @@ class InicioView extends StatelessWidget {
                 count: '${data.totalLocations}',
                 accentColor: AppColors.secondary,
               ),
+              const SizedBox(height: AppSpacing.lg),
+              QuickSummarySection(data: data),
               const SizedBox(height: AppSpacing.lg),
               _SectionHeader(
                 title: 'Alertas prioritarias',

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a show_animal_filters_sheet \u2014 shows the animal filter bottom sheet.
+library;
+
 import 'package:flutter/material.dart';
 
 Future<void> showAnimalFiltersSheet({

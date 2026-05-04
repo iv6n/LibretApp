@@ -1,3 +1,6 @@
+/// core › models › timestamped_record — mixin for records with created/updated timestamps.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Base class for all timestamped records (animal records, location records).

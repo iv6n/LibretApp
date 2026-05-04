@@ -1,3 +1,9 @@
+/// main — application entry point.
+///
+/// Bootstraps Flutter, configures GetIt dependency injection, and launches
+/// [LibretApp].
+library;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

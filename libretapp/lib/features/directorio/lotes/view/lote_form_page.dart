@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a view \u203a lote_form_page \u2014 form page for creating or editing a lote.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';

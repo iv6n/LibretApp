@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_search_overlay \u2014 full-screen search overlay for animals.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/l10n/app_localizations.dart';

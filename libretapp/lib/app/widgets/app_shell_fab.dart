@@ -1,3 +1,6 @@
+/// app › widgets › app_shell_fab — floating action button rendered by the app shell.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/theme/app_theme.dart';
 

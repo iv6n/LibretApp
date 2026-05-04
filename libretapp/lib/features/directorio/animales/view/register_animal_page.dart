@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a register_animal_page \u2014 page for registering a new animal.
+library;
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/widgets.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a show_create_animal_sheet \u2014 shows the create-animal bottom sheet.
+library;
+
 import 'package:flutter/material.dart';
 
 Future<void> showCreateAnimalSheet(

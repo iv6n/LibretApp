@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a history_tab \u2014 history tab on the animal detail page.
+library;
+
 import 'dart:math' show max;
 
 import 'package:flutter/material.dart';

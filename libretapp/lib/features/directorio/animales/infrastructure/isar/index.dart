@@ -1,3 +1,6 @@
+﻿/// features > directorio > animales > infrastructure > isar > index — barrel for Isar model files.
+library;
+
 export 'isar_animal.dart';
 export 'isar_commercial_record.dart';
 export 'isar_cost_record.dart';

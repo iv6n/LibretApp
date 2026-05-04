@@ -1,3 +1,6 @@
+/// features › ubicaciones › widgets › location_form_sheet — bottom sheet form for creating or editing a location.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';

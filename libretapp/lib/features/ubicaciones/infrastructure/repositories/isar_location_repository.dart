@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a infrastructure \u203a repositories \u203a isar_location_repository \u2014 Isar implementation of LocationRepository.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a animal_detail_page \u2014 detail page for a single animal.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a bloc \u203a perfil_event \u2014 events for PerfilBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 

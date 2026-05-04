@@ -1,5 +1,8 @@
+/// core › widgets › app_empty_state — empty-state placeholder widget with icon and message.
+library;
+
 import 'package:flutter/material.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AppEmptyState extends StatelessWidget {
   const AppEmptyState({

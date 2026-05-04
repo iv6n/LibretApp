@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_constants \u2014 constants used by eventos widgets.
+library;
+
 import 'package:flutter/material.dart';
 
 class EventLegendItem {

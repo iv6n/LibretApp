@@ -1,3 +1,6 @@
+﻿/// features > directorio > animales > widgets > widgets — barrel for animal widget files.
+library;
+
 export 'animal_assignment_sheet.dart';
 export 'animal_batch_manager.dart';
 export 'animal_card.dart';

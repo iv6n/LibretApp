@@ -1,3 +1,6 @@
+/// core › security › ports — barrel export for security port abstractions.
+library;
+
 export 'auth_port.dart';
 export 'crypto_port.dart';
 export 'key_provider_port.dart';

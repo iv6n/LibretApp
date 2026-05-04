@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a ubicaciones_tab_event \u2014 events for UbicacionesTabBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 

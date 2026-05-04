@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a entities \u203a crop_records \u2014 entities for crop-related records.
+library;
+
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';

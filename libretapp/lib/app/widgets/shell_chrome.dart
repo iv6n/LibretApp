@@ -1,3 +1,6 @@
+/// app › widgets › shell_chrome — exposes nav-bar / FAB visibility to descendants.
+library;
+
 import 'package:flutter/widgets.dart';
 
 /// Exposes shell chrome visibility to descendants (nav bar + FAB).

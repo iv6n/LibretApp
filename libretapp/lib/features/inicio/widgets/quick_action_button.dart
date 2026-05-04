@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a widgets \u203a quick_action_button \u2014 individual quick-action button.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/theme/app_theme.dart';
 

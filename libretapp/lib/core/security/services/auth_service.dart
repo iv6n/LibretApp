@@ -1,3 +1,6 @@
+/// core › security › services › auth_service — default authentication service implementation.
+library;
+
 import 'package:libretapp/core/security/models/models.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 

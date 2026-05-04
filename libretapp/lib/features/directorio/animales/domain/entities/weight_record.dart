@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a weight_record \u2014 entity for a weight measurement record.
+library;
+
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Métodos de medición de peso.

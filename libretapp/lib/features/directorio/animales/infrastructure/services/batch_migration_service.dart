@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a services \u203a batch_migration_service \u2014 migrates legacy animal data in batches.
+library;
+
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';

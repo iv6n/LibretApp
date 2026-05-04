@@ -1,3 +1,6 @@
+/// core › advisor › livestock_advisor — engine that applies care rules to produce tips.
+library;
+
 import 'package:libretapp/core/advisor/livestock_tip.dart';
 import 'package:libretapp/core/advisor/rules/health_rules.dart';
 import 'package:libretapp/core/advisor/rules/movement_rules.dart';

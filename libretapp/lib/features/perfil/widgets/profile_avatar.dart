@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a widgets \u203a profile_avatar \u2014 avatar widget for the user profile.
+library;
+
 import 'package:flutter/material.dart';
 
 class ProfileAvatar extends StatelessWidget {

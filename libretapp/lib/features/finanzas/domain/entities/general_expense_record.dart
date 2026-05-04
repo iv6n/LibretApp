@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a general_expense_record \u2014 entity for a general farm expense.
+library;
+
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Categorías de gasto general de la finca (no asociado a un animal).

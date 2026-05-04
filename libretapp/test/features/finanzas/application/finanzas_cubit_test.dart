@@ -9,7 +9,8 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_cubit.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_state.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
@@ -274,6 +275,38 @@ CommercialRecord _makeSale({required DateTime date, double amount = 500}) {
   );
 }
 
+/// Compatibility extension so existing Cubit-style test calls work with [FinanzasBloc].
+extension _FinanzasBlocCompat on FinanzasBloc {
+  Future<void> loadPeriod(DateRange period) async {
+    add(LoadPeriod(period));
+    await stream.firstWhere((s) => s.status != FinanzasStatus.loading);
+  }
+
+  Future<void> addIncome(IncomeRecord record) async {
+    add(AddIncome(record));
+    if (state.period != null) {
+      await stream.firstWhere((s) => s.status != FinanzasStatus.loading);
+    }
+  }
+
+  Future<void> addExpense(GeneralExpenseRecord record) async {
+    add(AddExpense(record));
+    if (state.period != null) {
+      await stream.firstWhere((s) => s.status != FinanzasStatus.loading);
+    }
+  }
+
+  Future<void> deleteIncome(String id) async {
+    add(DeleteIncome(id));
+    await stream.firstWhere((s) => s.status != FinanzasStatus.loading);
+  }
+
+  Future<void> deleteExpense(String id) async {
+    add(DeleteExpense(id));
+    await stream.firstWhere((s) => s.status != FinanzasStatus.loading);
+  }
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 void main() {
@@ -290,7 +323,7 @@ void main() {
     animalRepo = _FakeAnimalRepository();
   });
 
-  FinanzasCubit _cubit() => FinanzasCubit(
+  FinanzasBloc _cubit() => FinanzasBloc(
     finanzasRepository: finanzasRepo,
     animalRepository: animalRepo,
   );
@@ -379,7 +412,7 @@ void main() {
           _makeExpense(date: inPeriod, amount: 80, id: '3'),
         );
 
-        final cubit = FinanzasCubit(
+        final cubit = FinanzasBloc(
           finanzasRepository: repo,
           animalRepository: animalRepo,
         );
@@ -401,7 +434,7 @@ void main() {
       final outOfPeriod = DateTime(2025, 3, 1);
       final animal = _makeAnimal(uuid: 'a1', purchasePrice: 500);
 
-      final cubit = FinanzasCubit(
+      final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
         animalRepository: _FakeAnimalRepository(
           animals: [animal],
@@ -432,7 +465,7 @@ void main() {
       final outOfPeriod = DateTime(2025, 3, 1);
       final animal = _makeAnimal(uuid: 'a1', purchasePrice: 300);
 
-      final cubit = FinanzasCubit(
+      final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
         animalRepository: _FakeAnimalRepository(
           animals: [animal],
@@ -462,7 +495,7 @@ void main() {
 
     test('AnimalProfitability uses customName when available', () async {
       final animal = _makeAnimal(uuid: 'a2', customName: 'Conchita');
-      final cubit = FinanzasCubit(
+      final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
         animalRepository: _FakeAnimalRepository(animals: [animal]),
       );
@@ -476,7 +509,7 @@ void main() {
       'AnimalProfitability falls back to earTagNumber when customName is null',
       () async {
         final animal = _makeAnimal(uuid: 'a3');
-        final cubit = FinanzasCubit(
+        final cubit = FinanzasBloc(
           finanzasRepository: finanzasRepo,
           animalRepository: _FakeAnimalRepository(animals: [animal]),
         );
@@ -495,7 +528,7 @@ void main() {
         _makeAnimal(uuid: 'mid', purchasePrice: 0),
       ];
 
-      final cubit = FinanzasCubit(
+      final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
         animalRepository: _FakeAnimalRepository(
           animals: animals,

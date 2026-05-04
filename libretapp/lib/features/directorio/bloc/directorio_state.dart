@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a directorio_state \u2014 state for DirectorioBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 
 enum CombinedSearchType { animal, lote, ubicacion }

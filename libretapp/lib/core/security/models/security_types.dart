@@ -1,3 +1,6 @@
+/// core › security › models › security_types — value objects for security domain.
+library;
+
 import 'dart:typed_data';
 
 class CipherText {

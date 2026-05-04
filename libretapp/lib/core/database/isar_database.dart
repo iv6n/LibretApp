@@ -1,3 +1,6 @@
+/// core › database › isar_database — opens and provides the Isar database instance.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_dto \u2014 Data Transfer Object for Animal.
+library;
+
 import 'dart:convert';
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';

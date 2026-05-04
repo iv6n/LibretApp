@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_bloc \u2014 BLoC for the ubicaciones (farm locations) feature.
+library;
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';

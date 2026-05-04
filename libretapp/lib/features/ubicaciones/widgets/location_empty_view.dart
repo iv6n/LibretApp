@@ -1,3 +1,6 @@
+/// features › ubicaciones › widgets › location_empty_view — empty-state view for the locations list.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';

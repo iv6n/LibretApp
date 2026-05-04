@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_create_form \u2014 form for creating a new animal.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';

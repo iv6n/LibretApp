@@ -1,5 +1,9 @@
+/// core › widgets › responsive_scaler — scales child widget based on screen size.
+library;
+
 import 'package:flutter/material.dart';
 
+/// Scales its [child] uniformly based on the current screen width.
 class ResponsiveScaler extends StatelessWidget {
   const ResponsiveScaler({required this.child, super.key});
 

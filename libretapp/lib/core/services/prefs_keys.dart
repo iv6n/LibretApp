@@ -1,3 +1,7 @@
+/// core › services › prefs_keys — SharedPreferences key constants.
+library;
+
+/// Centralises all [SharedPreferences] key strings to avoid magic strings.
 class PrefsKeys {
   const PrefsKeys._();
 

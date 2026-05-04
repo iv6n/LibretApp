@@ -1,3 +1,6 @@
+/// core › security › services › token_store_service — persists JWT / session tokens securely.
+library;
+
 import 'dart:convert';
 import 'dart:typed_data';
 

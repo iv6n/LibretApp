@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_bloc \u2014 BLoC for the lotes list.
+library;
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';

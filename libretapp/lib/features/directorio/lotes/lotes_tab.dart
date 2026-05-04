@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a lotes_tab \u2014 lotes tab widget within the directorio feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';

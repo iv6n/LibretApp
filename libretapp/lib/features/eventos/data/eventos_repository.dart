@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a data \u203a eventos_repository \u2014 Isar implementation of the eventos data repository.
+library;
+
 import 'dart:convert';
 
 import 'package:libretapp/core/services/prefs_keys.dart';

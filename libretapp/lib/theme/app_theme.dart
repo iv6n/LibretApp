@@ -1,3 +1,6 @@
+/// theme › app_theme — global ThemeData definitions for light and dark themes.
+library;
+
 import 'package:flutter/material.dart';
 
 class AppColors {

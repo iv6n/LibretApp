@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a infrastructure \u203a isar_finanzas_repository \u2014 Isar implementation of FinanzasRepository.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';

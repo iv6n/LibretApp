@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_summary_card \u2014 summary card for a single event.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';

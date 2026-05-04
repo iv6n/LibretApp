@@ -1,3 +1,6 @@
+/// core › security › ports › crypto_port — abstract cryptographic operations port.
+library;
+
 import 'dart:typed_data';
 
 import 'package:libretapp/core/security/models/security_types.dart';

@@ -1,5 +1,7 @@
+/// app › app_event — events for [AppBloc].
 part of 'app_bloc.dart';
 
+/// Base class for all [AppBloc] events.
 abstract class AppEvent extends Equatable {
   const AppEvent();
 

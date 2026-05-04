@@ -1,3 +1,6 @@
+/// core › security › services › secure_logger_service — logger that redacts sensitive data.
+library;
+
 import 'package:libretapp/core/security/models/models.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 import 'package:libretapp/core/services/logger_service.dart';

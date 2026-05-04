@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a animal_card \u2014 card widget shown in the animal list (view layer).
+library;
+
 import 'package:flutter/material.dart';
 
 class AnimalCard extends StatelessWidget {

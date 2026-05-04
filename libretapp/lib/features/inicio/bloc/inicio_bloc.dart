@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a bloc \u203a inicio_bloc \u2014 BLoC for the home dashboard.
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_event.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_state.dart';

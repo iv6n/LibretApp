@@ -1,3 +1,8 @@
+/// core › di › injection — GetIt service locator setup.
+///
+/// Call [setupLocator] once at startup to register all dependencies.
+library;
+
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';

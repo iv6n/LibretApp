@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a view \u203a inicio_page \u2014 root page for the home dashboard.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_bloc.dart';

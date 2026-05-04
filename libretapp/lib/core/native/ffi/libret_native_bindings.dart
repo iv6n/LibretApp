@@ -1,3 +1,6 @@
+/// core › native › ffi › libret_native_bindings — auto-generated FFI bindings for libret_core.
+library;
+
 import 'dart:ffi' as ffi;
 import 'dart:io' show Platform;
 

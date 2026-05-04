@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a bloc \u203a perfil_bloc \u2014 BLoC for the user profile feature.
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_state.dart';

@@ -1,3 +1,6 @@
+/// core › performance › interaction_tracer — traces gesture interaction timing.
+library;
+
 import 'package:flutter/gestures.dart';
 import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/core/services/logger_service.dart';

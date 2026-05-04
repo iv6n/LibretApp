@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_header \u2014 header section of the animal detail page.
+library;
+
 import 'dart:io';
 import 'dart:math' show max;
 import 'dart:ui' show lerpDouble;

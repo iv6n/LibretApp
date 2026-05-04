@@ -1,5 +1,9 @@
+/// app › widgets › app_bottom_nav_bar — bottom navigation bar widget for the app shell.
+library;
+
 import 'package:flutter/material.dart';
 
+/// Configuration for a single bottom-navigation item.
 class AppNavItemConfig {
   const AppNavItemConfig({
     required this.index,

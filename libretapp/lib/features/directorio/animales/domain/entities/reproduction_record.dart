@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a reproduction_record \u2014 entity for a reproduction event record.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Tipos de servicio reproductor.

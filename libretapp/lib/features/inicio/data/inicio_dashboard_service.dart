@@ -1,5 +1,10 @@
+﻿/// features \u203a inicio \u203a data \u203a inicio_dashboard_service \u2014 service that aggregates data for the home dashboard.
+library;
+
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
@@ -56,6 +61,24 @@ class InicioDashboardService {
 
     final unvaccinated = animals.where((a) => !a.vaccinated).length;
     final underObservation = animals.where((a) => a.underObservation).length;
+
+    // Category breakdown – only categories with ≥1 animal.
+    final categoryTotals = <Category, ({int male, int female})>{};
+    for (final animal in animals) {
+      final cat = animal.category;
+      final prev = categoryTotals[cat] ?? (male: 0, female: 0);
+      categoryTotals[cat] = animal.sex == Sex.male
+          ? (male: prev.male + 1, female: prev.female)
+          : (male: prev.male, female: prev.female + 1);
+    }
+    final categoryBreakdown = categoryTotals.entries.map((e) {
+      return CategorySummary(
+        category: e.key,
+        total: e.value.male + e.value.female,
+        maleCount: e.value.male,
+        femaleCount: e.value.female,
+      );
+    }).toList()..sort((a, b) => b.total.compareTo(a.total));
 
     final upcomingEvents =
         eventos.where((e) => !e.fecha.isBefore(today)).toList()
@@ -173,6 +196,7 @@ class InicioDashboardService {
       alerts: alerts,
       tasks: tasks,
       lastUpdated: now,
+      categoryBreakdown: categoryBreakdown,
     );
   }
 }

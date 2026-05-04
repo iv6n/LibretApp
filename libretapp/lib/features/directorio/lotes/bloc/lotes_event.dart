@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_event \u2014 events for LotesBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 

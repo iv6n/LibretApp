@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a financial_period_summary \u2014 aggregated financial summary for a date range.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Rango de fechas para filtrar períodos financieros.

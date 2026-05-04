@@ -1,3 +1,6 @@
+/// app › widgets › shell_fab — configuration for the shared FAB rendered by the app shell.
+library;
+
 import 'package:flutter/material.dart';
 
 /// Configuration for the shared FAB rendered by the app shell.

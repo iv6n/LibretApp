@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_error \u2014 error state widget for the animal detail page.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 

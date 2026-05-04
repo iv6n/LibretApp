@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a domain \u203a entities \u203a lote_entity \u2014 Lote domain entity.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Entidad que representa un lote de animales agrupados.

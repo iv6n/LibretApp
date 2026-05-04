@@ -1,3 +1,6 @@
+﻿/// features \u203a registro \u203a view \u203a registro_page \u2014 entry page for the registro module showing record type selection.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';

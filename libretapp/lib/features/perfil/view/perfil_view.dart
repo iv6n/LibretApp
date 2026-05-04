@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a view \u203a perfil_view \u2014 main view for the user profile.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';

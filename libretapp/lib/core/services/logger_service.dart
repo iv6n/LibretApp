@@ -1,3 +1,8 @@
+/// core › services › logger_service — centralised application logger.
+///
+/// Wraps debug/info/warning/error logging with platform-aware output.
+library;
+
 import 'package:flutter/foundation.dart';
 
 class LoggerService {

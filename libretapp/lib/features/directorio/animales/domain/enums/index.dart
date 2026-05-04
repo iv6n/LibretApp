@@ -1,3 +1,6 @@
+﻿/// features > directorio > animales > domain > enums > index — barrel for animal enum files.
+library;
+
 export 'animal_status.dart';
 export 'category.dart';
 export 'health_status.dart';

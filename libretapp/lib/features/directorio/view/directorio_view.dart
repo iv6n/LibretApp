@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a view \u203a directorio_view \u2014 main view for the directorio feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

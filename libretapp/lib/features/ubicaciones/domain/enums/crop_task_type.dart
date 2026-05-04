@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a enums \u203a crop_task_type \u2014 enum for types of crop tasks.
+library;
+
 enum CropTaskType { water, fertilize, spray, harvest, prune }
 
 extension CropTaskTypeX on CropTaskType {

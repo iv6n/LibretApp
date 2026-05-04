@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a view \u203a perfil_page \u2014 root page for the user profile feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_batch_manager \u2014 manages batch operations on multiple animals.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_bloc.dart';

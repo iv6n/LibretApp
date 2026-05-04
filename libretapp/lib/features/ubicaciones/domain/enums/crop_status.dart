@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a enums \u203a crop_status \u2014 enum for crop lifecycle status.
+library;
+
 enum CropStatus { active, harvested, failed }
 
 extension CropStatusX on CropStatus {

@@ -1,5 +1,7 @@
+/// app › theme › theme_event — events for [ThemeBloc].
 part of 'theme_bloc.dart';
 
+/// Base sealed class for all [ThemeBloc] events.
 sealed class ThemeEvent extends Equatable {
   const ThemeEvent();
 

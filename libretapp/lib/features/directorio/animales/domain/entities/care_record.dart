@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a care_record \u2014 entity for a scheduled care event record.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 

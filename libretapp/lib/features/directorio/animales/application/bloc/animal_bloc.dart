@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a application \u203a bloc \u203a animal_bloc \u2014 BLoC for single-animal state.
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/security/ports/sensitive_logger_port.dart';

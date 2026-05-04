@@ -1,3 +1,8 @@
+/// core › extensions › context_extensions — BuildContext extension methods.
+///
+/// Convenience getters on [BuildContext] for frequently accessed services.
+library;
+
 import 'package:flutter/material.dart';
 
 /// Convenience extensions on [BuildContext] for common UI operations.

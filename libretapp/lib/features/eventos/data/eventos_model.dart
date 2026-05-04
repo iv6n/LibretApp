@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a data \u203a eventos_model \u2014 Isar model and domain entity for an event.
+library;
+
 import 'package:equatable/equatable.dart';
 
 class Evento extends Equatable {

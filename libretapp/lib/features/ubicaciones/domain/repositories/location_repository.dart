@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a repositories \u203a location_repository \u2014 abstract LocationRepository port.
+library;
+
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';

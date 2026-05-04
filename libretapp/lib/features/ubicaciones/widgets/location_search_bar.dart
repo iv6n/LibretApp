@@ -1,3 +1,6 @@
+/// features › ubicaciones › widgets › location_search_bar — search bar for filtering locations.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/widgets/app_search_bar.dart';
 

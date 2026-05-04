@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a commercial_record \u2014 entity for a commercial transaction record.
+library;
+
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de evento comercial.

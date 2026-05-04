@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a bloc \u203a inicio_state \u2014 state for InicioBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 

@@ -1,3 +1,6 @@
+/// core › advisor › rules › health_rules — rules that generate health-related advisor tips.
+library;
+
 import 'package:libretapp/core/advisor/livestock_tip.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';

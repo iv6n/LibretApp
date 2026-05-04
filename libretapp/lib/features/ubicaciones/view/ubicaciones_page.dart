@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a view \u203a ubicaciones_page \u2014 root page for the ubicaciones feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';

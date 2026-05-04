@@ -1,5 +1,8 @@
+/// core › widgets › app_card — themed card with consistent padding and elevation.
+library;
+
 import 'package:flutter/material.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AppCard extends StatelessWidget {
   const AppCard({

@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_list \u2014 scrollable list of events for a selected day.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';

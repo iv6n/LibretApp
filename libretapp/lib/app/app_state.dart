@@ -1,5 +1,7 @@
+/// app › app_state — states emitted by [AppBloc].
 part of 'app_bloc.dart';
 
+/// Base class for all [AppBloc] states.
 abstract class AppState extends Equatable {
   const AppState();
 

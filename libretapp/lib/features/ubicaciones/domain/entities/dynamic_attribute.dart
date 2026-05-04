@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a entities \u203a dynamic_attribute \u2014 entity for a dynamic key-value attribute on a location.
+library;
+
 import 'package:equatable/equatable.dart';
 
 enum DynamicAttributeType { number, integer, boolean, text }

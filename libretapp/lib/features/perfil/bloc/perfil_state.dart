@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a bloc \u203a perfil_state \u2014 state for PerfilBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 

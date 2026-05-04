@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a application \u203a bloc \u203a animal_state \u2014 state for AnimalBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 

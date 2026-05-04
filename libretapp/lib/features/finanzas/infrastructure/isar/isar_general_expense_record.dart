@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_general_expense_record \u2014 Isar schema for GeneralExpenseRecord.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 

@@ -1,5 +1,26 @@
+﻿/// features \u203a inicio \u203a data \u203a inicio_dashboard_models \u2014 data models for the dashboard.
+library;
+
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
+
+class CategorySummary extends Equatable {
+  const CategorySummary({
+    required this.category,
+    required this.total,
+    required this.maleCount,
+    required this.femaleCount,
+  });
+
+  final Category category;
+  final int total;
+  final int maleCount;
+  final int femaleCount;
+
+  @override
+  List<Object?> get props => [category, total, maleCount, femaleCount];
+}
 
 enum InicioAlertSeverity { critical, warning, info }
 
@@ -49,6 +70,7 @@ class InicioDashboardData extends Equatable {
     required this.alerts,
     required this.tasks,
     required this.lastUpdated,
+    required this.categoryBreakdown,
   });
 
   final String profileName;
@@ -63,6 +85,7 @@ class InicioDashboardData extends Equatable {
   final List<InicioAlertItem> alerts;
   final List<InicioTaskItem> tasks;
   final DateTime lastUpdated;
+  final List<CategorySummary> categoryBreakdown;
 
   @override
   List<Object?> get props => [
@@ -78,5 +101,6 @@ class InicioDashboardData extends Equatable {
     alerts,
     tasks,
     lastUpdated,
+    categoryBreakdown,
   ];
 }

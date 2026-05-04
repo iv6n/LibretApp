@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_animal \u2014 Isar schema for the Animal model.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';

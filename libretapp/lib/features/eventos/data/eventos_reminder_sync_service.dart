@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a data \u203a eventos_reminder_sync_service \u2014 syncs eventos with device reminders.
+library;
+
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';

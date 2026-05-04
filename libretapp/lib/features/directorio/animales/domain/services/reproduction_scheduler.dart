@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a services \u203a reproduction_scheduler \u2014 schedules reproduction-cycle alerts.
+library;
+
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 
 class ReproductionScheduleResult {

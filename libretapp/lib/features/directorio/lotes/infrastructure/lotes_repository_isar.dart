@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a lotes_repository_isar \u2014 Isar implementation of LotesRepository.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';

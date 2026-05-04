@@ -1,9 +1,18 @@
+/// finanzas › view › FinanzasPage
+///
+/// Entry point for the financial dashboard. Provides [FinanzasBloc] and
+/// renders a 4-tab view: summary, incomes, expenses, and per-animal results.
+///
+/// Layer: view (presentation)
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_cubit.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_state.dart';
 import 'package:libretapp/features/finanzas/domain/entities/animal_profitability.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
@@ -61,16 +70,17 @@ extension _PeriodPresetLabel on _PeriodPreset {
 
 // ─── Page wrapper ─────────────────────────────────────────────────────────────
 
+/// Page wrapper that creates and provides [FinanzasBloc] to the subtree.
 class FinanzasPage extends StatelessWidget {
   const FinanzasPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => FinanzasCubit(
+      create: (_) => FinanzasBloc(
         finanzasRepository: locator<FinanzasRepository>(),
         animalRepository: locator<AnimalRepository>(),
-      )..loadPeriod(_PeriodPreset.thisMonth.toDateRange()),
+      )..add(LoadPeriod(_PeriodPreset.thisMonth.toDateRange())),
       child: const _FinanzasView(),
     );
   }
@@ -104,7 +114,7 @@ class _FinanzasViewState extends State<_FinanzasView>
 
   void _changePeriod(_PeriodPreset preset) {
     setState(() => _preset = preset);
-    context.read<FinanzasCubit>().loadPeriod(preset.toDateRange());
+    context.read<FinanzasBloc>().add(LoadPeriod(preset.toDateRange()));
   }
 
   @override
@@ -141,7 +151,7 @@ class _FinanzasViewState extends State<_FinanzasView>
           ],
         ),
       ),
-      body: BlocBuilder<FinanzasCubit, FinanzasState>(
+      body: BlocBuilder<FinanzasBloc, FinanzasState>(
         builder: (context, state) {
           if (state.status == FinanzasStatus.loading ||
               state.status == FinanzasStatus.initial) {
@@ -157,12 +167,12 @@ class _FinanzasViewState extends State<_FinanzasView>
               _IngresosList(
                 incomes: state.incomes,
                 onDelete: (id) =>
-                    context.read<FinanzasCubit>().deleteIncome(id),
+                    context.read<FinanzasBloc>().add(DeleteIncome(id)),
               ),
               _GastosList(
                 expenses: state.expenses,
                 onDelete: (id) =>
-                    context.read<FinanzasCubit>().deleteExpense(id),
+                    context.read<FinanzasBloc>().add(DeleteExpense(id)),
               ),
               _AnimalList(profitabilities: state.animalProfitabilities),
             ],

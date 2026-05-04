@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a data \u203a perfil_repository \u2014 repository for reading and writing profile data.
+library;
+
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 
 abstract class PerfilRepository {

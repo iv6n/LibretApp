@@ -1,3 +1,6 @@
+/// core › security › services › native_crypto_service — crypto service backed by native FFI.
+library;
+
 import 'dart:typed_data';
 import 'dart:convert';
 

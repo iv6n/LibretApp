@@ -1,3 +1,8 @@
+/// app › app_shell — persistent shell scaffold with bottom navigation bar.
+///
+/// Hosts the five main tabs via [StatefulShellRoute.indexedStack].
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';

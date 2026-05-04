@@ -1,3 +1,6 @@
+﻿/// features > directorio > animales > domain > animal_domain — barrel for animal domain layer.
+library;
+
 export 'entities/animal_entity.dart';
 export 'entities/commercial_record.dart';
 export 'entities/cost_record.dart';

@@ -1,8 +1,12 @@
+﻿/// features \u203a registro \u203a view \u203a registro_ingreso_page \u2014 page for recording a farm income entry.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_cubit.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
@@ -69,11 +73,11 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
     );
 
     try {
-      // If a FinanzasCubit is already in the tree, use it so the list
+      // If a FinanzasBloc is already in the tree, dispatch to it so the list
       // refreshes automatically. Otherwise, save directly via repository.
-      final cubit = context.read<FinanzasCubit?>();
-      if (cubit != null) {
-        await cubit.addIncome(record);
+      final finanzasBloc = context.read<FinanzasBloc?>();
+      if (finanzasBloc != null) {
+        finanzasBloc.add(AddIncome(record));
       } else {
         await locator<FinanzasRepository>().addIncome(record);
       }

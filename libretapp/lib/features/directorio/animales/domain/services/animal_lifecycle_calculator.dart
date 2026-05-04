@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a services \u203a animal_lifecycle_calculator \u2014 calculates age and lifecycle stage for animals.
+library;
+
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';

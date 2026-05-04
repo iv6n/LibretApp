@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a bloc \u203a inicio_event \u2014 events for InicioBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 
 abstract class InicioEvent extends Equatable {

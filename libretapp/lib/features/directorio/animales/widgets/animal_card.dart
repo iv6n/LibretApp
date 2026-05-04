@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_card \u2014 reusable animal card widget.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';
@@ -32,10 +35,6 @@ class AnimalCard extends StatelessWidget {
 
     final stageAsset = profile.asset;
     final avatarBorderColor = _avatarBorderColor(animal, context);
-    final sexoSymbol = animal.sex == Sex.male ? '♂' : '♀';
-    final sexoColor = animal.sex == Sex.male
-        ? const Color(0xFF16A0A9)
-        : const Color(0xFFBB6BD9);
     final healthColor = colorFromHex(animal.healthStatus.hexColor);
     final riskColor = colorFromHex(animal.riskLevel.hexColor);
     final locationLabel = location?.name ?? 'Sin ubicación';
@@ -165,14 +164,10 @@ class AnimalCard extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  sexoSymbol,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w700,
-                                    color: sexoColor,
-                                    height: 1,
-                                  ),
+                                TagChip(
+                                  fontSize: 10,
+                                  label: stageLabel.toUpperCase(),
+                                  color: stageColor,
                                 ),
                                 if (selectionEnabled) ...[
                                   const SizedBox(width: 6),
@@ -224,29 +219,18 @@ class AnimalCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  child: TagChip(
-                                    fontSize: 10,
-                                    label: stageLabel.toUpperCase(),
-                                    color: stageColor,
-                                  ),
-                                ),
                                 const Spacer(),
                                 SizedBox(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 14),
-                                    child: Text(
-                                      ageLabel,
-                                      style: textTheme.titleSmall?.copyWith(
-                                        fontSize: 12,
-                                        color: headerSecondaryTextColor,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.end,
+                                  child: Text(
+                                    ageLabel,
+                                    style: textTheme.titleSmall?.copyWith(
+                                      fontSize: 12,
+                                      color: headerSecondaryTextColor,
+                                      fontWeight: FontWeight.w600,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
                                   ),
                                 ),
                               ],

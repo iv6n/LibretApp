@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a widgets \u203a crop_sheets \u2014 bottom sheets for crop record management.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';

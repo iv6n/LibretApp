@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a view \u203a lote_detail_page \u2014 detail page for a single lote.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

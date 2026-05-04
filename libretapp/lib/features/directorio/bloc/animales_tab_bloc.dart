@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a animales_tab_bloc \u2014 BLoC managing the animales tab state within the directorio shell.
+library;
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';

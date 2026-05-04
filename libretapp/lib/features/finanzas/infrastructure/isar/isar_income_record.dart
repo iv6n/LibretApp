@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_income_record \u2014 Isar schema for IncomeRecord.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 

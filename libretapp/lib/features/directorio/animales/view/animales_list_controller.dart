@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_controller \u2014 controller for the animals list screen.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';

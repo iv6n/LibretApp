@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a isar \u203a isar_lote \u2014 Isar schema for the Lote model.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 

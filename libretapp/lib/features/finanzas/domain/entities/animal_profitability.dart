@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a animal_profitability \u2014 entity for per-animal profitability data.
+library;
+
 import 'package:equatable/equatable.dart';
 
 /// Rentabilidad calculada para un animal individual.

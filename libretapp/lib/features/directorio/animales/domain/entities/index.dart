@@ -1,3 +1,6 @@
+﻿/// features > directorio > animales > domain > entities > index — barrel for animal entity files.
+library;
+
 export 'animal_entity.dart';
 export 'care_record.dart';
 export 'care_rule.dart';

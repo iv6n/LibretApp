@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_form_sheet \u2014 bottom sheet form for creating/editing an event.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';

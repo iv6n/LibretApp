@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_style \u2014 styling helpers for event widgets.
+library;
+
 import 'package:flutter/material.dart';
 
 Color colorForTipo(String tipo) {

@@ -1,3 +1,6 @@
+/// core › services › shared_prefs_service — wrapper around SharedPreferences.
+library;
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPrefsService {

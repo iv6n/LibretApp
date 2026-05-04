@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a animal_entity \u2014 Animal domain entity.
+library;
+
 import 'package:equatable/equatable.dart';
 
 import '../enums/animal_status.dart';

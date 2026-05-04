@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_legend \u2014 legend widget explaining event colour codes.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/eventos/widgets/event_constants.dart';
 

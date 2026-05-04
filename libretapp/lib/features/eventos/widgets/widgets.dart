@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a widgets \u2014 barrel for eventos widget files.
+library;
+
 export 'event_calendar.dart';
 export 'event_constants.dart';
 export 'event_form_sheet.dart';

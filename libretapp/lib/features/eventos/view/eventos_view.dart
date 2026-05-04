@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a view \u203a eventos_view \u2014 main view for the eventos calendar.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';

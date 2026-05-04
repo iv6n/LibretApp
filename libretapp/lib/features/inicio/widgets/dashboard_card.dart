@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a widgets \u203a dashboard_card \u2014 card widget shown on the home dashboard.
+library;
+
 import 'package:flutter/material.dart';
 
 class DashboardCard extends StatelessWidget {

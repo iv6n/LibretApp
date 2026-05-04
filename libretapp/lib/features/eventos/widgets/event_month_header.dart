@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_month_header \u2014 header row showing month name and navigation.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/eventos/widgets/event_calendar.dart';

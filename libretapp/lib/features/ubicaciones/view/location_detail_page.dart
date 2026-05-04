@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a view \u203a location_detail_page \u2014 detail page for a single location.
+library;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

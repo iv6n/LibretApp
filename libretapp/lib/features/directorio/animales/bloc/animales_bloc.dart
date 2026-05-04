@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_bloc \u2014 BLoC for the animals list.
+library;
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';

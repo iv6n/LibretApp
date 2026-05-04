@@ -1,7 +1,18 @@
+/// finanzas › application › FinanzasBloc
+///
+/// BLoC for the finanzas feature (replaces the former FinanzasCubit).
+/// Manages period-scoped financial summaries, income/expense records, and
+/// per-animal profitability data.
+///
+/// Layer: application (state management)
+/// Dependencies: [FinanzasRepository], [AnimalRepository]
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_state.dart';
 import 'package:libretapp/features/finanzas/domain/entities/animal_profitability.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
@@ -9,31 +20,42 @@ import 'package:libretapp/features/finanzas/domain/entities/general_expense_reco
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 
-class FinanzasCubit extends Cubit<FinanzasState> {
-  FinanzasCubit({
+/// BLoC that drives the financial dashboard screen.
+///
+/// Responds to [LoadPeriod], [AddIncome], [AddExpense], [DeleteIncome], and
+/// [DeleteExpense] events. After any mutation event the current period is
+/// automatically reloaded so the UI stays consistent.
+class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
+  /// Creates a [FinanzasBloc] with the required repositories.
+  FinanzasBloc({
     required FinanzasRepository finanzasRepository,
     required AnimalRepository animalRepository,
   }) : _finanzasRepository = finanzasRepository,
        _animalRepository = animalRepository,
-       super(const FinanzasState());
+       super(const FinanzasState()) {
+    on<LoadPeriod>(_onLoadPeriod);
+    on<AddIncome>(_onAddIncome);
+    on<AddExpense>(_onAddExpense);
+    on<DeleteIncome>(_onDeleteIncome);
+    on<DeleteExpense>(_onDeleteExpense);
+  }
 
   final FinanzasRepository _finanzasRepository;
   final AnimalRepository _animalRepository;
 
-  /// Carga todos los datos financieros para el [period] dado.
-  ///
-  /// Todos los registros de animales se obtienen en paralelo (sin N+1).
-  /// Los costos y ventas por animal se filtran al mismo [period] que el
-  /// resumen general para garantizar consistencia entre pestañas.
-  Future<void> loadPeriod(DateRange period) async {
+  Future<void> _onLoadPeriod(
+    LoadPeriod event,
+    Emitter<FinanzasState> emit,
+  ) async {
     emit(
       state.copyWith(
         status: FinanzasStatus.loading,
-        period: period,
+        period: event.period,
         error: null,
       ),
     );
     try {
+      final period = event.period;
       final topResults = await Future.wait([
         _finanzasRepository.getIncomes(period),
         _finanzasRepository.getExpenses(period),
@@ -44,7 +66,7 @@ class FinanzasCubit extends Cubit<FinanzasState> {
       final expenses = topResults[1] as List<GeneralExpenseRecord>;
       final animals = topResults[2] as List;
 
-      // Fetch all per-animal records concurrently (fix N+1 query).
+      // Fetch all per-animal records concurrently (avoids N+1 queries).
       final animalRecords = await Future.wait(
         animals.map((animal) async {
           final uuid = animal.uuid as String;
@@ -140,27 +162,44 @@ class FinanzasCubit extends Cubit<FinanzasState> {
     }
   }
 
-  Future<void> addIncome(IncomeRecord record) async {
-    await _finanzasRepository.addIncome(record);
-    final period = state.period;
-    if (period != null) await loadPeriod(period);
+  Future<void> _onAddIncome(
+    AddIncome event,
+    Emitter<FinanzasState> emit,
+  ) async {
+    await _finanzasRepository.addIncome(event.record);
+    _reload();
   }
 
-  Future<void> addExpense(GeneralExpenseRecord record) async {
-    await _finanzasRepository.addExpense(record);
-    final period = state.period;
-    if (period != null) await loadPeriod(period);
+  Future<void> _onAddExpense(
+    AddExpense event,
+    Emitter<FinanzasState> emit,
+  ) async {
+    await _finanzasRepository.addExpense(event.record);
+    _reload();
   }
 
-  Future<void> deleteIncome(String id) async {
-    await _finanzasRepository.deleteIncome(id);
-    final period = state.period;
-    if (period != null) await loadPeriod(period);
+  Future<void> _onDeleteIncome(
+    DeleteIncome event,
+    Emitter<FinanzasState> emit,
+  ) async {
+    await _finanzasRepository.deleteIncome(event.id);
+    _reload();
   }
 
-  Future<void> deleteExpense(String id) async {
-    await _finanzasRepository.deleteExpense(id);
+  Future<void> _onDeleteExpense(
+    DeleteExpense event,
+    Emitter<FinanzasState> emit,
+  ) async {
+    await _finanzasRepository.deleteExpense(event.id);
+    _reload();
+  }
+
+  /// Re-dispatches [LoadPeriod] for the currently active period.
+  ///
+  /// Called after any mutation (add/delete) to keep the UI in sync without
+  /// requiring callers to manage the period themselves.
+  void _reload() {
     final period = state.period;
-    if (period != null) await loadPeriod(period);
+    if (period != null) add(LoadPeriod(period));
   }
 }

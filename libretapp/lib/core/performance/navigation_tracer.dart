@@ -1,3 +1,6 @@
+/// core › performance › navigation_tracer — traces route navigation timing.
+library;
+
 import 'package:flutter/widgets.dart';
 import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/core/services/logger_service.dart';

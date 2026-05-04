@@ -1,3 +1,6 @@
+/// core › services — barrel export for application services.
+library;
+
 export 'logger_service.dart';
 export 'prefs_keys.dart';
 export 'shared_prefs_service.dart';

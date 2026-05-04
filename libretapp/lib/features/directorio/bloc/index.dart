@@ -1,3 +1,6 @@
+﻿/// features > directorio > bloc > index — barrel for directorio BLoC files.
+library;
+
 export 'animales_tab_bloc.dart';
 export 'animales_tab_event.dart';
 export 'animales_tab_state.dart';

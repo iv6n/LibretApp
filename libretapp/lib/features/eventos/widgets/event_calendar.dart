@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a widgets \u203a event_calendar \u2014 calendar grid widget for eventos.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
 import 'package:libretapp/features/eventos/widgets/event_style.dart';

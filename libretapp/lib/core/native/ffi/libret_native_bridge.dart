@@ -1,3 +1,6 @@
+/// core › native › ffi › libret_native_bridge — high-level Dart bridge over libret_core FFI bindings.
+library;
+
 import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 

@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_event \u2014 events for UbicacionesBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a entities \u203a location_entity \u2014 Location domain entity.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';

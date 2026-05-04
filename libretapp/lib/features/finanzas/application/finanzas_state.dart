@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a application \u203a finanzas_state \u2014 state for FinanzasBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/finanzas/domain/entities/animal_profitability.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';

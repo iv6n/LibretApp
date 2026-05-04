@@ -1,5 +1,8 @@
+/// app › widgets › shell_insets — inherited widget exposing bottom inset for shell chrome.
+library;
+
 import 'package:flutter/widgets.dart';
-import 'shell_chrome.dart';
+import 'package:libretapp/app/widgets/shell_chrome.dart';
 
 class ShellInsets {
   static const double defaultBarHeight = 67;

@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a bloc \u203a eventos_event \u2014 events for EventosBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
 

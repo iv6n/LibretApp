@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a income_record \u2014 entity for an income entry.
+library;
+
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Categorías de ingreso general de la finca.

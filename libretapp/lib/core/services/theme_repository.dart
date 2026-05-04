@@ -1,3 +1,6 @@
+/// core › services › theme_repository — persists the user’s selected theme mode.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';

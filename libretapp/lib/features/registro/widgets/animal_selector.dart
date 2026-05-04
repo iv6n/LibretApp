@@ -1,3 +1,6 @@
+﻿/// features \u203a registro \u203a widgets \u203a animal_selector \u2014 widget for selecting an animal from the directory.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';

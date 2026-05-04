@@ -1,3 +1,6 @@
+﻿/// features \u203a finanzas \u203a domain \u203a repositories \u203a finanzas_repository \u2014 abstract FinanzasRepository port.
+library;
+
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';

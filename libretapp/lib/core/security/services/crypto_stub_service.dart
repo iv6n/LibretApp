@@ -1,3 +1,6 @@
+/// core › security › services › crypto_stub_service — no-op crypto service for platforms without native crypto.
+library;
+
 import 'dart:typed_data';
 
 import 'package:libretapp/core/security/models/models.dart';

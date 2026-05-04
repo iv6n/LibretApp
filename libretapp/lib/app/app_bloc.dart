@@ -1,3 +1,9 @@
+/// app › app_bloc — application-level BLoC controlling auth/session state.
+///
+/// Manages high-level app lifecycle events such as startup and authentication
+/// state changes.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';

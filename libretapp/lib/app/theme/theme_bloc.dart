@@ -1,3 +1,8 @@
+/// app › theme › theme_bloc — BLoC controlling app theme (light/dark).
+///
+/// Persists the selected theme via [ThemeRepository].
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a ubicaciones \u203a ubicaciones_tab \u2014 ubicaciones tab widget within the directorio feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';

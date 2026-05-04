@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a quick_actions_fab \u2014 expandable FAB with quick-action buttons.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';

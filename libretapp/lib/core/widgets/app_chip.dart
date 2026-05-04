@@ -1,5 +1,8 @@
+/// core › widgets › app_chip — themed chip widget used across features.
+library;
+
 import 'package:flutter/material.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/theme/theme.dart';
 
 enum AppChipTone { neutral, info, success, warning, error }
 

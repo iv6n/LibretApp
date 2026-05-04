@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a view \u203a ubicaciones_view \u2014 main view for the farm locations list.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

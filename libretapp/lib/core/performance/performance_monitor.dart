@@ -1,3 +1,6 @@
+/// core › performance › performance_monitor — aggregates frame/interaction metrics.
+library;
+
 import 'dart:collection';
 
 import 'package:flutter/scheduler.dart';

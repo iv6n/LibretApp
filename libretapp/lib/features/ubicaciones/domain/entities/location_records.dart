@@ -1,3 +1,6 @@
+﻿/// features \u203a ubicaciones \u203a domain \u203a entities \u203a location_records \u2014 entities for location measurement records.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 

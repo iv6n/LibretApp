@@ -1,3 +1,6 @@
+﻿/// features \u203a perfil \u203a widgets \u203a profile_field \u2014 labelled field row for the profile page.
+library;
+
 import 'package:flutter/material.dart';
 
 class ProfileField extends StatelessWidget {

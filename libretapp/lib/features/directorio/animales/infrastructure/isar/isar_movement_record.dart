@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_movement_record \u2014 Isar schema for MovementRecord.
+library;
+
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 

@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a view \u203a eventos_page \u2014 root page for the eventos feature.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';

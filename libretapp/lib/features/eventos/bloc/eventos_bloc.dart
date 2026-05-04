@@ -1,3 +1,6 @@
+﻿/// features \u203a eventos \u203a bloc \u203a eventos_bloc \u2014 BLoC for the eventos calendar feature.
+library;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/eventos/bloc/eventos_event.dart';
 import 'package:libretapp/features/eventos/bloc/eventos_state.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a directorio_event \u2014 events for DirectorioBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 
 abstract class DirectorioEvent extends Equatable {

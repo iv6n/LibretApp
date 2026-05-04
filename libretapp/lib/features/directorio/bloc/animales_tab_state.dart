@@ -1,3 +1,6 @@
+﻿/// features \u203a directorio \u203a bloc \u203a animales_tab_state \u2014 state for AnimalesTabBloc.
+library;
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 

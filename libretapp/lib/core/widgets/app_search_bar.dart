@@ -1,3 +1,6 @@
+/// core › widgets › app_search_bar — reusable search input widget.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/theme/app_theme.dart';
 

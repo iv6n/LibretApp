@@ -1,3 +1,6 @@
+/// core › security › services › default_key_provider_service — derives encryption keys from platform secrets.
+library;
+
 import 'dart:convert';
 import 'dart:typed_data';
 

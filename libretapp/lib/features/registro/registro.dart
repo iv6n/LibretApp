@@ -1,11 +1,7 @@
-export 'view/registro_page.dart';
-export 'view/registro_sanitario_page.dart';
-export 'view/registro_peso_page.dart';
-export 'view/registro_produccion_page.dart';
-export 'view/registro_reproduccion_page.dart';
-export 'view/registro_comercial_page.dart';
-export 'view/registro_movimiento_page.dart';
-export 'view/registro_costo_page.dart';
-export 'view/registro_ingreso_page.dart';
-export 'view/registro_gasto_general_page.dart';
-export 'widgets/animal_selector.dart';
+/// Barrel — registro feature
+///
+/// Exports all registration pages, shared widgets, and the [RegistroBloc]
+/// state management layer for the registro feature.
+export 'bloc/index.dart';
+export 'view/view.dart';
+export 'widgets/widgets.dart';

@@ -1,3 +1,6 @@
+﻿/// features \u203a inicio \u203a widgets \u203a quick_actions \u2014 quick-actions section on the home dashboard.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';

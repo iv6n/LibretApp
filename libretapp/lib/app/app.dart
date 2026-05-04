@@ -1,3 +1,9 @@
+/// app › app — root widget of the LibretApp application.
+///
+/// Builds the [MaterialApp.router] from GoRouter and provides the top-level
+/// BLoC providers consumed by every page.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
