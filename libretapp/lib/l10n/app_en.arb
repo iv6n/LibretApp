@@ -196,6 +196,22 @@
   "detailFormReproductionNotes": "Notes (optional)",
   "detailFormReproductionExpectedAfterDate": "Expected calving date cannot be before service date",
   "detailFormReproductionSaved": "Reproduction event saved",
+  "registroReproSubtitleFemale": "Female: full reproductive form.",
+  "registroReproSubtitleMale": "Male: basic reproductive fields.",
+  "registroReproAgeWarning": "Notice: this animal is {ageMonths} months old. Minimum recommended age is {minMonths} months, but this form does not block registration.",
+  "@registroReproAgeWarning": {
+    "placeholders": {
+      "ageMonths": { "type": "int" },
+      "minMonths": { "type": "int" }
+    }
+  },
+  "registroReproSireMale": "Male identifier (optional)",
+  "registroReproPartialError": "Health record saved, but reproduction event failed: {error}",
+  "@registroReproPartialError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "animalFormLoadError": "Could not load the animal form",
   "animalFormCategoryAdjusted": "Category adjusted to Other to match species",
   "animalFormSpeciesAdjusted": "Species adjusted to Cattle for that category",

@@ -11,6 +11,12 @@ abstract class LotesRepository {
   /// Obtener todos los lotes
   Future<List<LoteEntity>> getAll();
 
+  /// Crear o actualizar un lote usando su UUID como llave natural.
+  Future<void> upsert(LoteEntity lote);
+
+  /// Eliminar todos los lotes almacenados.
+  Future<void> clearAll();
+
   /// Obtener un lote por UUID
   Future<LoteEntity?> getByUuid(String uuid);
 

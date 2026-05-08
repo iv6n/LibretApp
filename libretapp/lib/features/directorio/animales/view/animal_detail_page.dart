@@ -12,6 +12,13 @@ import 'package:libretapp/features/directorio/animales/application/bloc/animal_b
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
@@ -31,13 +38,35 @@ class AnimalDetailPage extends StatefulWidget {
     this.showQuickActions = true,
     AnimalRepository? repository,
     LotesRepository? lotesRepository,
+    WeightRecordRepository? weightRepo,
+    HealthRecordRepository? healthRepo,
+    ProductionRecordRepository? productionRepo,
+    ReproductionRecordRepository? reproductionRepo,
+    CommercialRecordRepository? commercialRepo,
+    MovementRecordRepository? movementRepo,
+    CostRecordRepository? costRepo,
     super.key,
   }) : repository = repository ?? locator<AnimalRepository>(),
-       lotesRepository = lotesRepository ?? locator<LotesRepository>();
+       lotesRepository = lotesRepository ?? locator<LotesRepository>(),
+       weightRepo = weightRepo ?? locator<WeightRecordRepository>(),
+       healthRepo = healthRepo ?? locator<HealthRecordRepository>(),
+       productionRepo = productionRepo ?? locator<ProductionRecordRepository>(),
+       reproductionRepo =
+           reproductionRepo ?? locator<ReproductionRecordRepository>(),
+       commercialRepo = commercialRepo ?? locator<CommercialRecordRepository>(),
+       movementRepo = movementRepo ?? locator<MovementRecordRepository>(),
+       costRepo = costRepo ?? locator<CostRecordRepository>();
 
   final String animalUuid;
   final AnimalRepository repository;
   final LotesRepository lotesRepository;
+  final WeightRecordRepository weightRepo;
+  final HealthRecordRepository healthRepo;
+  final ProductionRecordRepository productionRepo;
+  final ReproductionRecordRepository reproductionRepo;
+  final CommercialRecordRepository commercialRepo;
+  final MovementRecordRepository movementRepo;
+  final CostRecordRepository costRepo;
   final bool showQuickActions;
 
   @override
@@ -71,13 +100,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     _loadedAnimal = animal;
 
     final uuid = animal.uuid;
-    final weightsFuture = widget.repository.getWeightRecords(uuid);
-    final reproductionsFuture = widget.repository.getReproductionRecords(uuid);
-    final productionsFuture = widget.repository.getProductionRecords(uuid);
-    final healthFuture = widget.repository.getHealthRecords(uuid);
-    final commercialFuture = widget.repository.getCommercialRecords(uuid);
-    final movementsFuture = widget.repository.getMovementRecords(uuid);
-    final costsFuture = widget.repository.getCostRecords(uuid);
+    final weightsFuture = widget.weightRepo.getWeightRecords(uuid);
+    final reproductionsFuture = widget.reproductionRepo.getReproductionRecords(
+      uuid,
+    );
+    final productionsFuture = widget.productionRepo.getProductionRecords(uuid);
+    final healthFuture = widget.healthRepo.getHealthRecords(uuid);
+    final commercialFuture = widget.commercialRepo.getCommercialRecords(uuid);
+    final movementsFuture = widget.movementRepo.getMovementRecords(uuid);
+    final costsFuture = widget.costRepo.getCostRecords(uuid);
 
     final weights = await weightsFuture;
     final reproductions = await reproductionsFuture;

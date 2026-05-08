@@ -1274,6 +1274,36 @@ abstract class AppLocalizations {
   /// **'Evento reproductivo guardado'**
   String get detailFormReproductionSaved;
 
+  /// No description provided for @registroReproSubtitleFemale.
+  ///
+  /// In es, this message translates to:
+  /// **'Hembra: formulario reproductivo completo.'**
+  String get registroReproSubtitleFemale;
+
+  /// No description provided for @registroReproSubtitleMale.
+  ///
+  /// In es, this message translates to:
+  /// **'Macho: ajustes reproductivos básicos.'**
+  String get registroReproSubtitleMale;
+
+  /// No description provided for @registroReproAgeWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Aviso: este animal tiene {ageMonths} meses. Se recomienda esperar al menos {minMonths} meses para servicio, pero este formulario no bloquea el registro.'**
+  String registroReproAgeWarning(int ageMonths, int minMonths);
+
+  /// No description provided for @registroReproSireMale.
+  ///
+  /// In es, this message translates to:
+  /// **'Identificación del macho (opcional)'**
+  String get registroReproSireMale;
+
+  /// No description provided for @registroReproPartialError.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro sanitario guardado, pero falló el evento reproductivo: {error}'**
+  String registroReproPartialError(Object error);
+
   /// No description provided for @animalFormLoadError.
   ///
   /// In es, this message translates to:

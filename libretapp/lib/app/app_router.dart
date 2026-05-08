@@ -8,12 +8,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/eventos/eventos.dart';
 import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
 import 'package:libretapp/features/registro/registro.dart';
+import 'package:libretapp/features/exportar/exportar.dart';
 import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
 
 final router = GoRouter(
@@ -86,6 +94,14 @@ final router = GoRouter(
                         create: (_) => AnimalBloc(
                           animalRepository: locator<AnimalRepository>(),
                           lotesRepository: locator<LotesRepository>(),
+                          weightRepo: locator<WeightRecordRepository>(),
+                          healthRepo: locator<HealthRecordRepository>(),
+                          productionRepo: locator<ProductionRecordRepository>(),
+                          reproductionRepo:
+                              locator<ReproductionRecordRepository>(),
+                          commercialRepo: locator<CommercialRecordRepository>(),
+                          movementRepo: locator<MovementRecordRepository>(),
+                          costRepo: locator<CostRecordRepository>(),
                         ),
                         child: AnimalDetailPage(animalUuid: uuid),
                       ),
@@ -289,6 +305,12 @@ final router = GoRouter(
       name: AppRoutes.nameFinanzas,
       pageBuilder: (context, state) =>
           _buildOverlayDetailPage(state: state, child: const FinanzasPage()),
+    ),
+    GoRoute(
+      path: AppRoutes.exportar,
+      name: AppRoutes.nameExportar,
+      pageBuilder: (context, state) =>
+          _buildOverlayDetailPage(state: state, child: const ExportarPage()),
     ),
   ],
 );

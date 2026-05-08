@@ -33,6 +33,33 @@ class LotesRepositoryIsar implements LotesRepository {
   }
 
   @override
+  Future<void> upsert(LoteEntity lote) async {
+    final isar = await _isar;
+    final isarLote = lote.toIsarLote();
+
+    await isar.writeTxn(() async {
+      final existing = await isar.isarLotes
+          .where()
+          .uuidEqualTo(lote.uuid)
+          .findFirst();
+
+      if (existing != null) {
+        isarLote.id = existing.id;
+      }
+
+      await isar.isarLotes.put(isarLote);
+    });
+  }
+
+  @override
+  Future<void> clearAll() async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      await isar.isarLotes.clear();
+    });
+  }
+
+  @override
   Future<LoteEntity?> getByUuid(String uuid) async {
     final isar = await _isar;
     final lote = await isar.isarLotes.where().uuidEqualTo(uuid).findFirst();

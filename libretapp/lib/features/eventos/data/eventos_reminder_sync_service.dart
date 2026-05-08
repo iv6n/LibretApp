@@ -4,6 +4,8 @@ library;
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/eventos/data/eventos_model.dart';
@@ -13,14 +15,20 @@ class EventosReminderSyncService {
   EventosReminderSyncService({
     required AnimalRepository animalRepository,
     required EventosRepository eventosRepository,
+    required HealthRecordRepository healthRepo,
+    required ReproductionRecordRepository reproductionRepo,
     ReproductionScheduler? reproductionScheduler,
   }) : _animalRepository = animalRepository,
        _eventosRepository = eventosRepository,
+       _healthRepo = healthRepo,
+       _reproductionRepo = reproductionRepo,
        _reproductionScheduler =
            reproductionScheduler ?? const ReproductionScheduler();
 
   final AnimalRepository _animalRepository;
   final EventosRepository _eventosRepository;
+  final HealthRecordRepository _healthRepo;
+  final ReproductionRecordRepository _reproductionRepo;
   final ReproductionScheduler _reproductionScheduler;
 
   Future<int> sync() async {
@@ -44,9 +52,7 @@ class EventosReminderSyncService {
     final desired = <String, Evento>{};
 
     for (final animal in animals) {
-      final healthRecords = await _animalRepository.getHealthRecords(
-        animal.uuid,
-      );
+      final healthRecords = await _healthRepo.getHealthRecords(animal.uuid);
       for (final record in healthRecords) {
         final date = record.nextDueDate;
         if (date == null) continue;
@@ -68,7 +74,7 @@ class EventosReminderSyncService {
         );
       }
 
-      final reproRecords = await _animalRepository.getReproductionRecords(
+      final reproRecords = await _reproductionRepo.getReproductionRecords(
         animal.uuid,
       );
       for (final record in reproRecords) {

@@ -141,7 +141,9 @@ class _NavButton extends StatelessWidget {
             const SizedBox(height: 1),
             Text(
               label,
-              key: ValueKey(isSelected),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: isSelected ? 9 : 8,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,

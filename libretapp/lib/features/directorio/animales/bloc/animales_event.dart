@@ -126,3 +126,7 @@ class SelectAllVisibleAnimals extends AnimalesEvent {
 class ClearAnimalSelection extends AnimalesEvent {
   const ClearAnimalSelection();
 }
+
+class AnimalesLoadMore extends AnimalesEvent {
+  const AnimalesLoadMore();
+}

@@ -9,6 +9,13 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/production_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/reproduction_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -182,11 +189,19 @@ void main() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final sharedPrefs = await SharedPreferences.getInstance();
 
+      final db = IsarDatabase();
       final repository = AnimalRepositoryIsar(
-        IsarDatabase(),
+        db,
         SharedPrefsService(sharedPrefs),
         _FakeAnimalRemoteDataSource(),
       );
+      final weightRepo = WeightRecordRepositoryIsar(db);
+      final healthRepo = HealthRecordRepositoryIsar(db);
+      final productionRepo = ProductionRecordRepositoryIsar(db);
+      final reproductionRepo = ReproductionRecordRepositoryIsar(db);
+      final movementRepo = MovementRecordRepositoryIsar(db);
+      final commercialRepo = CommercialRecordRepositoryIsar(db);
+      final costRepo = CostRecordRepositoryIsar(db);
 
       await repository.clearAll();
 
@@ -199,7 +214,7 @@ void main() {
 
       final now = DateTime(2025, 6, 1);
 
-      await repository.addWeightRecord(
+      await weightRepo.addWeightRecord(
         animal.uuid,
         WeightRecord(
           date: DateTime(2025, 6, 1),
@@ -209,7 +224,7 @@ void main() {
         ),
       );
 
-      await repository.addHealthRecord(
+      await healthRepo.addHealthRecord(
         animal.uuid,
         HealthRecord(
           date: DateTime(2025, 6, 1),
@@ -219,7 +234,7 @@ void main() {
         ),
       );
 
-      await repository.addProductionRecord(
+      await productionRepo.addProductionRecord(
         animal.uuid,
         ProductionRecord(
           date: DateTime(2025, 6, 1),
@@ -229,7 +244,7 @@ void main() {
         ),
       );
 
-      await repository.addReproductionRecord(
+      await reproductionRepo.addReproductionRecord(
         animal.uuid,
         ReproductionRecord(
           serviceDate: now,
@@ -238,7 +253,7 @@ void main() {
         ),
       );
 
-      await repository.addMovementRecord(
+      await movementRepo.addMovementRecord(
         animal.uuid,
         MovementRecord(
           fromLocation: 'Potrero 1',
@@ -248,7 +263,7 @@ void main() {
         ),
       );
 
-      await repository.addCommercialRecord(
+      await commercialRepo.addCommercialRecord(
         animal.uuid,
         CommercialRecord(
           date: DateTime(2025, 6, 1),
@@ -258,7 +273,7 @@ void main() {
         ),
       );
 
-      await repository.addCostRecord(
+      await costRepo.addCostRecord(
         animal.uuid,
         CostRecord(
           date: DateTime(2025, 6, 1),
@@ -268,13 +283,15 @@ void main() {
         ),
       );
 
-      final weights = await repository.getWeightRecords(animal.uuid);
-      final health = await repository.getHealthRecords(animal.uuid);
-      final production = await repository.getProductionRecords(animal.uuid);
-      final reproduction = await repository.getReproductionRecords(animal.uuid);
-      final movements = await repository.getMovementRecords(animal.uuid);
-      final commercial = await repository.getCommercialRecords(animal.uuid);
-      final costs = await repository.getCostRecords(animal.uuid);
+      final weights = await weightRepo.getWeightRecords(animal.uuid);
+      final health = await healthRepo.getHealthRecords(animal.uuid);
+      final production = await productionRepo.getProductionRecords(animal.uuid);
+      final reproduction = await reproductionRepo.getReproductionRecords(
+        animal.uuid,
+      );
+      final movements = await movementRepo.getMovementRecords(animal.uuid);
+      final commercial = await commercialRepo.getCommercialRecords(animal.uuid);
+      final costs = await costRepo.getCostRecords(animal.uuid);
 
       expect(weights, hasLength(1));
       expect(weights.first.weight, 412.5);

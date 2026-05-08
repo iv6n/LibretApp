@@ -21,6 +21,21 @@ class _FakeLotesRepository implements LotesRepository {
   Future<List<LoteEntity>> getAll() async => List<LoteEntity>.from(_lotes);
 
   @override
+  Future<void> upsert(LoteEntity lote) async {
+    final index = _lotes.indexWhere((value) => value.uuid == lote.uuid);
+    if (index >= 0) {
+      _lotes[index] = lote;
+      return;
+    }
+    _lotes.add(lote);
+  }
+
+  @override
+  Future<void> clearAll() async {
+    _lotes.clear();
+  }
+
+  @override
   Future<LoteEntity?> getByUuid(String uuid) async {
     for (final lote in _lotes) {
       if (lote.uuid == uuid) return lote;

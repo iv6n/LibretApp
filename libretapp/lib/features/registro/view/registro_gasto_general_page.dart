@@ -1,4 +1,4 @@
-﻿/// features \u203a registro \u203a view \u203a registro_gasto_general_page \u2014 page for recording a general expense.
+/// features \u203a registro \u203a view \u203a registro_gasto_general_page \u2014 page for recording a general expense.
 library;
 
 import 'package:flutter/material.dart';

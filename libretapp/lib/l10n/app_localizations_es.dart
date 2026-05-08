@@ -734,6 +734,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormReproductionSaved => 'Evento reproductivo guardado';
 
   @override
+  String get registroReproSubtitleFemale =>
+      'Hembra: formulario reproductivo completo.';
+
+  @override
+  String get registroReproSubtitleMale =>
+      'Macho: ajustes reproductivos básicos.';
+
+  @override
+  String registroReproAgeWarning(int ageMonths, int minMonths) {
+    return 'Aviso: este animal tiene $ageMonths meses. Se recomienda esperar al menos $minMonths meses para servicio, pero este formulario no bloquea el registro.';
+  }
+
+  @override
+  String get registroReproSireMale => 'Identificación del macho (opcional)';
+
+  @override
+  String registroReproPartialError(Object error) {
+    return 'Registro sanitario guardado, pero falló el evento reproductivo: $error';
+  }
+
+  @override
   String get animalFormLoadError => 'No se pudo cargar el formulario de animal';
 
   @override

@@ -2,13 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_state.dart';
@@ -61,33 +58,24 @@ class _FakeFinanzasRepository implements FinanzasRepository {
 
 class _FakeAnimalRepository implements AnimalRepository {
   final List<AnimalEntity> _animals;
-  final Map<String, List<CostRecord>> _costs;
-  final Map<String, List<CommercialRecord>> _commercials;
 
-  _FakeAnimalRepository({
-    List<AnimalEntity>? animals,
-    Map<String, List<CostRecord>>? costs,
-    Map<String, List<CommercialRecord>>? commercials,
-  }) : _animals = animals ?? [],
-       _costs = costs ?? {},
-       _commercials = commercials ?? {};
+  _FakeAnimalRepository({List<AnimalEntity>? animals})
+    : _animals = animals ?? [];
 
   @override
   Future<List<AnimalEntity>> getAll() async => _animals;
 
   @override
-  Future<List<CostRecord>> getCostRecords(String animalUuid) async =>
-      _costs[animalUuid] ?? [];
-
-  @override
-  Future<List<CommercialRecord>> getCommercialRecords(
-    String animalUuid,
-  ) async => _commercials[animalUuid] ?? [];
-
-  @override
   Stream<List<AnimalEntity>> watchAll() => const Stream.empty();
 
-  // ─── Unused stubs ──────────────────────────────────────────────────────────
+  @override
+  Stream<void> watchChanges() => const Stream.empty();
+
+  @override
+  Future<List<AnimalEntity>> getPage({
+    required int offset,
+    required int limit,
+  }) async => _animals.skip(offset).take(limit).toList();
 
   @override
   Future<bool> refreshFromRemote({bool force = false}) =>
@@ -123,44 +111,37 @@ class _FakeAnimalRepository implements AnimalRepository {
   Future<int> count() => throw UnimplementedError();
   @override
   Future<Map<String, dynamic>> getStatistics() => throw UnimplementedError();
+}
+
+class _FakeCostRecordRepository implements CostRecordRepository {
+  final Map<String, List<CostRecord>> _costs;
+
+  _FakeCostRecordRepository({Map<String, List<CostRecord>>? costs})
+    : _costs = costs ?? {};
+
   @override
-  Future<List<WeightRecord>> getWeightRecords(String animalUuid) =>
+  Future<List<CostRecord>> getCostRecords(String animalUuid) async =>
+      _costs[animalUuid] ?? [];
+
+  @override
+  Future<CostRecord> addCostRecord(String animalUuid, CostRecord record) =>
       throw UnimplementedError();
   @override
-  Future<WeightRecord> addWeightRecord(
+  Future<void> deleteCostRecord(String recordId) => throw UnimplementedError();
+}
+
+class _FakeCommercialRecordRepository implements CommercialRecordRepository {
+  final Map<String, List<CommercialRecord>> _commercials;
+
+  _FakeCommercialRecordRepository({
+    Map<String, List<CommercialRecord>>? commercials,
+  }) : _commercials = commercials ?? {};
+
+  @override
+  Future<List<CommercialRecord>> getCommercialRecords(
     String animalUuid,
-    WeightRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> deleteWeightRecord(String recordId) =>
-      throw UnimplementedError();
-  @override
-  Future<List<ProductionRecord>> getProductionRecords(String animalUuid) =>
-      throw UnimplementedError();
-  @override
-  Future<ProductionRecord> addProductionRecord(
-    String animalUuid,
-    ProductionRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> deleteProductionRecord(String recordId) =>
-      throw UnimplementedError();
-  @override
-  Future<List<HealthRecord>> getHealthRecords(String animalUuid) =>
-      throw UnimplementedError();
-  @override
-  Future<HealthRecord> addHealthRecord(
-    String animalUuid,
-    HealthRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> addHealthRecordToMultiple(
-    List<String> animalUuids,
-    HealthRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> deleteHealthRecord(String recordId) =>
-      throw UnimplementedError();
+  ) async => _commercials[animalUuid] ?? [];
+
   @override
   Future<CommercialRecord> addCommercialRecord(
     String animalUuid,
@@ -168,33 +149,6 @@ class _FakeAnimalRepository implements AnimalRepository {
   ) => throw UnimplementedError();
   @override
   Future<void> deleteCommercialRecord(String recordId) =>
-      throw UnimplementedError();
-  @override
-  Future<List<MovementRecord>> getMovementRecords(String animalUuid) =>
-      throw UnimplementedError();
-  @override
-  Future<MovementRecord> addMovementRecord(
-    String animalUuid,
-    MovementRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> deleteMovementRecord(String recordId) =>
-      throw UnimplementedError();
-  @override
-  Future<CostRecord> addCostRecord(String animalUuid, CostRecord record) =>
-      throw UnimplementedError();
-  @override
-  Future<void> deleteCostRecord(String recordId) => throw UnimplementedError();
-  @override
-  Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid) =>
-      throw UnimplementedError();
-  @override
-  Future<ReproductionRecord> addReproductionRecord(
-    String animalUuid,
-    ReproductionRecord record,
-  ) => throw UnimplementedError();
-  @override
-  Future<void> deleteReproductionRecord(String recordId) =>
       throw UnimplementedError();
 }
 
@@ -317,15 +271,21 @@ void main() {
 
   late _FakeFinanzasRepository finanzasRepo;
   late _FakeAnimalRepository animalRepo;
+  late _FakeCostRecordRepository costRepo;
+  late _FakeCommercialRecordRepository commercialRepo;
 
   setUp(() {
     finanzasRepo = _FakeFinanzasRepository();
     animalRepo = _FakeAnimalRepository();
+    costRepo = _FakeCostRecordRepository();
+    commercialRepo = _FakeCommercialRecordRepository();
   });
 
   FinanzasBloc _cubit() => FinanzasBloc(
     finanzasRepository: finanzasRepo,
     animalRepository: animalRepo,
+    costRepo: costRepo,
+    commercialRepo: commercialRepo,
   );
 
   group('FinanzasCubit initial state', () {
@@ -415,6 +375,8 @@ void main() {
         final cubit = FinanzasBloc(
           finanzasRepository: repo,
           animalRepository: animalRepo,
+          costRepo: costRepo,
+          commercialRepo: commercialRepo,
         );
         await cubit.loadPeriod(period);
 
@@ -436,14 +398,16 @@ void main() {
 
       final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
-        animalRepository: _FakeAnimalRepository(
-          animals: [animal],
+        animalRepository: _FakeAnimalRepository(animals: [animal]),
+        costRepo: _FakeCostRecordRepository(
           costs: {
             'a1': [
               _makeCost(date: inPeriod, amount: 80),
               _makeCost(date: outOfPeriod, amount: 999),
             ],
           },
+        ),
+        commercialRepo: _FakeCommercialRecordRepository(
           commercials: {
             'a1': [
               _makeSale(date: inPeriod, amount: 400),
@@ -467,14 +431,16 @@ void main() {
 
       final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
-        animalRepository: _FakeAnimalRepository(
-          animals: [animal],
+        animalRepository: _FakeAnimalRepository(animals: [animal]),
+        costRepo: _FakeCostRecordRepository(
           costs: {
             'a1': [
               _makeCost(date: inPeriod, amount: 80),
               _makeCost(date: outOfPeriod, amount: 500),
             ],
           },
+        ),
+        commercialRepo: _FakeCommercialRecordRepository(
           commercials: {
             'a1': [
               _makeSale(date: inPeriod, amount: 400),
@@ -498,6 +464,8 @@ void main() {
       final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
         animalRepository: _FakeAnimalRepository(animals: [animal]),
+        costRepo: costRepo,
+        commercialRepo: commercialRepo,
       );
       await cubit.loadPeriod(period);
 
@@ -512,6 +480,8 @@ void main() {
         final cubit = FinanzasBloc(
           finanzasRepository: finanzasRepo,
           animalRepository: _FakeAnimalRepository(animals: [animal]),
+          costRepo: costRepo,
+          commercialRepo: commercialRepo,
         );
         await cubit.loadPeriod(period);
 
@@ -530,8 +500,9 @@ void main() {
 
       final cubit = FinanzasBloc(
         finanzasRepository: finanzasRepo,
-        animalRepository: _FakeAnimalRepository(
-          animals: animals,
+        animalRepository: _FakeAnimalRepository(animals: animals),
+        costRepo: costRepo,
+        commercialRepo: _FakeCommercialRecordRepository(
           commercials: {
             'low': [_makeSale(date: inPeriod, amount: 100)],
             'high': [_makeSale(date: inPeriod, amount: 900)],

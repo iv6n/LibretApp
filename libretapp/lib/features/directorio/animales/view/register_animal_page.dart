@@ -12,6 +12,9 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -33,8 +36,8 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   static const _stepLabels = <String>[
     'Información',
     'Origen',
-    'Manejo',
     'Salud',
+    'Manejo',
     'Revisión',
   ];
 
@@ -52,6 +55,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   final _step1FormKey = GlobalKey<FormState>();
 
   late final AnimalRepository _animalRepository;
+  late final HealthRecordRepository _healthRepo;
+  late final MovementRecordRepository _movementRepo;
+  late final ReproductionRecordRepository _reproductionRepo;
   late final LotesRepository _lotesRepository;
   late final LocationRepository _locationRepository;
   late final SharedPrefsService _sharedPrefsService;
@@ -119,11 +125,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   final List<_RecordDraft> _treatments = [];
   final List<_RecordDraft> _vaccinations = [];
   final List<_RecordDraft> _exams = [];
+  final List<_ReproductionDraft> _reproductions = [];
 
   @override
   void initState() {
     super.initState();
     _animalRepository = locator<AnimalRepository>();
+    _healthRepo = locator<HealthRecordRepository>();
+    _movementRepo = locator<MovementRecordRepository>();
+    _reproductionRepo = locator<ReproductionRecordRepository>();
     _lotesRepository = locator<LotesRepository>();
     _locationRepository = locator<LocationRepository>();
     _sharedPrefsService = locator<SharedPrefsService>();
@@ -278,6 +288,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return ShellChromeScope(
       visible: false,
       child: PopScope(
@@ -318,8 +329,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                           ),
                         ),
                       ),
-                      if (View.of(context).viewInsets.bottom == 0)
-                        _buildBottomBar(),
+                      if (!keyboardVisible) _buildBottomBar(),
                     ],
                   ),
                 ),
@@ -443,9 +453,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       case 1:
         return _buildStep2();
       case 2:
-        return _buildStep3();
-      case 3:
         return _buildStep4();
+      case 3:
+        return _buildStep3();
       default:
         return _buildStep5();
     }
@@ -499,7 +509,6 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<Category>(
-                            key: ValueKey(_category),
                             initialValue: _category,
                             decoration: const InputDecoration(
                               labelText: 'Categoria',
@@ -587,11 +596,12 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 labelText: 'Fecha de nacimiento (opcional)',
-                                prefixIcon: Icon(Icons.calendar_today_outlined),
                                 suffixIcon: Icon(Icons.calendar_month_outlined),
                               ),
                               isEmpty: false,
                               child: Text(
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                                 _birthDate == null
                                     ? 'Selecciona la fecha de nacimiento'
                                     : _formatDate(_birthDate!),
@@ -787,9 +797,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _selectedDamUuid,
                   decoration: const InputDecoration(
-                    labelText: 'Madre (opcional)',
+                    label: Text(
+                      'Madre (opcional)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   items: _animals
                       .map(
@@ -809,9 +824,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _selectedSireUuid,
                   decoration: const InputDecoration(
-                    labelText: 'Padre (opcional)',
+                    label: Text(
+                      'Padre (opcional)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   items: _animals
                       .map(
@@ -1253,6 +1273,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               onAdded: (record) => _exams.add(record),
             ),
           ),
+          if (_showReproductionSection) ...[
+            const SizedBox(height: 12),
+            _buildReproductionSection(),
+          ],
           const SizedBox(height: 12),
           TextFormField(
             controller: _healthNotesCtrl,
@@ -1351,6 +1375,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               _ReviewRow('Tratamientos', '${_treatments.length}'),
               _ReviewRow('Vacunas', '${_vaccinations.length}'),
               _ReviewRow('Examenes', '${_exams.length}'),
+              if (_showReproductionSection)
+                _ReviewRow(
+                  'Reproducción',
+                  '${_reproductions.length} registro(s)',
+                ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1468,10 +1497,18 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     required ValueChanged<String> onSelected,
   }) {
     return DropdownButtonFormField<String>(
+      isExpanded: true,
       initialValue: value,
-      decoration: InputDecoration(labelText: label),
+      decoration: InputDecoration(
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
       items: options
-          .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+          .map(
+            (option) => DropdownMenuItem(
+              value: option,
+              child: Text(option, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          )
           .toList(),
       onChanged: (selected) {
         if (selected == null) return;
@@ -1479,6 +1516,309 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       },
     );
   }
+
+  // ─── Reproduction section ────────────────────────────────────────────────
+
+  String _serviceTypeLabel(ServiceType t) {
+    switch (t) {
+      case ServiceType.naturalService:
+        return 'Monta natural';
+      case ServiceType.artificialInsemination:
+        return 'Inseminación artificial';
+      case ServiceType.ivf:
+        return 'FIV';
+    }
+  }
+
+  String _pregnancyResultLabel(PregnancyCheckResult? r) {
+    switch (r) {
+      case PregnancyCheckResult.positive:
+        return 'Positivo';
+      case PregnancyCheckResult.negative:
+        return 'Negativo';
+      case PregnancyCheckResult.uncertain:
+        return 'Incierto';
+      case PregnancyCheckResult.notChecked:
+      case null:
+        return 'No verificado';
+    }
+  }
+
+  Widget _buildReproductionSection() {
+    final isFemale = _sex == Sex.female;
+    final title = isFemale ? 'Eventos reproductivos' : 'Registros de servicio';
+    final subtitle = isFemale
+        ? 'Agrega montas, inseminaciones o chequeos de preñez previos.'
+        : 'Registra servicios o montas realizados por este animal.';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.favorite_border,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _openAddReproductionDialog(isFemale),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Agregar'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+            ),
+            if (_reproductions.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'Sin registros. Opcional.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              )
+            else ...[
+              const SizedBox(height: 8),
+              ...List.generate(_reproductions.length, (i) {
+                final r = _reproductions[i];
+                final subtitle = isFemale
+                    ? '${_serviceTypeLabel(r.serviceType)}  ·  ${_pregnancyResultLabel(r.pregnancyResult)}'
+                    : _serviceTypeLabel(r.serviceType);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.favorite, color: Colors.pink),
+                  title: Text(_formatDate(r.serviceDate)),
+                  subtitle: Text(subtitle),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    onPressed: () => setState(() => _reproductions.removeAt(i)),
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openAddReproductionDialog(bool isFemale) async {
+    var serviceType = ServiceType.naturalService;
+    var serviceDate = DateTime.now();
+    final sireIdCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    PregnancyCheckResult? pregnancyResult;
+    DateTime? expectedCalvingDate;
+
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                isFemale ? 'Agregar evento reproductivo' : 'Agregar servicio',
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<ServiceType>(
+                      initialValue: serviceType,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de servicio',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: ServiceType.values
+                          .map(
+                            (t) => DropdownMenuItem(
+                              value: t,
+                              child: Text(_serviceTypeLabel(t)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => serviceType = v);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: serviceDate,
+                          firstDate: DateTime(now.year - 20),
+                          lastDate: now,
+                        );
+                        if (picked != null) {
+                          setDialogState(() => serviceDate = picked);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Fecha del servicio',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today, size: 18),
+                        ),
+                        child: Text(_formatDate(serviceDate)),
+                      ),
+                    ),
+                    if (isFemale) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: sireIdCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'ID del semental (opcional)',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<PregnancyCheckResult?>(
+                        initialValue: pregnancyResult,
+                        decoration: const InputDecoration(
+                          labelText: 'Resultado de chequeo de preñez',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('No verificado'),
+                          ),
+                          ...PregnancyCheckResult.values.map(
+                            (r) => DropdownMenuItem(
+                              value: r,
+                              child: Text(_pregnancyResultLabel(r)),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          setDialogState(() {
+                            pregnancyResult = v;
+                            if (v != PregnancyCheckResult.positive) {
+                              expectedCalvingDate = null;
+                            }
+                          });
+                        },
+                      ),
+                      if (pregnancyResult == PregnancyCheckResult.positive) ...[
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: dialogContext,
+                              initialDate:
+                                  expectedCalvingDate ??
+                                  now.add(const Duration(days: 283)),
+                              firstDate: now.subtract(const Duration(days: 30)),
+                              lastDate: now.add(const Duration(days: 365)),
+                            );
+                            if (picked != null) {
+                              setDialogState(
+                                () => expectedCalvingDate = picked,
+                              );
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Fecha esperada de parto',
+                              border: OutlineInputBorder(),
+                              suffixIcon: Icon(Icons.calendar_today, size: 18),
+                            ),
+                            child: Text(
+                              expectedCalvingDate != null
+                                  ? _formatDate(expectedCalvingDate!)
+                                  : 'Seleccionar',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: notesCtrl,
+                      maxLines: 2,
+                      maxLength: 200,
+                      decoration: const InputDecoration(
+                        labelText: 'Notas (opcional)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Guardar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    final sireIdText = sireIdCtrl.text.trim().isEmpty
+        ? null
+        : sireIdCtrl.text.trim();
+    final notesText = notesCtrl.text.trim().isEmpty
+        ? null
+        : notesCtrl.text.trim();
+    sireIdCtrl.dispose();
+    notesCtrl.dispose();
+
+    if (added == true && mounted) {
+      setState(() {
+        _reproductions.add(
+          _ReproductionDraft(
+            serviceDate: serviceDate,
+            serviceType: serviceType,
+            maleSireIdentifier: sireIdText,
+            pregnancyResult: pregnancyResult,
+            expectedCalvingDate: expectedCalvingDate,
+            notes: notesText,
+          ),
+        );
+      });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildRecordSection({
     required String title,
@@ -2013,6 +2353,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     'treatments': _treatments.map((r) => r.toMap()).toList(),
     'vaccinations': _vaccinations.map((r) => r.toMap()).toList(),
     'exams': _exams.map((r) => r.toMap()).toList(),
+    'reproductions': _reproductions.map((r) => r.toMap()).toList(),
   };
 
   Future<bool> _persistDraft() async {
@@ -2090,6 +2431,19 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         if (item is Map<String, dynamic>) {
           try {
             result.add(_RecordDraft.fromMap(item));
+          } catch (_) {}
+        }
+      }
+      return result;
+    }
+
+    List<_ReproductionDraft> parseReproductionRecords(dynamic raw) {
+      if (raw is! List) return [];
+      final result = <_ReproductionDraft>[];
+      for (final item in raw) {
+        if (item is Map<String, dynamic>) {
+          try {
+            result.add(_ReproductionDraft.fromMap(item));
           } catch (_) {}
         }
       }
@@ -2203,6 +2557,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       _exams
         ..clear()
         ..addAll(parseRecords(m['exams']));
+      _reproductions
+        ..clear()
+        ..addAll(parseReproductionRecords(m['reproductions']));
     });
   }
 
@@ -2241,6 +2598,18 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         Category.values.contains(_category);
   }
 
+  bool get _showReproductionSection {
+    if (_species != Species.cattle) return false;
+    if (_reproductiveStatus == ReproductiveStatus.neutered) return false;
+    const eligible = {
+      Category.heifer,
+      Category.cow,
+      Category.youngBull,
+      Category.bull,
+    };
+    return eligible.contains(_category);
+  }
+
   Future<void> _onSave() async {
     if (widget.isEdit && _editingAnimal == null) {
       _showMessage('No se encontró el animal para editar.');
@@ -2274,6 +2643,39 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       sex: _sex,
     );
     final resolvedAgeMonths = manualAgeMonths ?? lifecycle.ageMonths;
+
+    // Derive reproductive entity fields from reproduction drafts
+    final derivedFirstService = _reproductions.isNotEmpty
+        ? _reproductions
+              .map((r) => r.serviceDate)
+              .reduce((a, b) => a.isBefore(b) ? a : b)
+        : null;
+    final derivedLastService = _reproductions.isNotEmpty
+        ? _reproductions
+              .map((r) => r.serviceDate)
+              .reduce((a, b) => a.isAfter(b) ? a : b)
+        : null;
+    final derivedCalvingDate = _reproductions
+        .where(
+          (r) =>
+              r.pregnancyResult == PregnancyCheckResult.positive &&
+              r.expectedCalvingDate != null,
+        )
+        .lastOrNull
+        ?.expectedCalvingDate;
+    final derivedReproStatus = () {
+      if (_sex == Sex.female && _reproductions.isNotEmpty) {
+        if (_reproductions.any(
+          (r) => r.pregnancyResult == PregnancyCheckResult.positive,
+        )) {
+          return ReproductiveStatus.pregnant;
+        }
+        if (_reproductiveStatus == ReproductiveStatus.unknown) {
+          return ReproductiveStatus.active;
+        }
+      }
+      return _reproductiveStatus;
+    }();
 
     final now = DateTime.now();
     final uuid = widget.isEdit
@@ -2384,10 +2786,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             ),
             hasChronicIssues: _healthMode == _InitialHealthMode.problem,
             chronicNotes: _nullableText(_healthNotesCtrl.text),
-            reproductiveStatus: _reproductiveStatus,
-            firstServiceDate: null,
-            lastServiceDate: null,
-            expectedCalvingDate: null,
+            reproductiveStatus: derivedReproStatus,
+            firstServiceDate: derivedFirstService,
+            lastServiceDate: derivedLastService,
+            expectedCalvingDate: derivedCalvingDate,
             productionPurpose: ProductionPurpose.undefined,
             productionStage: ProductionStage.unknown,
             productionSystem: _productionSystem,
@@ -2446,7 +2848,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       // Registrar movimiento inicial si se asignó una ubicación
       final initialLocation = _selectedPaddockUuid ?? _selectedRanchUuid;
       if (initialLocation != null && !widget.isEdit) {
-        await _animalRepository.addMovementRecord(
+        await _movementRepo.addMovementRecord(
           uuid,
           MovementRecord(
             toLocation: _locationNameByUuid(initialLocation),
@@ -2468,13 +2870,26 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
       if (!widget.isEdit) {
         for (final record in [..._treatments, ..._vaccinations, ..._exams]) {
-          await _animalRepository.addHealthRecord(
+          await _healthRepo.addHealthRecord(
             uuid,
             HealthRecord(
               type: record.type,
               product: record.product,
               dose: record.dose,
               date: record.date,
+              notes: record.notes,
+            ),
+          );
+        }
+        for (final record in _reproductions) {
+          await _reproductionRepo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: record.serviceDate,
+              serviceType: record.serviceType,
+              maleSireIdentifier: record.maleSireIdentifier,
+              pregnancyResult: record.pregnancyResult,
+              expectedCalvingDate: record.expectedCalvingDate,
               notes: record.notes,
             ),
           );
@@ -2821,4 +3236,62 @@ class _ReviewRow {
 
   final String label;
   final String value;
+}
+
+class _ReproductionDraft {
+  const _ReproductionDraft({
+    required this.serviceDate,
+    required this.serviceType,
+    this.maleSireIdentifier,
+    this.pregnancyResult,
+    this.expectedCalvingDate,
+    this.notes,
+  });
+
+  final DateTime serviceDate;
+  final ServiceType serviceType;
+  final String? maleSireIdentifier;
+  final PregnancyCheckResult? pregnancyResult;
+  final DateTime? expectedCalvingDate;
+  final String? notes;
+
+  Map<String, dynamic> toMap() => {
+    'serviceDate': serviceDate.millisecondsSinceEpoch,
+    'serviceType': serviceType.name,
+    'maleSireIdentifier': maleSireIdentifier,
+    'pregnancyResult': pregnancyResult?.name,
+    'expectedCalvingDate': expectedCalvingDate?.millisecondsSinceEpoch,
+    'notes': notes,
+  };
+
+  static _ReproductionDraft fromMap(Map<String, dynamic> map) {
+    ServiceType parsedType;
+    try {
+      parsedType = ServiceType.values.byName(
+        (map['serviceType'] as String?) ?? 'naturalService',
+      );
+    } catch (_) {
+      parsedType = ServiceType.naturalService;
+    }
+    PregnancyCheckResult? parsedResult;
+    final resultName = map['pregnancyResult'] as String?;
+    if (resultName != null) {
+      try {
+        parsedResult = PregnancyCheckResult.values.byName(resultName);
+      } catch (_) {}
+    }
+    final expectedMs = map['expectedCalvingDate'] as int?;
+    return _ReproductionDraft(
+      serviceDate: DateTime.fromMillisecondsSinceEpoch(
+        (map['serviceDate'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+      ),
+      serviceType: parsedType,
+      maleSireIdentifier: map['maleSireIdentifier'] as String?,
+      pregnancyResult: parsedResult,
+      expectedCalvingDate: expectedMs != null
+          ? DateTime.fromMillisecondsSinceEpoch(expectedMs)
+          : null,
+      notes: map['notes'] as String?,
+    );
+  }
 }

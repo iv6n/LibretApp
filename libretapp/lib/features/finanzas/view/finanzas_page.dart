@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
@@ -80,6 +82,8 @@ class FinanzasPage extends StatelessWidget {
       create: (_) => FinanzasBloc(
         finanzasRepository: locator<FinanzasRepository>(),
         animalRepository: locator<AnimalRepository>(),
+        costRepo: locator<CostRecordRepository>(),
+        commercialRepo: locator<CommercialRecordRepository>(),
       )..add(LoadPeriod(_PeriodPreset.thisMonth.toDateRange())),
       child: const _FinanzasView(),
     );

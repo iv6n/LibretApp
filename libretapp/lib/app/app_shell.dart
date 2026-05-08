@@ -171,7 +171,6 @@ class _AppShellState extends State<AppShell>
               onTap: () => _onCentralTap(context),
               child: Icon(
                 isHomeSelected ? Icons.add : Icons.home,
-                key: ValueKey(isHomeSelected),
                 size: 22,
                 color: isHomeSelected
                     ? Colors.white
@@ -182,7 +181,6 @@ class _AppShellState extends State<AppShell>
         ),
         Text(
           isHomeSelected ? 'Registrar' : l10n.navHome,
-          key: ValueKey(isHomeSelected),
           style: TextStyle(
             fontSize: 9.0,
             fontWeight: isHomeSelected ? FontWeight.w700 : FontWeight.w600,

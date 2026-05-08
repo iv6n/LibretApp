@@ -6,6 +6,13 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/security/ports/sensitive_logger_port.dart';
 import 'package:libretapp/core/security/services/secure_logger_service.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
@@ -17,8 +24,22 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
   AnimalBloc({
     required this.animalRepository,
     required this.lotesRepository,
+    required WeightRecordRepository weightRepo,
+    required HealthRecordRepository healthRepo,
+    required ProductionRecordRepository productionRepo,
+    required ReproductionRecordRepository reproductionRepo,
+    required CommercialRecordRepository commercialRepo,
+    required MovementRecordRepository movementRepo,
+    required CostRecordRepository costRepo,
     SensitiveLoggerPort? sensitiveLogger,
-  }) : _sensitiveLogger =
+  }) : _weightRepo = weightRepo,
+       _healthRepo = healthRepo,
+       _productionRepo = productionRepo,
+       _reproductionRepo = reproductionRepo,
+       _commercialRepo = commercialRepo,
+       _movementRepo = movementRepo,
+       _costRepo = costRepo,
+       _sensitiveLogger =
            sensitiveLogger ??
            (locator.isRegistered<SensitiveLoggerPort>()
                ? locator<SensitiveLoggerPort>()
@@ -42,6 +63,13 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
   }
   final AnimalRepository animalRepository;
   final LotesRepository lotesRepository;
+  final WeightRecordRepository _weightRepo;
+  final HealthRecordRepository _healthRepo;
+  final ProductionRecordRepository _productionRepo;
+  final ReproductionRecordRepository _reproductionRepo;
+  final CommercialRecordRepository _commercialRepo;
+  final MovementRecordRepository _movementRepo;
+  final CostRecordRepository _costRepo;
   final SensitiveLoggerPort _sensitiveLogger;
   static const _logTag = 'AnimalBloc';
 
@@ -272,7 +300,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       emit,
       logAction: 'Agregar registro de peso para ${event.animalUuid}',
       operation: () =>
-          animalRepository.addWeightRecord(event.animalUuid, event.record),
+          _weightRepo.addWeightRecord(event.animalUuid, event.record),
     );
   }
 
@@ -283,7 +311,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     await _handleRecordOperation(
       emit,
       logAction: 'Agregar evento reproductivo para ${event.animalUuid}',
-      operation: () => animalRepository.addReproductionRecord(
+      operation: () => _reproductionRepo.addReproductionRecord(
         event.animalUuid,
         event.record,
       ),
@@ -298,7 +326,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       emit,
       logAction: 'Agregar registro productivo para ${event.animalUuid}',
       operation: () =>
-          animalRepository.addProductionRecord(event.animalUuid, event.record),
+          _productionRepo.addProductionRecord(event.animalUuid, event.record),
     );
   }
 
@@ -310,7 +338,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       emit,
       logAction: 'Agregar registro sanitario para ${event.animalUuid}',
       operation: () =>
-          animalRepository.addHealthRecord(event.animalUuid, event.record),
+          _healthRepo.addHealthRecord(event.animalUuid, event.record),
     );
   }
 
@@ -322,7 +350,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       emit,
       logAction: 'Agregar registro comercial para ${event.animalUuid}',
       operation: () =>
-          animalRepository.addCommercialRecord(event.animalUuid, event.record),
+          _commercialRepo.addCommercialRecord(event.animalUuid, event.record),
     );
   }
 
@@ -334,7 +362,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       emit,
       logAction: 'Agregar movimiento para ${event.animalUuid}',
       operation: () =>
-          animalRepository.addMovementRecord(event.animalUuid, event.record),
+          _movementRepo.addMovementRecord(event.animalUuid, event.record),
     );
   }
 
@@ -345,8 +373,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     await _handleRecordOperation(
       emit,
       logAction: 'Agregar costo para ${event.animalUuid}',
-      operation: () =>
-          animalRepository.addCostRecord(event.animalUuid, event.record),
+      operation: () => _costRepo.addCostRecord(event.animalUuid, event.record),
     );
   }
 

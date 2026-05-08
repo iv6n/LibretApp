@@ -1,5 +1,6 @@
 /// main — application entry point.
 ///
+///
 /// Bootstraps Flutter, configures GetIt dependency injection, and launches
 /// [LibretApp].
 library;

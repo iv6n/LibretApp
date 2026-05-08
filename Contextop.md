@@ -1,8 +1,8 @@
 ## PROJECT CONTEXT (synthesized from exhaustive codebase analysis)
 
-### Reality Check Status (2026-04-26)
-- **Verification scope**: spot-checked against live code (`pubspec.yaml`, `lib/main.dart`, `lib/app/app_router.dart`, `lib/core/router/app_routes.dart`, selected repositories, and test tree).
-- **Confidence**: High for project identity, module layout, persistence stack, and technical debt; updated where route/navigation and backend wording had drifted.
+### Reality Check Status (2026-05-06)
+- **Verification scope**: exhaustively spot-checked against live code (`pubspec.yaml`, `lib/main.dart`, `lib/app/app_router.dart`, `lib/core/router/app_routes.dart`, `lib/features/finanzas/`, `lib/features/exportar/`, `lib/core/services/`, `lib/core/security/` ports+services, `lib/core/mock/`, `lib/features/registro/bloc/`, all route constants, and test tree).
+- **Confidence**: High for project identity, module layout, persistence stack, new features (finanzas, exportar), security layer, and technical debt; updated to reflect 2026-05-06 codebase state.
 - **Note**: This is still a synthesis document, not a generated schema.
 
 ### Project Identity
@@ -17,6 +17,8 @@
 - **Native**: C++ native library `libret_core` via FFI (dart:ffi ^2.1.3)
 - **Localization**: Flutter intl with ARB files, `flutter_localizations` SDK
 - **Value objects**: Equatable ^2.0.5
+- **Export**: excel ^4.0.6, share_plus ^10.0.0, file_picker ^8.1.2
+- **Streams**: stream_transform ^2.1.0
 - **Version**: 1.0.0+1
 
 ### Architecture Style: Clean Architecture + BLoC
@@ -28,16 +30,17 @@ The app follows a feature-first Clean Architecture with 3 layers per feature:
 Core shared infrastructure lives in `lib/core/`:
 - `database/` — Isar singleton initialization
 - `di/` — GetIt service locator
-- `services/` — LoggerService, SharedPrefsService, ThemeRepository
+- `services/` — LoggerService, SharedPrefsService, ThemeRepository, BackupService, ExportService
 - `router/` — GoRouter route definitions
-- `security/` — Authentication & crypto ports/services (abstract + native implementation)
+- `security/` — Auth & crypto ports (auth, crypto, key_provider, secure_store, sensitive_logger, token) + services (auth, native_crypto, crypto_stub, default_key_provider, prefs_secure_store, secure_logger, token_store) + models (security_types, credentials)
 - `performance/` — Performance monitoring, navigation tracing, interaction tracing
 - `native/ffi/` — Dart FFI bindings to native C++ library
 - `advisor/` — Livestock advisory rules engine
 - `models/` — Mixins (Syncable, Auditable), TimestampedRecord
-- `constants/` — UI design tokens (spacing, radii) 
-- `extensions/` — Dart extension methods
-- `widgets/` — Shared widgets (responsive_scaler, etc.)
+- `constants/` — UI design tokens (spacing, radii)
+- `extensions/` — Dart extension methods (context_extensions, etc.)
+- `widgets/` — Shared widgets (app_card, app_chip, app_empty_state, app_search_bar, responsive_scaler)
+- `mock/` — MockDataSeeder (dev/demo data seeder, independent of repositories)
 - `l10n/` — Generated localizations
 
 ### Directory Map
@@ -73,16 +76,28 @@ libretapp/
 │   │   │   ├── logger_service.dart        # Simple structured logger
 │   │   │   ├── shared_prefs_service.dart  # Typed SharedPreferences wrapper
 │   │   │   ├── prefs_keys.dart            # SharedPreferences key constants
-│   │   │   └── theme_repository.dart      # Persists/loads theme mode
+│   │   │   ├── theme_repository.dart      # Persists/loads theme mode
+│   │   │   ├── backup_service.dart        # JSON backup/import for animals & lotes
+│   │   │   └── export_service.dart        # Excel (.xlsx) export via AnimalRepository, LocationRepository, EventosRepository
 │   │   ├── security/
 │   │   │   ├── ports/
-│   │   │   │   ├── auth_port.dart         # Abstract auth interface
-│   │   │   │   └── crypto_port.dart       # Abstract crypto interface
+│   │   │   │   ├── auth_port.dart             # Abstract auth interface
+│   │   │   │   ├── crypto_port.dart           # Abstract crypto interface
+│   │   │   │   ├── key_provider_port.dart     # Abstract key management interface
+│   │   │   │   ├── secure_store_port.dart     # Abstract secure storage interface
+│   │   │   │   ├── sensitive_logger_port.dart # Abstract PII-aware logger interface
+│   │   │   │   └── token_port.dart            # Abstract token management interface
 │   │   │   ├── services/
-│   │   │   │   ├── auth_service.dart      # Auth service (native crypto)
-│   │   │   │   └── native_crypto_service.dart # Crypto via native FFI
+│   │   │   │   ├── auth_service.dart              # Auth service
+│   │   │   │   ├── native_crypto_service.dart     # Crypto via native FFI
+│   │   │   │   ├── crypto_stub_service.dart       # Stub crypto (non-native fallback)
+│   │   │   │   ├── default_key_provider_service.dart # Default key derivation
+│   │   │   │   ├── prefs_secure_store_service.dart   # SharedPrefs-backed secure store
+│   │   │   │   ├── secure_logger_service.dart     # PII-redacting logger
+│   │   │   │   └── token_store_service.dart       # Token lifecycle management
 │   │   │   └── models/
-│   │   │       └── credentials.dart       # Credential data model
+│   │   │       ├── credentials.dart           # AuthCredentials, AuthResult
+│   │   │       └── security_types.dart        # CipherText, TokenBundle, PiiKind, SecurityException
 │   │   ├── native/ffi/
 │   │   │   └── libret_native_bridge.dart  # FFI bindings to libret_core
 │   │   ├── performance/
@@ -100,9 +115,15 @@ libretapp/
 │   │   ├── constants/
 │   │   │   ├── ui_constants.dart         # UI spacing/radii tokens
 │   │   │   └── constants.dart            # Misc constants
-│   │   ├── extensions/                   # Dart extension methods
+│   │   ├── extensions/                   # Dart extension methods (context_extensions, etc.)
 │   │   ├── widgets/
+│   │   │   ├── app_card.dart             # Shared card widget
+│   │   │   ├── app_chip.dart             # Shared chip widget
+│   │   │   ├── app_empty_state.dart      # Shared empty state widget
+│   │   │   ├── app_search_bar.dart       # Shared search bar widget
 │   │   │   └── responsive_scaler.dart    # Responsive layout scaling
+│   │   ├── mock/
+│   │   │   └── mock_data_seeder.dart     # Dev/demo data seeder (standalone, generates demo animals)
 │   │   └── l10n/                         # Generated localization files
 │   ├── theme/
 │   │   ├── app_theme.dart                # Full Material 3 light/dark themes
@@ -112,26 +133,29 @@ libretapp/
 │   │   ├── directorio/                   # Directory feature (animals + lots)
 │   │   │   ├── directorio.dart           # Barrel export
 │   │   │   ├── animales/                 # Animals sub-feature
-│   │   │   │   ├── animals.dart          # Barrel export
+│   │   │   │   ├── animals.dart          # Barrel export (canonical)
 │   │   │   │   ├── domain/
 │   │   │   │   │   ├── entities/         # AnimalEntity, WeightRecord, HealthRecord, ProductionRecord, ReproductionRecord, MovementRecord, CommercialRecord, CostRecord
 │   │   │   │   │   ├── enums/            # Species, Sex, Category, LifeStage, HealthStatus, ReproductiveStatus, ProductionPurpose, ProductionStage, ProductionSystem, RiskLevel, AnimalStatus
 │   │   │   │   │   └── services/         # AnimalLifecycleCalculator
 │   │   │   │   ├── infrastructure/
 │   │   │   │   │   ├── animal_repository.dart           # Abstract repository interface
-│   │   │   │   │   ├── animal_repository_isar.dart      # Isar implementation + 25-animal seed
-│   │   │   │   │   ├── animal_remote_data_source.dart   # Remote sync data source
+│   │   │   │   │   ├── animal_repository_isar.dart      # Isar implementation + seed (~27 animals)
+│   │   │   │   │   ├── animal_dto.dart                  # DTO for remote/export serialization
+│   │   │   │   │   ├── animal_remote_data_source.dart   # Remote sync data source (AnimalApiMock)
 │   │   │   │   │   └── isar/                            # Isar persistence models: IsarAnimal + IsarWeightRecord, IsarHealthRecord, etc. + mapper extensions
 │   │   │   │   ├── bloc/                 # AnimalesBloc, AnimalesEvent, AnimalesState (CRUD, search, sort, filter, selection)
 │   │   │   │   ├── application/          # AnimalesListController, sort options
-│   │   │   │   ├── view/                 # AnimalesListView, animal detail, filters, register, edit pages
-│   │   │   │   └── widgets/              # AnimalCard, AnimalPalette, health/weight/production/etc. forms
+│   │   │   │   ├── view/                 # AnimalesListPage, AnimalesListView, AnimalDetailPage, RegisterAnimalPage, show_animal_filters_sheet, show_create_animal_sheet
+│   │   │   │   └── widgets/              # AnimalCard, AnimalPalette (moved from domain), AnimalFilterBar, AnimalSearchOverlay, AnimalAssignmentSheet, AnimalBatchManager, LocationBatchSheet, QuickActionsFab, health/weight/production/commercial/movement/cost/reproduction form sheets, detail_error/header/helpers, history_tab, info_tab, records_tab
 │   │   │   ├── lotes/                    # Lots sub-feature
 │   │   │   │   ├── lotes.dart            # Barrel export
+│   │   │   │   ├── lotes_list_view.dart  # Top-level lots list view
+│   │   │   │   ├── lotes_tab.dart        # Tab wrapper
 │   │   │   │   ├── domain/entities/      # LoteEntity
-│   │   │   │   ├── infrastructure/       # LotesRepository abstract, LotesRepositoryIsar + IsarLote + seed
-│   │   │   │   ├── bloc/                 # LotesTabBloc
-│   │   │   │   └── view/                 # LotesListView, lotes detail
+│   │   │   │   ├── infrastructure/       # LotesRepository abstract, LotesRepositoryIsar + lote_dto.dart + IsarLote + seed (5 lots)
+│   │   │   │   ├── bloc/                 # LotesBloc, LotesEvent, LotesState
+│   │   │   │   └── view/                 # LoteDetailPage, LoteFormPage
 │   │   │   ├── ubicaciones/             # Locations sub-feature (sub-tab)
 │   │   │   └── bloc/                     # DirectorioTabBloc, AnimalesTabBloc, LotesTabBloc, UbicacionesTabBloc
 │   │   ├── inicio/                       # Home/Dashboard feature
@@ -154,15 +178,28 @@ libretapp/
 │   │   │   └── widgets/                  # Profile UI components
 │   │   ├── registro/                     # Record/registration feature
 │   │   │   ├── registro.dart             # Barrel export
-│   │   │   ├── view/                     # 8 registration pages: animal, health, weight, production, reproduction, commercial, movement, cost
+│   │   │   ├── bloc/                     # RegistroBloc, RegistroEvent, RegistroState (save lifecycle for all 8+ record types)
+│   │   │   ├── view/                     # 10 registration pages: animal, sanitario, peso, produccion, reproduccion, comercial, movimiento, costo, ingreso, gasto_general
 │   │   │   └── widgets/                  # AnimalSelector widget
-│   │   └── ubicaciones/                  # Locations feature
-│   │       ├── ubicaciones.dart          # Barrel export
-│   │       ├── domain/                   # LocationEntity, DynamicAttribute, location_records (VisitRecord, WaterRecord, SaltRecord, ShadeRecord, PastureRecord, SeedingRecord, IrrigationRecord, RainRecord, CostRecord), crop_records (CropRecord, HarvestRecord, CropWateringRecord, CropHealthRecord, CropTask), enums (LocationType, LocationKind, WaterType, CropGrowthStage, CropStatus, CropTaskType)
-│   │       ├── infrastructure/           # LocationRepository abstract, IsarLocationRepository (full implementation with parent/child tree management), IsarLocation (with 13+ embedded record types)
-│   │       ├── bloc/                     # UbicacionesBloc
-│   │       ├── view/                     # Location list, detail, form pages
-│   │       └── widgets/                  # Location UI components
+│   │   ├── ubicaciones/                  # Locations feature
+│   │   │   ├── ubicaciones.dart          # Barrel export
+│   │   │   ├── domain/                   # LocationEntity, DynamicAttribute, location_records (VisitRecord, WaterRecord, SaltRecord, ShadeRecord, PastureRecord, SeedingRecord, IrrigationRecord, RainRecord, CostRecord), crop_records (CropRecord, HarvestRecord, CropWateringRecord, CropHealthRecord, CropTask), enums (LocationType, LocationKind, WaterType, CropGrowthStage, CropStatus, CropTaskType)
+│   │   │   ├── infrastructure/           # LocationRepository abstract, IsarLocationRepository (parent/child tree management), IsarLocation (13+ embedded record types)
+│   │   │   ├── bloc/                     # UbicacionesBloc
+│   │   │   ├── view/                     # UbicacionesPage, UbicacionesView, LocationDetailPage, LocationFormPage
+│   │   │   └── widgets/                  # LocationCard, LocationEmptyView, LocationFormSheet, LocationSearchBar, CropSheets
+│   │   ├── finanzas/                     # Finance feature (NEW)
+│   │   │   ├── finanzas.dart             # Barrel export
+│   │   │   ├── application/              # FinanzasBloc, FinanzasEvent, FinanzasState
+│   │   │   ├── domain/
+│   │   │   │   ├── entities/             # FinancialPeriodSummary, AnimalProfitability, IncomeRecord, GeneralExpenseRecord, DateRange
+│   │   │   │   └── repositories/         # Repository interfaces
+│   │   │   ├── infrastructure/           # Repository implementations
+│   │   │   └── view/                     # FinanzasPage (4-tab dashboard: summary, income, expenses, profitability)
+│   │   └── exportar/                     # Export feature (NEW)
+│   │       ├── exportar.dart             # Barrel export
+│   │       ├── cubit/                    # ExportCubit, ExportState (Idle → Loading → Success(File) / Error)
+│   │       └── view/                     # ExportarPage (checkbox selection UI, invokes ExportService, shares via share_plus)
 ├── native/
 │   └── libret_core/
 │       └── src/libret_secure_api.cc      # C++ native library for secure operations
@@ -172,8 +209,9 @@ libretapp/
 │   │   ├── directorio/
 │   │   │   ├── animales/ (animal_repository_isar_test, animales_bloc_add_animal_test)
 │   │   │   ├── lotes/lotes_list_view_test.dart
-│   │   │   ├── directorio_view_search_results_test.dart, directorio_bloc_search_test.dart, etc.
+│   │   │   ├── directorio_view_search_results_test.dart, directorio_bloc_search_test.dart, directorio_search_navigation_test.dart, animales_list_controller_sort_test.dart
 │   │   │   └── animal_form_page_regression_test.dart
+│   │   ├── finanzas/
 │   │   ├── registro/registro_pages_validation_test.dart
 │   │   └── ubicaciones/ (4 tests: page, form, bloc, empty_view)
 │   └── widget_test.dart
@@ -221,17 +259,34 @@ libretapp/
 **InicioDashboardData** — Aggregated dashboard:
 - profileName, farmName, totalAnimals, attentionAnimals, unsyncedAnimals, activeLotes, totalLocations, upcomingEventsCount, upcomingEvents[], alerts[], tasks[], lastUpdated
 
+**FinancialPeriodSummary** — Finance dashboard aggregate (finanzas feature):
+- DateRange (start, end: DateTime); totalIncome, totalGeneralExpenses, totalAnimalCosts, totalAnimalSales
+- Computed: totalRevenue, totalExpenses, netProfit, profitMargin (%)
+
+**AnimalProfitability** — Per-animal finance breakdown:
+- animalUuid, purchaseCost, totalCosts, saleRevenue
+- Computed: netResult, isProfitable (bool)
+
+**IncomeRecord** — Income entry:
+- uuid, amount, date, description, animalUuid (optional), IncomeType enum (milkSale, woolSale, service, subsidy, other)
+
+**GeneralExpenseRecord** — Farm-level expense (not animal-specific):
+- uuid, amount, date, description, GeneralExpenseType enum (fuel, equipment, infrastructure, utilities, labor, taxes, other)
+
 ### State Management & UI Flow
 
 - **App-level**: AppBloc handles initialization. ThemeBloc (attached at MaterialApp level) manages light/dark/system theme mode, persisted via ThemeRepository (SharedPreferences).
 - **Feature-level BLoCs**: Each feature has its own BLoC(s):
   - AnimalesBloc: Manages animal list state, search, sort, filtering by life stage, multi-select (bulk operations), CRUD
-  - LotesTabBloc: Manages lots list
+  - LotesBloc: Manages lots list and form operations
   - InicioBloc: Manages dashboard data aggregation
   - EventosBloc: Manages events list
   - PerfilBloc: Manages user profile
   - UbicacionesBloc: Manages locations list
   - ThemeBloc: Theme mode (light/dark/system)
+  - RegistroBloc: Manages save lifecycle for all record-form types (peso, sanitario, produccion, reproduccion, comercial, movimiento, costo, ingreso, gasto_general)
+  - FinanzasBloc: Manages financial period summary, income/expense aggregation
+  - ExportCubit: Manages export state (Idle → Loading → Success(File) / Error); triggers ExportService.exportToExcel() and share_plus share dialog
 - **Navigation**: GoRouter with `StatefulShellRoute.indexedStack`. BottomNavigationBar shell has 5 branches (directorio, eventos, inicio, ubicaciones, perfil), with a central contextual button that switches to inicio or opens `/registro`.
 - **UI Architecture**: ShellChromeScope + ShellFabConfigScope provide contextual chrome/FAB configuration. ShellInsets handles safe area.
 
@@ -240,16 +295,27 @@ libretapp/
 - **Isar**: Main storage for animals, lots, locations. Three Isar collections: IsarAnimal, IsarLote, IsarLocation. Each with generated `.g.dart` files. Embedded records for sub-documents (records, attributes, crops). Reactive streams via `.watch()`.
 - **SharedPreferences**: Events (JSON-serialized), theme mode, sync hashes/dates.
 - **Remote sync**: `AnimalRemoteDataSource` interface with hash-based change detection. `refreshFromRemote()` compares hash, downloads and upserts animals.
-- **Seed data**: IsarAnimal (25+ animals across 10+ species with realistic data), IsarLote (3 lots), IsarLocation (6 locations with full embedded records) — all seeded on first launch or when empty (fish-in-barrel pattern).
+- **Seed data**: IsarAnimal (~27 animals — 19 assigned to lots + 8 unassigned — across 10+ species with realistic data), IsarLote (5 lots), IsarLocation (6 locations with full embedded records) — all seeded on first launch or when empty (fish-in-barrel pattern). `MockDataSeeder` in `core/mock/` provides an independent dev-only seeder.
+- **Backup**: `BackupService` serializes animals + lotes to versioned JSON string (export) and supports merge/replaceAll import modes.
+- **Export**: `ExportService` generates `.xlsx` files (via `excel` package) with selectable sheets (animals, ubicaciones, eventos). Output saved to temp directory, shared via `share_plus`.
 - **Mapping**: All Isar models have mapper extensions (`toEntity()` / `toIsar()` / `fromEntity()`) converting between domain entities and persistence models. Enums stored as strings.
 
 ### Security
 
 - **AuthPort** (abstract): Defines login/logout/token management interface.
 - **CryptoPort** (abstract): Defines encrypt/decrypt/hash interface.
+- **KeyProviderPort** (abstract): Defines key derivation/rotation interface.
+- **SecureStorePort** (abstract): Defines secure storage (encrypted prefs) interface.
+- **SensitiveLoggerPort** (abstract): Defines PII-aware logging interface.
+- **TokenPort** (abstract): Defines token lifecycle (store/retrieve/revoke) interface.
 - **NativeCryptoService**: Implements CryptoPort via native FFI to `libret_core` (C++ library).
+- **CryptoStubService**: Non-native fallback crypto implementation.
+- **DefaultKeyProviderService**: Default key derivation service.
+- **PrefsSecureStoreService**: SharedPreferences-backed encrypted store.
+- **SecureLoggerService**: PII-redacting logger (wraps LoggerService).
 - **AuthService**: Combines AuthPort + CryptoPort for authentication flow.
-- **TokenStoreService**: Manages credential storage. Has dedicated test file.
+- **TokenStoreService**: Manages credential/token storage lifecycle. Has dedicated test file.
+- **Security types** (`security_types.dart`): `CipherText` (bytes, nonce, tag, keyVersion), `TokenBundle` (accessToken, refreshToken, expiresAtUtc), `PiiKind` enum (email, phone, uuid, generic), `AuthCredentials` (username + secret), `AuthResult` (success, userId, tokenBundle, errorMessage), `SecurityException` (code + message).
 
 ### Routes (GoRouter)
 
@@ -273,6 +339,11 @@ libretapp/
 - Standalone:
   - `/registro` → RegistroPage
   - `/registro/sanitario`, `/registro/peso`, `/registro/produccion`, `/registro/reproduccion`, `/registro/comercial`, `/registro/movimiento`, `/registro/costo`
+  - `/registro/ingreso` → RegistroIngresoPage (NEW)
+  - `/registro/gasto-general` → RegistroGastoGeneralPage (NEW)
+- Route-only (not in BottomNavigationBar):
+  - `/finanzas` → FinanzasPage
+  - `/exportar` → ExportarPage
 
 ### Theme System
 
@@ -287,7 +358,7 @@ libretapp/
 - **Code generation**: `flutter pub run build_runner build` for Isar `.g.dart` files
 - **Localization**: `flutter gen-l10n` (configured via l10n.yaml)
 - **Linting**: flutter_lints ^6.0.0 via analysis_options.yaml
-- **Tests**: 15+ test files using flutter_test. Test coverage includes: animal repository (Isar CRUD), animales bloc (add animal), search/sort/filter functionality, location pages/bloc, registro page validation, security token store, lotes list view.
+- **Tests**: 15+ test files using flutter_test. Test coverage includes: animal repository (Isar CRUD), animales bloc (add animal), search/sort/filter functionality, animales_list_controller sort, directorio search navigation, location pages/bloc, registro page validation, security token store, lotes list view, finanzas (test directory present).
 - **CI/CD**: No CI/CD config found in repository. Assume manual build or standard Flutter CI.
 - **Native build**: Requires C++ compiler for `libret_core` native library. ffigen ^15.0.0 for FFI binding generation.
 - **Assets**: `assets/images/` directory configured.
@@ -301,7 +372,7 @@ libretapp/
 4. **UUID-based identification**: All entities use String UUIDs for primary identification. Enables offline creation without ID conflicts. Int auto-increment IDs are internal to Isar only.
 5. **Enum-as-string storage**: Enums stored as strings in Isar for readability and backward compatibility. The `_enumByName` helper with safe defaults handles deserialization.
 6. **Sync-ready architecture**: All entities have `synced`, `remoteId`, `syncDate`, `lastUpdateDate` fields. Repository interfaces include sync methods (`markAsSynced`, `refreshFromRemote`). Hash-based change detection prevents redundant remote updates.
-7. **Seed data as demo/tutorial**: Realistic seed data (25 animals, 3 lots, 6 locations) with complete records for demonstration and development. Fish-in-barrel pattern (checks if empty/missing before seeding).
+7. **Seed data as demo/tutorial**: Realistic seed data (~27 animals — 19 assigned + 8 unassigned —, 5 lots, 6 locations) with complete records for demonstration and development. Fish-in-barrel pattern (checks if empty/missing before seeding). `MockDataSeeder` in `core/mock/` provides a standalone dev seeder independent of repositories.
 8. **Theme extension for shell chrome**: Custom `ThemeExtension<ShellChromeTheme>` provides nav/FAB colors outside the Material color system, enabling per-theme shell customization.
 9. **Native FFI for security**: Cryptographic operations delegated to native C++ library for performance and security-sensitive operations.
 10. **Events stored in SharedPreferences**: Simple event management uses JSON-in-SharedPreferences rather than Isar, suitable for small datasets without complex queries.
@@ -317,5 +388,7 @@ libretapp/
 8. **AnimalEntity has >50 fields**: Large entity with many optional fields. Consider value objects (e.g., `HealthInfo`, `ReproductiveInfo`, `ProductionInfo`) to group related fields.
 9. **No pagination**: Animal list loads all animals into memory. Not scalable beyond thousands of animals. Needs lazy loading / pagination.
 10. **Native library incomplete**: Only a single `.cc` file exists. FFI bindings are defined but native build integration is not fully wired in the Flutter project.
+11. **FinanzasBloc has no dedicated Isar persistence**: `IncomeRecord` and `GeneralExpenseRecord` domain entities exist, but no Isar collection or repository implementation is in place. Finance data is currently aggregated from existing animal/event records; direct income/expense logging is not yet persisted.
+12. **ExportService is tightly coupled to 3 repositories**: `ExportService` directly depends on `AnimalRepository`, `LocationRepository`, and `EventosRepository`. Consider a query facade or export DTO layer to decouple export format from domain model internals.
 
 ---

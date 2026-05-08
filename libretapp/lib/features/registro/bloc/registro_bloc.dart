@@ -13,7 +13,13 @@
 library;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/bloc/registro_event.dart';
 import 'package:libretapp/features/registro/bloc/registro_state.dart';
 
@@ -22,10 +28,23 @@ import 'package:libretapp/features/registro/bloc/registro_state.dart';
 /// Only the save lifecycle is managed here. Validation and UI form state
 /// remain in each page's [State] class.
 class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
-  /// Creates a [RegistroBloc] with the required [AnimalRepository].
-  RegistroBloc({required AnimalRepository animalRepository})
-    : _repo = animalRepository,
-      super(const RegistroState()) {
+  /// Creates a [RegistroBloc] with the required record repositories.
+  RegistroBloc({
+    required WeightRecordRepository weightRepo,
+    required HealthRecordRepository healthRepo,
+    required ProductionRecordRepository productionRepo,
+    required ReproductionRecordRepository reproductionRepo,
+    required CommercialRecordRepository commercialRepo,
+    required MovementRecordRepository movementRepo,
+    required CostRecordRepository costRepo,
+  }) : _weightRepo = weightRepo,
+       _healthRepo = healthRepo,
+       _productionRepo = productionRepo,
+       _reproductionRepo = reproductionRepo,
+       _commercialRepo = commercialRepo,
+       _movementRepo = movementRepo,
+       _costRepo = costRepo,
+       super(const RegistroState()) {
     on<RegistroPesoSubmitted>(_onPeso);
     on<RegistroSanitarioSubmitted>(_onSanitario);
     on<RegistroProduccionSubmitted>(_onProduccion);
@@ -36,7 +55,13 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
     on<RegistroReset>(_onReset);
   }
 
-  final AnimalRepository _repo;
+  final WeightRecordRepository _weightRepo;
+  final HealthRecordRepository _healthRepo;
+  final ProductionRecordRepository _productionRepo;
+  final ReproductionRecordRepository _reproductionRepo;
+  final CommercialRecordRepository _commercialRepo;
+  final MovementRecordRepository _movementRepo;
+  final CostRecordRepository _costRepo;
 
   Future<void> _onPeso(
     RegistroPesoSubmitted event,
@@ -44,7 +69,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addWeightRecord(event.animalUuid, event.record);
+      await _weightRepo.addWeightRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -62,7 +87,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addHealthRecord(event.animalUuid, event.record);
+      await _healthRepo.addHealthRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -80,7 +105,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addProductionRecord(event.animalUuid, event.record);
+      await _productionRepo.addProductionRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -98,7 +123,10 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addReproductionRecord(event.animalUuid, event.record);
+      await _reproductionRepo.addReproductionRecord(
+        event.animalUuid,
+        event.record,
+      );
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -116,7 +144,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addCommercialRecord(event.animalUuid, event.record);
+      await _commercialRepo.addCommercialRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -134,7 +162,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addMovementRecord(event.animalUuid, event.record);
+      await _movementRepo.addMovementRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(
@@ -152,7 +180,7 @@ class RegistroBloc extends Bloc<RegistroEvent, RegistroState> {
   ) async {
     emit(state.copyWith(status: RegistroStatus.loading));
     try {
-      await _repo.addCostRecord(event.animalUuid, event.record);
+      await _costRepo.addCostRecord(event.animalUuid, event.record);
       emit(state.copyWith(status: RegistroStatus.success));
     } catch (e) {
       emit(

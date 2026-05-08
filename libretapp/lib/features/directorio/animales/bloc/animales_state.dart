@@ -20,12 +20,17 @@ class AnimalesLoading extends AnimalesState {
 }
 
 class AnimalesLoaded extends AnimalesState {
+  static const int pageSize = 20;
+
   const AnimalesLoaded({
     required this.allAnimals,
     required this.visibleAnimals,
     this.isSearching = false,
     this.searchQuery = '',
     this.selectedAnimalUuids = const {},
+    this.hasMore = false,
+    this.isLoadingMore = false,
+    this.currentOffset = 0,
   });
 
   final List<AnimalEntity> allAnimals;
@@ -33,6 +38,9 @@ class AnimalesLoaded extends AnimalesState {
   final bool isSearching;
   final String searchQuery;
   final Set<String> selectedAnimalUuids;
+  final bool hasMore;
+  final bool isLoadingMore;
+  final int currentOffset;
 
   // Backward-friendly accessor for existing usages.
   List<AnimalEntity> get animales => visibleAnimals;
@@ -45,6 +53,9 @@ class AnimalesLoaded extends AnimalesState {
     bool? isSearching,
     String? searchQuery,
     Set<String>? selectedAnimalUuids,
+    bool? hasMore,
+    bool? isLoadingMore,
+    int? currentOffset,
   }) {
     return AnimalesLoaded(
       allAnimals: allAnimals ?? this.allAnimals,
@@ -52,6 +63,9 @@ class AnimalesLoaded extends AnimalesState {
       isSearching: isSearching ?? this.isSearching,
       searchQuery: searchQuery ?? this.searchQuery,
       selectedAnimalUuids: selectedAnimalUuids ?? this.selectedAnimalUuids,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      currentOffset: currentOffset ?? this.currentOffset,
     );
   }
 
@@ -62,6 +76,9 @@ class AnimalesLoaded extends AnimalesState {
     isSearching,
     searchQuery,
     selectedAnimalUuids,
+    hasMore,
+    isLoadingMore,
+    currentOffset,
   ];
 }
 

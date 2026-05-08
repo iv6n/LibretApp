@@ -29,6 +29,7 @@ class AppRoutes {
   static const registroIngreso = '/registro/ingreso';
   static const registroGastoGeneral = '/registro/gasto-general';
   static const finanzas = '/finanzas';
+  static const exportar = '/exportar';
 
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
@@ -56,6 +57,7 @@ class AppRoutes {
   static const nameRegistroIngreso = 'registro_ingreso';
   static const nameRegistroGastoGeneral = 'registro_gasto_general';
   static const nameFinanzas = 'finanzas';
+  static const nameExportar = 'exportar';
 
   static String animalNuevoPath() => '/directorio/animales/nuevo';
   static String animalDetallePath(String uuid) => '/directorio/animales/$uuid';

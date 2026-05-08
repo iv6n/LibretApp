@@ -11,6 +11,8 @@ library;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_state.dart';
@@ -30,8 +32,12 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
   FinanzasBloc({
     required FinanzasRepository finanzasRepository,
     required AnimalRepository animalRepository,
+    required CostRecordRepository costRepo,
+    required CommercialRecordRepository commercialRepo,
   }) : _finanzasRepository = finanzasRepository,
        _animalRepository = animalRepository,
+       _costRepo = costRepo,
+       _commercialRepo = commercialRepo,
        super(const FinanzasState()) {
     on<LoadPeriod>(_onLoadPeriod);
     on<AddIncome>(_onAddIncome);
@@ -42,6 +48,8 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
 
   final FinanzasRepository _finanzasRepository;
   final AnimalRepository _animalRepository;
+  final CostRecordRepository _costRepo;
+  final CommercialRecordRepository _commercialRepo;
 
   Future<void> _onLoadPeriod(
     LoadPeriod event,
@@ -71,8 +79,8 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
         animals.map((animal) async {
           final uuid = animal.uuid as String;
           final fetched = await Future.wait([
-            _animalRepository.getCostRecords(uuid),
-            _animalRepository.getCommercialRecords(uuid),
+            _costRepo.getCostRecords(uuid),
+            _commercialRepo.getCommercialRecords(uuid),
           ]);
           return (
             animal: animal,
@@ -166,39 +174,57 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
     AddIncome event,
     Emitter<FinanzasState> emit,
   ) async {
-    await _finanzasRepository.addIncome(event.record);
-    _reload();
+    emit(state.copyWith(status: FinanzasStatus.loading));
+    try {
+      await _finanzasRepository.addIncome(event.record);
+      await _reload();
+    } catch (e) {
+      emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
+    }
   }
 
   Future<void> _onAddExpense(
     AddExpense event,
     Emitter<FinanzasState> emit,
   ) async {
-    await _finanzasRepository.addExpense(event.record);
-    _reload();
+    emit(state.copyWith(status: FinanzasStatus.loading));
+    try {
+      await _finanzasRepository.addExpense(event.record);
+      await _reload();
+    } catch (e) {
+      emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
+    }
   }
 
   Future<void> _onDeleteIncome(
     DeleteIncome event,
     Emitter<FinanzasState> emit,
   ) async {
-    await _finanzasRepository.deleteIncome(event.id);
-    _reload();
+    emit(state.copyWith(status: FinanzasStatus.loading));
+    try {
+      await _finanzasRepository.deleteIncome(event.id);
+      await _reload();
+    } catch (e) {
+      emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
+    }
   }
 
   Future<void> _onDeleteExpense(
     DeleteExpense event,
     Emitter<FinanzasState> emit,
   ) async {
-    await _finanzasRepository.deleteExpense(event.id);
-    _reload();
+    emit(state.copyWith(status: FinanzasStatus.loading));
+    try {
+      await _finanzasRepository.deleteExpense(event.id);
+      await _reload();
+    } catch (e) {
+      emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
+    }
   }
 
-  /// Re-dispatches [LoadPeriod] for the currently active period.
-  ///
-  /// Called after any mutation (add/delete) to keep the UI in sync without
-  /// requiring callers to manage the period themselves.
-  void _reload() {
+  /// Re-dispatches [LoadPeriod] for the currently active period and waits for
+  /// the resulting state to be emitted before returning.
+  Future<void> _reload() async {
     final period = state.period;
     if (period != null) add(LoadPeriod(period));
   }

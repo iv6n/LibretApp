@@ -196,6 +196,22 @@
   "detailFormReproductionNotes": "Notas (opcional)",
   "detailFormReproductionExpectedAfterDate": "La fecha probable de parto no puede ser anterior a la fecha de servicio",
   "detailFormReproductionSaved": "Evento reproductivo guardado",
+  "registroReproSubtitleFemale": "Hembra: formulario reproductivo completo.",
+  "registroReproSubtitleMale": "Macho: ajustes reproductivos básicos.",
+  "registroReproAgeWarning": "Aviso: este animal tiene {ageMonths} meses. Se recomienda esperar al menos {minMonths} meses para servicio, pero este formulario no bloquea el registro.",
+  "@registroReproAgeWarning": {
+    "placeholders": {
+      "ageMonths": { "type": "int" },
+      "minMonths": { "type": "int" }
+    }
+  },
+  "registroReproSireMale": "Identificación del macho (opcional)",
+  "registroReproPartialError": "Registro sanitario guardado, pero falló el evento reproductivo: {error}",
+  "@registroReproPartialError": {
+    "placeholders": {
+      "error": {}
+    }
+  },
   "animalFormLoadError": "No se pudo cargar el formulario de animal",
   "animalFormCategoryAdjusted": "Categoría ajustada a Otro para coincidir con la especie",
   "animalFormSpeciesAdjusted": "Especie ajustada a Bovino para esa categoría",

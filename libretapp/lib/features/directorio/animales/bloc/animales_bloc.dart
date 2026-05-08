@@ -14,6 +14,7 @@ import 'package:stream_transform/stream_transform.dart';
 class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   AnimalesBloc(this.repository) : super(const AnimalesInitial()) {
     on<LoadAnimales>(_onLoadAnimales);
+    on<AnimalesLoadMore>(_onLoadMoreAnimals);
     on<AnimalesStreamUpdated>(_onStreamUpdated);
     on<AnimalesStreamFailed>(_onStreamFailed);
     on<AddAnimal>(_onAddAnimal);
@@ -33,26 +34,68 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   }
   final AnimalRepository repository;
 
-  StreamSubscription<List<AnimalEntity>>? _subscription;
+  StreamSubscription<void>? _changesSubscription;
   List<AnimalEntity> _latest = const [];
   String _searchQuery = '';
   bool _isSearching = false;
   Set<String> _selectedAnimalUuids = const <String>{};
+  int _currentOffset = 0;
+  bool _hasMore = false;
 
   Future<void> _onLoadAnimales(
     LoadAnimales event,
     Emitter<AnimalesState> emit,
   ) async {
     emit(const AnimalesLoading());
-    await _subscription?.cancel();
-    _subscription = repository.watchAll().listen(
-      (animales) => add(AnimalesStreamUpdated(animales)),
+    await _changesSubscription?.cancel();
+    _currentOffset = 0;
+    final page = await repository.getPage(
+      offset: 0,
+      limit: AnimalesLoaded.pageSize,
+    );
+    _latest = page;
+    _currentOffset = page.length;
+    _hasMore = page.length == AnimalesLoaded.pageSize;
+    emit(_buildLoadedState());
+
+    // Watch for any DB changes and reload from offset 0 to keep list fresh.
+    _changesSubscription = repository.watchChanges().listen(
+      (_) async {
+        if (isClosed) return;
+        final refreshed = await repository.getPage(
+          offset: 0,
+          limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
+        );
+        if (!isClosed) add(AnimalesStreamUpdated(refreshed));
+      },
       onError: (error, _) {
-        if (!isClosed) {
-          add(AnimalesStreamFailed(error.toString()));
-        }
+        if (!isClosed) add(AnimalesStreamFailed(error.toString()));
       },
     );
+  }
+
+  Future<void> _onLoadMoreAnimals(
+    AnimalesLoadMore event,
+    Emitter<AnimalesState> emit,
+  ) async {
+    if (!_hasMore) return;
+    final currentState = state;
+    if (currentState is AnimalesLoaded && currentState.isLoadingMore) return;
+    if (currentState is AnimalesLoaded) {
+      emit(currentState.copyWith(isLoadingMore: true));
+    }
+    try {
+      final page = await repository.getPage(
+        offset: _currentOffset,
+        limit: AnimalesLoaded.pageSize,
+      );
+      _latest = [..._latest, ...page];
+      _currentOffset += page.length;
+      _hasMore = page.length == AnimalesLoaded.pageSize;
+      emit(_buildLoadedState());
+    } catch (e) {
+      emit(AnimalesError(e.toString()));
+    }
   }
 
   void _onStreamUpdated(
@@ -60,20 +103,12 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     Emitter<AnimalesState> emit,
   ) {
     _latest = event.animales;
+    _currentOffset = _latest.length;
     final existingUuids = _latest.map((a) => a.uuid).toSet();
     _selectedAnimalUuids = _selectedAnimalUuids
         .where(existingUuids.contains)
         .toSet();
-    final filtered = _applyFilter(_latest, _searchQuery);
-    emit(
-      AnimalesLoaded(
-        allAnimals: _latest,
-        visibleAnimals: filtered,
-        isSearching: _isSearching,
-        searchQuery: _searchQuery,
-        selectedAnimalUuids: _selectedAnimalUuids,
-      ),
-    );
+    emit(_buildLoadedState());
   }
 
   void _onStreamFailed(
@@ -127,16 +162,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     if (!_isSearching) {
       _searchQuery = '';
     }
-    final filtered = _applyFilter(_latest, _searchQuery);
-    emit(
-      AnimalesLoaded(
-        allAnimals: _latest,
-        visibleAnimals: filtered,
-        isSearching: _isSearching,
-        searchQuery: _searchQuery,
-        selectedAnimalUuids: _selectedAnimalUuids,
-      ),
-    );
+    emit(_buildLoadedState());
   }
 
   Future<void> _onSearchQueryChanged(
@@ -145,30 +171,13 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   ) async {
     _searchQuery = event.query.trim();
     _isSearching = true;
-    final filtered = _applyFilter(_latest, _searchQuery);
-    emit(
-      AnimalesLoaded(
-        allAnimals: _latest,
-        visibleAnimals: filtered,
-        isSearching: _isSearching,
-        searchQuery: _searchQuery,
-        selectedAnimalUuids: _selectedAnimalUuids,
-      ),
-    );
+    emit(_buildLoadedState());
   }
 
   void _onClearSearch(ClearSearch event, Emitter<AnimalesState> emit) {
     _searchQuery = '';
     _isSearching = false;
-    emit(
-      AnimalesLoaded(
-        allAnimals: _latest,
-        visibleAnimals: _latest,
-        isSearching: _isSearching,
-        searchQuery: _searchQuery,
-        selectedAnimalUuids: _selectedAnimalUuids,
-      ),
-    );
+    emit(_buildLoadedState());
   }
 
   void _onToggleAnimalSelection(
@@ -290,11 +299,17 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       isSearching: _isSearching,
       searchQuery: _searchQuery,
       selectedAnimalUuids: _selectedAnimalUuids,
+      hasMore: _hasMore,
+      isLoadingMore: false,
+      currentOffset: _currentOffset,
     );
   }
 
   Future<void> _refreshLoadedState(Emitter<AnimalesState> emit) async {
-    final animals = await repository.getAll();
+    final animals = await repository.getPage(
+      offset: 0,
+      limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
+    );
     _latest = animals;
     final existingUuids = _latest.map((a) => a.uuid).toSet();
     _selectedAnimalUuids = _selectedAnimalUuids
@@ -309,7 +324,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
 
   @override
   Future<void> close() async {
-    await _subscription?.cancel();
+    await _changesSubscription?.cancel();
     return super.close();
   }
 }

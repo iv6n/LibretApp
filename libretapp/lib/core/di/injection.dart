@@ -15,7 +15,9 @@ import 'package:libretapp/core/security/services/prefs_secure_store_service.dart
 import 'package:libretapp/core/security/services/secure_logger_service.dart';
 import 'package:libretapp/core/security/services/token_store_service.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/services/export_service.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/theme_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
@@ -24,13 +26,29 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository_isar.dart';
 import 'package:libretapp/features/eventos/data/eventos_repository.dart';
+import 'package:libretapp/features/eventos/infrastructure/isar_eventos_repository.dart';
 import 'package:libretapp/features/eventos/data/eventos_reminder_sync_service.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
+import 'package:libretapp/features/perfil/data/perfil_shared_prefs_repository.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/production_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/reproduction_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final locator = GetIt.instance;
@@ -133,16 +151,52 @@ Future<void> setupLocator() async {
     ..registerLazySingleton<LotesRepository>(
       () => LotesRepositoryIsar(locator<IsarDatabase>()),
     )
+    ..registerLazySingleton<BackupService>(
+      () => BackupService(
+        animalRepository: locator<AnimalRepository>(),
+        lotesRepository: locator<LotesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ExportService>(
+      () => ExportService(
+        animalRepository: locator<AnimalRepository>(),
+        locationRepository: locator<LocationRepository>(),
+        eventosRepository: locator<EventosRepository>(),
+      ),
+    )
     ..registerLazySingleton<LocationRepository>(
       () => IsarLocationRepository(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<EventosRepository>(
-      () => EventosRepositoryImpl(locator<SharedPrefsService>()),
+      () => IsarEventosRepository(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<WeightRecordRepository>(
+      () => WeightRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<HealthRecordRepository>(
+      () => HealthRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<ProductionRecordRepository>(
+      () => ProductionRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<ReproductionRecordRepository>(
+      () => ReproductionRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<CommercialRecordRepository>(
+      () => CommercialRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<MovementRecordRepository>(
+      () => MovementRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<CostRecordRepository>(
+      () => CostRecordRepositoryIsar(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<EventosReminderSyncService>(
       () => EventosReminderSyncService(
         animalRepository: locator<AnimalRepository>(),
         eventosRepository: locator<EventosRepository>(),
+        healthRepo: locator<HealthRecordRepository>(),
+        reproductionRepo: locator<ReproductionRecordRepository>(),
       ),
     )
     ..registerLazySingleton<InicioDashboardService>(
@@ -154,7 +208,9 @@ Future<void> setupLocator() async {
         perfilRepository: locator<PerfilRepository>(),
       ),
     )
-    ..registerLazySingleton<PerfilRepository>(() => PerfilRepositoryImpl())
+    ..registerLazySingleton<PerfilRepository>(
+      () => PerfilSharedPrefsRepository(locator<SharedPrefsService>()),
+    )
     ..registerLazySingleton<FinanzasRepository>(
       () => IsarFinanzasRepository(locator<IsarDatabase>()),
     );

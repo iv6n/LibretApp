@@ -734,6 +734,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormReproductionSaved => 'Reproduction event saved';
 
   @override
+  String get registroReproSubtitleFemale => 'Female: full reproductive form.';
+
+  @override
+  String get registroReproSubtitleMale => 'Male: basic reproductive fields.';
+
+  @override
+  String registroReproAgeWarning(int ageMonths, int minMonths) {
+    return 'Notice: this animal is $ageMonths months old. Minimum recommended age is $minMonths months, but this form does not block registration.';
+  }
+
+  @override
+  String get registroReproSireMale => 'Male identifier (optional)';
+
+  @override
+  String registroReproPartialError(Object error) {
+    return 'Health record saved, but reproduction event failed: $error';
+  }
+
+  @override
   String get animalFormLoadError => 'Could not load the animal form';
 
   @override

@@ -9,6 +9,7 @@ import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
@@ -29,6 +30,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
   static const double _nearListEndThreshold = 96;
   late final AnimalesListController _animalController;
   late final AnimalRepository _animalRepository;
+  late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
   late final TabController _tabController;
   bool _isAtTop = true;
@@ -42,6 +44,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _scrollController = ScrollController()..addListener(_handleScroll);
     _tabController = TabController(length: 2, vsync: this);
     _animalRepository = locator<AnimalRepository>();
+    _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
       locationRepository: IsarLocationRepository(locator<IsarDatabase>()),
     )..loadInitial();
@@ -87,6 +90,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
       _isNearListEnd = isNearListEnd;
       _isScrollingUp = isScrollingUp;
     });
+
+    // Trigger pagination when scrolling near the bottom.
+    if (isNearListEnd && !isScrollingUp && mounted) {
+      final bloc = context.read<AnimalesBloc>();
+      final s = bloc.state;
+      if (s is AnimalesLoaded && s.hasMore && !s.isLoadingMore) {
+        bloc.add(const AnimalesLoadMore());
+      }
+    }
   }
 
   Future<void> _scrollToTop() async {
@@ -346,10 +358,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
       selectedCount: selectedUuids.length,
       onSubmit: (record) async {
         try {
-          await _animalRepository.addHealthRecordToMultiple(
-            selectedUuids,
-            record,
-          );
+          await _healthRepo.addHealthRecordToMultiple(selectedUuids, record);
           return true;
         } catch (e) {
           if (mounted) {
@@ -502,6 +511,11 @@ class _AnimalesListViewState extends State<AnimalesListView>
           ),
         ),
       ),
+      if (state.isLoadingMore)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(child: CircularProgressIndicator()),
+        ),
     ];
   }
 }

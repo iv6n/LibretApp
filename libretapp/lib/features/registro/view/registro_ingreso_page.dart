@@ -1,4 +1,4 @@
-﻿/// features \u203a registro \u203a view \u203a registro_ingreso_page \u2014 page for recording a farm income entry.
+/// features \u203a registro \u203a view \u203a registro_ingreso_page \u2014 page for recording a farm income entry.
 library;
 
 import 'package:flutter/material.dart';
