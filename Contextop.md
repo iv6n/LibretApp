@@ -368,7 +368,7 @@ libretapp/
 - **Code generation**: `flutter pub run build_runner build` for Isar `.g.dart` files
 - **Localization**: `flutter gen-l10n` (configured via l10n.yaml)
 - **Linting**: flutter_lints ^6.0.0 via analysis_options.yaml
-- **Tests**: 15+ test files using flutter_test. Test coverage includes: animal repository (Isar CRUD), animales bloc (add animal), search/sort/filter functionality, animales_list_controller sort, directorio search navigation, location pages/bloc, registro page validation, security token store, lotes list view, finanzas (test directory present).
+- **Tests**: 16+ test files using flutter_test. Test coverage includes: animal repository (Isar CRUD), animales bloc (add animal), records_repository_isar (health/weight/production/reproduction/commercial/movement/cost Isar repos), search/sort/filter functionality, animales_list_controller sort, directorio search navigation, location pages/bloc, registro page validation, security token store, lotes list view, finanzas (test directory present).
 - **CI/CD**: No CI/CD config found in repository. Assume manual build or standard Flutter CI.
 - **Native build**: Requires C++ compiler for `libret_core` native library. ffigen ^15.0.0 for FFI binding generation.
 - **Assets**: `assets/images/` directory configured.
