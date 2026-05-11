@@ -8,8 +8,8 @@ import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
-import 'package:libretapp/features/eventos/data/eventos_model.dart';
-import 'package:libretapp/features/eventos/data/eventos_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
@@ -20,18 +20,18 @@ class InicioDashboardService {
   InicioDashboardService({
     required AnimalRepository animalRepository,
     required LotesRepository lotesRepository,
-    required EventosRepository eventosRepository,
+    required AgendaRepository agendaRepository,
     required LocationRepository locationRepository,
     required PerfilRepository perfilRepository,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
-       _eventosRepository = eventosRepository,
+       _agendaRepository = agendaRepository,
        _locationRepository = locationRepository,
        _perfilRepository = perfilRepository;
 
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
-  final EventosRepository _eventosRepository;
+  final AgendaRepository _agendaRepository;
   final LocationRepository _locationRepository;
   final PerfilRepository _perfilRepository;
 
@@ -44,7 +44,7 @@ class InicioDashboardService {
       _animalRepository.getAll(),
       _lotesRepository.getActiveLotes(),
       _locationRepository.getAll(),
-      _eventosRepository.fetchEventos(),
+      _agendaRepository.fetchEntries(),
       _perfilRepository.fetchPerfil(),
     ]);
 
@@ -52,7 +52,7 @@ class InicioDashboardService {
     final animals = results[1] as List<AnimalEntity>;
     final activeLotes = results[2] as List<LoteEntity>;
     final locations = results[3] as List<LocationEntity>;
-    final eventos = results[4] as List<Evento>;
+    final eventos = results[4] as List<AgendaEntry>;
     final perfil = results[5] as Perfil;
 
     final totalAnimals = (statistics['total'] as int?) ?? animals.length;
@@ -104,7 +104,7 @@ class InicioDashboardService {
           title: 'Eventos vencidos',
           message: '$overdueEvents actividad(es) quedaron fuera de fecha.',
           severity: InicioAlertSeverity.warning,
-          targetRoute: AppRoutes.eventos,
+          targetRoute: AppRoutes.agenda,
         ),
       );
     }
@@ -178,7 +178,7 @@ class InicioDashboardService {
         const InicioTaskItem(
           title: 'Sin pendientes criticos',
           message: 'Puedes revisar reportes o registrar nuevas actividades.',
-          targetRoute: AppRoutes.eventos,
+          targetRoute: AppRoutes.agenda,
         ),
       );
     }

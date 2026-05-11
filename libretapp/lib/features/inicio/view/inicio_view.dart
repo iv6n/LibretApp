@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/features/eventos/data/eventos_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_bloc.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_event.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_state.dart';
@@ -112,8 +112,8 @@ class InicioView extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               _SectionHeader(
                 title: 'Tareas del dia',
-                actionText: 'Ir a eventos',
-                onAction: () => context.push(AppRoutes.eventos),
+                actionText: 'Ir a agenda',
+                onAction: () => context.push(AppRoutes.agenda),
               ),
               const SizedBox(height: AppSpacing.sm),
               ...data.tasks.map((task) => _TaskCard(item: task)),
@@ -121,7 +121,7 @@ class InicioView extends StatelessWidget {
               _SectionHeader(
                 title: 'Eventos proximos',
                 actionText: 'Calendario',
-                onAction: () => context.push(AppRoutes.eventos),
+                onAction: () => context.push(AppRoutes.agenda),
               ),
               const SizedBox(height: AppSpacing.sm),
               if (data.upcomingEvents.isEmpty)
@@ -288,7 +288,7 @@ class _TaskCard extends StatelessWidget {
 class _EventCard extends StatelessWidget {
   const _EventCard({required this.event});
 
-  final Evento event;
+  final AgendaEntry event;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +297,7 @@ class _EventCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        onTap: () => context.push(AppRoutes.eventos),
+        onTap: () => context.push(AppRoutes.agenda),
         leading: const Icon(Icons.event_note, color: AppColors.accent),
         title: event.titulo,
         subtitle: '$dateText · ${event.ubicacion}',

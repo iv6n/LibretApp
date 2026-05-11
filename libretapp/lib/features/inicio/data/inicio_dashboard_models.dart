@@ -3,7 +3,7 @@ library;
 
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
-import 'package:libretapp/features/eventos/data/eventos_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
 
 class CategorySummary extends Equatable {
   const CategorySummary({
@@ -81,7 +81,7 @@ class InicioDashboardData extends Equatable {
   final int activeLotes;
   final int totalLocations;
   final int upcomingEventsCount;
-  final List<Evento> upcomingEvents;
+  final List<AgendaEntry> upcomingEvents;
   final List<InicioAlertItem> alerts;
   final List<InicioTaskItem> tasks;
   final DateTime lastUpdated;

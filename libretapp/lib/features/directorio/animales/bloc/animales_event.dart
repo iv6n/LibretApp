@@ -3,6 +3,7 @@ library;
 
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 
 abstract class AnimalesEvent extends Equatable {
   const AnimalesEvent();
@@ -129,4 +130,14 @@ class ClearAnimalSelection extends AnimalesEvent {
 
 class AnimalesLoadMore extends AnimalesEvent {
   const AnimalesLoadMore();
+}
+
+class SetSearchFilters extends AnimalesEvent {
+  const SetSearchFilters({this.stages = const {}, this.sexes = const {}});
+
+  final Set<LifeStage> stages;
+  final Set<Sex> sexes;
+
+  @override
+  List<Object> get props => [stages, sexes];
 }

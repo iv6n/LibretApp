@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/eventos/data/eventos_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -14,14 +14,14 @@ class ExportService {
   ExportService({
     required AnimalRepository animalRepository,
     required LocationRepository locationRepository,
-    required EventosRepository eventosRepository,
+    required AgendaRepository eventosRepository,
   }) : _animalRepository = animalRepository,
        _locationRepository = locationRepository,
        _eventosRepository = eventosRepository;
 
   final AnimalRepository _animalRepository;
   final LocationRepository _locationRepository;
-  final EventosRepository _eventosRepository;
+  final AgendaRepository _eventosRepository;
 
   /// Generates a .xlsx file with the selected sheets and returns its [File].
   Future<File> exportToExcel({
@@ -134,7 +134,7 @@ class ExportService {
       'Ubicación',
     ], header: true);
 
-    final eventList = await _eventosRepository.fetchEventos();
+    final eventList = await _eventosRepository.fetchEntries();
     for (var i = 0; i < eventList.length; i++) {
       final e = eventList[i];
       _writeRow(sheet, i + 1, [
@@ -142,7 +142,7 @@ class ExportService {
         e.descripcion,
         DateFormat('dd/MM/yyyy HH:mm').format(e.fecha),
         e.tipo,
-        e.animalId,
+        e.animalIds.join(', '),
         e.ubicacion,
       ]);
     }

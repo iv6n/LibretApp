@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/infrastructure.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -19,13 +18,6 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/bloc/index.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 

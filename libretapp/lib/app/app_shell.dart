@@ -39,7 +39,7 @@ class _AppShellState extends State<AppShell>
 
   final List<_NavItem> _navItems = const [
     _NavItem(routeName: AppRoutes.nameDirectorio, icon: Icons.folder),
-    _NavItem(routeName: AppRoutes.nameEventos, icon: Icons.calendar_today),
+    _NavItem(routeName: AppRoutes.nameAgenda, icon: Icons.calendar_today),
     _NavItem(routeName: AppRoutes.nameInicio, icon: Icons.home),
     _NavItem(routeName: AppRoutes.nameUbicaciones, icon: Icons.location_on),
     _NavItem(routeName: AppRoutes.namePerfil, icon: Icons.person),
@@ -284,7 +284,7 @@ class _AppShellState extends State<AppShell>
     _logFab('Removed FAB id=${config?.id} indexes=$targetEntries');
   }
 
-  bool _isFabAllowed(int index) => index != 1 && index != 4;
+  bool _isFabAllowed(int index) => index != 4;
 
   /// Returns true for overlay/detail routes where the shell chrome
   /// (bottom nav + FAB) should be hidden immediately — before the
@@ -295,6 +295,7 @@ class _AppShellState extends State<AppShell>
         path.endsWith('/animales/nuevo') ||
         path.endsWith('/lotes/nuevo') ||
         path.contains('/lotes/') ||
+        path.startsWith('${AppRoutes.agenda}/') ||
         path.endsWith('/ubicaciones/nueva') ||
         path.contains('/ubicaciones/') ||
         path == AppRoutes.registro ||
@@ -345,8 +346,8 @@ class _AppShellState extends State<AppShell>
     switch (routeName) {
       case AppRoutes.nameDirectorio:
         return l10n.navDirectory;
-      case AppRoutes.nameEventos:
-        return l10n.navEvents;
+      case AppRoutes.nameAgenda:
+        return l10n.navAgenda;
       case AppRoutes.nameUbicaciones:
         return l10n.navLocations;
       case AppRoutes.namePerfil:

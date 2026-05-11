@@ -281,6 +281,7 @@ class IsarLocationRepository implements LocationRepository {
     });
   }
 
+  // ignore: unused_element
   Future<void> _ensureSeed(Isar isar) async {
     final count = await isar.isarLocations.count();
     if (count > 0) return;

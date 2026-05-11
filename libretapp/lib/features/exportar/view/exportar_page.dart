@@ -127,7 +127,7 @@ class _ExportarViewState extends State<_ExportarView> {
                       ),
                       CheckboxListTile(
                         secondary: const Icon(Icons.event_outlined),
-                        title: const Text('Eventos'),
+                        title: const Text('Agenda'),
                         subtitle: const Text(
                           'Título, fecha, tipo, animal vinculado…',
                         ),

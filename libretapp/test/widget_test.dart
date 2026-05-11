@@ -12,7 +12,7 @@ import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/services/theme_repository.dart';
-import 'package:libretapp/features/eventos/data/eventos_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -32,7 +32,7 @@ class _FakeInicioDashboardService implements InicioDashboardService {
       activeLotes: 0,
       totalLocations: 0,
       upcomingEventsCount: 0,
-      upcomingEvents: const <Evento>[],
+      upcomingEvents: const <AgendaEntry>[],
       alerts: const <InicioAlertItem>[
         InicioAlertItem(
           title: 'OK',

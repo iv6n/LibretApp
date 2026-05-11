@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/core/constants/ui_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -28,6 +29,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       transformer: _debounce(UiConstants.searchDebounceDuration),
     );
     on<ClearSearch>(_onClearSearch);
+    on<SetSearchFilters>(_onSetSearchFilters);
     on<ToggleAnimalSelection>(_onToggleAnimalSelection);
     on<SelectAllVisibleAnimals>(_onSelectAllVisibleAnimals);
     on<ClearAnimalSelection>(_onClearAnimalSelection);
@@ -38,6 +40,8 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   List<AnimalEntity> _latest = const [];
   String _searchQuery = '';
   bool _isSearching = false;
+  Set<LifeStage> _searchFilterStages = const {};
+  Set<Sex> _searchFilterSexes = const {};
   Set<String> _selectedAnimalUuids = const <String>{};
   int _currentOffset = 0;
   bool _hasMore = false;
@@ -177,6 +181,17 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   void _onClearSearch(ClearSearch event, Emitter<AnimalesState> emit) {
     _searchQuery = '';
     _isSearching = false;
+    _searchFilterStages = const {};
+    _searchFilterSexes = const {};
+    emit(_buildLoadedState());
+  }
+
+  void _onSetSearchFilters(
+    SetSearchFilters event,
+    Emitter<AnimalesState> emit,
+  ) {
+    _searchFilterStages = event.stages;
+    _searchFilterSexes = event.sexes;
     emit(_buildLoadedState());
   }
 
@@ -269,26 +284,65 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     }
   }
 
+  /// Checks if an ear tag matches the search query.
+  /// Supports:
+  /// - Full ear tag number matching
+  /// - Last 4 digits matching (e.g., "6849" matches "002658976849")
+  /// - Leading zero stripping (e.g., "2658976849" matches "002658976849")
+  bool _matchesEarTagQuery(String? earTag, String normalized) {
+    if (earTag == null || earTag.isEmpty) return false;
+    final tagLower = earTag.toLowerCase();
+
+    // Direct substring match
+    if (tagLower.contains(normalized)) return true;
+
+    // Last 4 digits match
+    if (normalized.length <= 4 && tagLower.endsWith(normalized)) return true;
+
+    // Strip leading zeros and check
+    final stripped = earTag.replaceFirst(RegExp(r'^0+'), '');
+    final strippedLower = stripped.toLowerCase();
+    if (strippedLower.contains(normalized)) return true;
+    if (normalized.length <= 4 && strippedLower.endsWith(normalized))
+      return true;
+
+    return false;
+  }
+
   List<AnimalEntity> _applyFilter(List<AnimalEntity> source, String query) {
     final normalized = query.trim().toLowerCase();
-    if (normalized.isEmpty) return source;
-    return source.where((animal) {
-      final fields = <String?>[
-        animal.earTagNumber,
-        animal.visualId,
-        animal.breed,
-        animal.species.displayName,
-        animal.category.displayName,
-        animal.lifeStage.displayName,
-        animal.sex.displayName,
-        animal.rfidTag,
-        animal.batchUuid,
-        animal.chronicNotes,
-      ];
-      return fields.any(
-        (field) => (field ?? '').toLowerCase().contains(normalized),
-      );
-    }).toList();
+    Iterable<AnimalEntity> result = source;
+
+    // Text search
+    if (normalized.isNotEmpty) {
+      result = result.where((animal) {
+        if (_matchesEarTagQuery(animal.earTagNumber, normalized)) return true;
+        final fields = <String?>[
+          animal.visualId,
+          animal.breed,
+          animal.species.displayName,
+          animal.category.displayName,
+          animal.lifeStage.displayName,
+          animal.sex.displayName,
+          animal.rfidTag,
+          animal.batchUuid,
+          animal.chronicNotes,
+        ];
+        return fields.any(
+          (field) => (field ?? '').toLowerCase().contains(normalized),
+        );
+      });
+    }
+
+    // Search-specific filters (active while isSearching)
+    if (_searchFilterStages.isNotEmpty) {
+      result = result.where((a) => _searchFilterStages.contains(a.lifeStage));
+    }
+    if (_searchFilterSexes.isNotEmpty) {
+      result = result.where((a) => _searchFilterSexes.contains(a.sex));
+    }
+
+    return result.toList();
   }
 
   AnimalesLoaded _buildLoadedState() {
@@ -298,6 +352,8 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       visibleAnimals: filtered,
       isSearching: _isSearching,
       searchQuery: _searchQuery,
+      searchFilterStages: _searchFilterStages,
+      searchFilterSexes: _searchFilterSexes,
       selectedAnimalUuids: _selectedAnimalUuids,
       hasMore: _hasMore,
       isLoadingMore: false,

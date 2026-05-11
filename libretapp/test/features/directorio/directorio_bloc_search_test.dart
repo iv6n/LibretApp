@@ -544,6 +544,157 @@ void main() {
         expect(loaded.searchResults[1].type, CombinedSearchType.lote);
       },
     );
+
+    test('search matches animal by last 4 digits of ear tag', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-4digits-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('6849'));
+      await _flushEvents();
+
+      final state = directorioBloc.state;
+      expect(state, isA<DirectorioLoaded>());
+
+      final loaded = state as DirectorioLoaded;
+      expect(loaded.searchResults, isNotEmpty);
+      expect(loaded.searchResults.first.type, CombinedSearchType.animal);
+      expect(loaded.searchResults.first.id, 'animal-eartag-4digits-1');
+    });
+
+    test(
+      'search matches animal by ear tag with leading zeros stripped',
+      () async {
+        final animal = _buildAnimal(
+          uuid: 'animal-eartag-stripped-1',
+          earTagNumber: '002658976849',
+        );
+        animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+        await _flushEvents();
+
+        directorioBloc.add(const PerformCombinedSearch('2658976849'));
+        await _flushEvents();
+
+        final state = directorioBloc.state;
+        expect(state, isA<DirectorioLoaded>());
+
+        final loaded = state as DirectorioLoaded;
+        expect(loaded.searchResults, isNotEmpty);
+        expect(loaded.searchResults.first.type, CombinedSearchType.animal);
+        expect(loaded.searchResults.first.id, 'animal-eartag-stripped-1');
+      },
+    );
+
+    test('search still matches animal by full ear tag number', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-full-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('002658976849'));
+      await _flushEvents();
+
+      final state = directorioBloc.state;
+      expect(state, isA<DirectorioLoaded>());
+
+      final loaded = state as DirectorioLoaded;
+      expect(loaded.searchResults, isNotEmpty);
+      expect(loaded.searchResults.first.type, CombinedSearchType.animal);
+      expect(loaded.searchResults.first.id, 'animal-eartag-full-1');
+    });
+
+    test('search matches animal by partial ear tag substring', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-partial-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('65897'));
+      await _flushEvents();
+
+      final state = directorioBloc.state;
+      expect(state, isA<DirectorioLoaded>());
+
+      final loaded = state as DirectorioLoaded;
+      expect(loaded.searchResults, isNotEmpty);
+      expect(loaded.searchResults.first.id, 'animal-eartag-partial-1');
+    });
+
+    test('search ear tag is case-insensitive', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-case-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('6849'));
+      await _flushEvents();
+
+      final state = directorioBloc.state as DirectorioLoaded;
+      expect(state.searchResults, isNotEmpty);
+    });
+
+    test('search does not match ear tag with incorrect digits', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-nomatch-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('9999'));
+      await _flushEvents();
+
+      final state = directorioBloc.state as DirectorioLoaded;
+      expect(state.searchResults, isEmpty);
+    });
+
+    test('search with 5 digits still uses substring matching', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-eartag-5digits-1',
+        earTagNumber: '002658976849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      await _flushEvents();
+
+      // 65897 is substring starting at index 6
+      directorioBloc.add(const PerformCombinedSearch('65897'));
+      await _flushEvents();
+
+      final state = directorioBloc.state as DirectorioLoaded;
+      expect(state.searchResults, isNotEmpty);
+    });
+
+    test('search matches multiple animals with same last 4 digits', () async {
+      final animal1 = _buildAnimal(
+        uuid: 'animal-eartag-multi-1',
+        earTagNumber: '001234566849',
+      );
+      final animal2 = _buildAnimal(
+        uuid: 'animal-eartag-multi-2',
+        earTagNumber: '009876546849',
+      );
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal1, animal2]));
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('6849'));
+      await _flushEvents();
+
+      final state = directorioBloc.state as DirectorioLoaded;
+      expect(state.searchResults.length, 2);
+      expect(
+        state.searchResults.map((r) => r.id).toList(),
+        containsAll(['animal-eartag-multi-1', 'animal-eartag-multi-2']),
+      );
+    });
   });
 }
 

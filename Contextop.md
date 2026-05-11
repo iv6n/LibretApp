@@ -1,8 +1,8 @@
-## PROJECT CONTEXT (synthesized from exhaustive codebase analysis)
+﻿## PROJECT CONTEXT (synthesized from exhaustive codebase analysis)
 
-### Reality Check Status (2026-05-06)
-- **Verification scope**: exhaustively spot-checked against live code (`pubspec.yaml`, `lib/main.dart`, `lib/app/app_router.dart`, `lib/core/router/app_routes.dart`, `lib/features/finanzas/`, `lib/features/exportar/`, `lib/core/services/`, `lib/core/security/` ports+services, `lib/core/mock/`, `lib/features/registro/bloc/`, all route constants, and test tree).
-- **Confidence**: High for project identity, module layout, persistence stack, new features (finanzas, exportar), security layer, and technical debt; updated to reflect 2026-05-06 codebase state.
+### Reality Check Status (2026-05-11)
+- **Verification scope**: exhaustively spot-checked against live code (`pubspec.yaml`, `lib/main.dart`, `lib/app/app_router.dart`, `lib/core/router/app_routes.dart`, `lib/features/agenda/`, `lib/features/finanzas/`, `lib/features/exportar/`, `lib/core/services/`, `lib/core/security/` ports+services, `lib/core/mock/`, `lib/features/registro/bloc/`, all route constants, animales record repositories, AnimalBloc, pagination state, and test tree).
+- **Confidence**: High for project identity, module layout, persistence stack, new features (agenda, finanzas, exportar), security layer, and technical debt; updated to reflect 2026-05-11 codebase state.
 - **Note**: This is still a synthesis document, not a generated schema.
 
 ### Project Identity
@@ -78,7 +78,7 @@ libretapp/
 │   │   │   ├── prefs_keys.dart            # SharedPreferences key constants
 │   │   │   ├── theme_repository.dart      # Persists/loads theme mode
 │   │   │   ├── backup_service.dart        # JSON backup/import for animals & lotes
-│   │   │   └── export_service.dart        # Excel (.xlsx) export via AnimalRepository, LocationRepository, EventosRepository
+│   │   │   └── export_service.dart        # Excel (.xlsx) export via AnimalRepository, LocationRepository, AgendaRepository
 │   │   ├── security/
 │   │   │   ├── ports/
 │   │   │   │   ├── auth_port.dart             # Abstract auth interface
@@ -135,19 +135,28 @@ libretapp/
 │   │   │   ├── animales/                 # Animals sub-feature
 │   │   │   │   ├── animals.dart          # Barrel export (canonical)
 │   │   │   │   ├── domain/
-│   │   │   │   │   ├── entities/         # AnimalEntity, WeightRecord, HealthRecord, ProductionRecord, ReproductionRecord, MovementRecord, CommercialRecord, CostRecord
-│   │   │   │   │   ├── enums/            # Species, Sex, Category, LifeStage, HealthStatus, ReproductiveStatus, ProductionPurpose, ProductionStage, ProductionSystem, RiskLevel, AnimalStatus
-│   │   │   │   │   └── services/         # AnimalLifecycleCalculator
+│   │   │   │   │   ├── entities/         # AnimalEntity, WeightRecord, HealthRecord, ProductionRecord, ReproductionRecord, MovementRecord, CommercialRecord, CostRecord, CareRecord, CareRule, ScheduledCare
+│   │   │   │   │   ├── enums/            # Species, Sex, Category, LifeStage, HealthStatus, ReproductiveStatus, ProductionPurpose, ProductionStage, ProductionSystem, RiskLevel, AnimalStatus, OriginType, CareType
+│   │   │   │   │   ├── repositories/     # Abstract repo interfaces: HealthRecordRepository (+addHealthRecordToMultiple), WeightRecordRepository, ProductionRecordRepository, ReproductionRecordRepository, CommercialRecordRepository, MovementRecordRepository, CostRecordRepository
+│   │   │   │   │   └── services/         # AnimalLifecycleCalculator, CareScheduler, ReproductionScheduler
 │   │   │   │   ├── infrastructure/
 │   │   │   │   │   ├── animal_repository.dart           # Abstract repository interface
 │   │   │   │   │   ├── animal_repository_isar.dart      # Isar implementation + seed (~27 animals)
 │   │   │   │   │   ├── animal_dto.dart                  # DTO for remote/export serialization
 │   │   │   │   │   ├── animal_remote_data_source.dart   # Remote sync data source (AnimalApiMock)
+│   │   │   │   │   ├── health_record_repository_isar.dart    # HealthRecord Isar impl
+│   │   │   │   │   ├── weight_record_repository_isar.dart
+│   │   │   │   │   ├── production_record_repository_isar.dart
+│   │   │   │   │   ├── reproduction_record_repository_isar.dart
+│   │   │   │   │   ├── commercial_record_repository_isar.dart
+│   │   │   │   │   ├── movement_record_repository_isar.dart
+│   │   │   │   │   ├── cost_record_repository_isar.dart
+│   │   │   │   │   ├── services/batch_migration_service.dart  # Migrates legacy batch string names to LoteEntity UUIDs
 │   │   │   │   │   └── isar/                            # Isar persistence models: IsarAnimal + IsarWeightRecord, IsarHealthRecord, etc. + mapper extensions
-│   │   │   │   ├── bloc/                 # AnimalesBloc, AnimalesEvent, AnimalesState (CRUD, search, sort, filter, selection)
-│   │   │   │   ├── application/          # AnimalesListController, sort options
-│   │   │   │   ├── view/                 # AnimalesListPage, AnimalesListView, AnimalDetailPage, RegisterAnimalPage, show_animal_filters_sheet, show_create_animal_sheet
-│   │   │   │   └── widgets/              # AnimalCard, AnimalPalette (moved from domain), AnimalFilterBar, AnimalSearchOverlay, AnimalAssignmentSheet, AnimalBatchManager, LocationBatchSheet, QuickActionsFab, health/weight/production/commercial/movement/cost/reproduction form sheets, detail_error/header/helpers, history_tab, info_tab, records_tab
+│   │   │   │   ├── bloc/                 # AnimalesBloc, AnimalesEvent, AnimalesState (CRUD, search, sort, filter, selection, pagination: hasMore/isLoadingMore/AnimalesLoadMore)
+│   │   │   │   ├── application/          # AnimalBloc/AnimalEvent/AnimalState in bloc/ (single-animal detail BLoC, uses all 7 record repos)
+│   │   │   │   ├── view/                 # AnimalesListPage, AnimalesListView, AnimalesListController, AnimalDetailPage, RegisterAnimalPage, show_animal_filters_sheet, show_create_animal_sheet, plus individual form pages: animal_health_form_page, animal_weight_form_page, animal_production_form_page, animal_reproduction_form_page, animal_commercial_form_page, animal_movement_form_page, animal_cost_form_page
+│   │   │   │   └── widgets/              # AnimalCard, AnimalPalette, AnimalFilterBar, AnimalSearchOverlay, AnimalAssignmentSheet, AnimalBatchManager, LocationBatchSheet, QuickActionsFab, animal_create_form, animal_filters_sheet, detail_error/header/helpers, history_tab, info_tab, records_tab
 │   │   │   ├── lotes/                    # Lots sub-feature
 │   │   │   │   ├── lotes.dart            # Barrel export
 │   │   │   │   ├── lotes_list_view.dart  # Top-level lots list view
@@ -164,12 +173,12 @@ libretapp/
 │   │   │   ├── bloc/                     # InicioBloc
 │   │   │   ├── view/                     # Dashboard view
 │   │   │   └── widgets/                  # Dashboard UI components
-│   │   ├── eventos/                      # Events feature
-│   │   │   ├── eventos.dart              # Barrel export
-│   │   │   ├── data/                     # Evento model, EventosRepository (SharedPrefs-backed), EventosReminderSyncService
-│   │   │   ├── bloc/                     # EventosBloc
-│   │   │   ├── view/                     # Events list/detail views
-│   │   │   └── widgets/                  # Event UI components
+│   │   ├── agenda/                       # Agenda feature
+│   │   │   ├── agenda.dart               # Barrel export
+│   │   │   ├── data/                     # AgendaEntry model, AgendaRepository (SharedPrefs-backed), AgendaReminderSyncService
+│   │   │   ├── bloc/                     # AgendaBloc
+│   │   │   ├── view/                     # Agenda calendar/list/detail views
+│   │   │   └── widgets/                  # Agenda UI components
 │   │   ├── perfil/                       # User profile feature
 │   │   │   ├── perfil.dart               # Barrel export
 │   │   │   ├── data/                     # Perfil model (nombre, finca, email, telefono), PerfilRepository (currently mock data)
@@ -277,27 +286,28 @@ libretapp/
 
 - **App-level**: AppBloc handles initialization. ThemeBloc (attached at MaterialApp level) manages light/dark/system theme mode, persisted via ThemeRepository (SharedPreferences).
 - **Feature-level BLoCs**: Each feature has its own BLoC(s):
-  - AnimalesBloc: Manages animal list state, search, sort, filtering by life stage, multi-select (bulk operations), CRUD
+  - AnimalesBloc: Manages animal list state, search, sort, filtering by life stage, multi-select (bulk operations), CRUD, pagination (hasMore/isLoadingMore)
+  - AnimalBloc: Manages single-animal detail state and all 7 record-type sub-repositories (weight, health, production, reproduction, commercial, movement, cost)
   - LotesBloc: Manages lots list and form operations
   - InicioBloc: Manages dashboard data aggregation
-  - EventosBloc: Manages events list
+  - AgendaBloc: Manages agenda entries, reminders, and detail views
   - PerfilBloc: Manages user profile
   - UbicacionesBloc: Manages locations list
   - ThemeBloc: Theme mode (light/dark/system)
   - RegistroBloc: Manages save lifecycle for all record-form types (peso, sanitario, produccion, reproduccion, comercial, movimiento, costo, ingreso, gasto_general)
   - FinanzasBloc: Manages financial period summary, income/expense aggregation
   - ExportCubit: Manages export state (Idle → Loading → Success(File) / Error); triggers ExportService.exportToExcel() and share_plus share dialog
-- **Navigation**: GoRouter with `StatefulShellRoute.indexedStack`. BottomNavigationBar shell has 5 branches (directorio, eventos, inicio, ubicaciones, perfil), with a central contextual button that switches to inicio or opens `/registro`.
+- **Navigation**: GoRouter with `StatefulShellRoute.indexedStack`. BottomNavigationBar shell has 5 branches (directorio, agenda, inicio, ubicaciones, perfil), with a central contextual button that switches to inicio or opens `/registro`.
 - **UI Architecture**: ShellChromeScope + ShellFabConfigScope provide contextual chrome/FAB configuration. ShellInsets handles safe area.
 
 ### Data Layer & Persistence
 
 - **Isar**: Main storage for animals, lots, locations. Three Isar collections: IsarAnimal, IsarLote, IsarLocation. Each with generated `.g.dart` files. Embedded records for sub-documents (records, attributes, crops). Reactive streams via `.watch()`.
-- **SharedPreferences**: Events (JSON-serialized), theme mode, sync hashes/dates.
+- **SharedPreferences**: Agenda entries (JSON-serialized), theme mode, sync hashes/dates.
 - **Remote sync**: `AnimalRemoteDataSource` interface with hash-based change detection. `refreshFromRemote()` compares hash, downloads and upserts animals.
 - **Seed data**: IsarAnimal (~27 animals — 19 assigned to lots + 8 unassigned — across 10+ species with realistic data), IsarLote (5 lots), IsarLocation (6 locations with full embedded records) — all seeded on first launch or when empty (fish-in-barrel pattern). `MockDataSeeder` in `core/mock/` provides an independent dev-only seeder.
 - **Backup**: `BackupService` serializes animals + lotes to versioned JSON string (export) and supports merge/replaceAll import modes.
-- **Export**: `ExportService` generates `.xlsx` files (via `excel` package) with selectable sheets (animals, ubicaciones, eventos). Output saved to temp directory, shared via `share_plus`.
+- **Export**: `ExportService` generates `.xlsx` files (via `excel` package) with selectable sheets (animals, ubicaciones, agenda). Output saved to temp directory, shared via `share_plus`.
 - **Mapping**: All Isar models have mapper extensions (`toEntity()` / `toIsar()` / `fromEntity()`) converting between domain entities and persistence models. Enums stored as strings.
 
 ### Security
@@ -321,7 +331,7 @@ libretapp/
 
 - Shell branches:
   - `/directorio` → DirectorioView
-  - `/eventos` → EventosPage
+  - `/agenda` → AgendaPage
   - `/` → InicioPage
   - `/ubicaciones` → UbicacionesPage
   - `/perfil` → PerfilPage
@@ -375,20 +385,19 @@ libretapp/
 7. **Seed data as demo/tutorial**: Realistic seed data (~27 animals — 19 assigned + 8 unassigned —, 5 lots, 6 locations) with complete records for demonstration and development. Fish-in-barrel pattern (checks if empty/missing before seeding). `MockDataSeeder` in `core/mock/` provides a standalone dev seeder independent of repositories.
 8. **Theme extension for shell chrome**: Custom `ThemeExtension<ShellChromeTheme>` provides nav/FAB colors outside the Material color system, enabling per-theme shell customization.
 9. **Native FFI for security**: Cryptographic operations delegated to native C++ library for performance and security-sensitive operations.
-10. **Events stored in SharedPreferences**: Simple event management uses JSON-in-SharedPreferences rather than Isar, suitable for small datasets without complex queries.
+10. **Agenda stored in SharedPreferences**: Simple agenda management uses JSON-in-SharedPreferences rather than Isar, suitable for small datasets without complex queries.
 
 **Technical Debt & Areas for Refactoring:**
-1. **AnimalRepositoryIsar is a god class**: ~2000+ lines (2034 lines observed) with record CRUD + seeding + sync. Should be split into specialized repositories (WeightRecordRepository, HealthRecordRepository, etc.).
+1. **AnimalRepositoryIsar god class partially resolved**: Specialized record repositories have been extracted (HealthRecordRepository, WeightRecordRepository, ProductionRecordRepository, ReproductionRecordRepository, CommercialRecordRepository, MovementRecordRepository, CostRecordRepository) with dedicated Isar implementations. AnimalRepositoryIsar now delegates record CRUD to these repos. Animal detail BLoC (AnimalBloc) also extracted to application/bloc/.
 2. **PerfilRepository uses mock data**: Returns hardcoded profile data. Needs real persistence (Isar collection or backend API).
-3. **EventosRepository uses SharedPreferences**: Works for small datasets but lacks querying/ indexing. Should migrate to Isar if event counts grow.
+3. **AgendaRepository uses SharedPreferences**: Works for small datasets but lacks querying/ indexing. Should migrate to Isar if agenda counts grow.
 4. **No real backend API implemented**: `AnimalRemoteDataSource` has a concrete `AnimalApiMock`, but no HTTP backend implementation yet.
 5. **Duplicate seed data pattern**: `_seedIfEmpty` duplicated across AnimalRepositoryIsar, LotesRepositoryIsar, and IsarLocationRepository. Could be centralized in database initialization.
 6. **IsarLocationRepository has tight coupling**: Directly manages parent/child tree relationships in write transactions. Could use a tree management service.
 7. **Missing error handling in some BLoCs**: Some event handlers lack try/catch for user-facing error messages (e.g., network failures, database errors).
 8. **AnimalEntity has >50 fields**: Large entity with many optional fields. Consider value objects (e.g., `HealthInfo`, `ReproductiveInfo`, `ProductionInfo`) to group related fields.
-9. **No pagination**: Animal list loads all animals into memory. Not scalable beyond thousands of animals. Needs lazy loading / pagination.
+9. **Pagination implemented**: AnimalesLoaded now has hasMore and isLoadingMore flags; AnimalesLoadMore event triggers incremental page fetches. Scroll-triggered via _handleScroll in AnimalesListView.
 10. **Native library incomplete**: Only a single `.cc` file exists. FFI bindings are defined but native build integration is not fully wired in the Flutter project.
-11. **FinanzasBloc has no dedicated Isar persistence**: `IncomeRecord` and `GeneralExpenseRecord` domain entities exist, but no Isar collection or repository implementation is in place. Finance data is currently aggregated from existing animal/event records; direct income/expense logging is not yet persisted.
-12. **ExportService is tightly coupled to 3 repositories**: `ExportService` directly depends on `AnimalRepository`, `LocationRepository`, and `EventosRepository`. Consider a query facade or export DTO layer to decouple export format from domain model internals.
+11. **ExportService is tightly coupled to 3 repositories**: `ExportService` directly depends on `AnimalRepository`, `LocationRepository`, and `AgendaRepository`. Consider a query facade or export DTO layer to decouple export format from domain model internals.
 
 ---

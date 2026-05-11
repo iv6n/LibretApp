@@ -3,15 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
-import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
-import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
-import 'package:libretapp/features/directorio/animales/application/bloc/animal_state.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -77,7 +72,6 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     with SingleTickerProviderStateMixin {
   late Future<DetailData> _future;
   late TabController _tabController;
-  AnimalEntity? _loadedAnimal;
 
   @override
   void initState() {
@@ -97,7 +91,6 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
   Future<DetailData> _loadData() async {
     final animal = await widget.repository.getByUuid(widget.animalUuid);
     if (animal == null) throw Exception('Animal no encontrado');
-    _loadedAnimal = animal;
 
     final uuid = animal.uuid;
     final weightsFuture = widget.weightRepo.getWeightRecords(uuid);
@@ -132,29 +125,6 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
 
   void _reload() => setState(() => _future = _loadData());
 
-  // ── bloc helper ───────────────────────────────────────────────────────
-
-  Future<bool> _dispatchAndAwait(AnimalEvent event) async {
-    final bloc = context.read<AnimalBloc>();
-    final future = bloc.stream
-        .skip(1)
-        .firstWhere(
-          (state) => state.status != AnimalStatus.loading,
-          orElse: () => bloc.state,
-        );
-    bloc.add(event);
-    final nextState = await future;
-    if (!mounted) return false;
-    if (nextState.status == AnimalStatus.failure) {
-      final message = nextState.errorMessage ?? 'Ocurrió un error';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
-      return false;
-    }
-    return true;
-  }
-
   // ── build ─────────────────────────────────────────────────────────────
 
   @override
@@ -176,51 +146,69 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
               ? Padding(
                   padding: EdgeInsets.only(bottom: fabBottomPadding),
                   child: QuickActionsFab(
-                    onAddWeight: () => showWeightForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                    ),
-                    onAddReproduction: () => showReproductionForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                      animal: _loadedAnimal,
-                    ),
-                    onAddProduction: () => showProductionForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                    ),
-                    onAddHealth: () => showHealthForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                      animal: _loadedAnimal,
-                    ),
-                    onAddCommercial: () => showCommercialForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                    ),
-                    onAddMovement: () => showMovementForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                      animal: _loadedAnimal,
-                    ),
-                    onAddCost: () => showCostForm(
-                      context,
-                      animalUuid: widget.animalUuid,
-                      dispatchAndAwait: _dispatchAndAwait,
-                      onReload: _reload,
-                    ),
+                    onAddWeight: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroPeso,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddReproduction: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroReproduccion,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddProduction: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroProduccion,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddHealth: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroSalud,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddCommercial: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroComercial,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddMovement: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroMovimiento,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddCost: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameAnimalRegistroCosto,
+                        pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
                   ),
                 )
               : null,
@@ -368,7 +356,6 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final Color purple = Theme.of(context).primaryColor;
     final radius = Radius.circular(topRadius);
 
     return Stack(

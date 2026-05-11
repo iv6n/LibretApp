@@ -1,0 +1,12 @@
+/// features › agenda — barrel for the entire agenda feature.
+library;
+
+export 'bloc/agenda_bloc.dart';
+export 'bloc/agenda_event.dart';
+export 'bloc/agenda_state.dart';
+export 'data/agenda_model.dart';
+export 'data/agenda_reminder_sync_service.dart';
+export 'data/agenda_repository.dart';
+export 'infrastructure/isar_agenda_repository.dart';
+export 'view/view.dart';
+export 'widgets/widgets.dart';

@@ -8,7 +8,6 @@ import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
@@ -28,7 +27,6 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rem
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_movement_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
@@ -301,6 +299,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
     return records.map((e) => e.toEntity()).toList(growable: false);
   }
 
+  // ignore: unused_element
   Future<void> _seedIfEmpty(Isar isar) async {
     final existing = await isar.isarAnimals.where().findAll();
     final existingUuids = existing.map((a) => a.uuid).toSet();

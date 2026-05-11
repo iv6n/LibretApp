@@ -10,8 +10,8 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/features/eventos/data/eventos_repository.dart';
-import 'package:libretapp/features/eventos/data/eventos_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
 
 part 'app_event.dart';
@@ -60,7 +60,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     if (alreadyDone == true) return;
 
     try {
-      final eventosRepository = locator<EventosRepository>();
+      final eventosRepository = locator<AgendaRepository>();
       await eventosRepository.clearAll();
       await _prefs.setBool(PrefsKeys.eventsInitialPurgeV1Done, true);
       LoggerService.i(
@@ -78,7 +78,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   Future<void> _syncAutomaticReminders() async {
     try {
-      final syncService = locator<EventosReminderSyncService>();
+      final syncService = locator<AgendaReminderSyncService>();
       final generated = await syncService.sync();
       LoggerService.i(
         'Recordatorios automáticos sincronizados: $generated',

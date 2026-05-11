@@ -204,12 +204,44 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     }
   }
 
-  bool _matchesQuery(Object item, String query) {
-    final id = _getId(item).toLowerCase();
-    if (id.contains(query)) return true;
+  /// Checks if an ear tag matches the search query.
+  /// Supports:
+  /// - Full ear tag number matching
+  /// - Last 4 digits matching (e.g., "6849" matches "002658976849")
+  /// - Leading zero stripping (e.g., "2658976849" matches "002658976849")
+  bool _matchesEarTagQuery(String earTag, String normalized) {
+    final tagLower = earTag.toLowerCase();
 
-    final name = _getName(item).toLowerCase();
-    return name.contains(query);
+    // Direct substring match
+    if (tagLower.contains(normalized)) return true;
+
+    // Last 4 digits match
+    if (normalized.length <= 4 && tagLower.endsWith(normalized)) return true;
+
+    // Strip leading zeros and check
+    final stripped = earTag.replaceFirst(RegExp(r'^0+'), '');
+    final strippedLower = stripped.toLowerCase();
+    if (strippedLower.contains(normalized)) return true;
+    if (normalized.length <= 4 && strippedLower.endsWith(normalized))
+      return true;
+
+    return false;
+  }
+
+  bool _matchesQuery(Object item, String query) {
+    final normalized = query.trim().toLowerCase();
+
+    final id = _getId(item).toLowerCase();
+    if (id.contains(normalized)) return true;
+
+    // For animals, use special ear tag matching logic
+    final name = _getName(item);
+    if (item is AnimalEntity && item.earTagNumber == name) {
+      return _matchesEarTagQuery(name, normalized);
+    }
+
+    final nameLower = name.toLowerCase();
+    return nameLower.contains(normalized);
   }
 
   void _addResultIfNew(

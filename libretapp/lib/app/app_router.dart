@@ -15,8 +15,15 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_weight_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_cost_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_production_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_movement_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_reproduction_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_health_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_commercial_form_page.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
-import 'package:libretapp/features/eventos/eventos.dart';
+import 'package:libretapp/features/agenda/agenda.dart';
 import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
@@ -120,6 +127,83 @@ final router = GoRouter(
                   },
                 ),
                 GoRoute(
+                  path: 'animales/:uuid/registros/peso',
+                  name: AppRoutes.nameAnimalRegistroPeso,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalWeightFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/reproduccion',
+                  name: AppRoutes.nameAnimalRegistroReproduccion,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalReproductionFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/salud',
+                  name: AppRoutes.nameAnimalRegistroSalud,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalHealthFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/produccion',
+                  name: AppRoutes.nameAnimalRegistroProduccion,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalProductionFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/movimiento',
+                  name: AppRoutes.nameAnimalRegistroMovimiento,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalMovementFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/comercial',
+                  name: AppRoutes.nameAnimalRegistroComercial,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalCommercialFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/costo',
+                  name: AppRoutes.nameAnimalRegistroCosto,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: AnimalCostFormPage(animalUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
                   path: 'lotes/:uuid/editar',
                   name: AppRoutes.nameLoteEditar,
                   pageBuilder: (context, state) {
@@ -148,9 +232,32 @@ final router = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AppRoutes.eventos,
-              name: AppRoutes.nameEventos,
-              builder: (context, state) => const EventosPage(),
+              path: AppRoutes.agenda,
+              name: AppRoutes.nameAgenda,
+              builder: (context, state) => BlocProvider(
+                create: (_) =>
+                    AgendaBloc(locator<AgendaRepository>())
+                      ..add(const LoadAgenda()),
+                child: const AgendaPage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'nuevo',
+                  name: AppRoutes.nameAgendaNuevo,
+                  pageBuilder: (context, state) {
+                    final dateParam = state.uri.queryParameters['date'];
+                    final initialDate =
+                        DateTime.tryParse(dateParam ?? '') ?? DateTime.now();
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: BlocProvider(
+                        create: (_) => AgendaBloc(locator<AgendaRepository>()),
+                        child: AgendaEntryFormPage(initialDate: initialDate),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -255,7 +362,9 @@ final router = GoRouter(
           name: AppRoutes.nameRegistroReproduccion,
           pageBuilder: (context, state) => _buildOverlayDetailPage(
             state: state,
-            child: const RegistroReproduccionPage(),
+            child: RegistroReproduccionPage(
+              preset: state.uri.queryParameters['preset'],
+            ),
           ),
         ),
         GoRoute(

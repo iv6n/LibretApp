@@ -25,9 +25,9 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository_isar.dart';
-import 'package:libretapp/features/eventos/data/eventos_repository.dart';
-import 'package:libretapp/features/eventos/infrastructure/isar_eventos_repository.dart';
-import 'package:libretapp/features/eventos/data/eventos_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_shared_prefs_repository.dart';
@@ -161,14 +161,14 @@ Future<void> setupLocator() async {
       () => ExportService(
         animalRepository: locator<AnimalRepository>(),
         locationRepository: locator<LocationRepository>(),
-        eventosRepository: locator<EventosRepository>(),
+        eventosRepository: locator<AgendaRepository>(),
       ),
     )
     ..registerLazySingleton<LocationRepository>(
       () => IsarLocationRepository(locator<IsarDatabase>()),
     )
-    ..registerLazySingleton<EventosRepository>(
-      () => IsarEventosRepository(locator<IsarDatabase>()),
+    ..registerLazySingleton<AgendaRepository>(
+      () => IsarAgendaRepository(locator<SharedPrefsService>()),
     )
     ..registerLazySingleton<WeightRecordRepository>(
       () => WeightRecordRepositoryIsar(locator<IsarDatabase>()),
@@ -191,10 +191,10 @@ Future<void> setupLocator() async {
     ..registerLazySingleton<CostRecordRepository>(
       () => CostRecordRepositoryIsar(locator<IsarDatabase>()),
     )
-    ..registerLazySingleton<EventosReminderSyncService>(
-      () => EventosReminderSyncService(
+    ..registerLazySingleton<AgendaReminderSyncService>(
+      () => AgendaReminderSyncService(
         animalRepository: locator<AnimalRepository>(),
-        eventosRepository: locator<EventosRepository>(),
+        agendaRepository: locator<AgendaRepository>(),
         healthRepo: locator<HealthRecordRepository>(),
         reproductionRepo: locator<ReproductionRecordRepository>(),
       ),
@@ -203,7 +203,7 @@ Future<void> setupLocator() async {
       () => InicioDashboardService(
         animalRepository: locator<AnimalRepository>(),
         lotesRepository: locator<LotesRepository>(),
-        eventosRepository: locator<EventosRepository>(),
+        agendaRepository: locator<AgendaRepository>(),
         locationRepository: locator<LocationRepository>(),
         perfilRepository: locator<PerfilRepository>(),
       ),

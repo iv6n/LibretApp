@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/infrastructure.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -19,19 +18,14 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/bloc/index.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the reproduction registration form.
 class RegistroReproduccionPage extends StatelessWidget {
-  const RegistroReproduccionPage({super.key});
+  const RegistroReproduccionPage({this.preset, super.key});
+
+  final String? preset;
 
   @override
   Widget build(BuildContext context) {
@@ -45,14 +39,16 @@ class RegistroReproduccionPage extends StatelessWidget {
         movementRepo: locator<MovementRecordRepository>(),
         costRepo: locator<CostRecordRepository>(),
       ),
-      child: const _RegistroReproduccionView(),
+      child: _RegistroReproduccionView(preset: preset),
     );
   }
 }
 
 /// Internal form view for reproduction registration.
 class _RegistroReproduccionView extends StatefulWidget {
-  const _RegistroReproduccionView();
+  const _RegistroReproduccionView({this.preset});
+
+  final String? preset;
 
   @override
   State<_RegistroReproduccionView> createState() =>
@@ -66,6 +62,16 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   String? _sireId;
   String? _notes;
   AnimalEntity? _selectedAnimal;
+
+  @override
+  void initState() {
+    super.initState();
+    final isParicionPreset = widget.preset?.toLowerCase() == 'paricion';
+    if (isParicionPreset) {
+      _serviceType = ServiceType.naturalService;
+      _expectedCalvingDate = DateTime.now();
+    }
+  }
 
   @override
   void dispose() {
@@ -125,7 +131,13 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormReproductionTitle)),
+        appBar: AppBar(
+          title: Text(
+            widget.preset?.toLowerCase() == 'paricion'
+                ? 'Registro de paricion'
+                : l10n.detailFormReproductionTitle,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(

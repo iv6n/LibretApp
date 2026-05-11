@@ -21,7 +21,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navAnimals => 'Animales';
 
   @override
-  String get navEvents => 'Eventos';
+  String get navAgenda => 'Agenda';
 
   @override
   String get navLocations => 'Ubicaciones';

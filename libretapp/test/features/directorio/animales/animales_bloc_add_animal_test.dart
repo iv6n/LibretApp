@@ -237,6 +237,20 @@ class _FakeAnimalRepository implements AnimalRepository {
   Stream<List<AnimalEntity>> watchAll() => _controller.stream;
 
   @override
+  Stream<void> watchChanges() => _controller.stream.map((_) {});
+
+  @override
+  Future<List<AnimalEntity>> getPage({
+    required int offset,
+    required int limit,
+  }) async {
+    final end = (offset + limit).clamp(0, _animals.length);
+    return List<AnimalEntity>.unmodifiable(
+      _animals.sublist(offset.clamp(0, _animals.length), end),
+    );
+  }
+
+  @override
   Future<bool> refreshFromRemote({bool force = false}) async => true;
 
   @override

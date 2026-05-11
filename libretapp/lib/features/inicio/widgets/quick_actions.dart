@@ -43,7 +43,7 @@ class QuickActions extends StatelessWidget {
                 QuickActionButton(
                   icon: Icons.event_available,
                   label: 'Nuevo evento',
-                  onTap: () => context.push(AppRoutes.eventos),
+                  onTap: () => context.pushNamed(AppRoutes.nameAgendaNuevo),
                 ),
                 QuickActionButton(
                   icon: Icons.fmd_good,

@@ -5,13 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
-import 'package:libretapp/l10n/app_localizations.dart';
 
 class LotesListView extends StatefulWidget {
   const LotesListView({super.key});
@@ -75,7 +73,6 @@ class _LotesListViewState extends State<LotesListView> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final bottomInset = ShellInsets.bottomSafePadding(context);
     final listBottomPadding = bottomInset + 2;
 
@@ -109,7 +106,6 @@ class _LotesListViewState extends State<LotesListView> {
               context: context,
               lotes: lotes,
               listBottomPadding: listBottomPadding,
-              l10n: l10n,
             );
           },
         ),
@@ -121,10 +117,9 @@ class _LotesListViewState extends State<LotesListView> {
     required BuildContext context,
     required List<LoteEntity> lotes,
     required double listBottomPadding,
-    required AppLocalizations l10n,
   }) {
     if (lotes.isEmpty) {
-      return _buildEmptyState(context, l10n);
+      return _buildEmptyState(context);
     }
 
     return CustomScrollView(
@@ -157,7 +152,7 @@ class _LotesListViewState extends State<LotesListView> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+  Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     return _CenteredSection(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -327,140 +322,6 @@ class _CenteredSection extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 720),
       child: Padding(padding: padding, child: child),
-    );
-  }
-}
-
-/// Muestra el sheet para crear un nuevo lote
-void showCreateLoteSheet(BuildContext context, AppLocalizations l10n) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (_) => _CreateLoteSheet(l10n: l10n),
-  );
-}
-
-/// Sheet modal para crear lote
-class _CreateLoteSheet extends StatefulWidget {
-  const _CreateLoteSheet({required this.l10n});
-
-  final AppLocalizations l10n;
-
-  @override
-  State<_CreateLoteSheet> createState() => _CreateLoteSheetState();
-}
-
-class _CreateLoteSheetState extends State<_CreateLoteSheet> {
-  late final TextEditingController _nombreController;
-  late final TextEditingController _descripcionController;
-  late final TextEditingController _notasController;
-
-  @override
-  void initState() {
-    super.initState();
-    _nombreController = TextEditingController();
-    _descripcionController = TextEditingController();
-    _notasController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _nombreController.dispose();
-    _descripcionController.dispose();
-    _notasController.dispose();
-    super.dispose();
-  }
-
-  void _submitForm() {
-    final nombre = _nombreController.text.trim();
-    if (nombre.isEmpty) {
-      context.showErrorSnackBar('Por favor ingresa un nombre para el lote');
-      return;
-    }
-
-    context.read<LotesBloc>().add(
-      CreateLote(
-        nombre: nombre,
-        descripcion: _descripcionController.text.trim(),
-        notas: _notasController.text.trim(),
-      ),
-    );
-
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        left: 16,
-        right: 16,
-        top: 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Crear Nuevo Lote',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nombreController,
-            decoration: InputDecoration(
-              labelText: 'Nombre del lote',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _descripcionController,
-            decoration: InputDecoration(
-              labelText: 'Descripción (opcional)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            maxLines: 2,
-            controller: _notasController,
-            decoration: InputDecoration(
-              labelText: 'Notas (opcional)',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _submitForm,
-                  child: const Text('Crear'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

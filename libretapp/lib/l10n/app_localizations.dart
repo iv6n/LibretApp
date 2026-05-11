@@ -122,11 +122,11 @@ abstract class AppLocalizations {
   /// **'Animales'**
   String get navAnimals;
 
-  /// No description provided for @navEvents.
+  /// No description provided for @navAgenda.
   ///
   /// In es, this message translates to:
-  /// **'Eventos'**
-  String get navEvents;
+  /// **'Agenda'**
+  String get navAgenda;
 
   /// No description provided for @navLocations.
   ///

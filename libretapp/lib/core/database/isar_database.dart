@@ -14,7 +14,6 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
-import 'package:libretapp/features/eventos/infrastructure/isar/isar_evento.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
@@ -49,7 +48,6 @@ class IsarDatabase {
         IsarLocationSchema,
         IsarIncomeRecordSchema,
         IsarGeneralExpenseRecordSchema,
-        IsarEventoSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode,

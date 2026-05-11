@@ -224,16 +224,12 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     setState(() => _assigning = true);
     final selected = {for (final animal in animalsHere) animal.uuid};
 
-    final result = await showModalBottomSheet<Set<String>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return _AssignAnimalsSheet(
-          allAnimals: allAnimals,
-          initiallySelected: selected,
-          locationName: location.name,
-        );
-      },
+    final result = await _openRecordFormPage<Set<String>>(
+      _AssignAnimalsPage(
+        allAnimals: allAnimals,
+        initiallySelected: selected,
+        locationName: location.name,
+      ),
     );
 
     if (!mounted) return;
@@ -277,11 +273,20 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     await Future.wait(tasks);
   }
 
+  Future<T?> _openRecordFormPage<T>(Widget child) {
+    return Navigator.of(context).push<T>(
+      MaterialPageRoute<T>(
+        fullscreenDialog: true,
+        builder: (context) {
+          return ShellChromeScope(visible: false, child: Scaffold(body: child));
+        },
+      ),
+    );
+  }
+
   Future<void> _showVisitSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<VisitRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _VisitRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<VisitRecord>(
+      _VisitRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -290,10 +295,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   }
 
   Future<void> _showWaterSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<WaterRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _WaterRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<WaterRecord>(
+      _WaterRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -302,10 +305,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   }
 
   Future<void> _showSaltSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<SaltRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _SaltRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<SaltRecord>(
+      _SaltRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -314,10 +315,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   }
 
   Future<void> _showShadeSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<ShadeRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _ShadeRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<ShadeRecord>(
+      _ShadeRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -326,10 +325,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   }
 
   Future<void> _showPastureSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<PastureRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _PastureRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<PastureRecord>(
+      _PastureRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -338,10 +335,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
   }
 
   Future<void> _showCostSheet(LocationEntity location) async {
-    final record = await showModalBottomSheet<CostRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _CostRecordSheet(locationName: location.name),
+    final record = await _openRecordFormPage<CostRecord>(
+      _CostRecordSheet(locationName: location.name),
     );
 
     if (record != null) {
@@ -355,11 +350,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location, {
     CropRecord? initial,
   }) async {
-    final crop = await showModalBottomSheet<CropRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) =>
-          CropFormSheet(locationName: location.name, initial: initial),
+    final crop = await _openRecordFormPage<CropRecord>(
+      CropFormSheet(locationName: location.name, initial: initial),
     );
 
     if (crop != null) {
@@ -404,10 +396,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await showModalBottomSheet<CropWateringRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => CropWateringFormSheet(cropName: crop.cropName),
+    final record = await _openRecordFormPage<CropWateringRecord>(
+      CropWateringFormSheet(cropName: crop.cropName),
     );
 
     if (record != null) {
@@ -423,10 +413,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await showModalBottomSheet<HarvestRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => HarvestFormSheet(cropName: crop.cropName),
+    final record = await _openRecordFormPage<HarvestRecord>(
+      HarvestFormSheet(cropName: crop.cropName),
     );
 
     if (record != null) {
@@ -438,10 +426,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await showModalBottomSheet<CropHealthRecord>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => CropHealthFormSheet(cropName: crop.cropName),
+    final record = await _openRecordFormPage<CropHealthRecord>(
+      CropHealthFormSheet(cropName: crop.cropName),
     );
 
     if (record != null) {
@@ -453,10 +439,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final task = await showModalBottomSheet<CropTask>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => CropTaskFormSheet(cropName: crop.cropName),
+    final task = await _openRecordFormPage<CropTask>(
+      CropTaskFormSheet(cropName: crop.cropName),
     );
 
     if (task != null) {
@@ -2313,8 +2297,8 @@ class _ActionsRow extends StatelessWidget {
   }
 }
 
-class _AssignAnimalsSheet extends StatefulWidget {
-  const _AssignAnimalsSheet({
+class _AssignAnimalsPage extends StatefulWidget {
+  const _AssignAnimalsPage({
     required this.allAnimals,
     required this.initiallySelected,
     required this.locationName,
@@ -2325,74 +2309,63 @@ class _AssignAnimalsSheet extends StatefulWidget {
   final String locationName;
 
   @override
-  State<_AssignAnimalsSheet> createState() => _AssignAnimalsSheetState();
+  State<_AssignAnimalsPage> createState() => _AssignAnimalsPageState();
 }
 
-class _AssignAnimalsSheetState extends State<_AssignAnimalsSheet> {
+class _AssignAnimalsPageState extends State<_AssignAnimalsPage> {
   late final Set<String> _selected = Set<String>.from(widget.initiallySelected);
 
   @override
   Widget build(BuildContext context) {
     final animals = widget.allAnimals;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Asignar animales a ${widget.locationName}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 420),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: animals.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final animal = animals[index];
-                  final checked = _selected.contains(animal.uuid);
-                  return CheckboxListTile(
-                    value: checked,
-                    title: Text(_animalTitle(animal)),
-                    subtitle: Text(
-                      animal.breed.isNotEmpty
-                          ? '${animal.breed} • ${animal.species.displayName}'
-                          : animal.species.displayName,
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        if (value == true) {
-                          _selected.add(animal.uuid);
-                        } else {
-                          _selected.remove(animal.uuid);
-                        }
-                      });
-                    },
-                  );
-                },
+    return Scaffold(
+      appBar: AppBar(title: Text('Asignar animales a ${widget.locationName}')),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  itemCount: animals.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final animal = animals[index];
+                    final checked = _selected.contains(animal.uuid);
+                    return CheckboxListTile(
+                      value: checked,
+                      title: Text(_animalTitle(animal)),
+                      subtitle: Text(
+                        animal.breed.isNotEmpty
+                            ? '${animal.breed} • ${animal.species.displayName}'
+                            : animal.species.displayName,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          if (value == true) {
+                            _selected.add(animal.uuid);
+                          } else {
+                            _selected.remove(animal.uuid);
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Guardar'),
-                onPressed: () => Navigator.of(context).pop(_selected),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Guardar'),
+                  onPressed: () => Navigator.of(context).pop(_selected),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

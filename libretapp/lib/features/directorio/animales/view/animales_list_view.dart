@@ -1,6 +1,8 @@
 ﻿/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_view \u2014 stateless list layout for animals.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -29,7 +31,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
   static const double _listFabClearance = -39;
   static const double _nearListEndThreshold = 96;
   late final AnimalesListController _animalController;
-  late final AnimalRepository _animalRepository;
   late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
   late final TabController _tabController;
@@ -43,7 +44,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
     super.initState();
     _scrollController = ScrollController()..addListener(_handleScroll);
     _tabController = TabController(length: 2, vsync: this);
-    _animalRepository = locator<AnimalRepository>();
     _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
       locationRepository: IsarLocationRepository(locator<IsarDatabase>()),
@@ -127,9 +127,12 @@ class _AnimalesListViewState extends State<AnimalesListView>
             final isKeyboardFullyHidden =
                 MediaQuery.of(context).viewInsets.bottom == 0;
             final bottomInset = ShellInsets.bottomSafePadding(context);
-            final listBottomPadding = (isSelectionMode && isKeyboardFullyHidden)
-                ? MediaQuery.of(context).padding.bottom + 112
-                : bottomInset + _listFabClearance;
+            final listBottomPadding = math.max(
+              (isSelectionMode && isKeyboardFullyHidden)
+                  ? MediaQuery.of(context).padding.bottom + 112
+                  : bottomInset + _listFabClearance,
+              0.0,
+            );
 
             final showRegisterFab =
                 isKeyboardFullyHidden &&
@@ -219,6 +222,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                         onStagesChanged: _animalController.setStages,
                         locationResolver: _animalController.locationForAnimal,
                         onOpenDetail: _openAnimalDetail,
+                        hideStageChips: state.isSearching,
                       ),
                     ),
                   ),
@@ -353,7 +357,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     if (shouldContinue != true) return;
     if (!mounted) return;
 
-    await showBulkHealthForm(
+    await _showBulkHealthForm(
       context,
       selectedCount: selectedUuids.length,
       onSubmit: (record) async {
@@ -377,6 +381,26 @@ class _AnimalesListViewState extends State<AnimalesListView>
     );
   }
 
+  Future<void> _showBulkHealthForm(
+    BuildContext context, {
+    required int selectedCount,
+    required Future<bool> Function(HealthRecord record) onSubmit,
+    required VoidCallback onSaved,
+  }) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (context) => _BulkHealthFormPage(
+          selectedCount: selectedCount,
+          onSubmit: onSubmit,
+        ),
+      ),
+    );
+    if (saved == true) {
+      onSaved();
+    }
+  }
+
   List<Widget> _buildListContent({
     required BuildContext context,
     required AnimalesLoaded state,
@@ -389,6 +413,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required ValueChanged<Set<LifeStage>> onStagesChanged,
     required LocationEntity? Function(AnimalEntity) locationResolver,
     required void Function(AnimalEntity) onOpenDetail,
+    bool hideStageChips = false,
   }) {
     final theme = Theme.of(context);
     const calfStages = {
@@ -414,14 +439,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _stageFilterChips(
-                l10n: l10n,
-                selectedStages: selectedStages,
-                availableStages: availableStages,
-                stageCounts: stageCounts,
-                theme: theme,
-                onStagesChanged: onStagesChanged,
-              ),
+              if (!hideStageChips)
+                _stageFilterChips(
+                  l10n: l10n,
+                  selectedStages: selectedStages,
+                  availableStages: availableStages,
+                  stageCounts: stageCounts,
+                  theme: theme,
+                  onStagesChanged: onStagesChanged,
+                ),
               const SizedBox(height: 16),
               Text(
                 l10n.animalsEmptyTitle,
@@ -452,14 +478,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _stageFilterChips(
-              l10n: l10n,
-              selectedStages: selectedStages,
-              availableStages: availableStages,
-              stageCounts: stageCounts,
-              theme: theme,
-              onStagesChanged: onStagesChanged,
-            ),
+            if (!hideStageChips)
+              _stageFilterChips(
+                l10n: l10n,
+                selectedStages: selectedStages,
+                availableStages: availableStages,
+                stageCounts: stageCounts,
+                theme: theme,
+                onStagesChanged: onStagesChanged,
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Row(
@@ -517,6 +544,227 @@ class _AnimalesListViewState extends State<AnimalesListView>
           child: Center(child: CircularProgressIndicator()),
         ),
     ];
+  }
+}
+
+class _BulkHealthFormPage extends StatefulWidget {
+  const _BulkHealthFormPage({
+    required this.selectedCount,
+    required this.onSubmit,
+  });
+
+  final int selectedCount;
+  final Future<bool> Function(HealthRecord record) onSubmit;
+
+  @override
+  State<_BulkHealthFormPage> createState() => _BulkHealthFormPageState();
+}
+
+class _BulkHealthFormPageState extends State<_BulkHealthFormPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _productController = TextEditingController();
+  final _doseController = TextEditingController();
+  final _appliedByController = TextEditingController();
+  final _causeController = TextEditingController();
+  final _notesController = TextEditingController();
+
+  HealthRecordType _type = HealthRecordType.vaccine;
+  DateTime _date = DateTime.now();
+  DateTime? _nextDate;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _productController.dispose();
+    _doseController.dispose();
+    _appliedByController.dispose();
+    _causeController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
+    setState(() => _saving = true);
+
+    final record = HealthRecord(
+      date: _date,
+      type: _type,
+      product: _productController.text.trim(),
+      dose: _doseController.text.trim().isEmpty
+          ? null
+          : _doseController.text.trim(),
+      appliedBy: _appliedByController.text.trim().isEmpty
+          ? null
+          : _appliedByController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
+      nextDueDate: _nextDate,
+      cause: _causeController.text.trim().isEmpty
+          ? null
+          : _causeController.text.trim(),
+    );
+
+    final ok = await widget.onSubmit(record);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.animalsBulkMaintenanceAction(widget.selectedCount)),
+      ),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<HealthRecordType>(
+                  initialValue: _type,
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormHealthType,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: HealthRecordType.values
+                      .map(
+                        (t) => DropdownMenuItem(value: t, child: Text(t.name)),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _type = value);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _productController,
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormHealthProduct,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return l10n.detailFormHealthProductRequired;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _doseController,
+                        decoration: InputDecoration(
+                          labelText: l10n.detailFormHealthDose,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _appliedByController,
+                        decoration: InputDecoration(
+                          labelText: l10n.detailFormHealthAppliedBy,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.today),
+                        label: Text(
+                          '${_date.year}-${_date.month}-${_date.day}',
+                        ),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _date,
+                            firstDate: DateTime(_date.year - 5),
+                            lastDate: DateTime(_date.year + 1),
+                          );
+                          if (picked == null) return;
+                          setState(() => _date = picked);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.event_available),
+                        label: Text(
+                          _nextDate == null
+                              ? l10n.detailFormHealthNext
+                              : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
+                        ),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _nextDate ?? _date,
+                            firstDate: DateTime(_date.year),
+                            lastDate: DateTime(_date.year + 5),
+                          );
+                          setState(() => _nextDate = picked);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _causeController,
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormHealthCause,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: l10n.fieldNotes,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _saving ? null : _submit,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(l10n.actionSave),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -848,12 +1096,47 @@ class _AnimalesSearchAppBarState extends State<AnimalesSearchAppBar> {
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[500],
                 ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    _focusNode.unfocus();
-                    bloc.add(const ClearSearch());
-                  },
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BlocBuilder<AnimalesBloc, AnimalesState>(
+                      buildWhen: (p, c) {
+                        final pLoaded = p is AnimalesLoaded ? p : null;
+                        final cLoaded = c is AnimalesLoaded ? c : null;
+                        return pLoaded?.searchFilterStages !=
+                                cLoaded?.searchFilterStages ||
+                            pLoaded?.searchFilterSexes !=
+                                cLoaded?.searchFilterSexes;
+                      },
+                      builder: (context, state) {
+                        final loaded = state is AnimalesLoaded ? state : null;
+                        final activeCount =
+                            (loaded?.searchFilterStages.length ?? 0) +
+                            (loaded?.searchFilterSexes.length ?? 0);
+                        return _SearchFilterChipButton(
+                          activeFilterCount: activeCount,
+                          onTap: () => _showSearchFilterPopup(
+                            context,
+                            currentStages:
+                                loaded?.searchFilterStages ?? const {},
+                            currentSexes: loaded?.searchFilterSexes ?? const {},
+                            onApply: (stages, sexes) {
+                              bloc.add(
+                                SetSearchFilters(stages: stages, sexes: sexes),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _focusNode.unfocus();
+                        bloc.add(const ClearSearch());
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -900,4 +1183,288 @@ Map<LifeStage, int> _countByStage(List<AnimalEntity> animals) {
     counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
   }
   return counts;
+}
+
+// ---------------------------------------------------------------------------
+// Search filter chip button (shown inside the search bar suffix)
+// ---------------------------------------------------------------------------
+
+class _SearchFilterChipButton extends StatelessWidget {
+  const _SearchFilterChipButton({
+    required this.activeFilterCount,
+    required this.onTap,
+  });
+
+  final int activeFilterCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasFilters = activeFilterCount > 0;
+    final color = hasFilters
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.tune, size: 18, color: color),
+            if (hasFilters) ...[
+              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$activeFilterCount',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search filter popup
+// ---------------------------------------------------------------------------
+
+void _showSearchFilterPopup(
+  BuildContext context, {
+  required Set<LifeStage> currentStages,
+  required Set<Sex> currentSexes,
+  required void Function(Set<LifeStage> stages, Set<Sex> sexes) onApply,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) => _SearchFilterSheet(
+      initialStages: currentStages,
+      initialSexes: currentSexes,
+      onApply: (stages, sexes) {
+        Navigator.of(sheetContext).pop();
+        onApply(stages, sexes);
+      },
+    ),
+  );
+}
+
+class _SearchFilterSheet extends StatefulWidget {
+  const _SearchFilterSheet({
+    required this.initialStages,
+    required this.initialSexes,
+    required this.onApply,
+  });
+
+  final Set<LifeStage> initialStages;
+  final Set<Sex> initialSexes;
+  final void Function(Set<LifeStage> stages, Set<Sex> sexes) onApply;
+
+  @override
+  State<_SearchFilterSheet> createState() => _SearchFilterSheetState();
+}
+
+class _SearchFilterSheetState extends State<_SearchFilterSheet> {
+  late Set<LifeStage> _stages;
+  late Set<Sex> _sexes;
+
+  @override
+  void initState() {
+    super.initState();
+    _stages = Set<LifeStage>.from(widget.initialStages);
+    _sexes = Set<Sex>.from(widget.initialSexes);
+  }
+
+  bool get _hasFilters => _stages.isNotEmpty || _sexes.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPadding),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle bar
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Text(
+                'Filtros de búsqueda',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (_hasFilters)
+                TextButton(
+                  onPressed: () => setState(() {
+                    _stages = {};
+                    _sexes = {};
+                  }),
+                  child: const Text('Limpiar'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Etapa / Life stage
+          Text(
+            'Etapa',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildStageChips(theme),
+          const SizedBox(height: 16),
+
+          // Sexo
+          Text(
+            'Sexo',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildSexChips(theme),
+          const SizedBox(height: 20),
+
+          // Apply button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => widget.onApply(_stages, _sexes),
+              child: const Text('Aplicar filtros'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStageChips(ThemeData theme) {
+    const stageGroups = [
+      (
+        label: 'Ternero/a',
+        stages: [LifeStage.calf, LifeStage.calfMale, LifeStage.calfFemale],
+      ),
+      (label: 'Vaquillona', stages: [LifeStage.heifer]),
+      (label: 'Torito', stages: [LifeStage.youngBull]),
+      (label: 'Novillo', stages: [LifeStage.steer]),
+      (label: 'Vaca', stages: [LifeStage.cow]),
+      (label: 'Toro', stages: [LifeStage.bull]),
+      (label: 'Potro/a', stages: [LifeStage.colt, LifeStage.filly]),
+      (label: 'Caballo', stages: [LifeStage.horse]),
+      (label: 'Yegua', stages: [LifeStage.mare]),
+      (label: 'Burro/a', stages: [LifeStage.donkey, LifeStage.donkeyFemale]),
+      (label: 'Mula', stages: [LifeStage.mule]),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: stageGroups.map((group) {
+        final isSelected = group.stages.any(_stages.contains);
+        return FilterChip(
+          label: Text(group.label),
+          selected: isSelected,
+          showCheckmark: false,
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _stages.addAll(group.stages);
+              } else {
+                _stages.removeAll(group.stages);
+              }
+            });
+          },
+          selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+          checkmarkColor: theme.colorScheme.primary,
+          side: BorderSide(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
+          ),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSexChips(ThemeData theme) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: Sex.values.map((sex) {
+        final isSelected = _sexes.contains(sex);
+        return FilterChip(
+          label: Text(sex.displayName),
+          selected: isSelected,
+          showCheckmark: false,
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _sexes.add(sex);
+              } else {
+                _sexes.remove(sex);
+              }
+            });
+          },
+          selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+          side: BorderSide(
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outlineVariant,
+          ),
+          labelStyle: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+          ),
+        );
+      }).toList(),
+    );
+  }
 }

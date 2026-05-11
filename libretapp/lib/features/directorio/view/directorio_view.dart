@@ -99,9 +99,11 @@ class _DirectorioViewState extends State<DirectorioView>
 
   void _onSearchChanged(String query) {
     if (query.isEmpty) {
-      context.read<DirectorioBloc>().add(const ClearSearch());
+      context.read<AnimalesBloc>().add(const animales_event.ClearSearch());
     } else {
-      context.read<DirectorioBloc>().add(PerformCombinedSearch(query));
+      context.read<AnimalesBloc>().add(
+        animales_event.SearchQueryChanged(query),
+      );
     }
   }
 
@@ -111,9 +113,11 @@ class _DirectorioViewState extends State<DirectorioView>
       if (!_isSearching) {
         _searchController.clear();
         _searchFocusNode.unfocus();
-        context.read<DirectorioBloc>().add(const ClearSearch());
+        context.read<AnimalesBloc>().add(const animales_event.ClearSearch());
       } else {
-        context.read<DirectorioBloc>().add(const StartSearch());
+        context.read<AnimalesBloc>().add(
+          const animales_event.ToggleSearch(enabled: true),
+        );
         // Request focus and show keyboard
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _searchFocusNode.requestFocus();
@@ -409,15 +413,13 @@ class _DirectorioViewState extends State<DirectorioView>
                             )
                           : null,
                     ),
-                    body: _isSearching && state.searchResults.isNotEmpty
-                        ? _buildSearchResults(state)
-                        : NotificationListener<ScrollUpdateNotification>(
-                            onNotification: (notification) {
-                              _onScroll(notification);
-                              return false;
-                            },
-                            child: _buildTabContent(),
-                          ),
+                    body: NotificationListener<ScrollUpdateNotification>(
+                      onNotification: (notification) {
+                        _onScroll(notification);
+                        return false;
+                      },
+                      child: _buildTabContent(),
+                    ),
                   ),
                 ),
               );

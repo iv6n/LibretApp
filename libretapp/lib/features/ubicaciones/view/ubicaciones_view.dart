@@ -238,47 +238,14 @@ class _UbicacionesViewState extends State<UbicacionesView> {
   }
 
   Future<void> _openPrimaryActionsMenu() async {
-    final action = await showModalBottomSheet<_UbicacionesPrimaryAction>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.add_location_alt_outlined),
-                  title: const Text('Agregar ubicación'),
-                  subtitle: const Text('Crear una nueva ubicación en el mapa'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_UbicacionesPrimaryAction.createLocation),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.build_circle_outlined),
-                  title: const Text('Registrar mantenimiento'),
-                  subtitle: const Text('Abrir eventos de mantenimiento'),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_UbicacionesPrimaryAction.maintenance),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.swap_horiz_outlined),
-                  title: const Text('Registrar asignación / movimiento'),
-                  subtitle: const Text(
-                    'Asignar o mover animales entre ubicaciones',
-                  ),
-                  onTap: () => Navigator.of(
-                    sheetContext,
-                  ).pop(_UbicacionesPrimaryAction.assignment),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    final action = await Navigator.of(context).push<_UbicacionesPrimaryAction>(
+      MaterialPageRoute<_UbicacionesPrimaryAction>(
+        fullscreenDialog: true,
+        builder: (pageContext) => const ShellChromeScope(
+          visible: false,
+          child: _UbicacionesPrimaryActionsPage(),
+        ),
+      ),
     );
 
     if (!mounted || action == null) return;
@@ -288,7 +255,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
         await _openCreatePage();
         break;
       case _UbicacionesPrimaryAction.maintenance:
-        await context.push(AppRoutes.eventos);
+        await context.pushNamed(AppRoutes.nameAgendaNuevo);
         break;
       case _UbicacionesPrimaryAction.assignment:
         await context.pushNamed(AppRoutes.nameRegistroMovimiento);
@@ -531,3 +498,48 @@ class _CenteredSection extends StatelessWidget {
 }
 
 enum _UbicacionesPrimaryAction { createLocation, maintenance, assignment }
+
+class _UbicacionesPrimaryActionsPage extends StatelessWidget {
+  const _UbicacionesPrimaryActionsPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Acciones principales')),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_location_alt_outlined),
+              title: const Text('Agregar ubicación'),
+              subtitle: const Text('Crear una nueva ubicación en el mapa'),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_UbicacionesPrimaryAction.createLocation),
+            ),
+            ListTile(
+              leading: const Icon(Icons.build_circle_outlined),
+              title: const Text('Registrar mantenimiento'),
+              subtitle: const Text('Abrir eventos de mantenimiento'),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_UbicacionesPrimaryAction.maintenance),
+            ),
+            ListTile(
+              leading: const Icon(Icons.swap_horiz_outlined),
+              title: const Text('Registrar asignación / movimiento'),
+              subtitle: const Text(
+                'Asignar o mover animales entre ubicaciones',
+              ),
+              onTap: () => Navigator.of(
+                context,
+              ).pop(_UbicacionesPrimaryAction.assignment),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

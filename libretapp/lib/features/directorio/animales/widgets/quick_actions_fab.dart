@@ -27,9 +27,8 @@ class QuickActionsFab extends StatelessWidget {
   final VoidCallback onAddCost;
   final Color? accentColor;
 
-  void _showActionsSheet(BuildContext context) {
+  Future<void> _showActionsPage(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final actions = [
       _QuickAction(Icons.monitor_weight, l10n.detailActionWeight, onAddWeight),
       _QuickAction(
@@ -52,67 +51,11 @@ class QuickActionsFab extends StatelessWidget {
       _QuickAction(Icons.payments, l10n.detailActionCost, onAddCost),
     ];
 
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (ctx) => _QuickActionsPage(actions: actions),
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.detailQuickActionsTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 380;
-                    final columns = compact ? 3 : 4;
-                    return GridView.count(
-                      crossAxisCount: columns,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: compact ? 0.94 : 0.85,
-                      children: actions
-                          .map(
-                            (a) => _ActionTile(
-                              icon: a.icon,
-                              label: a.label,
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                a.onPressed();
-                              },
-                            ),
-                          )
-                          .toList(),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -122,7 +65,7 @@ class QuickActionsFab extends StatelessWidget {
     final shellChrome = theme.extension<ShellChromeTheme>();
     return FloatingActionButton(
       heroTag: 'fab-main',
-      onPressed: () => _showActionsSheet(context),
+      onPressed: () => _showActionsPage(context),
       backgroundColor:
           accentColor ??
           shellChrome?.fabBackground ??
@@ -142,6 +85,51 @@ class _QuickAction {
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
+}
+
+class _QuickActionsPage extends StatelessWidget {
+  const _QuickActionsPage({required this.actions});
+
+  final List<_QuickAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.detailQuickActionsTitle)),
+      body: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 380;
+              final columns = compact ? 3 : 4;
+              return GridView.count(
+                crossAxisCount: columns,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 8,
+                childAspectRatio: compact ? 0.94 : 0.85,
+                children: actions
+                    .map(
+                      (a) => _ActionTile(
+                        icon: a.icon,
+                        label: a.label,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          a.onPressed();
+                        },
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ActionTile extends StatelessWidget {

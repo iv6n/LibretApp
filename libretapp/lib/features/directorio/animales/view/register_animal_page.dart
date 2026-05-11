@@ -3066,18 +3066,6 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String get _ageLabel {
-    final birthDate = _birthDate;
-    if (birthDate == null) return '--';
-
-    final lifecycle = AnimalLifecycleCalculator.calculate(
-      birthDate: birthDate,
-      species: _species,
-      sex: _sex,
-    );
-    return '${lifecycle.ageMonths} meses';
-  }
-
   String _formatDate(DateTime value) {
     final dd = value.day.toString().padLeft(2, '0');
     final mm = value.month.toString().padLeft(2, '0');

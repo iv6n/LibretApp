@@ -3,6 +3,7 @@ library;
 
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 
 abstract class AnimalesState extends Equatable {
   const AnimalesState();
@@ -27,6 +28,8 @@ class AnimalesLoaded extends AnimalesState {
     required this.visibleAnimals,
     this.isSearching = false,
     this.searchQuery = '',
+    this.searchFilterStages = const {},
+    this.searchFilterSexes = const {},
     this.selectedAnimalUuids = const {},
     this.hasMore = false,
     this.isLoadingMore = false,
@@ -37,6 +40,8 @@ class AnimalesLoaded extends AnimalesState {
   final List<AnimalEntity> visibleAnimals;
   final bool isSearching;
   final String searchQuery;
+  final Set<LifeStage> searchFilterStages;
+  final Set<Sex> searchFilterSexes;
   final Set<String> selectedAnimalUuids;
   final bool hasMore;
   final bool isLoadingMore;
@@ -52,6 +57,8 @@ class AnimalesLoaded extends AnimalesState {
     List<AnimalEntity>? visibleAnimals,
     bool? isSearching,
     String? searchQuery,
+    Set<LifeStage>? searchFilterStages,
+    Set<Sex>? searchFilterSexes,
     Set<String>? selectedAnimalUuids,
     bool? hasMore,
     bool? isLoadingMore,
@@ -62,6 +69,8 @@ class AnimalesLoaded extends AnimalesState {
       visibleAnimals: visibleAnimals ?? this.visibleAnimals,
       isSearching: isSearching ?? this.isSearching,
       searchQuery: searchQuery ?? this.searchQuery,
+      searchFilterStages: searchFilterStages ?? this.searchFilterStages,
+      searchFilterSexes: searchFilterSexes ?? this.searchFilterSexes,
       selectedAnimalUuids: selectedAnimalUuids ?? this.selectedAnimalUuids,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
@@ -75,6 +84,8 @@ class AnimalesLoaded extends AnimalesState {
     visibleAnimals,
     isSearching,
     searchQuery,
+    searchFilterStages,
+    searchFilterSexes,
     selectedAnimalUuids,
     hasMore,
     isLoadingMore,
