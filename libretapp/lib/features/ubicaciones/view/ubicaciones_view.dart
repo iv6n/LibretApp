@@ -13,6 +13,7 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/widgets/widgets.dart';
 
 class UbicacionesView extends StatefulWidget {
@@ -29,6 +30,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
   Map<String, int> _animalCounts = <String, int>{};
   Map<String, double> _averageWeights = <String, double>{};
   String _lastCountsKey = '';
+  final Set<String> _expandedRanchos = {};
 
   @override
   void initState() {
@@ -186,45 +188,146 @@ class _UbicacionesViewState extends State<UbicacionesView> {
               ),
             )
           else
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index.isOdd) {
-                      return const SizedBox(height: 14);
-                    }
-                    final itemIndex = index ~/ 2;
-                    final location = ubicaciones[itemIndex];
-                    final parentName = location.parentUuid == null
-                        ? null
-                        : allByUuid[location.parentUuid]?.name;
-                    return LocationCard(
-                      location: location,
-                      animalCount: _animalCounts[location.uuid] ?? 0,
-                      averageWeightKg: _averageWeights[location.uuid],
-                      parentName: parentName,
-                      onTap: () => context.push(
-                        AppRoutes.ubicacionDetallePath(location.uuid),
-                      ),
-                      onEdit: () => _openEditPage(location.uuid),
-                      onDelete: () => _confirmDelete(context, location),
-                    );
-                  },
-                  childCount: ubicaciones.isEmpty
-                      ? 0
-                      : (ubicaciones.length * 2) - 1,
-                ),
-              ),
+            ..._buildGroupedSliver(
+              ubicaciones,
+              state.isSearching || state.searchQuery.isNotEmpty,
+              allByUuid,
+              listBottomPadding,
             ),
         ],
       ),
     );
   }
 
+  // ── Hierarchy helpers ─────────────────────────────────────────────────────
+
+  Widget _buildCard(
+    LocationEntity location,
+    Map<String, LocationEntity> allByUuid,
+  ) {
+    final parentName = location.parentUuid == null
+        ? null
+        : allByUuid[location.parentUuid]?.name;
+    return LocationCard(
+      location: location,
+      animalCount: _animalCounts[location.uuid] ?? 0,
+      averageWeightKg: _averageWeights[location.uuid],
+      parentName: parentName,
+      onTap: () => context.push(AppRoutes.ubicacionDetallePath(location.uuid)),
+      onEdit: () => _openEditPage(location.uuid),
+      onDelete: () => _confirmDelete(context, location),
+    );
+  }
+
+  List<Widget> _buildHierarchyWidgets(
+    List<LocationEntity> all,
+    Map<String, LocationEntity> allByUuid,
+  ) {
+    final ranchos = all.where((l) => l.type.isRootType).toList();
+    final childrenByParent = <String, List<LocationEntity>>{};
+    final standalones = <LocationEntity>[];
+
+    for (final loc in all) {
+      if (loc.type.isRootType) continue;
+      final parentId = loc.parentUuid;
+      if (parentId != null && allByUuid.containsKey(parentId)) {
+        childrenByParent.putIfAbsent(parentId, () => []).add(loc);
+      } else {
+        standalones.add(loc);
+      }
+    }
+
+    final widgets = <Widget>[];
+
+    for (final rancho in ranchos) {
+      final children = childrenByParent[rancho.uuid] ?? [];
+      final isExpanded = _expandedRanchos.contains(rancho.uuid);
+
+      widgets.add(_buildCard(rancho, allByUuid));
+
+      if (children.isNotEmpty) {
+        widgets.add(const SizedBox(height: 4));
+        widgets.add(
+          _RanchoChildrenToggle(
+            count: children.length,
+            isExpanded: isExpanded,
+            onToggle: () => setState(() {
+              if (isExpanded) {
+                _expandedRanchos.remove(rancho.uuid);
+              } else {
+                _expandedRanchos.add(rancho.uuid);
+              }
+            }),
+          ),
+        );
+
+        if (isExpanded) {
+          for (final child in children) {
+            widgets.add(const SizedBox(height: 8));
+            widgets.add(
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: _buildCard(child, allByUuid),
+              ),
+            );
+          }
+          widgets.add(const SizedBox(height: 4));
+        }
+      }
+
+      widgets.add(const SizedBox(height: 14));
+    }
+
+    if (standalones.isNotEmpty) {
+      if (ranchos.isNotEmpty) {
+        widgets.add(const _SectionLabel('Ubicaciones independientes'));
+        widgets.add(const SizedBox(height: 8));
+      }
+      for (int i = 0; i < standalones.length; i++) {
+        widgets.add(_buildCard(standalones[i], allByUuid));
+        if (i < standalones.length - 1) {
+          widgets.add(const SizedBox(height: 14));
+        }
+      }
+    }
+
+    return widgets;
+  }
+
+  List<Widget> _buildGroupedSliver(
+    List<LocationEntity> ubicaciones,
+    bool isSearching,
+    Map<String, LocationEntity> allByUuid,
+    double bottomPadding,
+  ) {
+    if (isSearching) {
+      // Flat list for search results.
+      final items = <Widget>[];
+      for (int i = 0; i < ubicaciones.length; i++) {
+        items.add(_buildCard(ubicaciones[i], allByUuid));
+        if (i < ubicaciones.length - 1) items.add(const SizedBox(height: 14));
+      }
+      return [
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
+          sliver: SliverList(delegate: SliverChildListDelegate(items)),
+        ),
+      ];
+    }
+
+    final hierarchyWidgets = _buildHierarchyWidgets(ubicaciones, allByUuid);
+    return [
+      SliverPadding(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
+        sliver: SliverList(delegate: SliverChildListDelegate(hierarchyWidgets)),
+      ),
+    ];
+  }
+
   Future<void> _openCreatePage() async {
     final created = await context.pushNamed<bool>(AppRoutes.nameUbicacionNueva);
     if (!mounted || created != true) return;
+    context.read<UbicacionesBloc>().add(const LoadUbicaciones());
     _showSuccessMessage('Ubicación creada correctamente');
   }
 
@@ -234,6 +337,7 @@ class _UbicacionesViewState extends State<UbicacionesView> {
       pathParameters: {'uuid': uuid},
     );
     if (!mounted || updated != true) return;
+    context.read<UbicacionesBloc>().add(const LoadUbicaciones());
     _showSuccessMessage('Ubicación actualizada correctamente');
   }
 
@@ -267,13 +371,34 @@ class _UbicacionesViewState extends State<UbicacionesView> {
     BuildContext context,
     LocationEntity location,
   ) async {
+    // Check how many animals are assigned before showing dialog.
+    int animalCount = 0;
+    final repo = _animalRepository;
+    if (repo != null) {
+      try {
+        final animals = await repo.getByPaddock(location.uuid);
+        animalCount = animals.length;
+      } catch (_) {
+        // If the check fails, proceed with normal confirmation dialog.
+      }
+    }
+
+    if (!context.mounted) return;
+
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar ubicación'),
-        content: Text(
-          '¿Deseas borrar "${location.name}"? Esta acción no se puede deshacer.',
-        ),
+        content: animalCount > 0
+            ? Text(
+                '${location.name}" tiene $animalCount '
+                '${animalCount == 1 ? 'animal asignado' : 'animales asignados'}. '
+                'Al eliminar, esos animales quedarán sin ubicación. '
+                '¿Deseas continuar de todas formas?',
+              )
+            : Text(
+                '¿Deseas borrar "${location.name}"? Esta acción no se puede deshacer.',
+              ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -479,6 +604,81 @@ class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
     _searchController.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+class _RanchoChildrenToggle extends StatelessWidget {
+  const _RanchoChildrenToggle({
+    required this.count,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  final int count;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = isExpanded
+        ? 'Ocultar $count ${count == 1 ? 'ubicación' : 'ubicaciones'}'
+        : 'Ver $count ${count == 1 ? 'ubicación' : 'ubicaciones'}';
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(width: 20),
+            SizedBox(
+              width: 20,
+              child: Divider(
+                height: 1,
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              isExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 14,
+              color: theme.colorScheme.primary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

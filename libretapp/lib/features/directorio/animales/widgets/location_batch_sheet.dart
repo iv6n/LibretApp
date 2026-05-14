@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -143,8 +144,12 @@ Future<void> showLocationBatchSheet(
                       icon: const Icon(Icons.save_as_outlined),
                       label: const Text('Guardar'),
                       onPressed: () async {
+                        final oldPaddockId = animal.currentPaddockId;
+                        final locationChanged =
+                            animal.currentPaddockId != selectedLocation;
+
                         // Update location first if changed
-                        if (animal.currentPaddockId != selectedLocation ||
+                        if (locationChanged ||
                             animal.batchUuid != selectedBatchUuid) {
                           final updatedAnimal = animal.copyWith(
                             currentPaddockId: selectedLocation,
@@ -160,6 +165,22 @@ Future<void> showLocationBatchSheet(
                           );
                           if (!context.mounted) return;
                           if (!ok) return;
+                        }
+
+                        // Create a MovementRecord with real FK UUIDs.
+                        if (locationChanged && selectedLocation != null) {
+                          await dispatchAndAwait(
+                            AddMovementRecord(
+                              animalUuid: animal.uuid,
+                              record: MovementRecord(
+                                fromLocation: oldPaddockId,
+                                toLocation: selectedLocation!,
+                                date: DateTime.now(),
+                                reason: MovementReason.paddockRotation,
+                              ),
+                            ),
+                          );
+                          if (!context.mounted) return;
                         }
 
                         // Assign to batch if batch selection changed

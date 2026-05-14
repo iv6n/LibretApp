@@ -297,7 +297,12 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: LocationDetailPage(locationUuid: uuid),
+                      child: BlocProvider(
+                        create: (_) =>
+                            AgendaBloc(locator<AgendaRepository>())
+                              ..add(const LoadAgenda()),
+                        child: LocationDetailPage(locationUuid: uuid),
+                      ),
                     );
                   },
                 ),

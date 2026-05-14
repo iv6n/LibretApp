@@ -16,6 +16,7 @@ import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
@@ -757,7 +758,7 @@ LocationEntity _buildLocation({required String uuid, required String name}) {
     capacity: 10,
     waterSource: 'Ninguna',
     terrainType: 'Plano',
-    status: 'activa',
+    status: LocationStatus.disponible,
   );
 }
 

@@ -17,6 +17,7 @@ class LoteEntity extends Equatable {
     this.fechaCierre,
     this.activo = true,
     this.notas,
+    this.currentLocationId,
     required this.lastUpdateDate,
     this.synced = false,
     this.remoteId,
@@ -31,6 +32,9 @@ class LoteEntity extends Equatable {
   final DateTime? fechaCierre;
   final bool activo;
   final String? notas;
+
+  /// UUID de la LocationEntity donde se encuentra actualmente el lote.
+  final String? currentLocationId;
   final DateTime lastUpdateDate;
   final bool synced;
   final String? remoteId;
@@ -47,6 +51,7 @@ class LoteEntity extends Equatable {
     DateTime? fechaCierre,
     bool? activo,
     String? notas,
+    Object? currentLocationId = _sentinel,
     DateTime? lastUpdateDate,
     bool? synced,
     String? remoteId,
@@ -62,6 +67,9 @@ class LoteEntity extends Equatable {
       fechaCierre: fechaCierre ?? this.fechaCierre,
       activo: activo ?? this.activo,
       notas: notas ?? this.notas,
+      currentLocationId: currentLocationId == _sentinel
+          ? this.currentLocationId
+          : currentLocationId as String?,
       lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
       synced: synced ?? this.synced,
       remoteId: remoteId ?? this.remoteId,
@@ -80,9 +88,13 @@ class LoteEntity extends Equatable {
     fechaCierre,
     activo,
     notas,
+    currentLocationId,
     lastUpdateDate,
     synced,
     remoteId,
     syncDate,
   ];
 }
+
+// Sentinel object used to distinguish explicit null from omitted in copyWith.
+const Object _sentinel = Object();

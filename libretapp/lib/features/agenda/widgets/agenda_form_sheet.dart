@@ -6,12 +6,14 @@ import 'package:intl/intl.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_animal_selector_sheet.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_constants.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
 Future<void> showAgendaFormSheet({
   required BuildContext context,
   required DateTime initialDate,
   required void Function(AgendaEntry) onSave,
   AgendaEntry? entry,
+  List<LocationEntity> locations = const [],
 }) async {
   await showModalBottomSheet<void>(
     context: context,
@@ -31,6 +33,7 @@ Future<void> showAgendaFormSheet({
           initialDate: initialDate,
           onSave: onSave,
           entry: entry,
+          locations: locations,
           showDragHandle: true,
           popOnSave: true,
         ),
@@ -44,6 +47,7 @@ class AgendaEntryForm extends StatefulWidget {
     required this.initialDate,
     required this.onSave,
     this.entry,
+    this.locations = const [],
     this.popOnSave = false,
     this.showDragHandle = false,
     super.key,
@@ -52,6 +56,7 @@ class AgendaEntryForm extends StatefulWidget {
   final DateTime initialDate;
   final void Function(AgendaEntry) onSave;
   final AgendaEntry? entry;
+  final List<LocationEntity> locations;
   final bool popOnSave;
   final bool showDragHandle;
 
@@ -65,6 +70,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
   late final TextEditingController _descripcionController;
   late final TextEditingController _notasController;
   late final TextEditingController _ubicacionController;
+  String? _locationUuid;
 
   late DateTime _fechaSeleccionada;
   late String _tipoSeleccionado;
@@ -82,6 +88,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
     _ubicacionController = TextEditingController(
       text: widget.entry?.ubicacion ?? '',
     );
+    _locationUuid = widget.entry?.locationUuid;
 
     _fechaSeleccionada = widget.entry?.fecha ?? widget.initialDate;
     _tipoSeleccionado = widget.entry?.tipo ?? agendaTipos.first;
@@ -100,9 +107,19 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
-    final ubicacion = _ubicacionController.text.trim().isEmpty
-        ? 'Sin ubicación'
-        : _ubicacionController.text.trim();
+    final String ubicacion;
+    if (_locationUuid != null && widget.locations.isNotEmpty) {
+      ubicacion =
+          widget.locations
+              .where((l) => l.uuid == _locationUuid)
+              .map((l) => l.name)
+              .firstOrNull ??
+          'Sin ubicación';
+    } else {
+      ubicacion = _ubicacionController.text.trim().isEmpty
+          ? 'Sin ubicación'
+          : _ubicacionController.text.trim();
+    }
     final saved = AgendaEntry(
       id: widget.entry?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       titulo: _tituloController.text.trim(),
@@ -112,6 +129,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
       animalIds: _selectedAnimalIds,
       loteIds: _selectedLoteIds,
       ubicacion: ubicacion,
+      locationUuid: _locationUuid,
       estado: widget.entry?.estado ?? AgendaEstado.pendiente,
       completedAnimalIds: widget.entry?.completedAnimalIds ?? const [],
       notas: _notasController.text.trim(),
@@ -213,14 +231,33 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
               ),
             ),
             const SizedBox(height: 10),
-            TextFormField(
-              controller: _ubicacionController,
-              decoration: const InputDecoration(
-                labelText: 'Ubicación (opcional)',
-                prefixIcon: Icon(Icons.place_outlined),
-                hintText: 'Ej: Potrero B',
+            if (widget.locations.isEmpty)
+              TextFormField(
+                controller: _ubicacionController,
+                decoration: const InputDecoration(
+                  labelText: 'Ubicación (opcional)',
+                  prefixIcon: Icon(Icons.place_outlined),
+                  hintText: 'Ej: Potrero B',
+                ),
+              )
+            else
+              DropdownButtonFormField<String?>(
+                value: _locationUuid,
+                decoration: const InputDecoration(
+                  labelText: 'Ubicación (opcional)',
+                  prefixIcon: Icon(Icons.place_outlined),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Sin ubicación'),
+                  ),
+                  ...widget.locations.map(
+                    (l) => DropdownMenuItem(value: l.uuid, child: Text(l.name)),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _locationUuid = value),
               ),
-            ),
             const SizedBox(height: 10),
             ListTile(
               contentPadding: EdgeInsets.zero,

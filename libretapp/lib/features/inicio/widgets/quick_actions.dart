@@ -38,7 +38,7 @@ class QuickActions extends StatelessWidget {
                 QuickActionButton(
                   icon: Icons.monitor_weight,
                   label: 'Registrar peso',
-                  onTap: () => context.push(AppRoutes.animales),
+                  onTap: () => context.pushNamed(AppRoutes.nameRegistroPeso),
                 ),
                 QuickActionButton(
                   icon: Icons.event_available,
@@ -48,12 +48,12 @@ class QuickActions extends StatelessWidget {
                 QuickActionButton(
                   icon: Icons.fmd_good,
                   label: 'Ubicaciones',
-                  onTap: () => context.push(AppRoutes.ubicaciones),
+                  onTap: () => context.go(AppRoutes.ubicaciones),
                 ),
                 QuickActionButton(
                   icon: Icons.groups,
                   label: 'Gestionar lotes',
-                  onTap: () => context.push(AppRoutes.directorio),
+                  onTap: () => context.go(AppRoutes.directorio),
                 ),
               ],
             ),

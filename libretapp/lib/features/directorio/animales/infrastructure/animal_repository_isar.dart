@@ -133,6 +133,12 @@ class AnimalRepositoryIsar implements AnimalRepository {
   }
 
   @override
+  Future<List<AnimalEntity>> getByBatchUuid(String batchUuid) async {
+    final all = await getAll();
+    return all.where((a) => a.batchUuid == batchUuid).toList(growable: false);
+  }
+
+  @override
   Future<List<AnimalEntity>> getAnimalsRequiringAttention() async {
     final isar = await _isar;
     final records = await isar.isarAnimals

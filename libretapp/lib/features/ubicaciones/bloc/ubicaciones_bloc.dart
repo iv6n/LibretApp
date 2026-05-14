@@ -46,6 +46,9 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     on<AddCropHealthEvent>(_onAddCropHealth);
     on<AddCropTaskEvent>(_onAddCropTask);
     on<CompleteCropTaskEvent>(_onCompleteCropTask);
+    on<AddInventoryItemEvent>(_onAddInventoryItem);
+    on<UpdateInventoryItemEvent>(_onUpdateInventoryItem);
+    on<RemoveInventoryItemEvent>(_onRemoveInventoryItem);
   }
 
   final LocationRepository repository;
@@ -366,6 +369,38 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
         event.cropUuid,
         event.taskUuid,
       ),
+      emit,
+    );
+  }
+
+  // ── Inventory handlers ────────────────────────────────────────────────
+
+  Future<void> _onAddInventoryItem(
+    AddInventoryItemEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.addInventoryItem(event.locationUuid, event.item),
+      emit,
+    );
+  }
+
+  Future<void> _onUpdateInventoryItem(
+    UpdateInventoryItemEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.updateInventoryItem(event.locationUuid, event.item),
+      emit,
+    );
+  }
+
+  Future<void> _onRemoveInventoryItem(
+    RemoveInventoryItemEvent event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    await _wrapMutation(
+      () => repository.removeInventoryItem(event.locationUuid, event.itemUuid),
       emit,
     );
   }

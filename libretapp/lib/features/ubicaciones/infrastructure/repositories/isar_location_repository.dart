@@ -6,8 +6,10 @@ import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -266,6 +268,36 @@ class IsarLocationRepository implements LocationRepository {
     });
   }
 
+  // ── Inventory management ─────────────────────────────────────────────
+
+  @override
+  Future<void> addInventoryItem(String locationUuid, InventoryItem item) async {
+    await _modify(locationUuid, (location) {
+      location.inventory.add(IsarInventoryItem.fromEntity(item));
+    });
+  }
+
+  @override
+  Future<void> updateInventoryItem(
+    String locationUuid,
+    InventoryItem item,
+  ) async {
+    await _modify(locationUuid, (location) {
+      final index = location.inventory.indexWhere((i) => i.uuid == item.uuid);
+      if (index == -1) {
+        throw StateError('Artículo ${item.uuid} no encontrado');
+      }
+      location.inventory[index] = IsarInventoryItem.fromEntity(item);
+    });
+  }
+
+  @override
+  Future<void> removeInventoryItem(String locationUuid, String itemUuid) async {
+    await _modify(locationUuid, (location) {
+      location.inventory.removeWhere((i) => i.uuid == itemUuid);
+    });
+  }
+
   Future<void> _modify(String uuid, void Function(IsarLocation) updater) async {
     final isar = await _database.initialize();
     await isar.writeTxn(() async {
@@ -297,7 +329,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 120,
         waterSource: 'Arroyo natural',
         terrainType: 'Montañoso con pastizal',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.number(
             key: 'agua',
@@ -391,7 +423,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 95,
         waterSource: 'Perforación con molino',
         terrainType: 'Plano con ligeras depresiones',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.number(
             key: 'agua',
@@ -491,7 +523,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 0,
         waterSource: 'Canal de riego',
         terrainType: 'Franco arcilloso',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.number(
             key: 'crecimiento_pct',
@@ -567,7 +599,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 64,
         waterSource: 'Bebedero automático',
         terrainType: 'Concreto con cama seca',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.number(
             key: 'ganancia_diaria',
@@ -627,7 +659,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 0,
         waterSource: 'No aplica',
         terrainType: 'Nave techada',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.text(
             key: 'equipos',
@@ -679,7 +711,7 @@ class IsarLocationRepository implements LocationRepository {
         capacity: 50,
         waterSource: 'Tanque elevado + perforación',
         terrainType: 'Compactado - acceso vehicular',
-        status: 'activo',
+        status: LocationStatus.disponible,
         attributes: [
           DynamicAttribute.number(
             key: 'agua',

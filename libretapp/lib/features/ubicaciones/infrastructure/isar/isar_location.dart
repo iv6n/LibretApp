@@ -3,12 +3,14 @@ library;
 
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_kind.dart';
@@ -35,6 +37,8 @@ class IsarLocation {
   late String status;
 
   List<IsarDynamicAttribute> attributes = [];
+
+  List<IsarInventoryItem> inventory = [];
 
   List<IsarVisitRecord> visits = [];
   List<IsarWaterRecord> waters = [];
@@ -432,8 +436,13 @@ extension IsarLocationMapper on IsarLocation {
       capacity: capacity,
       waterSource: waterSource,
       terrainType: terrainType,
-      status: status,
+      status: _enumByName(
+        LocationStatus.values,
+        status,
+        orElse: LocationStatus.disponible,
+      ),
       attributes: attributes.map((e) => e.toEntity()).toList(growable: false),
+      inventory: inventory.map((e) => e.toEntity()).toList(growable: false),
       visits: visits.map((e) => e.toEntity()).toList(growable: false),
       waters: waters.map((e) => e.toEntity()).toList(growable: false),
       salts: salts.map((e) => e.toEntity()).toList(growable: false),
@@ -462,8 +471,9 @@ extension LocationEntityToIsar on LocationEntity {
       ..capacity = capacity
       ..waterSource = waterSource
       ..terrainType = terrainType
-      ..status = status
+      ..status = status.name
       ..attributes = attributes.map(IsarDynamicAttribute.fromEntity).toList()
+      ..inventory = inventory.map(IsarInventoryItem.fromEntity).toList()
       ..visits = visits.map(IsarVisitRecord.fromEntity).toList()
       ..waters = waters.map(IsarWaterRecord.fromEntity).toList()
       ..salts = salts.map(IsarSaltRecord.fromEntity).toList()
@@ -484,10 +494,51 @@ extension LocationEntityToIsar on LocationEntity {
   }
 }
 
-T _enumByName<T extends Enum>(List<T> values, String name) => values.firstWhere(
-  (value) => value.name == name,
-  orElse: () => values.first,
-);
+@embedded
+class IsarInventoryItem {
+  late String uuid;
+  late String name;
+  late double quantity;
+  late String unit;
+  double? reorderThreshold;
+  DateTime? expiryDate;
+  late DateTime lastUpdated;
+  late String category;
+  String? notes;
+
+  InventoryItem toEntity() => InventoryItem(
+    uuid: uuid,
+    name: name,
+    quantity: quantity,
+    unit: unit,
+    reorderThreshold: reorderThreshold,
+    expiryDate: expiryDate,
+    lastUpdated: lastUpdated,
+    category: _enumByName(
+      InventoryCategory.values,
+      category,
+      orElse: InventoryCategory.otro,
+    ),
+    notes: notes,
+  );
+
+  static IsarInventoryItem fromEntity(InventoryItem item) => IsarInventoryItem()
+    ..uuid = item.uuid
+    ..name = item.name
+    ..quantity = item.quantity
+    ..unit = item.unit
+    ..reorderThreshold = item.reorderThreshold
+    ..expiryDate = item.expiryDate
+    ..lastUpdated = item.lastUpdated
+    ..category = item.category.name
+    ..notes = item.notes;
+}
+
+T _enumByName<T extends Enum>(List<T> values, String name, {T? orElse}) =>
+    values.firstWhere(
+      (value) => value.name == name,
+      orElse: () => orElse ?? values.first,
+    );
 
 extension on Id {
   int? get isarId => this == Isar.autoIncrement ? null : this;

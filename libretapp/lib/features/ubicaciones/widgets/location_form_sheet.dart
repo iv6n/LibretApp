@@ -3,13 +3,20 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 
 class LocationFormSheet extends StatefulWidget {
-  const LocationFormSheet({super.key, this.initial, this.onSubmit});
+  const LocationFormSheet({
+    super.key,
+    this.initial,
+    this.onSubmit,
+    this.ranchos = const [],
+  });
 
   final LocationEntity? initial;
   final ValueChanged<LocationEntity>? onSubmit;
+  final List<LocationEntity> ranchos;
 
   @override
   State<LocationFormSheet> createState() => _LocationFormSheetState();
@@ -23,14 +30,16 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   late final TextEditingController _waterController;
   late final TextEditingController _terrainController;
   late LocationType _type;
-  late String _status;
+  late LocationStatus _status;
+  String? _parentUuid;
 
   @override
   void initState() {
     super.initState();
     final initial = widget.initial;
     _type = initial?.type ?? LocationType.potrero;
-    _status = initial?.status ?? 'activo';
+    _status = initial?.status ?? LocationStatus.disponible;
+    _parentUuid = initial?.parentUuid;
     _nameController = TextEditingController(text: initial?.name ?? '');
     _surfaceController = TextEditingController(
       text: initial?.surfaceArea.toString() ?? '',
@@ -110,7 +119,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                     .map(
                       (type) => DropdownMenuItem(
                         value: type,
-                        child: Text(_capitalize(type.name)),
+                        child: Text(type.label),
                       ),
                     )
                     .toList(),
@@ -191,23 +200,42 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<LocationStatus>(
                 initialValue: _status,
                 decoration: const InputDecoration(
                   labelText: 'Estado',
                   prefixIcon: Icon(Icons.brightness_medium_outlined),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'activo', child: Text('Activo')),
-                  DropdownMenuItem(
-                    value: 'mantenimiento',
-                    child: Text('Mantenimiento'),
-                  ),
-                  DropdownMenuItem(value: 'inactivo', child: Text('Inactivo')),
-                ],
-                onChanged: (value) =>
-                    setState(() => _status = value ?? 'activo'),
+                items: LocationStatus.values
+                    .map(
+                      (s) => DropdownMenuItem(value: s, child: Text(s.label)),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(
+                  () => _status = value ?? LocationStatus.disponible,
+                ),
               ),
+              if (!_type.isRootType && widget.ranchos.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String?>(
+                  value: _parentUuid,
+                  decoration: const InputDecoration(
+                    labelText: 'Rancho (opcional)',
+                    prefixIcon: Icon(Icons.home_work_outlined),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sin rancho'),
+                    ),
+                    ...widget.ranchos.map(
+                      (r) =>
+                          DropdownMenuItem(value: r.uuid, child: Text(r.name)),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _parentUuid = value),
+                ),
+              ],
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -244,6 +272,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
       capacity: capacity,
       waterSource: _waterController.text.trim(),
       terrainType: _terrainController.text.trim(),
+      parentUuid: _type.isRootType ? null : _parentUuid,
       status: _status,
       visits: widget.initial?.visits ?? const [],
       waters: widget.initial?.waters ?? const [],
@@ -266,8 +295,3 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
 }
 
 String _randomId() => DateTime.now().microsecondsSinceEpoch.toString();
-
-String _capitalize(String value) {
-  if (value.isEmpty) return value;
-  return value[0].toUpperCase() + value.substring(1);
-}

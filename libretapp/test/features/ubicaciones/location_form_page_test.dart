@@ -8,6 +8,8 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -143,6 +145,24 @@ class _FormFakeLocationRepository implements LocationRepository {
     String taskUuid,
   ) async {}
 
+  @override
+  Future<void> addInventoryItem(
+    String locationUuid,
+    InventoryItem item,
+  ) async {}
+
+  @override
+  Future<void> updateInventoryItem(
+    String locationUuid,
+    InventoryItem item,
+  ) async {}
+
+  @override
+  Future<void> removeInventoryItem(
+    String locationUuid,
+    String itemUuid,
+  ) async {}
+
   Future<void> dispose() async {
     await _controller.close();
   }
@@ -167,7 +187,7 @@ LocationEntity _location({required String uuid, required String name}) {
     capacity: 25,
     waterSource: 'Pozo',
     terrainType: 'Plano',
-    status: 'activo',
+    status: LocationStatus.disponible,
   );
 }
 

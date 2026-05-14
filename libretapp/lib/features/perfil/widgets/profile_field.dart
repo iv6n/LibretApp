@@ -19,7 +19,14 @@ class ProfileField extends StatelessWidget {
           children: [
             Text(label, style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Text(value, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              value.isEmpty ? '—' : value,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: value.isEmpty
+                    ? Theme.of(context).colorScheme.outline
+                    : null,
+              ),
+            ),
           ],
         ),
       ),

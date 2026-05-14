@@ -13,6 +13,7 @@ abstract class AnimalRepository {
   Future<AnimalEntity?> getByUuid(String uuid);
   Future<List<AnimalEntity>> getBySpecies(String speciesName);
   Future<List<AnimalEntity>> getByPaddock(String paddockId);
+  Future<List<AnimalEntity>> getByBatchUuid(String batchUuid);
   Future<List<AnimalEntity>> getAnimalsRequiringAttention();
   Future<List<AnimalEntity>> getUnsynchronized();
   Future<AnimalEntity> save(AnimalEntity animal);

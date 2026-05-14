@@ -12,6 +12,7 @@ import 'package:libretapp/features/directorio/animales/view/register_animal_page
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -507,7 +508,7 @@ LocationEntity _location({required String uuid, required String name}) {
     capacity: 10,
     waterSource: 'pozo',
     terrainType: 'plano',
-    status: 'activo',
+    status: LocationStatus.disponible,
   );
 }
 

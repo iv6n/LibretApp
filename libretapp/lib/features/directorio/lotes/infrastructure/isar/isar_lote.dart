@@ -23,6 +23,7 @@ class IsarLote {
 
   late bool activo;
   String? notas;
+  String? currentLocationId;
 
   late bool synced;
   String? remoteId;
@@ -44,6 +45,7 @@ extension IsarLoteMapper on IsarLote {
       fechaCierre: fechaCierre,
       activo: activo,
       notas: notas,
+      currentLocationId: currentLocationId,
       lastUpdateDate: lastUpdateDate,
       synced: synced,
       remoteId: remoteId,
@@ -61,6 +63,7 @@ extension IsarLoteMapper on IsarLote {
     fechaCierre = entity.fechaCierre;
     activo = entity.activo;
     notas = entity.notas;
+    currentLocationId = entity.currentLocationId;
     lastUpdateDate = entity.lastUpdateDate;
     synced = entity.synced;
     remoteId = entity.remoteId;
@@ -78,6 +81,7 @@ extension IsarLoteFromEntityMapper on LoteEntity {
       ..animalUuids = animalUuids
       ..fechaCreacion = fechaCreacion
       ..fechaCierre = fechaCierre
+      ..currentLocationId = currentLocationId
       ..activo = activo
       ..notas = notas
       ..lastUpdateDate = lastUpdateDate

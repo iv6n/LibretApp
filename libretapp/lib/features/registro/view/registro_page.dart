@@ -151,7 +151,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       subtitle: 'Nueva ubicacion',
                       color: AppColors.accent,
                       onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameUbicacionNueva),
+                          context.goNamed(AppRoutes.nameUbicacionNueva),
                     ),
                     _RegistroCardItem(
                       icon: Icons.grass,

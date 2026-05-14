@@ -4,8 +4,10 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_kind.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 
 class LocationEntity extends Equatable {
@@ -22,8 +24,9 @@ class LocationEntity extends Equatable {
     required this.capacity,
     required this.waterSource,
     required this.terrainType,
-    required this.status,
+    this.status = LocationStatus.disponible,
     this.attributes = const [],
+    this.inventory = const [],
     this.visits = const [],
     this.waters = const [],
     this.salts = const [],
@@ -47,8 +50,9 @@ class LocationEntity extends Equatable {
   final int capacity;
   final String waterSource;
   final String terrainType;
-  final String status;
+  final LocationStatus status;
   final List<DynamicAttribute> attributes;
+  final List<InventoryItem> inventory;
   final List<VisitRecord> visits;
   final List<WaterRecord> waters;
   final List<SaltRecord> salts;
@@ -73,8 +77,9 @@ class LocationEntity extends Equatable {
     int? capacity,
     String? waterSource,
     String? terrainType,
-    String? status,
+    LocationStatus? status,
     List<DynamicAttribute>? attributes,
+    List<InventoryItem>? inventory,
     List<VisitRecord>? visits,
     List<WaterRecord>? waters,
     List<SaltRecord>? salts,
@@ -101,6 +106,7 @@ class LocationEntity extends Equatable {
       terrainType: terrainType ?? this.terrainType,
       status: status ?? this.status,
       attributes: attributes ?? this.attributes,
+      inventory: inventory ?? this.inventory,
       visits: visits ?? this.visits,
       waters: waters ?? this.waters,
       salts: salts ?? this.salts,
@@ -130,6 +136,7 @@ class LocationEntity extends Equatable {
     terrainType,
     status,
     attributes,
+    inventory,
     visits,
     waters,
     salts,

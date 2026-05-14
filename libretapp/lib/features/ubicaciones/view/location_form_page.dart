@@ -2,13 +2,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/extensions/context_extensions.dart';
-import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
-import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_form_sheet.dart';
 
@@ -26,15 +24,25 @@ class LocationFormPage extends StatefulWidget {
 class _LocationFormPageState extends State<LocationFormPage> {
   late final LocationRepository _repository;
   Future<LocationEntity?>? _loadFuture;
+  List<LocationEntity> _ranchos = [];
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _repository = locator<LocationRepository>();
+    _loadRanchos();
     if (widget.isEdit) {
       _loadFuture = _repository.getByUuid(widget.locationUuid!);
     }
+  }
+
+  Future<void> _loadRanchos() async {
+    final all = await _repository.getAll();
+    if (!mounted) return;
+    setState(() {
+      _ranchos = all.where((l) => l.type == LocationType.rancho).toList();
+    });
   }
 
   @override
@@ -67,12 +75,17 @@ class _LocationFormPageState extends State<LocationFormPage> {
 
                   return _FormBody(
                     initial: initial,
+                    ranchos: _ranchos,
                     saving: _saving,
                     onSubmit: _onSubmit,
                   );
                 },
               )
-            : _FormBody(saving: _saving, onSubmit: _onSubmit),
+            : _FormBody(
+                ranchos: _ranchos,
+                saving: _saving,
+                onSubmit: _onSubmit,
+              ),
       ),
     );
   }
@@ -85,7 +98,6 @@ class _LocationFormPageState extends State<LocationFormPage> {
     try {
       await _repository.upsert(value);
       if (!mounted) return;
-      context.read<UbicacionesBloc>().add(const LoadUbicaciones());
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -98,11 +110,17 @@ class _LocationFormPageState extends State<LocationFormPage> {
 }
 
 class _FormBody extends StatelessWidget {
-  const _FormBody({required this.onSubmit, required this.saving, this.initial});
+  const _FormBody({
+    required this.onSubmit,
+    required this.saving,
+    required this.ranchos,
+    this.initial,
+  });
 
   final LocationEntity? initial;
   final Future<void> Function(LocationEntity) onSubmit;
   final bool saving;
+  final List<LocationEntity> ranchos;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +130,7 @@ class _FormBody extends StatelessWidget {
           ignoring: saving,
           child: LocationFormSheet(
             initial: initial,
+            ranchos: ranchos,
             onSubmit: (value) {
               onSubmit(value);
             },

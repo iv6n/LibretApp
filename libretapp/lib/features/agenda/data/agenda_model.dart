@@ -24,6 +24,7 @@ class AgendaEntry extends Equatable {
     required this.completedAnimalIds,
     required this.notas,
     this.fechaCompletado,
+    this.locationUuid,
   });
 
   final String id;
@@ -49,6 +50,12 @@ class AgendaEntry extends Equatable {
   final String notas;
   final DateTime? fechaCompletado;
 
+  /// UUID of the [LocationEntity] this entry is linked to. May be null for
+  /// entries that predate location linking or have a free-text [ubicacion].
+  final String? locationUuid;
+
+  static const _sentinel = Object();
+
   AgendaEntry copyWith({
     String? id,
     String? titulo,
@@ -62,6 +69,7 @@ class AgendaEntry extends Equatable {
     List<String>? completedAnimalIds,
     String? notas,
     DateTime? fechaCompletado,
+    Object? locationUuid = _sentinel,
   }) {
     return AgendaEntry(
       id: id ?? this.id,
@@ -76,6 +84,9 @@ class AgendaEntry extends Equatable {
       completedAnimalIds: completedAnimalIds ?? this.completedAnimalIds,
       notas: notas ?? this.notas,
       fechaCompletado: fechaCompletado ?? this.fechaCompletado,
+      locationUuid: locationUuid == _sentinel
+          ? this.locationUuid
+          : locationUuid as String?,
     );
   }
 
@@ -92,6 +103,7 @@ class AgendaEntry extends Equatable {
     'completedAnimalIds': completedAnimalIds,
     'notas': notas,
     'fechaCompletado': fechaCompletado?.toIso8601String(),
+    if (locationUuid != null) 'locationUuid': locationUuid,
   };
 
   static AgendaEntry fromJson(Map<String, dynamic> json) {
@@ -129,6 +141,7 @@ class AgendaEntry extends Equatable {
       fechaCompletado: json['fechaCompletado'] != null
           ? DateTime.parse(json['fechaCompletado'] as String)
           : null,
+      locationUuid: json['locationUuid'] as String?,
     );
   }
 
@@ -146,5 +159,6 @@ class AgendaEntry extends Equatable {
     completedAnimalIds,
     notas,
     fechaCompletado,
+    locationUuid,
   ];
 }

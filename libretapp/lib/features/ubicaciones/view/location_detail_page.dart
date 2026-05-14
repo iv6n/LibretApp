@@ -11,16 +11,30 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
+import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
+import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/widgets/agenda_form_sheet.dart';
+import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
+import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
+import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
+import 'package:libretapp/features/ubicaciones/widgets/inventory_item_form_sheet.dart';
 
 class LocationDetailPage extends StatefulWidget {
   const LocationDetailPage({
@@ -41,6 +55,7 @@ class LocationDetailPage extends StatefulWidget {
 class _LocationDetailPageState extends State<LocationDetailPage> {
   late final LocationRepository _locationRepository;
   late final AnimalRepository _animalRepository;
+  late final MovementRecordRepository _movementRepository;
   bool _assigning = false;
 
   @override
@@ -49,6 +64,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     _locationRepository =
         widget.locationRepository ?? locator<LocationRepository>();
     _animalRepository = widget.animalRepository ?? locator<AnimalRepository>();
+    _movementRepository = locator<MovementRecordRepository>();
   }
 
   @override
@@ -151,6 +167,8 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                         const SizedBox(height: 12),
                         _LocationRecords(location: location),
                       ],
+                      const SizedBox(height: 12),
+                      _ActivitiesSection(location: location),
                       const SizedBox(height: 20),
                       _AnimalsSection(
                         animalsHere: animalsHere,
@@ -160,6 +178,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
                           location,
                           animals,
                           animalsHere,
+                          locations,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -219,6 +238,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     LocationEntity location,
     List<AnimalEntity> allAnimals,
     List<AnimalEntity> animalsHere,
+    List<LocationEntity> allLocations,
   ) async {
     if (_assigning) return;
     setState(() => _assigning = true);
@@ -229,6 +249,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
         allAnimals: allAnimals,
         initiallySelected: selected,
         locationName: location.name,
+        allLocations: allLocations,
       ),
     );
 
@@ -251,26 +272,42 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
     List<AnimalEntity> animals,
     Set<String> selected,
   ) async {
-    final tasks = <Future<void>>[];
+    final now = DateTime.now();
+    final updateTasks = <Future<void>>[];
+    final movementTasks = <Future<void>>[];
+
     for (final animal in animals) {
-      final locId = animal.currentPaddockId ?? animal.initialLocationId;
+      final oldLocId = animal.currentPaddockId ?? animal.initialLocationId;
       final shouldBeHere = selected.contains(animal.uuid);
-      final alreadyHere = locId == location.uuid;
+      final alreadyHere = oldLocId == location.uuid;
       if (shouldBeHere == alreadyHere) continue;
 
       final newLocId = shouldBeHere ? location.uuid : null;
       final updated = animal.copyWith(
         currentPaddockId: newLocId,
         initialLocationId: animal.initialLocationId ?? newLocId,
-        lastMovementDate: shouldBeHere
-            ? DateTime.now()
-            : animal.lastMovementDate,
-        lastUpdateDate: DateTime.now(),
+        lastMovementDate: shouldBeHere ? now : animal.lastMovementDate,
+        lastUpdateDate: now,
         synced: false,
       );
-      tasks.add(_animalRepository.update(updated));
+      updateTasks.add(_animalRepository.update(updated));
+
+      // Create a movement record with real FK UUIDs.
+      if (newLocId != null || oldLocId != null) {
+        final record = MovementRecord(
+          fromLocation: oldLocId,
+          toLocation: newLocId ?? oldLocId ?? '',
+          date: now,
+          reason: MovementReason.paddockRotation,
+        );
+        movementTasks.add(
+          _movementRepository.addMovementRecord(animal.uuid, record),
+        );
+      }
     }
-    await Future.wait(tasks);
+
+    await Future.wait(updateTasks);
+    await Future.wait(movementTasks);
   }
 
   Future<T?> _openRecordFormPage<T>(Widget child) {
@@ -478,8 +515,7 @@ class _LocationDetailPageState extends State<LocationDetailPage> {
       l.costs.isNotEmpty ||
       l.crops.isNotEmpty;
 
-  bool _isWarehouse(LocationEntity l) =>
-      l.type.name.toLowerCase() == 'almacen' || l.type == LocationType.rancho;
+  bool _isWarehouse(LocationEntity l) => l.type.supportsInventory;
 }
 
 class _LocationHeader extends StatelessWidget {
@@ -547,7 +583,7 @@ class _LocationHeader extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    location.status.toUpperCase(),
+                    location.status.label.toUpperCase(),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.w700,
@@ -653,12 +689,20 @@ IconData _typeIcon(LocationType type) {
   switch (type) {
     case LocationType.potrero:
       return Icons.agriculture_outlined;
+    case LocationType.monte:
+      return Icons.landscape_outlined;
     case LocationType.corral:
       return Icons.yard_outlined;
+    case LocationType.almacenamiento:
+      return Icons.warehouse_outlined;
+    case LocationType.aguada:
+      return Icons.water_outlined;
     case LocationType.rancho:
       return Icons.home_work_outlined;
     case LocationType.siembra:
       return Icons.grain_outlined;
+    case LocationType.casa:
+      return Icons.house_outlined;
   }
 }
 
@@ -666,12 +710,20 @@ String _systemLabel(LocationType type) {
   switch (type) {
     case LocationType.potrero:
       return 'Pastoreo';
+    case LocationType.monte:
+      return 'Pastoreo extensivo';
     case LocationType.corral:
       return 'Confinamiento';
+    case LocationType.almacenamiento:
+      return 'Almacén';
+    case LocationType.aguada:
+      return 'Conservación agua';
     case LocationType.rancho:
       return 'Mixto';
     case LocationType.siembra:
       return 'Pastoreo / rotación';
+    case LocationType.casa:
+      return 'Habitacional';
   }
 }
 
@@ -1241,9 +1293,63 @@ class _WarehouseSection extends StatelessWidget {
 
   final LocationEntity location;
 
+  Future<void> _showAddSheet(BuildContext context) async {
+    final item = await showModalBottomSheet<InventoryItem>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const InventoryItemFormSheet(),
+    );
+    if (item != null && context.mounted) {
+      context.read<UbicacionesBloc>().add(
+        AddInventoryItemEvent(location.uuid, item),
+      );
+    }
+  }
+
+  Future<void> _showEditSheet(BuildContext context, InventoryItem item) async {
+    final updated = await showModalBottomSheet<InventoryItem>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => InventoryItemFormSheet(initial: item),
+    );
+    if (updated != null && context.mounted) {
+      context.read<UbicacionesBloc>().add(
+        UpdateInventoryItemEvent(location.uuid, updated),
+      );
+    }
+  }
+
+  void _confirmDelete(BuildContext context, InventoryItem item) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar artículo'),
+        content: Text('¿Eliminar "${item.name}" del inventario?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && context.mounted) {
+        context.read<UbicacionesBloc>().add(
+          RemoveInventoryItemEvent(location.uuid, item.uuid),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final items = location.inventory;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1254,7 +1360,7 @@ class _WarehouseSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Modo almacén',
+                    'Inventario',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -1264,33 +1370,162 @@ class _WarehouseSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              'Configura inventarios de alimento y herramientas para ${location.name}.',
-              style: theme.textTheme.bodyMedium,
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Sin artículos registrados.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ...items.map(
+                (item) => _InventoryItemTile(
+                  item: item,
+                  onEdit: () => _showEditSheet(context, item),
+                  onDelete: () => _confirmDelete(context, item),
+                ),
+              ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Agregar artículo'),
+                onPressed: () => _showAddSheet(context),
+              ),
             ),
-            const SizedBox(height: 12),
-            const Wrap(
-              spacing: 12,
-              runSpacing: 12,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InventoryItemTile extends StatelessWidget {
+  const _InventoryItemTile({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final InventoryItem item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              item.category.icon,
+              size: 18,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ConditionRow(
-                  icon: Icons.inventory_2_outlined,
-                  label: 'Alimento',
-                  value: 'Agrega existencias, capacidad y días de autonomía',
+                Text(
+                  item.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                _ConditionRow(
-                  icon: Icons.handyman_outlined,
-                  label: 'Herramientas',
-                  value: 'Controla estado, cantidad y alertas de mantenimiento',
-                ),
-                _ConditionRow(
-                  icon: Icons.warning_amber_outlined,
-                  label: 'Alertas',
-                  value: 'Genera alertas de bajo inventario o equipo en taller',
+                Row(
+                  children: [
+                    Text(
+                      '${item.quantity} ${item.unit}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (item.isLowStock) ...[
+                      const SizedBox(width: 6),
+                      _Badge(
+                        label: 'Stock bajo',
+                        color: theme.colorScheme.errorContainer,
+                        textColor: theme.colorScheme.onErrorContainer,
+                      ),
+                    ],
+                    if (item.isExpired) ...[
+                      const SizedBox(width: 6),
+                      _Badge(
+                        label: 'Vencido',
+                        color: theme.colorScheme.errorContainer,
+                        textColor: theme.colorScheme.onErrorContainer,
+                      ),
+                    ] else if (item.isExpiringSoon) ...[
+                      const SizedBox(width: 6),
+                      _Badge(
+                        label: 'Por vencer',
+                        color: theme.colorScheme.tertiaryContainer,
+                        textColor: theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            onPressed: onEdit,
+            visualDensity: VisualDensity.compact,
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_outline,
+              size: 18,
+              color: theme.colorScheme.error,
+            ),
+            onPressed: onDelete,
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({
+    required this.label,
+    required this.color,
+    required this.textColor,
+  });
+  final String label;
+  final Color color;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: textColor,
         ),
       ),
     );
@@ -2302,11 +2537,13 @@ class _AssignAnimalsPage extends StatefulWidget {
     required this.allAnimals,
     required this.initiallySelected,
     required this.locationName,
+    required this.allLocations,
   });
 
   final List<AnimalEntity> allAnimals;
   final Set<String> initiallySelected;
   final String locationName;
+  final List<LocationEntity> allLocations;
 
   @override
   State<_AssignAnimalsPage> createState() => _AssignAnimalsPageState();
@@ -2334,11 +2571,21 @@ class _AssignAnimalsPageState extends State<_AssignAnimalsPage> {
                   itemBuilder: (context, index) {
                     final animal = animals[index];
                     final checked = _selected.contains(animal.uuid);
+                    final currentLocId =
+                        animal.currentPaddockId ?? animal.initialLocationId;
+                    final currentLocName = currentLocId != null
+                        ? widget.allLocations
+                              .where((l) => l.uuid == currentLocId)
+                              .map((l) => l.name)
+                              .firstOrNull
+                        : null;
                     return CheckboxListTile(
                       value: checked,
                       title: Text(_animalTitle(animal)),
                       subtitle: Text(
-                        animal.breed.isNotEmpty
+                        currentLocName != null
+                            ? 'Ubicación actual: $currentLocName'
+                            : animal.breed.isNotEmpty
                             ? '${animal.breed} • ${animal.species.displayName}'
                             : animal.species.displayName,
                       ),
@@ -3160,6 +3407,170 @@ class _SheetHeader extends StatelessWidget {
         ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+}
+
+class _ActivitiesSection extends StatelessWidget {
+  const _ActivitiesSection({required this.location});
+
+  final LocationEntity location;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return BlocBuilder<AgendaBloc, AgendaState>(
+      builder: (context, state) {
+        final entries = state is AgendaLoaded
+            ? state.entries
+                  .where((e) => e.locationUuid == location.uuid)
+                  .toList()
+            : <AgendaEntry>[];
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Actividades',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.event_note_outlined),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (state is AgendaLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (entries.isEmpty)
+                  Text(
+                    'Sin actividades programadas.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                else
+                  ...entries.map((entry) => _AgendaEntryTile(entry: entry)),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Agregar actividad'),
+                    onPressed: () => _showAddActivity(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddActivity(BuildContext context) {
+    final bloc = context.read<AgendaBloc>();
+    final ubBloc = context.read<UbicacionesBloc>();
+    final allLocations = ubBloc.state is UbicacionesLoaded
+        ? (ubBloc.state as UbicacionesLoaded).allUbicaciones
+        : <LocationEntity>[];
+    showAgendaFormSheet(
+      context: context,
+      initialDate: DateTime.now(),
+      locations: allLocations,
+      entry: AgendaEntry(
+        id: '',
+        titulo: '',
+        descripcion: '',
+        fecha: DateTime.now(),
+        tipo: 'General',
+        animalIds: const [],
+        loteIds: const [],
+        ubicacion: location.name,
+        estado: AgendaEstado.pendiente,
+        completedAnimalIds: const [],
+        notas: '',
+        locationUuid: location.uuid,
+      ),
+      onSave: (saved) {
+        bloc.add(
+          AddAgendaEntry(
+            saved.copyWith(
+              id: DateTime.now().microsecondsSinceEpoch.toString(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AgendaEntryTile extends StatelessWidget {
+  const _AgendaEntryTile({required this.entry});
+
+  final AgendaEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCompleted = entry.estado == AgendaEstado.completado;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isCompleted
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : theme.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isCompleted
+                  ? Icons.check_circle_outline
+                  : Icons.radio_button_unchecked,
+              size: 18,
+              color: isCompleted
+                  ? theme.colorScheme.onSurfaceVariant
+                  : theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.titulo,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    decoration: isCompleted ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                Text(
+                  '${entry.tipo} · '
+                  '${entry.fecha.day.toString().padLeft(2, '0')}/'
+                  '${entry.fecha.month.toString().padLeft(2, '0')}/'
+                  '${entry.fecha.year}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

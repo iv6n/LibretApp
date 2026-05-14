@@ -3,6 +3,7 @@ library;
 
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 
@@ -233,4 +234,33 @@ class CompleteCropTaskEvent extends UbicacionesEvent {
 
   @override
   List<Object> get props => [locationUuid, cropUuid, taskUuid];
+}
+
+// ── Inventory management events ──────────────────────────────────────────────
+
+class AddInventoryItemEvent extends UbicacionesEvent {
+  const AddInventoryItemEvent(this.locationUuid, this.item);
+  final String locationUuid;
+  final InventoryItem item;
+
+  @override
+  List<Object> get props => [locationUuid, item];
+}
+
+class UpdateInventoryItemEvent extends UbicacionesEvent {
+  const UpdateInventoryItemEvent(this.locationUuid, this.item);
+  final String locationUuid;
+  final InventoryItem item;
+
+  @override
+  List<Object> get props => [locationUuid, item];
+}
+
+class RemoveInventoryItemEvent extends UbicacionesEvent {
+  const RemoveInventoryItemEvent(this.locationUuid, this.itemUuid);
+  final String locationUuid;
+  final String itemUuid;
+
+  @override
+  List<Object> get props => [locationUuid, itemUuid];
 }

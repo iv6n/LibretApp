@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 
 class LocationCard extends StatelessWidget {
@@ -130,12 +131,13 @@ class LocationCard extends StatelessWidget {
         return _buildSiembraMetrics();
       case LocationType.corral:
         return _buildCorralMetrics();
+      case LocationType.almacenamiento:
+        return _buildAlmacenMetrics(metrics);
       case LocationType.rancho:
-        if (_isStorageLocation(location)) {
-          return _buildAlmacenMetrics(metrics);
-        }
-        return _buildDefaultMetrics(metrics);
       case LocationType.potrero:
+      case LocationType.monte:
+      case LocationType.aguada:
+      case LocationType.casa:
         return _buildDefaultMetrics(metrics);
     }
   }
@@ -300,22 +302,22 @@ class LocationCard extends StatelessWidget {
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
 
-  final String status;
+  final LocationStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
+        color: status.backgroundColor,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        _capitalize(status),
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
+        status.label,
+        style: TextStyle(
+          fontSize: 11,
           fontWeight: FontWeight.w600,
+          color: status.color,
         ),
       ),
     );
@@ -453,17 +455,6 @@ class _QuickMetrics {
   }
 }
 
-bool _isStorageLocation(LocationEntity location) {
-  final normalizedName = _normalize(location.name);
-  if (normalizedName.contains('almacen') || normalizedName.contains('bodega')) {
-    return true;
-  }
-  return location.attributes.any((attribute) {
-    final key = _normalize(attribute.key);
-    return key.contains('equipo') || key.contains('inventario');
-  });
-}
-
 double? _resolveNumberAttribute(
   List<DynamicAttribute> attributes, {
   required List<String> keys,
@@ -535,5 +526,9 @@ IconData _iconByType(String typeName) {
   if (typeName.contains('corral')) return Icons.storefront_outlined;
   if (typeName.contains('rancho')) return Icons.house_outlined;
   if (typeName.contains('siembra')) return Icons.agriculture_outlined;
+  if (typeName.contains('monte')) return Icons.landscape_outlined;
+  if (typeName.contains('almacenamiento')) return Icons.warehouse_outlined;
+  if (typeName.contains('aguada')) return Icons.water_outlined;
+  if (typeName.contains('casa')) return Icons.cottage_outlined;
   return Icons.map_outlined;
 }

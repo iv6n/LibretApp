@@ -7,11 +7,17 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class LoteDetailPage extends StatefulWidget {
   LoteDetailPage({
@@ -107,6 +113,176 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
     }
   }
 
+  Future<void> _showMoveLoteSheet(LoteEntity lote) async {
+    final locationRepository = locator<LocationRepository>();
+    final animalRepository = locator<AnimalRepository>();
+    final movementRepository = locator<MovementRecordRepository>();
+
+    List<LocationEntity> locations = [];
+    try {
+      locations = await locationRepository.getAll();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cargar ubicaciones')),
+        );
+      }
+      return;
+    }
+
+    final available = locations
+        .where((l) => l.status != LocationStatus.clausurado)
+        .toList();
+
+    if (!mounted) return;
+
+    String? selectedUuid = lote.currentLocationId;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.swap_horiz, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Mover lote "${lote.nombre}"',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Se moverán ${lote.animalUuids.length} animales a la ubicación seleccionada.',
+                    style: Theme.of(ctx).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    value: selectedUuid,
+                    decoration: const InputDecoration(
+                      labelText: 'Ubicación destino',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Sin ubicación'),
+                      ),
+                      ...available.map(
+                        (loc) => DropdownMenuItem(
+                          value: loc.uuid,
+                          child: Text(loc.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) => setModalState(() => selectedUuid = v),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.check),
+                      label: const Text('Confirmar movimiento'),
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+    if (selectedUuid == lote.currentLocationId) return;
+
+    final now = DateTime.now();
+
+    // 1. Load all animals that belong to this batch.
+    List<dynamic> animals = [];
+    try {
+      animals = await animalRepository.getByBatchUuid(lote.uuid);
+    } catch (_) {
+      // Proceed — empty list means only the lote record is updated.
+    }
+
+    // 2. Move each animal and create a MovementRecord.
+    final updateFutures = <Future<void>>[];
+    final moveFutures = <Future<void>>[];
+    for (final rawAnimal in animals) {
+      final animal = rawAnimal;
+      final oldLocId = animal.currentPaddockId;
+      final updatedAnimal = animal.copyWith(
+        currentPaddockId: selectedUuid,
+        initialLocationId: animal.initialLocationId ?? selectedUuid,
+        lastMovementDate: now,
+        lastUpdateDate: now,
+        synced: false,
+      );
+      updateFutures.add(animalRepository.update(updatedAnimal));
+
+      if (selectedUuid != null) {
+        final record = MovementRecord(
+          fromLocation: oldLocId,
+          toLocation: selectedUuid!,
+          date: now,
+          reason: MovementReason.paddockRotation,
+        );
+        moveFutures.add(
+          movementRepository.addMovementRecord(animal.uuid, record),
+        );
+      }
+    }
+    await Future.wait(updateFutures);
+    await Future.wait(moveFutures);
+
+    // 3. Update the lote's currentLocationId.
+    try {
+      await widget.repository.updateLote(
+        lote.copyWith(currentLocationId: selectedUuid),
+      );
+    } catch (_) {
+      // Best-effort — animals were already moved.
+    }
+
+    if (!mounted) return;
+
+    final locationName = available
+        .where((l) => l.uuid == selectedUuid)
+        .map((l) => l.name)
+        .firstOrNull;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          locationName != null
+              ? 'Lote movido a "$locationName"'
+              : 'Lote actualizado',
+        ),
+      ),
+    );
+    _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ShellChromeScope(
@@ -154,6 +330,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
               lote: lote,
               onEdit: () => _openEditPage(lote),
               onDelete: () => _confirmDelete(lote),
+              onMoveLocation: () => _showMoveLoteSheet(lote),
             );
           },
         ),
@@ -167,11 +344,13 @@ class _LoteDetailContent extends StatelessWidget {
     required this.lote,
     required this.onEdit,
     required this.onDelete,
+    required this.onMoveLocation,
   });
 
   final LoteEntity lote;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onMoveLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +405,15 @@ class _LoteDetailContent extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onMoveLocation,
+            icon: const Icon(Icons.swap_horiz),
+            label: const Text('Mover lote'),
+          ),
         ),
       ],
     );

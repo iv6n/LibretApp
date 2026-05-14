@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_state.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 
 class UbicacionesTab extends StatefulWidget {
   const UbicacionesTab({super.key});
@@ -46,7 +47,7 @@ class _UbicacionesTabState extends State<UbicacionesTab> {
               final ubicacion = ubicaciones[index];
               return ListTile(
                 title: Text(ubicacion.name),
-                subtitle: Text(ubicacion.status),
+                subtitle: Text(ubicacion.status.label),
               );
             },
           );

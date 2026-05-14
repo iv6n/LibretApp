@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
@@ -105,6 +107,24 @@ class _FakeLocationRepository implements LocationRepository {
     String cropUuid,
     String taskUuid,
   ) async {}
+
+  @override
+  Future<void> addInventoryItem(
+    String locationUuid,
+    InventoryItem item,
+  ) async {}
+
+  @override
+  Future<void> updateInventoryItem(
+    String locationUuid,
+    InventoryItem item,
+  ) async {}
+
+  @override
+  Future<void> removeInventoryItem(
+    String locationUuid,
+    String itemUuid,
+  ) async {}
 }
 
 void main() {
@@ -124,7 +144,7 @@ void main() {
           capacity: 40,
           waterSource: 'Pozo',
           terrainType: 'Plano',
-          status: 'activo',
+          status: LocationStatus.disponible,
           waters: [
             WaterRecord(
               date: DateTime(2024, 1, 1),
@@ -141,7 +161,7 @@ void main() {
           capacity: 25,
           waterSource: 'Pila',
           terrainType: 'Firm',
-          status: 'activo',
+          status: LocationStatus.disponible,
         ),
       ];
       repository = _FakeLocationRepository(fakeLocations);

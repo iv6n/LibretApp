@@ -4,12 +4,17 @@ library;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
+import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/widgets/location_batch_sheet.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -63,6 +68,38 @@ class _InfoTabState extends State<InfoTab> {
         setState(() => _loadingBatchName = false);
       }
     }
+  }
+
+  Future<void> _changeLocation(BuildContext context) async {
+    final bloc = context.read<AnimalBloc>();
+    final locationRepository = locator<LocationRepository>();
+
+    List<dynamic> locations = [];
+    try {
+      locations = await locationRepository.getAll();
+    } catch (_) {
+      // Proceed with empty list — sheet handles it gracefully.
+    }
+
+    if (!context.mounted) return;
+
+    await showLocationBatchSheet(
+      context,
+      animal: widget.animal,
+      locations: List.from(locations),
+      allAnimals: [widget.animal],
+      lotesRepository: _lotesRepository,
+      dispatchAndAwait: (event) async {
+        final completer = Future.microtask(() async {
+          bloc.add(event);
+          return true;
+        });
+        return completer;
+      },
+      onReload: () {
+        // The BLoC stream keeps the page reactive — no extra reload needed.
+      },
+    );
   }
 
   @override
@@ -270,6 +307,14 @@ class _InfoTabState extends State<InfoTab> {
                     ? l10n.animalUnderObservation
                     : l10n.valueNo,
                 icon: Icons.visibility_outlined,
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
+                  label: const Text('Cambiar ubicación'),
+                  onPressed: () => _changeLocation(context),
+                ),
               ),
             ],
           ),

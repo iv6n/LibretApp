@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 
@@ -46,4 +47,10 @@ abstract class LocationRepository {
     String cropUuid,
     String taskUuid,
   );
+
+  // ── Inventory management ─────────────────────────────────────────────
+
+  Future<void> addInventoryItem(String locationUuid, InventoryItem item);
+  Future<void> updateInventoryItem(String locationUuid, InventoryItem item);
+  Future<void> removeInventoryItem(String locationUuid, String itemUuid);
 }

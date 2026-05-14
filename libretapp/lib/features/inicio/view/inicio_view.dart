@@ -105,7 +105,7 @@ class InicioView extends StatelessWidget {
               _SectionHeader(
                 title: 'Alertas prioritarias',
                 actionText: 'Ver directorio',
-                onAction: () => context.push(AppRoutes.directorio),
+                onAction: () => context.go(AppRoutes.directorio),
               ),
               const SizedBox(height: AppSpacing.sm),
               ...data.alerts.map((item) => _AlertCard(item: item)),
@@ -113,7 +113,7 @@ class InicioView extends StatelessWidget {
               _SectionHeader(
                 title: 'Tareas del dia',
                 actionText: 'Ir a agenda',
-                onAction: () => context.push(AppRoutes.agenda),
+                onAction: () => context.go(AppRoutes.agenda),
               ),
               const SizedBox(height: AppSpacing.sm),
               ...data.tasks.map((task) => _TaskCard(item: task)),
@@ -121,7 +121,7 @@ class InicioView extends StatelessWidget {
               _SectionHeader(
                 title: 'Eventos proximos',
                 actionText: 'Calendario',
-                onAction: () => context.push(AppRoutes.agenda),
+                onAction: () => context.go(AppRoutes.agenda),
               ),
               const SizedBox(height: AppSpacing.sm),
               if (data.upcomingEvents.isEmpty)
@@ -205,7 +205,7 @@ class _AlertCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        onTap: () => context.push(item.targetRoute),
+        onTap: () => context.go(item.targetRoute),
         leading: Icon(
           _iconForSeverity(item.severity),
           color: _colorForSeverity(item.severity),
@@ -275,7 +275,7 @@ class _TaskCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        onTap: () => context.push(item.targetRoute),
+        onTap: () => context.go(item.targetRoute),
         leading: const Icon(Icons.task_alt, color: AppColors.primary),
         title: item.title,
         subtitle: item.message,
@@ -297,7 +297,7 @@ class _EventCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: AppCard(
-        onTap: () => context.push(AppRoutes.agenda),
+        onTap: () => context.go(AppRoutes.agenda),
         leading: const Icon(Icons.event_note, color: AppColors.accent),
         title: event.titulo,
         subtitle: '$dateText · ${event.ubicacion}',
