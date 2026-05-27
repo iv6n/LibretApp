@@ -6,6 +6,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/animal_en
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -23,17 +24,20 @@ class InicioDashboardService {
     required AgendaRepository agendaRepository,
     required LocationRepository locationRepository,
     required PerfilRepository perfilRepository,
+    required ReproductionRecordRepository reproductionRepository,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _agendaRepository = agendaRepository,
        _locationRepository = locationRepository,
-       _perfilRepository = perfilRepository;
+       _perfilRepository = perfilRepository,
+       _reproductionRepository = reproductionRepository;
 
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
   final AgendaRepository _agendaRepository;
   final LocationRepository _locationRepository;
   final PerfilRepository _perfilRepository;
+  final ReproductionRecordRepository _reproductionRepository;
 
   Future<InicioDashboardData> loadDashboard() async {
     final now = DateTime.now();
@@ -84,6 +88,33 @@ class InicioDashboardService {
         eventos.where((e) => !e.fecha.isBefore(today)).toList()
           ..sort((a, b) => a.fecha.compareTo(b.fecha));
     final overdueEvents = eventos.where((e) => e.fecha.isBefore(today)).length;
+
+    // Calvings in the next 21 days.
+    final calvingWindow = today.add(const Duration(days: 21));
+    final calvingRaw = await _reproductionRepository.getUpcomingCalvings(
+      today,
+      calvingWindow,
+    );
+    final animalMap = {for (final a in animals) a.uuid: a};
+    final upcomingCalvings =
+        calvingRaw
+            .map((c) {
+              final animal = animalMap[c.animalUuid];
+              if (animal == null) return null;
+              final daysRemaining = c.expectedCalvingDate
+                  .difference(today)
+                  .inDays;
+              return CalvingItem(
+                animalUuid: c.animalUuid,
+                animalTag: animal.earTagNumber,
+                animalName: animal.customName,
+                expectedDate: c.expectedCalvingDate,
+                daysRemaining: daysRemaining,
+              );
+            })
+            .whereType<CalvingItem>()
+            .toList(growable: false)
+          ..sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
 
     final alerts = <InicioAlertItem>[];
 
@@ -183,6 +214,34 @@ class InicioDashboardService {
       );
     }
 
+    // Recent activity – top 5 most recently updated animals.
+    final sortedByActivity = List<AnimalEntity>.from(animals)
+      ..sort((a, b) => b.lastUpdateDate.compareTo(a.lastUpdateDate));
+    final recentActivity = sortedByActivity
+        .take(5)
+        .map((a) {
+          final abbrev = a.category.displayName.substring(0, 1).toUpperCase();
+          return RecentActivityItem(
+            animalUuid: a.uuid,
+            animalTag: a.earTagNumber,
+            animalName: a.customName,
+            categoryLabel: a.category.displayName,
+            categoryAbbrev: abbrev,
+            lastUpdate: a.lastUpdateDate,
+            photoPath: a.profilePhoto,
+          );
+        })
+        .toList(growable: false);
+
+    // Static mock weather – replace with real API call when ready.
+    const weatherData = WeatherData(
+      temperature: 28,
+      maxTemperature: 36,
+      condition: 'Despejado',
+      humidity: 45,
+      windSpeed: 12,
+    );
+
     return InicioDashboardData(
       profileName: perfil.nombre,
       farmName: perfil.finca,
@@ -197,6 +256,9 @@ class InicioDashboardService {
       tasks: tasks,
       lastUpdated: now,
       categoryBreakdown: categoryBreakdown,
+      upcomingCalvings: upcomingCalvings,
+      weather: weatherData,
+      recentActivity: recentActivity,
     );
   }
 }

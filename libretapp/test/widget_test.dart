@@ -50,6 +50,7 @@ class _FakeInicioDashboardService implements InicioDashboardService {
       ],
       lastUpdated: DateTime(2026, 1, 1),
       categoryBreakdown: const [],
+      upcomingCalvings: const [],
     );
   }
 }

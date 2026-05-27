@@ -1,8 +1,6 @@
 /// features › exportar › view › exportar_page — UI for selecting and exporting data.
 library;
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -46,10 +44,10 @@ class _ExportarViewState extends State<_ExportarView> {
     });
   }
 
-  Future<void> _share(File file) async {
+  Future<void> _share(String filePath) async {
     await Share.shareXFiles([
       XFile(
-        file.path,
+        filePath,
         mimeType:
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ),
@@ -61,7 +59,7 @@ class _ExportarViewState extends State<_ExportarView> {
     return BlocListener<ExportCubit, ExportState>(
       listener: (context, state) {
         if (state is ExportSuccess) {
-          _share(state.file);
+          _share(state.filePath);
           context.read<ExportCubit>().reset();
         } else if (state is ExportError) {
           ScaffoldMessenger.of(context).showSnackBar(

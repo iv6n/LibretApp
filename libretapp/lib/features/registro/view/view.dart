@@ -14,3 +14,4 @@ export 'registro_movimiento_page.dart';
 export 'registro_costo_page.dart';
 export 'registro_ingreso_page.dart';
 export 'registro_gasto_general_page.dart';
+export 'bulk_health_registro_page.dart';

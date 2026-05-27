@@ -1,8 +1,6 @@
 /// features › exportar › cubit › export_state — states for ExportCubit.
 library;
 
-import 'dart:io';
-
 import 'package:equatable/equatable.dart';
 
 sealed class ExportState extends Equatable {
@@ -24,12 +22,12 @@ final class ExportLoading extends ExportState {
 }
 
 final class ExportSuccess extends ExportState {
-  const ExportSuccess(this.file);
+  const ExportSuccess(this.filePath);
 
-  final File file;
+  final String filePath;
 
   @override
-  List<Object?> get props => [file];
+  List<Object?> get props => [filePath];
 }
 
 final class ExportError extends ExportState {

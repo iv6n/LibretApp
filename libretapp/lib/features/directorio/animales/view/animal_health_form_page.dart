@@ -32,6 +32,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   DateTime? _nextDate;
   bool _saving = false;
   AnimalEntity? _animal;
+  HealthRecord? _lastRecord;
 
   @override
   void initState() {
@@ -48,8 +49,28 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     final animal = await locator<AnimalRepository>().getByUuid(
       widget.animalUuid,
     );
+    final records = await locator<HealthRecordRepository>().getHealthRecords(
+      widget.animalUuid,
+    );
     if (!mounted) return;
-    setState(() => _animal = animal);
+    setState(() {
+      _animal = animal;
+      _lastRecord = records.isNotEmpty ? records.first : null;
+    });
+  }
+
+  void _applyLastRecord() {
+    final last = _lastRecord;
+    if (last == null) return;
+    setState(() {
+      _type = last.type;
+      _productController.text = last.product;
+      _doseController.text = last.dose ?? '';
+      _appliedByController.text = last.appliedBy ?? '';
+      _causeController.text = last.cause ?? '';
+      _notesController.text = '';
+      _nextDate = null;
+    });
   }
 
   @override
@@ -123,6 +144,21 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_lastRecord != null) ...[
+                ActionChip(
+                  avatar: const Icon(Icons.replay, size: 16),
+                  label: Text(
+                    'Repetir: ${_lastRecord!.product} · ${_lastRecord!.type.name}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onPressed: _applyLastRecord,
+                  side: BorderSide.none,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer,
+                ),
+                const SizedBox(height: 12),
+              ],
               DropdownButtonFormField<HealthRecordType>(
                 initialValue: _type,
                 decoration: InputDecoration(

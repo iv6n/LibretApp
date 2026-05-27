@@ -56,6 +56,85 @@ class InicioTaskItem extends Equatable {
   List<Object?> get props => [title, message, targetRoute];
 }
 
+// ---------------------------------------------------------------------------
+// WeatherData
+// ---------------------------------------------------------------------------
+
+class WeatherData extends Equatable {
+  const WeatherData({
+    required this.temperature,
+    required this.maxTemperature,
+    required this.condition,
+    required this.humidity,
+    required this.windSpeed,
+  });
+
+  final int temperature;
+  final int maxTemperature;
+  final String condition;
+  final int humidity;
+  final int windSpeed;
+
+  @override
+  List<Object?> get props => [
+    temperature,
+    maxTemperature,
+    condition,
+    humidity,
+    windSpeed,
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// RecentActivityItem
+// ---------------------------------------------------------------------------
+
+class RecentActivityItem extends Equatable {
+  const RecentActivityItem({
+    required this.animalUuid,
+    required this.animalTag,
+    this.animalName,
+    required this.categoryLabel,
+    required this.categoryAbbrev,
+    required this.lastUpdate,
+    this.photoPath,
+  });
+
+  final String animalUuid;
+  final String animalTag;
+  final String? animalName;
+  final String categoryLabel;
+  final String categoryAbbrev;
+  final DateTime lastUpdate;
+  final String? photoPath;
+
+  @override
+  List<Object?> get props => [animalUuid, lastUpdate, photoPath];
+}
+
+// ---------------------------------------------------------------------------
+// CalvingItem
+// ---------------------------------------------------------------------------
+
+class CalvingItem extends Equatable {
+  const CalvingItem({
+    required this.animalUuid,
+    required this.animalTag,
+    this.animalName,
+    required this.expectedDate,
+    required this.daysRemaining,
+  });
+
+  final String animalUuid;
+  final String animalTag;
+  final String? animalName;
+  final DateTime expectedDate;
+  final int daysRemaining;
+
+  @override
+  List<Object?> get props => [animalUuid, expectedDate];
+}
+
 class InicioDashboardData extends Equatable {
   const InicioDashboardData({
     required this.profileName,
@@ -71,6 +150,9 @@ class InicioDashboardData extends Equatable {
     required this.tasks,
     required this.lastUpdated,
     required this.categoryBreakdown,
+    required this.upcomingCalvings,
+    this.weather,
+    this.recentActivity = const [],
   });
 
   final String profileName;
@@ -86,6 +168,9 @@ class InicioDashboardData extends Equatable {
   final List<InicioTaskItem> tasks;
   final DateTime lastUpdated;
   final List<CategorySummary> categoryBreakdown;
+  final List<CalvingItem> upcomingCalvings;
+  final WeatherData? weather;
+  final List<RecentActivityItem> recentActivity;
 
   @override
   List<Object?> get props => [
@@ -102,5 +187,8 @@ class InicioDashboardData extends Equatable {
     tasks,
     lastUpdated,
     categoryBreakdown,
+    upcomingCalvings,
+    weather,
+    recentActivity,
   ];
 }

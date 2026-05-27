@@ -55,12 +55,13 @@ void main() async {
     final startupSpan = PerformanceMonitor().startSpan('app.startup');
     LoggerService.i('Iniciando configuración de LibretApp', tag: 'Main');
     await setupLocator();
-    await seedMockAnimals();
+    if (kDebugMode) {
+      await seedMockAnimals();
+    }
 
     const enableTracing = kDebugMode || kProfileMode;
     if (enableTracing) {
       // Start capturing frame timings to surface slow frame KPIs in logs.
-      //PerformanceMonitor().attachFrameTimings(slowFrameThresholdMs: 120);
       // Capture global taps to correlate with slow frames.
       InteractionTracer().start();
       // Prepare navigation observer before router instantiation.

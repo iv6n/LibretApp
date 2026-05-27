@@ -57,4 +57,23 @@ class ReproductionRecordRepositoryIsar implements ReproductionRecordRepository {
       await isar.isarReproductionRecords.delete(id);
     });
   }
+
+  @override
+  Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
+      getUpcomingCalvings(DateTime from, DateTime to) async {
+    final isar = await _isar;
+    final records = await isar.isarReproductionRecords
+        .filter()
+        .expectedCalvingDateBetween(from, to)
+        .actualCalvingDateIsNull()
+        .findAll();
+    return records
+        .map(
+          (r) => (
+            animalUuid: r.animalUuid,
+            expectedCalvingDate: r.expectedCalvingDate!,
+          ),
+        )
+        .toList(growable: false);
+  }
 }

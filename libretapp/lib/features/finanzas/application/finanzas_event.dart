@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
+import 'package:libretapp/features/finanzas/domain/enums/financial_period_preset.dart';
 
 /// Base class for all finanzas events.
 sealed class FinanzasEvent extends Equatable {
@@ -66,4 +67,17 @@ final class DeleteExpense extends FinanzasEvent {
 
   @override
   List<Object?> get props => [id];
+}
+
+/// Loads data for a named period preset.
+///
+/// The BLoC computes the concrete [DateRange] from [preset] and then
+/// delegates to the same data-loading path as [LoadPeriod].
+final class LoadPreset extends FinanzasEvent {
+  const LoadPreset(this.preset);
+
+  final FinancialPeriodPreset preset;
+
+  @override
+  List<Object?> get props => [preset];
 }

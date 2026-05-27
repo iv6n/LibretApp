@@ -7,6 +7,12 @@ import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/register_animal_page.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
@@ -25,6 +31,15 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final prefs = await SharedPreferences.getInstance();
     locator.registerSingleton<SharedPrefsService>(SharedPrefsService(prefs));
+    locator.registerSingleton<HealthRecordRepository>(
+      _FakeHealthRecordRepository(),
+    );
+    locator.registerSingleton<MovementRecordRepository>(
+      _FakeMovementRecordRepository(),
+    );
+    locator.registerSingleton<ReproductionRecordRepository>(
+      _FakeReproductionRecordRepository(),
+    );
   });
 
   tearDown(() async {
@@ -669,4 +684,61 @@ class _FakeLocationRepository implements LocationRepository {
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeHealthRecordRepository implements HealthRecordRepository {
+  @override
+  Future<List<HealthRecord>> getHealthRecords(String animalUuid) async =>
+      const [];
+
+  @override
+  Future<HealthRecord> addHealthRecord(
+    String animalUuid,
+    HealthRecord record,
+  ) async => record;
+
+  @override
+  Future<void> addHealthRecordToMultiple(
+    List<String> animalUuids,
+    HealthRecord record,
+  ) async {}
+
+  @override
+  Future<void> deleteHealthRecord(String recordId) async {}
+}
+
+class _FakeMovementRecordRepository implements MovementRecordRepository {
+  @override
+  Future<List<MovementRecord>> getMovementRecords(String animalUuid) async =>
+      const [];
+
+  @override
+  Future<MovementRecord> addMovementRecord(
+    String animalUuid,
+    MovementRecord record,
+  ) async => record;
+
+  @override
+  Future<void> deleteMovementRecord(String recordId) async {}
+}
+
+class _FakeReproductionRecordRepository
+    implements ReproductionRecordRepository {
+  @override
+  Future<List<ReproductionRecord>> getReproductionRecords(
+    String animalUuid,
+  ) async => const [];
+
+  @override
+  Future<ReproductionRecord> addReproductionRecord(
+    String animalUuid,
+    ReproductionRecord record,
+  ) async => record;
+
+  @override
+  Future<void> deleteReproductionRecord(String recordId) async {}
+
+  @override
+  Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
+  getUpcomingCalvings(DateTime from, DateTime to) async => const [];
 }

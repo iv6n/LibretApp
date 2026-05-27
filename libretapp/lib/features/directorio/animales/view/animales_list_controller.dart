@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
-import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 @immutable
 class AnimalesListState {
@@ -40,11 +40,11 @@ class AnimalesListState {
 }
 
 class AnimalesListController extends ChangeNotifier {
-  AnimalesListController({required IsarLocationRepository locationRepository})
+  AnimalesListController({required LocationRepository locationRepository})
     : _locationRepository = locationRepository,
       _state = AnimalesListState.initial();
 
-  final IsarLocationRepository _locationRepository;
+  final LocationRepository _locationRepository;
 
   AnimalesListState _state;
   bool _disposed = false;

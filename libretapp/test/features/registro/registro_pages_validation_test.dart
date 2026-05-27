@@ -4,8 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/registro/view/registro_comercial_page.dart';
@@ -35,7 +49,22 @@ void main() {
 
     locator
       ..registerSingleton<AnimalRepository>(animalRepo)
-      ..registerSingleton<LotesRepository>(_FakeLotesRepository());
+      ..registerSingleton<LotesRepository>(_FakeLotesRepository())
+      ..registerSingleton<WeightRecordRepository>(_FakeWeightRecordRepository())
+      ..registerSingleton<HealthRecordRepository>(_FakeHealthRecordRepository())
+      ..registerSingleton<ProductionRecordRepository>(
+        _FakeProductionRecordRepository(),
+      )
+      ..registerSingleton<ReproductionRecordRepository>(
+        _FakeReproductionRecordRepository(),
+      )
+      ..registerSingleton<CommercialRecordRepository>(
+        _FakeCommercialRecordRepository(),
+      )
+      ..registerSingleton<MovementRecordRepository>(
+        _FakeMovementRecordRepository(),
+      )
+      ..registerSingleton<CostRecordRepository>(_FakeCostRecordRepository());
   });
 
   tearDown(() async {
@@ -228,4 +257,106 @@ class _FakeAnimalRepository implements AnimalRepository {
 class _FakeLotesRepository implements LotesRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeWeightRecordRepository implements WeightRecordRepository {
+  @override
+  Future<List<WeightRecord>> getWeightRecords(String animalUuid) async =>
+      const [];
+  @override
+  Future<WeightRecord> addWeightRecord(
+    String animalUuid,
+    WeightRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteWeightRecord(String recordId) async {}
+}
+
+class _FakeHealthRecordRepository implements HealthRecordRepository {
+  @override
+  Future<List<HealthRecord>> getHealthRecords(String animalUuid) async =>
+      const [];
+  @override
+  Future<HealthRecord> addHealthRecord(
+    String animalUuid,
+    HealthRecord record,
+  ) async => record;
+  @override
+  Future<void> addHealthRecordToMultiple(
+    List<String> animalUuids,
+    HealthRecord record,
+  ) async {}
+  @override
+  Future<void> deleteHealthRecord(String recordId) async {}
+}
+
+class _FakeProductionRecordRepository implements ProductionRecordRepository {
+  @override
+  Future<List<ProductionRecord>> getProductionRecords(
+    String animalUuid,
+  ) async => const [];
+  @override
+  Future<ProductionRecord> addProductionRecord(
+    String animalUuid,
+    ProductionRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteProductionRecord(String recordId) async {}
+}
+
+class _FakeReproductionRecordRepository
+    implements ReproductionRecordRepository {
+  @override
+  Future<List<ReproductionRecord>> getReproductionRecords(
+    String animalUuid,
+  ) async => const [];
+  @override
+  Future<ReproductionRecord> addReproductionRecord(
+    String animalUuid,
+    ReproductionRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteReproductionRecord(String recordId) async {}
+  @override
+  Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
+  getUpcomingCalvings(DateTime from, DateTime to) async => const [];
+}
+
+class _FakeCommercialRecordRepository implements CommercialRecordRepository {
+  @override
+  Future<List<CommercialRecord>> getCommercialRecords(
+    String animalUuid,
+  ) async => const [];
+  @override
+  Future<CommercialRecord> addCommercialRecord(
+    String animalUuid,
+    CommercialRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteCommercialRecord(String recordId) async {}
+}
+
+class _FakeMovementRecordRepository implements MovementRecordRepository {
+  @override
+  Future<List<MovementRecord>> getMovementRecords(String animalUuid) async =>
+      const [];
+  @override
+  Future<MovementRecord> addMovementRecord(
+    String animalUuid,
+    MovementRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteMovementRecord(String recordId) async {}
+}
+
+class _FakeCostRecordRepository implements CostRecordRepository {
+  @override
+  Future<List<CostRecord>> getCostRecords(String animalUuid) async => const [];
+  @override
+  Future<CostRecord> addCostRecord(
+    String animalUuid,
+    CostRecord record,
+  ) async => record;
+  @override
+  Future<void> deleteCostRecord(String recordId) async {}
 }

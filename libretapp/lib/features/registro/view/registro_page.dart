@@ -81,6 +81,14 @@ class _RegistroPageState extends State<RegistroPage> {
                   label: 'Registrar',
                   items: [
                     _RegistroCardItem(
+                      icon: Icons.vaccines,
+                      label: 'Tratar lote',
+                      subtitle: 'Vacunar o tratar varios animales',
+                      color: Colors.teal.shade700,
+                      onTap: (context) =>
+                          context.pushNamed(AppRoutes.nameRegistroTratarLote),
+                    ),
+                    _RegistroCardItem(
                       icon: Icons.monitor_weight,
                       label: 'Peso',
                       subtitle: 'Peso del animal',

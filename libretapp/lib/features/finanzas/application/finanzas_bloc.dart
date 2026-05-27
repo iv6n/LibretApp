@@ -40,6 +40,7 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
        _commercialRepo = commercialRepo,
        super(const FinanzasState()) {
     on<LoadPeriod>(_onLoadPeriod);
+    on<LoadPreset>(_onLoadPreset);
     on<AddIncome>(_onAddIncome);
     on<AddExpense>(_onAddExpense);
     on<DeleteIncome>(_onDeleteIncome);
@@ -174,10 +175,12 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
     AddIncome event,
     Emitter<FinanzasState> emit,
   ) async {
-    emit(state.copyWith(status: FinanzasStatus.loading));
     try {
       await _finanzasRepository.addIncome(event.record);
-      await _reload();
+      if (state.period != null) {
+        emit(state.copyWith(status: FinanzasStatus.loading));
+        await _reload();
+      }
     } catch (e) {
       emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
     }
@@ -187,10 +190,12 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
     AddExpense event,
     Emitter<FinanzasState> emit,
   ) async {
-    emit(state.copyWith(status: FinanzasStatus.loading));
     try {
       await _finanzasRepository.addExpense(event.record);
-      await _reload();
+      if (state.period != null) {
+        emit(state.copyWith(status: FinanzasStatus.loading));
+        await _reload();
+      }
     } catch (e) {
       emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
     }
@@ -220,6 +225,13 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
     } catch (e) {
       emit(state.copyWith(status: FinanzasStatus.error, error: e.toString()));
     }
+  }
+
+  Future<void> _onLoadPreset(
+    LoadPreset event,
+    Emitter<FinanzasState> emit,
+  ) async {
+    add(LoadPeriod(event.preset.toDateRange()));
   }
 
   /// Re-dispatches [LoadPeriod] for the currently active period and waits for

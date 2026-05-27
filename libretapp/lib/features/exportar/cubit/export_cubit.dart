@@ -27,7 +27,7 @@ class ExportCubit extends Cubit<ExportState> {
         ubicaciones: ubicaciones,
         eventos: eventos,
       );
-      emit(ExportSuccess(file));
+      emit(ExportSuccess(file.path));
     } catch (e) {
       emit(ExportError('Error al generar el archivo: $e'));
     }

@@ -140,7 +140,9 @@ Future<void> setupLocator() async {
     ..registerLazySingleton<ThemeRepository>(
       () => ThemeRepository(locator<SharedPrefsService>()),
     )
-    ..registerLazySingleton<AnimalRemoteDataSource>(AnimalApiMock.new)
+    ..registerLazySingleton<AnimalRemoteDataSource>(
+      kDebugMode ? AnimalApiMock.new : _NoOpAnimalRemoteDataSource.new,
+    )
     ..registerLazySingleton<AnimalRepository>(
       () => AnimalRepositoryIsar(
         locator<IsarDatabase>(),
@@ -206,6 +208,7 @@ Future<void> setupLocator() async {
         agendaRepository: locator<AgendaRepository>(),
         locationRepository: locator<LocationRepository>(),
         perfilRepository: locator<PerfilRepository>(),
+        reproductionRepository: locator<ReproductionRecordRepository>(),
       ),
     )
     ..registerLazySingleton<PerfilRepository>(
@@ -214,4 +217,19 @@ Future<void> setupLocator() async {
     ..registerLazySingleton<FinanzasRepository>(
       () => IsarFinanzasRepository(locator<IsarDatabase>()),
     );
+}
+
+/// Production stub for [AnimalRemoteDataSource].
+///
+/// Remote sync is not yet implemented; returns an empty payload so the local
+/// Isar repository operates offline-first without crashing.
+final class _NoOpAnimalRemoteDataSource implements AnimalRemoteDataSource {
+  @override
+  Future<RemoteAnimalPayload> fetchAnimals() async {
+    return RemoteAnimalPayload(
+      animals: const [],
+      hash: '',
+      lastUpdated: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
 }

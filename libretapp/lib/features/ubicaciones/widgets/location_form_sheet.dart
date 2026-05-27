@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
@@ -294,4 +295,4 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   }
 }
 
-String _randomId() => DateTime.now().microsecondsSinceEpoch.toString();
+String _randomId() => generateId();

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_animal_selector_sheet.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_constants.dart';
@@ -121,7 +122,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
           : _ubicacionController.text.trim();
     }
     final saved = AgendaEntry(
-      id: widget.entry?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.entry?.id ?? generateId(),
       titulo: _tituloController.text.trim(),
       descripcion: _descripcionController.text.trim(),
       fecha: _fechaSeleccionada,

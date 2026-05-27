@@ -10,4 +10,9 @@ abstract class ReproductionRecordRepository {
     ReproductionRecord record,
   );
   Future<void> deleteReproductionRecord(String recordId);
+
+  /// Returns records whose [expectedCalvingDate] falls within [from]..[to]
+  /// and whose [actualCalvingDate] is null (birth hasn't happened yet).
+  Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
+      getUpcomingCalvings(DateTime from, DateTime to);
 }

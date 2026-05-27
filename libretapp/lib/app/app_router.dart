@@ -21,6 +21,7 @@ import 'package:libretapp/features/directorio/animales/view/animal_production_fo
 import 'package:libretapp/features/directorio/animales/view/animal_movement_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_reproduction_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_health_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_commercial_form_page.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/agenda/agenda.dart';
@@ -80,6 +81,14 @@ final router = GoRouter(
                   pageBuilder: (context, state) => _buildOverlayDetailPage(
                     state: state,
                     child: const RegisterAnimalPage(),
+                  ),
+                ),
+                GoRoute(
+                  path: 'animales/nuevo-rapido',
+                  name: AppRoutes.nameAnimalNuevoRapido,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: const QuickRegisterAnimalPage(),
                   ),
                 ),
                 GoRoute(
@@ -410,6 +419,14 @@ final router = GoRouter(
           pageBuilder: (context, state) => _buildOverlayDetailPage(
             state: state,
             child: const RegistroGastoGeneralPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'tratar-lote',
+          name: AppRoutes.nameRegistroTratarLote,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const BulkHealthRegistroPage(),
           ),
         ),
       ],

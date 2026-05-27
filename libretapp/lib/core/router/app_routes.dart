@@ -7,6 +7,7 @@ class AppRoutes {
   static const inicio = '/';
   static const animales = '/animales';
   static const animalNuevo = '/directorio/animales/nuevo';
+  static const animalNuevoRapido = '/directorio/animales/nuevo-rapido';
   static const animalDetalle = '/directorio/animales/:uuid';
   static const animalRegistroPeso = '/directorio/animales/:uuid/registros/peso';
   static const animalRegistroReproduccion =
@@ -43,6 +44,7 @@ class AppRoutes {
   static const registroCosto = '/registro/costo';
   static const registroIngreso = '/registro/ingreso';
   static const registroGastoGeneral = '/registro/gasto-general';
+  static const registroTratarLote = '/registro/tratar-lote';
   static const finanzas = '/finanzas';
   static const exportar = '/exportar';
 
@@ -50,6 +52,7 @@ class AppRoutes {
   static const nameInicio = 'inicio';
   static const nameAnimales = 'animales';
   static const nameAnimalNuevo = 'animal_nuevo';
+  static const nameAnimalNuevoRapido = 'animal_nuevo_rapido';
   static const nameAnimalDetalle = 'animal_detalle';
   static const nameAnimalRegistroPeso = 'animal_registro_peso';
   static const nameAnimalRegistroReproduccion = 'animal_registro_reproduccion';
@@ -80,10 +83,12 @@ class AppRoutes {
   static const nameRegistroCosto = 'registro_costo';
   static const nameRegistroIngreso = 'registro_ingreso';
   static const nameRegistroGastoGeneral = 'registro_gasto_general';
+  static const nameRegistroTratarLote = 'registro_tratar_lote';
   static const nameFinanzas = 'finanzas';
   static const nameExportar = 'exportar';
 
   static String animalNuevoPath() => '/directorio/animales/nuevo';
+  static String animalNuevoRapidoPath() => '/directorio/animales/nuevo-rapido';
   static String animalDetallePath(String uuid) => '/directorio/animales/$uuid';
   static String animalRegistroPesoPath(String uuid) =>
       '/directorio/animales/$uuid/registros/peso';
@@ -108,4 +113,5 @@ class AppRoutes {
   static String ubicacionDetallePath(String uuid) => '/ubicaciones/$uuid';
   static String ubicacionEditarPath(String uuid) => '/ubicaciones/$uuid/editar';
   static String agendaNuevoPath() => '/agenda/nuevo';
+  static String registroTratarLotePath() => '/registro/tratar-lote';
 }

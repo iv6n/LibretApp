@@ -5,9 +5,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
@@ -16,7 +16,8 @@ import 'package:libretapp/features/directorio/animales/widgets/animal_palette.da
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
-import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
+import 'package:libretapp/features/directorio/animales/view/bulk_health_form_page.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalesListView extends StatefulWidget {
@@ -46,7 +47,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _tabController = TabController(length: 2, vsync: this);
     _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
-      locationRepository: IsarLocationRepository(locator<IsarDatabase>()),
+      locationRepository: locator<LocationRepository>(),
     )..loadInitial();
     context.read<LotesTabBloc>().add(const LoadLotesTab());
   }
@@ -141,10 +142,11 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 ? null
                 : ShellFabConfig(
                     id: 'animales',
-                    label: 'Registrar',
+                    label: 'Nuevo',
                     icon: Icons.add,
                     heroTag: 'fab_animales',
-                    onPressed: () => context.pushNamed(AppRoutes.nameRegistro),
+                    onPressed: () =>
+                        context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
                   );
 
             return PopScope(
@@ -390,7 +392,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         fullscreenDialog: true,
-        builder: (context) => _BulkHealthFormPage(
+        builder: (context) => BulkHealthFormPage(
           selectedCount: selectedCount,
           onSubmit: onSubmit,
         ),
@@ -515,26 +517,66 @@ class _AnimalesListViewState extends State<AnimalesListView>
       ...filtered.map(
         (animal) => _CenteredSection(
           padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: AnimalCard(
-            key: ValueKey('card_${animal.uuid}'),
-            animal: animal,
-            location: locationResolver(animal),
-            isSelected: state.selectedAnimalUuids.contains(animal.uuid),
-            selectionEnabled: state.isSelectionMode,
-            onTap: () {
-              if (state.isSelectionMode) {
+          child: Slidable(
+            key: ValueKey('slide_${animal.uuid}'),
+            enabled: !state.isSelectionMode,
+            startActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.22,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => context.push(
+                    AppRoutes.animalRegistroPesoPath(animal.uuid),
+                  ),
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  icon: Icons.monitor_weight_outlined,
+                  label: 'Pesar',
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(20),
+                  ),
+                ),
+              ],
+            ),
+            endActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.22,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => context.push(
+                    AppRoutes.animalRegistroSaludPath(animal.uuid),
+                  ),
+                  backgroundColor: Colors.blue.shade700,
+                  foregroundColor: Colors.white,
+                  icon: Icons.medical_services_outlined,
+                  label: 'Salud',
+                  borderRadius: const BorderRadius.horizontal(
+                    right: Radius.circular(20),
+                  ),
+                ),
+              ],
+            ),
+            child: AnimalCard(
+              key: ValueKey('card_${animal.uuid}'),
+              animal: animal,
+              location: locationResolver(animal),
+              isSelected: state.selectedAnimalUuids.contains(animal.uuid),
+              selectionEnabled: state.isSelectionMode,
+              onTap: () {
+                if (state.isSelectionMode) {
+                  context.read<AnimalesBloc>().add(
+                    ToggleAnimalSelection(animal.uuid),
+                  );
+                  return;
+                }
+                onOpenDetail(animal);
+              },
+              onLongPress: () {
                 context.read<AnimalesBloc>().add(
                   ToggleAnimalSelection(animal.uuid),
                 );
-                return;
-              }
-              onOpenDetail(animal);
-            },
-            onLongPress: () {
-              context.read<AnimalesBloc>().add(
-                ToggleAnimalSelection(animal.uuid),
-              );
-            },
+              },
+            ),
           ),
         ),
       ),
@@ -544,227 +586,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
           child: Center(child: CircularProgressIndicator()),
         ),
     ];
-  }
-}
-
-class _BulkHealthFormPage extends StatefulWidget {
-  const _BulkHealthFormPage({
-    required this.selectedCount,
-    required this.onSubmit,
-  });
-
-  final int selectedCount;
-  final Future<bool> Function(HealthRecord record) onSubmit;
-
-  @override
-  State<_BulkHealthFormPage> createState() => _BulkHealthFormPageState();
-}
-
-class _BulkHealthFormPageState extends State<_BulkHealthFormPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _productController = TextEditingController();
-  final _doseController = TextEditingController();
-  final _appliedByController = TextEditingController();
-  final _causeController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  HealthRecordType _type = HealthRecordType.vaccine;
-  DateTime _date = DateTime.now();
-  DateTime? _nextDate;
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _productController.dispose();
-    _doseController.dispose();
-    _appliedByController.dispose();
-    _causeController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _saving) return;
-    setState(() => _saving = true);
-
-    final record = HealthRecord(
-      date: _date,
-      type: _type,
-      product: _productController.text.trim(),
-      dose: _doseController.text.trim().isEmpty
-          ? null
-          : _doseController.text.trim(),
-      appliedBy: _appliedByController.text.trim().isEmpty
-          ? null
-          : _appliedByController.text.trim(),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-      nextDueDate: _nextDate,
-      cause: _causeController.text.trim().isEmpty
-          ? null
-          : _causeController.text.trim(),
-    );
-
-    final ok = await widget.onSubmit(record);
-    if (!mounted) return;
-    if (ok) {
-      Navigator.of(context).pop(true);
-    } else {
-      setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.animalsBulkMaintenanceAction(widget.selectedCount)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<HealthRecordType>(
-                  initialValue: _type,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthType,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: HealthRecordType.values
-                      .map(
-                        (t) => DropdownMenuItem(value: t, child: Text(t.name)),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _type = value);
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _productController,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthProduct,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.detailFormHealthProductRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _doseController,
-                        decoration: InputDecoration(
-                          labelText: l10n.detailFormHealthDose,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _appliedByController,
-                        decoration: InputDecoration(
-                          labelText: l10n.detailFormHealthAppliedBy,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.today),
-                        label: Text(
-                          '${_date.year}-${_date.month}-${_date.day}',
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _date,
-                            firstDate: DateTime(_date.year - 5),
-                            lastDate: DateTime(_date.year + 1),
-                          );
-                          if (picked == null) return;
-                          setState(() => _date = picked);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.event_available),
-                        label: Text(
-                          _nextDate == null
-                              ? l10n.detailFormHealthNext
-                              : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _nextDate ?? _date,
-                            firstDate: DateTime(_date.year),
-                            lastDate: DateTime(_date.year + 5),
-                          );
-                          setState(() => _nextDate = picked);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _causeController,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthCause,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.fieldNotes,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _saving ? null : _submit,
-                    child: _saving
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.actionSave),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

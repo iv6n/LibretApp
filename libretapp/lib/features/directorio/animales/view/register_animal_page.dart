@@ -7,6 +7,7 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -2678,9 +2679,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     }();
 
     final now = DateTime.now();
-    final uuid = widget.isEdit
-        ? _editingAnimal!.uuid
-        : 'ani-${now.microsecondsSinceEpoch}';
+    final uuid = widget.isEdit ? _editingAnimal!.uuid : 'ani-${generateId()}';
     final healthTuple = _resolveHealthFlags();
     final normalizedName = _nullableText(_nameCtrl.text);
     final normalizedVisualId =

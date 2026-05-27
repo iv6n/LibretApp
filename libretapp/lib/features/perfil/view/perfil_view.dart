@@ -1,8 +1,6 @@
 ﻿/// features \u203a perfil \u203a view \u203a perfil_view \u2014 main view for the user profile.
 library;
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
@@ -603,10 +601,10 @@ class _ExcelExportCardState extends State<_ExcelExportCard> {
     });
   }
 
-  Future<void> _shareFile(File file) async {
+  Future<void> _shareFile(String filePath) async {
     await Share.shareXFiles([
       XFile(
-        file.path,
+        filePath,
         mimeType:
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ),
@@ -621,7 +619,7 @@ class _ExcelExportCardState extends State<_ExcelExportCard> {
       child: BlocListener<ExportCubit, ExportState>(
         listener: (context, state) {
           if (state is ExportSuccess) {
-            _shareFile(state.file);
+            _shareFile(state.filePath);
             context.read<ExportCubit>().reset();
           } else if (state is ExportError) {
             ScaffoldMessenger.of(context).showSnackBar(
