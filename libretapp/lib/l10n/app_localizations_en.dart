@@ -27,6 +27,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navLocations => 'Locations';
 
   @override
+  String get navReports => 'Reports';
+
+  @override
   String get navProfile => 'Profile';
 
   @override
@@ -142,6 +145,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get animalsBulkMaintenanceConfirmAction => 'Continue';
+
+  @override
+  String get stageFilterAll => 'All';
 
   @override
   String stageFilterCalf(num count) {

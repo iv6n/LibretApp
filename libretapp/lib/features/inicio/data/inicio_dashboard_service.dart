@@ -12,9 +12,12 @@ import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
+import 'package:libretapp/features/inicio/data/weather_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class InicioDashboardService {
@@ -25,12 +28,14 @@ class InicioDashboardService {
     required LocationRepository locationRepository,
     required PerfilRepository perfilRepository,
     required ReproductionRecordRepository reproductionRepository,
+    required WeatherService weatherService,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _agendaRepository = agendaRepository,
        _locationRepository = locationRepository,
        _perfilRepository = perfilRepository,
-       _reproductionRepository = reproductionRepository;
+       _reproductionRepository = reproductionRepository,
+       _weatherService = weatherService;
 
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
@@ -38,6 +43,7 @@ class InicioDashboardService {
   final LocationRepository _locationRepository;
   final PerfilRepository _perfilRepository;
   final ReproductionRecordRepository _reproductionRepository;
+  final WeatherService _weatherService;
 
   Future<InicioDashboardData> loadDashboard() async {
     final now = DateTime.now();
@@ -62,6 +68,10 @@ class InicioDashboardService {
     final totalAnimals = (statistics['total'] as int?) ?? animals.length;
     final attentionAnimals = (statistics['attention'] as int?) ?? 0;
     final unsyncedAnimals = (statistics['unsynced'] as int?) ?? 0;
+    final totalAnimalCapacity = locations.fold<int>(
+      0,
+      (sum, location) => sum + location.capacity,
+    );
 
     final unvaccinated = animals.where((a) => !a.vaccinated).length;
     final underObservation = animals.where((a) => a.underObservation).length;
@@ -84,10 +94,19 @@ class InicioDashboardService {
       );
     }).toList()..sort((a, b) => b.total.compareTo(a.total));
 
+    bool isOpenAgendaEntry(AgendaEntry entry) =>
+        entry.estado != AgendaEstado.completado &&
+        entry.estado != AgendaEstado.verificado &&
+        entry.estado != AgendaEstado.cancelado;
+
     final upcomingEvents =
-        eventos.where((e) => !e.fecha.isBefore(today)).toList()
+        eventos
+            .where((e) => !e.fecha.isBefore(today) && isOpenAgendaEntry(e))
+            .toList()
           ..sort((a, b) => a.fecha.compareTo(b.fecha));
-    final overdueEvents = eventos.where((e) => e.fecha.isBefore(today)).length;
+    final overdueEvents = eventos
+        .where((e) => e.fecha.isBefore(today) && isOpenAgendaEntry(e))
+        .length;
 
     // Calvings in the next 21 days.
     final calvingWindow = today.add(const Duration(days: 21));
@@ -233,19 +252,59 @@ class InicioDashboardService {
         })
         .toList(growable: false);
 
-    // Static mock weather – replace with real API call when ready.
-    const weatherData = WeatherData(
-      temperature: 28,
-      maxTemperature: 36,
-      condition: 'Despejado',
-      humidity: 45,
-      windSpeed: 12,
-    );
+    final animalCountsByLocation = <String, int>{};
+    for (final animal in animals) {
+      final locationUuid = animal.currentLocationId;
+      if (locationUuid == null || locationUuid.isEmpty) continue;
+      animalCountsByLocation.update(locationUuid, (count) => count + 1,
+          ifAbsent: () => 1);
+    }
+
+    final activeLocations = List<LocationEntity>.from(locations)
+      ..sort((a, b) {
+        final aActive = a.status == LocationStatus.inUse ? 0 : 1;
+        final bActive = b.status == LocationStatus.inUse ? 0 : 1;
+        if (aActive != bActive) return aActive.compareTo(bActive);
+        final byAnimals = (animalCountsByLocation[b.uuid] ?? 0).compareTo(
+          animalCountsByLocation[a.uuid] ?? 0,
+        );
+        if (byAnimals != 0) return byAnimals;
+        return a.name.compareTo(b.name);
+      });
+
+    final activeLocationSummaries = activeLocations
+        .take(3)
+        .map(
+          (location) => ActiveLocationSummary(
+            uuid: location.uuid,
+            name: location.name,
+            typeLabel: location.type.label,
+            animalCount: animalCountsByLocation[location.uuid] ?? 0,
+            capacity: location.capacity,
+            surfaceArea: location.surfaceArea,
+            waterEvents: location.waters.length,
+            pastureEvents: location.pastures.length,
+            imageCount: location.imagePaths.length,
+          ),
+        )
+        .toList(growable: false);
+
+    WeatherData? weather;
+    try {
+      weather = await _weatherService.getCurrentWeather(
+        locations: locations,
+        address: perfil.direccion,
+      );
+    } catch (_) {
+      // Weather is supplementary: connectivity or location failures must not
+      // prevent the operational dashboard from loading.
+    }
 
     return InicioDashboardData(
       profileName: perfil.nombre,
       farmName: perfil.finca,
       totalAnimals: totalAnimals,
+      totalAnimalCapacity: totalAnimalCapacity,
       attentionAnimals: attentionAnimals,
       unsyncedAnimals: unsyncedAnimals,
       activeLotes: activeLotes.length,
@@ -257,8 +316,9 @@ class InicioDashboardService {
       lastUpdated: now,
       categoryBreakdown: categoryBreakdown,
       upcomingCalvings: upcomingCalvings,
-      weather: weatherData,
+      weather: weather,
       recentActivity: recentActivity,
+      activeLocations: activeLocationSummaries,
     );
   }
 }

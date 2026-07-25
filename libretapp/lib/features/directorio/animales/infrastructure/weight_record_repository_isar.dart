@@ -7,6 +7,7 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 
 class WeightRecordRepositoryIsar implements WeightRecordRepository {
   WeightRecordRepositoryIsar(this._database);
@@ -37,6 +38,14 @@ class WeightRecordRepositoryIsar implements WeightRecordRepository {
     await isar.writeTxn(() async {
       final id = await isar.isarWeightRecords.put(model);
       model.id = id;
+      final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+      if (animal != null) {
+        animal
+          ..weight = record.weight
+          ..lastUpdateDate = DateTime.now()
+          ..synced = false;
+        await isar.isarAnimals.put(animal);
+      }
     });
     final saved = model.toEntity();
     LoggerService.i(

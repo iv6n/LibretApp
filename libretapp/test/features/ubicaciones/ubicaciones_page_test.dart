@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
@@ -139,17 +139,17 @@ void main() {
         LocationEntity(
           uuid: 'uuid-1',
           name: 'Potrero A',
-          type: LocationType.potrero,
+          type: LocationType.pasture,
           surfaceArea: 12.5,
           capacity: 40,
           waterSource: 'Pozo',
           terrainType: 'Plano',
-          status: LocationStatus.disponible,
+          status: LocationStatus.available,
           waters: [
             WaterRecord(
               date: DateTime(2024, 1, 1),
               level: 70,
-              type: WaterType.pozo,
+              type: WaterType.well,
             ),
           ],
         ),
@@ -161,7 +161,7 @@ void main() {
           capacity: 25,
           waterSource: 'Pila',
           terrainType: 'Firm',
-          status: LocationStatus.disponible,
+          status: LocationStatus.available,
         ),
       ];
       repository = _FakeLocationRepository(fakeLocations);

@@ -16,6 +16,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/movement_r
 import 'package:libretapp/features/directorio/animales/infrastructure/production_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/reproduction_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
+import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -313,6 +314,74 @@ void main() {
 
       expect(costs, hasLength(1));
       expect(costs.first.amount, 280);
+    },
+    skip: !_canRunIsarNative(),
+  );
+
+  test(
+    'seeded animals and movement records reference existing seeded locations',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPrefs = await SharedPreferences.getInstance();
+
+      final db = IsarDatabase();
+      final locationRepository = IsarLocationRepository(db);
+      final animalRepository = AnimalRepositoryIsar(
+        db,
+        SharedPrefsService(sharedPrefs),
+        _FakeAnimalRemoteDataSource(),
+      );
+      final movementRepo = MovementRecordRepositoryIsar(db);
+
+      // Ensure location seed is present before checking animal references.
+      final locations = await locationRepository.getAll();
+      final validLocationUuids = locations
+          .map((location) => location.uuid)
+          .toSet();
+
+      final animals = await animalRepository.getAll();
+
+      final invalidCurrentLocations = <String>[];
+      for (final animal in animals) {
+        final locId = animal.currentLocationId;
+        if (locId == null || locId.trim().isEmpty) continue;
+        if (!validLocationUuids.contains(locId)) {
+          invalidCurrentLocations.add('${animal.uuid}->$locId');
+        }
+      }
+
+      final invalidMovementLocations = <String>[];
+      for (final animal in animals) {
+        final movements = await movementRepo.getMovementRecords(animal.uuid);
+        for (final movement in movements) {
+          final fromLocation = movement.fromLocation;
+          final toLocation = movement.toLocation;
+
+          if (fromLocation != null &&
+              fromLocation.trim().isNotEmpty &&
+              !validLocationUuids.contains(fromLocation)) {
+            invalidMovementLocations.add('${animal.uuid}:from=$fromLocation');
+          }
+
+          if (toLocation.trim().isNotEmpty &&
+              !validLocationUuids.contains(toLocation)) {
+            invalidMovementLocations.add('${animal.uuid}:to=$toLocation');
+          }
+        }
+      }
+
+      expect(
+        invalidCurrentLocations,
+        isEmpty,
+        reason:
+            'Seed animals with invalid currentLocationId: ${invalidCurrentLocations.join(', ')}',
+      );
+      expect(
+        invalidMovementLocations,
+        isEmpty,
+        reason:
+            'Seed movement records with invalid location IDs: ${invalidMovementLocations.join(', ')}',
+      );
     },
     skip: !_canRunIsarNative(),
   );

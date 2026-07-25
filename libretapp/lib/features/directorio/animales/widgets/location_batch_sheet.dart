@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/movement_
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 /// Shows a bottom sheet for changing an animal's location and batch.
 /// The batch selection now uses existing LoteEntity objects (UUID-based).
@@ -23,7 +24,7 @@ Future<void> showLocationBatchSheet(
   final messenger = ScaffoldMessenger.of(context);
 
   String? selectedLocation =
-      (animal.currentPaddockId ?? animal.initialLocationId)?.trim();
+      (animal.currentLocationId ?? animal.initialLocationId)?.trim();
   String? selectedBatchUuid = animal.batchUuid;
 
   // Load available batches
@@ -81,7 +82,7 @@ Future<void> showLocationBatchSheet(
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.route_outlined, color: Colors.blue),
+                      Icon(Icons.route_outlined, color: AppColors.secondary),
                       SizedBox(width: 8),
                       Text(
                         'Cambiar ubicación y lote',
@@ -129,7 +130,7 @@ Future<void> showLocationBatchSheet(
                       ...availableLotes.map(
                         (lote) => DropdownMenuItem(
                           value: lote.uuid,
-                          child: Text(lote.nombre),
+                          child: Text(lote.name),
                         ),
                       ),
                     ],
@@ -144,15 +145,15 @@ Future<void> showLocationBatchSheet(
                       icon: const Icon(Icons.save_as_outlined),
                       label: const Text('Guardar'),
                       onPressed: () async {
-                        final oldPaddockId = animal.currentPaddockId;
+                        final oldPaddockId = animal.currentLocationId;
                         final locationChanged =
-                            animal.currentPaddockId != selectedLocation;
+                            animal.currentLocationId != selectedLocation;
 
                         // Update location first if changed
                         if (locationChanged ||
                             animal.batchUuid != selectedBatchUuid) {
                           final updatedAnimal = animal.copyWith(
-                            currentPaddockId: selectedLocation,
+                            currentLocationId: selectedLocation,
                             initialLocationId:
                                 animal.initialLocationId ?? selectedLocation,
                             lastMovementDate: DateTime.now(),

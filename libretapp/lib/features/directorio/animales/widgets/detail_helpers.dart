@@ -1,9 +1,10 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_helpers \u2014 helper functions and mixins for the animal detail page.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_helpers \u2014 helper functions and mixins for the animal detail page.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
+import 'package:libretapp/features/milking/domain/milking_models.dart';
 
 /// Aggregated data for the animal detail screen.
 class DetailData {
@@ -16,6 +17,7 @@ class DetailData {
     required this.commercial,
     required this.movements,
     required this.costs,
+    required this.milkingRecords,
   });
 
   final AnimalEntity animal;
@@ -26,6 +28,7 @@ class DetailData {
   final List<CommercialRecord> commercial;
   final List<MovementRecord> movements;
   final List<CostRecord> costs;
+  final List<MilkingRecord> milkingRecords;
 }
 
 Color detailStageColor(LifeStage stage) {
@@ -33,33 +36,7 @@ Color detailStageColor(LifeStage stage) {
 }
 
 String stageAsset(LifeStage stage) {
-  switch (stage) {
-    case LifeStage.calf:
-    case LifeStage.calfMale:
-    case LifeStage.calfFemale:
-      return 'assets/images/becerro.png';
-    case LifeStage.heifer:
-      return 'assets/images/vaquilla.png';
-    case LifeStage.youngBull:
-      return 'assets/images/toro.png';
-    case LifeStage.steer:
-      return 'assets/images/novillo.png';
-    case LifeStage.cow:
-      return 'assets/images/vaca.png';
-    case LifeStage.bull:
-      return 'assets/images/toro.png';
-    case LifeStage.colt:
-    case LifeStage.filly:
-      return 'assets/images/caballo.png';
-    case LifeStage.horse:
-    case LifeStage.mare:
-      return 'assets/images/caballo.png';
-    case LifeStage.donkey:
-    case LifeStage.donkeyFemale:
-      return 'assets/images/burro.png';
-    case LifeStage.mule:
-      return 'assets/images/mula.png';
-  }
+  return AnimalTaxonomy.assetForStage(stage);
 }
 
 String formatDate(DateTime? date, {bool withTime = false}) {

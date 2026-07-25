@@ -5,6 +5,7 @@
 export 'domain/domain.dart';
 export 'infrastructure/infrastructure.dart';
 export 'bloc/bloc.dart';
+export 'lote_card.dart';
 export 'lotes_list_view.dart';
 export 'lotes_tab.dart';
 export 'view/view.dart';

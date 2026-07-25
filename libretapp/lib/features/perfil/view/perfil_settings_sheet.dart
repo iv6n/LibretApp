@@ -1,0 +1,435 @@
+/// Settings sheet: theme, backup, export, edit profile.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/theme/theme_bloc.dart';
+import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/services/backup_service.dart';
+import 'package:libretapp/core/services/export_service.dart';
+import 'package:libretapp/features/exportar/cubit/export_cubit.dart';
+import 'package:libretapp/features/exportar/cubit/export_state.dart';
+import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
+import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
+import 'package:libretapp/features/perfil/data/perfil_model.dart';
+import 'package:libretapp/theme/app_theme.dart';
+import 'package:share_plus/share_plus.dart';
+
+void showPerfilSettingsSheet(BuildContext context, Perfil perfil) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: context.read<PerfilBloc>()),
+        BlocProvider.value(value: context.read<ThemeBloc>()),
+      ],
+      child: PerfilSettingsSheet(perfil: perfil),
+    ),
+  );
+}
+
+class PerfilSettingsSheet extends StatefulWidget {
+  const PerfilSettingsSheet({required this.perfil, super.key});
+
+  final Perfil perfil;
+
+  @override
+  State<PerfilSettingsSheet> createState() => _PerfilSettingsSheetState();
+}
+
+class _PerfilSettingsSheetState extends State<PerfilSettingsSheet> {
+  @override
+  Widget build(BuildContext context) {
+    return PerfilSettingsContent(
+      perfil: widget.perfil,
+      showCloseButton: true,
+      closeBeforeEdit: true,
+      shrinkWrap: true,
+    );
+  }
+}
+
+class PerfilSettingsContent extends StatefulWidget {
+  const PerfilSettingsContent({
+    required this.perfil,
+    this.showCloseButton = false,
+    this.closeBeforeEdit = false,
+    this.shrinkWrap = false,
+    super.key,
+  });
+
+  final Perfil perfil;
+  final bool showCloseButton;
+  final bool closeBeforeEdit;
+  final bool shrinkWrap;
+
+  @override
+  State<PerfilSettingsContent> createState() => _PerfilSettingsContentState();
+}
+
+class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
+  bool _animals = true;
+  bool _ubicaciones = true;
+  bool _eventos = true;
+
+  void _openEdit() {
+    final perfilBloc = context.read<PerfilBloc>();
+    if (widget.closeBeforeEdit) {
+      Navigator.of(context).pop();
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => BlocProvider.value(
+        value: perfilBloc,
+        child: _EditPerfilSheet(perfil: widget.perfil),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+
+    return ListView(
+      shrinkWrap: widget.shrinkWrap,
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 24),
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Text('Ajustes', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                if (widget.showCloseButton)
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar perfil'),
+              onTap: _openEdit,
+            ),
+            BlocBuilder<ThemeBloc, ThemeState>(
+              builder: (context, state) {
+                final isDark = state.themeMode == ThemeMode.dark;
+                return SwitchListTile(
+                  secondary: const Icon(Icons.dark_mode_outlined),
+                  title: const Text('Tema oscuro'),
+                  value: isDark,
+                  onChanged: (_) => context.read<ThemeBloc>().add(
+                    ThemeModeChanged(isDark ? ThemeMode.light : ThemeMode.dark),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.upload_file_outlined),
+              title: const Text('Exportar respaldo JSON'),
+              onTap: () => _exportBackup(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_for_offline_outlined),
+              title: const Text('Importar respaldo JSON'),
+              onTap: () => _importBackup(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.table_chart_outlined),
+              title: const Text('Exportar a Excel'),
+              onTap: () => context.push(AppRoutes.exportar),
+            ),
+            const Divider(),
+            BlocProvider(
+              create: (_) => ExportCubit(locator<ExportService>()),
+              child: BlocConsumer<ExportCubit, ExportState>(
+                listener: (context, state) {
+                  if (state is ExportSuccess) {
+                    Share.shareXFiles([XFile(state.filePath)]);
+                    context.read<ExportCubit>().reset();
+                  } else if (state is ExportError) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(state.message)));
+                    context.read<ExportCubit>().reset();
+                  }
+                },
+                builder: (context, state) {
+                  final loading = state is ExportLoading;
+                  return Column(
+                    children: [
+                      CheckboxListTile(
+                        title: const Text('Animales'),
+                        value: _animals,
+                        onChanged: loading
+                            ? null
+                            : (v) => setState(() => _animals = v ?? false),
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Ubicaciones'),
+                        value: _ubicaciones,
+                        onChanged: loading
+                            ? null
+                            : (v) => setState(() => _ubicaciones = v ?? false),
+                      ),
+                      CheckboxListTile(
+                        title: const Text('Eventos'),
+                        value: _eventos,
+                        onChanged: loading
+                            ? null
+                            : (v) => setState(() => _eventos = v ?? false),
+                      ),
+                      FilledButton.icon(
+                        onPressed:
+                            loading || (!_animals && !_ubicaciones && !_eventos)
+                            ? null
+                            : () => context.read<ExportCubit>().export(
+                                animals: _animals,
+                                ubicaciones: _ubicaciones,
+                                eventos: _eventos,
+                              ),
+                        icon: loading
+                            ? const SizedBox.square(
+                                dimension: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.ios_share_outlined),
+                        label: Text(loading ? 'Generando…' : 'Exportar rápido'),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportBackup(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final path = await locator<BackupService>().exportToFile();
+      if (!context.mounted) return;
+      if (path == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Exportación cancelada.')),
+        );
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: const Text('Respaldo guardado.'),
+          action: SnackBarAction(
+            label: 'Compartir',
+            onPressed: () => Share.shareXFiles([XFile(path)]),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _importBackup(BuildContext context) async {
+    final mode = await showDialog<BackupImportMode>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Modo de importación'),
+        content: const Text(
+          'Mezclar conserva datos locales. Reemplazar borra todo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, BackupImportMode.merge),
+            child: const Text('Mezclar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, BackupImportMode.replaceAll),
+            child: const Text('Reemplazar'),
+          ),
+        ],
+      ),
+    );
+    if (mode == null || !context.mounted) return;
+    try {
+      final summary = await locator<BackupService>().importFromFile(mode: mode);
+      if (!context.mounted) return;
+      if (summary == null) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Importados ${summary.animalsImported} animales, '
+            '${summary.lotesImported} lotes, '
+            '${summary.agendaEntriesImported} tareas, '
+            '${summary.workersImported} integrantes y '
+            '${summary.teamsImported} equipos, '
+            '${summary.milkingSessionsImported} ordeñas.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+}
+
+class _EditPerfilSheet extends StatefulWidget {
+  const _EditPerfilSheet({required this.perfil});
+  final Perfil perfil;
+
+  @override
+  State<_EditPerfilSheet> createState() => _EditPerfilSheetState();
+}
+
+class _EditPerfilSheetState extends State<_EditPerfilSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _nombre;
+  late final TextEditingController _apellido;
+  late final TextEditingController _email;
+  late final TextEditingController _telefono;
+  late final TextEditingController _finca;
+  late final TextEditingController _upp;
+  late final TextEditingController _direccion;
+
+  @override
+  void initState() {
+    super.initState();
+    _nombre = TextEditingController(text: widget.perfil.nombre);
+    _apellido = TextEditingController(text: widget.perfil.apellido);
+    _email = TextEditingController(text: widget.perfil.email);
+    _telefono = TextEditingController(text: widget.perfil.telefono);
+    _finca = TextEditingController(text: widget.perfil.finca);
+    _upp = TextEditingController(text: widget.perfil.upp);
+    _direccion = TextEditingController(text: widget.perfil.direccion);
+  }
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _apellido.dispose();
+    _email.dispose();
+    _telefono.dispose();
+    _finca.dispose();
+    _upp.dispose();
+    _direccion.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final updated = Perfil(
+      id: widget.perfil.id,
+      nombre: _nombre.text.trim(),
+      apellido: _apellido.text.trim(),
+      email: _email.text.trim(),
+      telefono: _telefono.text.trim(),
+      finca: _finca.text.trim(),
+      upp: _upp.text.trim(),
+      direccion: _direccion.text.trim(),
+    );
+    context.read<PerfilBloc>().add(SavePerfil(updated));
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Editar perfil',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _nombre,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _apellido,
+                      decoration: const InputDecoration(labelText: 'Apellido'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _finca,
+                decoration: const InputDecoration(labelText: 'Rancho / Finca'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _upp,
+                decoration: const InputDecoration(labelText: 'UPP'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _email,
+                decoration: const InputDecoration(labelText: 'Correo'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _telefono,
+                decoration: const InputDecoration(labelText: 'Teléfono'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _direccion,
+                decoration: const InputDecoration(labelText: 'Dirección'),
+              ),
+              const SizedBox(height: 24),
+              FilledButton(onPressed: _save, child: const Text('Guardar')),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

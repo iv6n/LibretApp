@@ -26,6 +26,7 @@ class RecordsTab extends StatelessWidget {
     final hasAnyRecords =
         data.weights.isNotEmpty ||
         data.productions.isNotEmpty ||
+        data.milkingRecords.isNotEmpty ||
         data.health.isNotEmpty ||
         data.reproductions.isNotEmpty ||
         data.commercial.isNotEmpty ||
@@ -107,6 +108,23 @@ class RecordsTab extends StatelessWidget {
                         '${l10n.detailRecordsScore}: ${r.score}',
                       if (r.notes != null) r.notes!,
                     ].where((e) => e.isNotEmpty).join(' · '),
+                  ),
+                )
+                .toList(),
+          ),
+          RecordSection(
+            icon: Icons.water_drop,
+            title: 'Ordeñas',
+            children: data.milkingRecords
+                .map(
+                  (record) => RecordTile(
+                    title:
+                        '${fmtDate(record.session.occurredAt)} · '
+                        '${record.entry.liters.toStringAsFixed(2)} L',
+                    subtitle: [
+                      record.session.shift.label,
+                      if (record.session.notes != null) record.session.notes!,
+                    ].join(' · '),
                   ),
                 )
                 .toList(),

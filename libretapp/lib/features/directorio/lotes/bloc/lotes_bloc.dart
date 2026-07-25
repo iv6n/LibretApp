@@ -85,9 +85,9 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
 
     try {
       final newLote = await repository.createLote(
-        nombre: event.nombre,
-        descripcion: event.descripcion,
-        notas: event.notas,
+        nombre: event.name,
+        descripcion: event.description,
+        notas: event.notes,
       );
 
       final updatedLotes = [...currentState.lotes, newLote];
@@ -96,7 +96,7 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         LotesActionSuccess(
           action: 'create',
           lotes: updatedLotes,
-          message: 'Lote "${event.nombre}" creado exitosamente',
+          message: 'Lote "${event.name}" creado exitosamente',
         ),
       );
 
@@ -362,10 +362,7 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     try {
       final lote = currentState.lotes.firstWhere((l) => l.uuid == event.uuid);
 
-      final closedLote = lote.copyWith(
-        activo: false,
-        fechaCierre: DateTime.now(),
-      );
+      final closedLote = lote.copyWith(active: false, closedAt: DateTime.now());
 
       await repository.updateLote(closedLote);
 
@@ -391,7 +388,7 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     try {
       final lote = currentState.lotes.firstWhere((l) => l.uuid == event.uuid);
 
-      final reopenedLote = lote.copyWith(activo: true);
+      final reopenedLote = lote.copyWith(active: true);
 
       await repository.updateLote(reopenedLote);
 

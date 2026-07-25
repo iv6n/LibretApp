@@ -1,7 +1,7 @@
 ﻿/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_controller \u2014 controller for the animals list screen.
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -84,7 +84,7 @@ class AnimalesListController extends ChangeNotifier {
   }
 
   LocationEntity? locationForAnimal(AnimalEntity animal) {
-    return locationById(animal.currentPaddockId) ??
+    return locationById(animal.currentLocationId) ??
         locationById(animal.initialLocationId);
   }
 
@@ -233,16 +233,24 @@ class AnimalesListController extends ChangeNotifier {
 }
 
 const Map<String, String> _legacyLocationAliases = {
-  'potrero-a': 'potrero',
-  'potrero-b': 'potrero',
-  'potrero-c': 'potrero',
-  'corral-crias': 'corral-engorda',
-  'feedlot-1': 'corral-engorda',
-  'rancho-principal': 'rancho-trabajo',
-  'rancho': 'rancho-trabajo',
-  'almacen': 'almacen-equipo',
-  'almacen-principal': 'almacen-equipo',
-  'monte-norte': 'monte',
-  'milpa-1': 'milpa-alfalfa',
-  'milpa-alfalfa-norte': 'milpa-alfalfa',
+  'potrero-a': 'milpa-corral-a',
+  'potrero-b': 'milpa-corral-b',
+  'potrero-c': 'ejido-corral-priv',
+  'potrero-d': 'casa-corral-2',
+  'corral-crias': 'milpa-corral-becerros',
+  'feedlot-1': 'casa-corral-1',
+  'rancho-principal': 'prop-casa',
+  'rancho-trabajo': 'prop-casa',
+  'rancho': 'prop-casa',
+  'gallinero-central': 'casa-house',
+  'almacen': 'casa-bodega',
+  'almacen-principal': 'casa-bodega',
+  'almacen-equipo': 'casa-bodega',
+  'monte-norte': 'monte-ejidal',
+  'monte': 'monte-ejidal',
+  'milpa-1': 'milpa-campo',
+  'milpa-alfalfa': 'milpa-campo',
+  'milpa-alfalfa-norte': 'milpa-campo',
+  'potrero': 'milpa-corral-a',
+  'corral-engorda': 'casa-corral-1',
 };

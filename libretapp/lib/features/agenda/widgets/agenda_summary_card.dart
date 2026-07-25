@@ -28,10 +28,12 @@ class AgendaSummaryCard extends StatelessWidget {
     final timeFormatter = DateFormat('HH:mm');
     final dateFormatter = DateFormat('d MMM, EEEE');
 
-    final totalAnimals = entry.animalIds.length + entry.loteIds.length;
     final completedCount = entry.completedAnimalIds.length;
-    final hasAnimals = totalAnimals > 0;
-    final isCompleted = entry.estado == AgendaEstado.completado;
+    final hasAnimals = entry.animalIds.isNotEmpty || entry.loteIds.isNotEmpty;
+    final isCompleted =
+        entry.estado == AgendaEstado.completado ||
+        entry.estado == AgendaEstado.verificado ||
+        entry.estado == AgendaEstado.cancelado;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -136,7 +138,9 @@ class AgendaSummaryCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '$completedCount / ${entry.animalIds.length} animales',
+                          entry.loteIds.isEmpty
+                              ? '$completedCount / ${entry.animalIds.length} animales'
+                              : '$completedCount animales completados',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -151,19 +155,21 @@ class AgendaSummaryCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: entry.animalIds.isEmpty
-                            ? 0
-                            : completedCount / entry.animalIds.length,
-                        minHeight: 6,
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation<Color>(estadoColor),
+                    if (entry.loteIds.isEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: entry.animalIds.isEmpty
+                              ? 0
+                              : completedCount / entry.animalIds.length,
+                          minHeight: 6,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation<Color>(estadoColor),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 10),
+                    ],
                   ],
                   // Details row + Realizar button
                   Row(

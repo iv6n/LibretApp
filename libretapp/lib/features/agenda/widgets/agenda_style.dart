@@ -2,32 +2,33 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 Color colorForTipo(String tipo) {
   switch (tipo.toLowerCase()) {
     case 'vacunación':
-      return Colors.teal;
+      return AppColors.primary;
     case 'desparasitación':
-      return const Color(0xFF8BC34A);
+      return AppColors.success;
     case 'pesaje':
-      return Colors.blueAccent;
+      return AppColors.secondary;
     case 'revisión veterinaria':
-      return Colors.cyan;
+      return const Color(0xFF3A7F78);
     case 'inseminación':
-      return const Color(0xFFE91E8C);
+      return AppColors.earth;
     case 'parto':
     case 'gestación':
-      return const Color(0xFF9C27B0);
+      return const Color(0xFF8B623A);
     case 'movimiento de lote':
-      return Colors.orange;
+      return AppColors.earth;
     case 'mantenimiento':
-      return Colors.amber;
+      return AppColors.amber;
     case 'alerta':
       return Colors.redAccent;
     case 'recordatorio':
-      return Colors.indigo;
+      return AppColors.secondary;
     default:
-      return Colors.blueGrey;
+      return AppColors.primary;
   }
 }
 
@@ -61,22 +62,36 @@ IconData iconForTipo(String tipo) {
 
 Color colorForEstado(String estado) {
   switch (estado) {
+    case 'verificado':
     case 'completado':
-      return Colors.green;
+      return AppColors.success;
     case 'en_progreso':
-      return Colors.blue;
+      return AppColors.secondary;
+    case 'bloqueado':
+    case 'cancelado':
+      return Colors.redAccent;
+    case 'borrador':
+      return Colors.blueGrey;
     case 'pendiente':
     default:
-      return Colors.orange;
+      return AppColors.amber;
   }
 }
 
 IconData iconForEstado(String estado) {
   switch (estado) {
+    case 'verificado':
+      return Icons.verified_outlined;
     case 'completado':
       return Icons.check_circle_outline;
     case 'en_progreso':
       return Icons.timelapse;
+    case 'bloqueado':
+      return Icons.pause_circle_outline;
+    case 'cancelado':
+      return Icons.cancel_outlined;
+    case 'borrador':
+      return Icons.edit_note_outlined;
     case 'pendiente':
     default:
       return Icons.schedule;
@@ -85,10 +100,18 @@ IconData iconForEstado(String estado) {
 
 String labelForEstado(String estado) {
   switch (estado) {
+    case 'verificado':
+      return 'Verificado';
     case 'completado':
       return 'Completado';
     case 'en_progreso':
       return 'En progreso';
+    case 'bloqueado':
+      return 'Bloqueado';
+    case 'cancelado':
+      return 'Cancelado';
+    case 'borrador':
+      return 'Borrador';
     case 'pendiente':
     default:
       return 'Pendiente';

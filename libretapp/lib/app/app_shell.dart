@@ -36,12 +36,13 @@ class _AppShellState extends State<AppShell>
   int _fabVersion = 0;
   final Map<int, ShellFabConfig> _fabCache = <int, ShellFabConfig>{};
   final Map<int, bool> _chromeCache = <int, bool>{};
+  bool _treeActive = true;
 
   final List<_NavItem> _navItems = const [
     _NavItem(routeName: AppRoutes.nameDirectorio, icon: Icons.folder),
     _NavItem(routeName: AppRoutes.nameAgenda, icon: Icons.calendar_today),
     _NavItem(routeName: AppRoutes.nameInicio, icon: Icons.home),
-    _NavItem(routeName: AppRoutes.nameUbicaciones, icon: Icons.location_on),
+    _NavItem(routeName: AppRoutes.nameReportes, icon: Icons.analytics),
     _NavItem(routeName: AppRoutes.namePerfil, icon: Icons.person),
   ];
 
@@ -53,7 +54,7 @@ class _AppShellState extends State<AppShell>
     final chromeVisible =
         !_isOverlayRoute(routePath) && _chromeForIndex(selectedIndex);
     final fabConfig = _fabForIndex(selectedIndex);
-    final accent = Theme.of(context).colorScheme.primary;
+    final accent = Theme.of(context).colorScheme.tertiary;
     final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
 
     final navItems = List<AppNavItemConfig>.generate(
@@ -66,6 +67,7 @@ class _AppShellState extends State<AppShell>
     );
 
     final isHomeSelected = selectedIndex == 2;
+    final homeFabColor = AppColors.accent;
 
     return ShellChromeVisibility(
       visible: chromeVisible,
@@ -97,7 +99,7 @@ class _AppShellState extends State<AppShell>
                   center: _buildCenterButton(
                     context,
                     isHomeSelected: isHomeSelected,
-                    accent: accent,
+                    accent: isHomeSelected ? homeFabColor : accent,
                   ),
                   barHeight: _barHeight,
                   barHorizontalPadding: _barHorizontalPadding,
@@ -128,6 +130,27 @@ class _AppShellState extends State<AppShell>
 
   int get _activeIndex => widget.navigationShell.currentIndex;
 
+  @override
+  int get activeBranchIndex => _activeIndex;
+
+  @override
+  void activate() {
+    super.activate();
+    _treeActive = true;
+  }
+
+  @override
+  void deactivate() {
+    _treeActive = false;
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
+    _treeActive = false;
+    super.dispose();
+  }
+
   ShellFabConfig? _fabForIndex(int index) {
     if (!_isFabAllowed(index)) return null;
     return _fabCache[index];
@@ -143,8 +166,12 @@ class _AppShellState extends State<AppShell>
     required Color accent,
   }) {
     final l10n = AppLocalizations.of(context);
-    final surface = Theme.of(context).colorScheme.surface;
-    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final inactiveBackground = theme.brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.10)
+        : Colors.grey.shade200;
+    final inactiveForeground = onSurface.withValues(alpha: 0.46);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -155,8 +182,11 @@ class _AppShellState extends State<AppShell>
           height: 44,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: isHomeSelected ? accent : surface,
+              color: isHomeSelected ? accent : inactiveBackground,
               borderRadius: BorderRadius.circular(14),
+              border: isHomeSelected
+                  ? null
+                  : Border.all(color: onSurface.withValues(alpha: 0.10)),
               boxShadow: [
                 if (isHomeSelected)
                   BoxShadow(
@@ -172,9 +202,7 @@ class _AppShellState extends State<AppShell>
               child: Icon(
                 isHomeSelected ? Icons.add : Icons.home,
                 size: 22,
-                color: isHomeSelected
-                    ? Colors.white
-                    : onSurface.withValues(alpha: 0.8),
+                color: isHomeSelected ? Colors.white : inactiveForeground,
               ),
             ),
           ),
@@ -184,7 +212,7 @@ class _AppShellState extends State<AppShell>
           style: TextStyle(
             fontSize: 9.0,
             fontWeight: isHomeSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isHomeSelected ? accent : Colors.grey.shade600,
+            color: isHomeSelected ? accent : inactiveForeground,
           ),
         ),
       ],
@@ -192,21 +220,25 @@ class _AppShellState extends State<AppShell>
   }
 
   @override
-  void updateFab(ShellFabConfig? config) => _updateFab(config);
+  void updateFab(ShellFabConfig? config, {required int branchIndex}) =>
+      _updateFab(config, branchIndex: branchIndex);
 
   @override
-  void removeFab(ShellFabConfig? config) => _removeFab(config);
+  void removeFab(ShellFabConfig? config, {required int branchIndex}) =>
+      _removeFab(config, branchIndex: branchIndex);
 
   @override
-  void updateChromeVisibility(bool visible) => _updateChromeVisibility(visible);
+  void updateChromeVisibility(bool visible, {required int branchIndex}) =>
+      _updateChromeVisibility(visible, branchIndex: branchIndex);
 
   @override
-  void removeChromeVisibility(bool visible) {
-    final index = _activeIndex;
+  void removeChromeVisibility(bool visible, {required int branchIndex}) {
+    if (!_canMutateShell) return;
+    final index = branchIndex;
     final shouldRestore = !visible || !_chromeForIndex(index);
     if (!shouldRestore) return;
     void restore() {
-      if (!mounted) return;
+      if (!_canMutateShell) return;
       setState(() {
         _chromeCache.remove(index);
       });
@@ -223,8 +255,9 @@ class _AppShellState extends State<AppShell>
     }
   }
 
-  void _updateFab(ShellFabConfig? config) {
-    final index = _activeIndex;
+  void _updateFab(ShellFabConfig? config, {required int branchIndex}) {
+    if (!_canMutateShell) return;
+    final index = branchIndex;
     if (!_isFabAllowed(index)) {
       if (_fabCache.containsKey(index)) {
         setState(() {
@@ -247,24 +280,16 @@ class _AppShellState extends State<AppShell>
     _logFab('Set FAB v$_fabVersion index=$index id=${config?.id}');
   }
 
-  void _removeFab(ShellFabConfig? config) {
+  void _removeFab(ShellFabConfig? config, {required int branchIndex}) {
+    if (!_canMutateShell) return;
     final targetEntries = <int>[];
-    if (config == null) {
-      final active = _activeIndex;
-      if (_fabCache.containsKey(active)) {
-        targetEntries.add(active);
-      }
-    } else {
-      _fabCache.forEach((index, cached) {
-        if (cached.id == config.id) {
-          targetEntries.add(index);
-        }
-      });
+    final cached = _fabCache[branchIndex];
+    if (cached != null && (config == null || cached.id == config.id)) {
+      targetEntries.add(branchIndex);
     }
     if (targetEntries.isEmpty) return;
-    if (!mounted) return;
     void removeEntries() {
-      if (!mounted) return;
+      if (!_canMutateShell) return;
       setState(() {
         _fabVersion++;
         for (final index in targetEntries) {
@@ -302,14 +327,17 @@ class _AppShellState extends State<AppShell>
         path.startsWith('${AppRoutes.registro}/');
   }
 
-  void _updateChromeVisibility(bool visible) {
-    final index = _activeIndex;
+  void _updateChromeVisibility(bool visible, {required int branchIndex}) {
+    if (!_canMutateShell) return;
+    final index = branchIndex;
     final current = _chromeForIndex(index);
     if (current == visible) return;
     setState(() {
       _chromeCache[index] = visible;
     });
   }
+
+  bool get _canMutateShell => mounted && _treeActive;
 
   void _onCentralTap(BuildContext context) {
     final isHome = widget.navigationShell.currentIndex == 2;
@@ -348,8 +376,8 @@ class _AppShellState extends State<AppShell>
         return l10n.navDirectory;
       case AppRoutes.nameAgenda:
         return l10n.navAgenda;
-      case AppRoutes.nameUbicaciones:
-        return l10n.navLocations;
+      case AppRoutes.nameReportes:
+        return l10n.navReports;
       case AppRoutes.namePerfil:
         return l10n.navProfile;
       case AppRoutes.nameInicio:

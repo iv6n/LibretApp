@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
@@ -51,10 +52,10 @@ class _FakeLotesRepository implements LotesRepository {
   }) async {
     final lote = LoteEntity(
       uuid: 'created-$nombre',
-      nombre: nombre,
-      descripcion: descripcion,
-      notas: notas,
-      fechaCreacion: DateTime(2024, 1, 1),
+      name: nombre,
+      description: descripcion,
+      notes: notas,
+      createdAt: DateTime(2024, 1, 1),
       lastUpdateDate: DateTime(2024, 1, 1),
     );
     _lotes.add(lote);
@@ -104,11 +105,11 @@ class _FakeLotesRepository implements LotesRepository {
 
   @override
   Future<List<LoteEntity>> getActiveLotes() async =>
-      _lotes.where((lote) => lote.activo).toList();
+      _lotes.where((lote) => lote.active).toList();
 
   @override
   Future<List<LoteEntity>> getInactiveLotes() async =>
-      _lotes.where((lote) => !lote.activo).toList();
+      _lotes.where((lote) => !lote.active).toList();
 }
 
 void main() {
@@ -121,9 +122,9 @@ void main() {
       final repository = _FakeLotesRepository([
         LoteEntity(
           uuid: 'lote-1',
-          nombre: 'Lote Norte',
-          descripcion: 'Test lote',
-          fechaCreacion: DateTime(2024, 1, 1),
+          name: 'Lote Norte',
+          description: 'Test lote',
+          createdAt: DateTime(2024, 1, 1),
           lastUpdateDate: DateTime(2024, 1, 1),
         ),
       ]);
@@ -142,15 +143,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Lote Norte'), findsOneWidget);
 
-      final popupFinder = find.byWidgetPredicate(
-        (widget) => widget is PopupMenuButton,
-      );
-      expect(popupFinder, findsWidgets);
-
-      final popupState = tester.state<PopupMenuButtonState>(popupFinder.first);
-      popupState.showButtonMenu();
+      // Deslizar la tarjeta a la izquierda para revelar la acción de eliminar
+      await tester.drag(find.byType(Slidable).first, const Offset(-300, 0));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Eliminar').first);
+      await tester.tap(find.widgetWithText(SlidableAction, 'Eliminar'));
       await tester.pumpAndSettle();
 
       expect(find.text('Eliminar lote'), findsOneWidget);

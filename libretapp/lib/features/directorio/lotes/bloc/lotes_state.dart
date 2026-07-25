@@ -42,10 +42,10 @@ class LotesLoaded extends LotesState {
   }
 
   /// Filtra los lotes activos
-  List<LoteEntity> get activeLotes => lotes.where((l) => l.activo).toList();
+  List<LoteEntity> get activeLotes => lotes.where((l) => l.active).toList();
 
   /// Filtra los lotes inactivos/cerrados
-  List<LoteEntity> get inactiveLotes => lotes.where((l) => !l.activo).toList();
+  List<LoteEntity> get inactiveLotes => lotes.where((l) => !l.active).toList();
 
   LotesLoaded copyWith({List<LoteEntity>? lotes, String? selectedLoteUuid}) {
     return LotesLoaded(

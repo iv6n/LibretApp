@@ -56,3 +56,37 @@ class MarkAnimalCompleted extends AgendaEvent {
   @override
   List<Object> get props => [entryId, animalId];
 }
+
+class ChangeAgendaStatus extends AgendaEvent {
+  const ChangeAgendaStatus({
+    required this.entryId,
+    required this.status,
+    this.reason = '',
+    this.actorId = '',
+  });
+
+  final String entryId;
+  final String status;
+  final String reason;
+  final String actorId;
+
+  @override
+  List<Object> get props => [entryId, status, reason, actorId];
+}
+
+class ToggleAgendaChecklistItem extends AgendaEvent {
+  const ToggleAgendaChecklistItem({
+    required this.entryId,
+    required this.itemId,
+    required this.completed,
+    this.actorId = '',
+  });
+
+  final String entryId;
+  final String itemId;
+  final bool completed;
+  final String actorId;
+
+  @override
+  List<Object> get props => [entryId, itemId, completed, actorId];
+}

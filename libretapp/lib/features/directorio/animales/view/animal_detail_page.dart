@@ -17,6 +17,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
+import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Detail page for a single animal.
@@ -40,6 +41,7 @@ class AnimalDetailPage extends StatefulWidget {
     CommercialRecordRepository? commercialRepo,
     MovementRecordRepository? movementRepo,
     CostRecordRepository? costRepo,
+    MilkingRepository? milkingRepo,
     super.key,
   }) : repository = repository ?? locator<AnimalRepository>(),
        lotesRepository = lotesRepository ?? locator<LotesRepository>(),
@@ -50,7 +52,8 @@ class AnimalDetailPage extends StatefulWidget {
            reproductionRepo ?? locator<ReproductionRecordRepository>(),
        commercialRepo = commercialRepo ?? locator<CommercialRecordRepository>(),
        movementRepo = movementRepo ?? locator<MovementRecordRepository>(),
-       costRepo = costRepo ?? locator<CostRecordRepository>();
+       costRepo = costRepo ?? locator<CostRecordRepository>(),
+       milkingRepo = milkingRepo ?? locator<MilkingRepository>();
 
   final String animalUuid;
   final AnimalRepository repository;
@@ -62,6 +65,7 @@ class AnimalDetailPage extends StatefulWidget {
   final CommercialRecordRepository commercialRepo;
   final MovementRecordRepository movementRepo;
   final CostRecordRepository costRepo;
+  final MilkingRepository milkingRepo;
   final bool showQuickActions;
 
   @override
@@ -102,6 +106,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final commercialFuture = widget.commercialRepo.getCommercialRecords(uuid);
     final movementsFuture = widget.movementRepo.getMovementRecords(uuid);
     final costsFuture = widget.costRepo.getCostRecords(uuid);
+    final milkingFuture = widget.milkingRepo.getRecordsByAnimal(uuid);
 
     final weights = await weightsFuture;
     final reproductions = await reproductionsFuture;
@@ -110,6 +115,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final commercial = await commercialFuture;
     final movements = await movementsFuture;
     final costs = await costsFuture;
+    final milkingRecords = await milkingFuture;
 
     return DetailData(
       animal: animal,
@@ -120,6 +126,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       commercial: commercial,
       movements: movements,
       costs: costs,
+      milkingRecords: milkingRecords,
     );
   }
 
@@ -168,6 +175,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
                       final saved = await context.pushNamed(
                         AppRoutes.nameAnimalRegistroProduccion,
                         pathParameters: {'uuid': widget.animalUuid},
+                      );
+                      if (saved == true && mounted) {
+                        _reload();
+                      }
+                    },
+                    onAddMilking: () async {
+                      final saved = await context.pushNamed(
+                        AppRoutes.nameRegistroOrdena,
+                        queryParameters: {'animalUuid': widget.animalUuid},
                       );
                       if (saved == true && mounted) {
                         _reload();

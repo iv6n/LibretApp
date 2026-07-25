@@ -175,7 +175,7 @@ class _WaterRecordSheetState extends State<WaterRecordSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _levelController;
   late final TextEditingController _notesController;
-  WaterType _type = WaterType.pozo;
+  WaterType _type = WaterType.well;
 
   @override
   void initState() {
@@ -237,7 +237,7 @@ class _WaterRecordSheetState extends State<WaterRecordSheet> {
                     )
                     .toList(),
                 onChanged: (value) =>
-                    setState(() => _type = value ?? WaterType.pozo),
+                    setState(() => _type = value ?? WaterType.well),
               ),
               const SizedBox(height: 12),
               TextFormField(

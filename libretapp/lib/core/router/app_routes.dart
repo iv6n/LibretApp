@@ -29,15 +29,18 @@ class AppRoutes {
   static const agenda = '/agenda';
   static const agendaNuevo = '/agenda/nuevo';
   static const agendaTask = '/agenda/task/:id';
-  static const ubicaciones = '/ubicaciones';
-  static const ubicacionNueva = '/ubicaciones/nueva';
-  static const ubicacionDetalle = '/ubicaciones/:uuid';
-  static const ubicacionEditar = '/ubicaciones/:uuid/editar';
+  static const reportes = '/reportes';
+  static const ubicaciones = '/directorio?tab=ubicaciones';
+  static const ubicacionesLegacy = '/ubicaciones';
+  static const ubicacionNueva = '/directorio/ubicaciones/nueva';
+  static const ubicacionDetalle = '/directorio/ubicaciones/:uuid';
+  static const ubicacionEditar = '/directorio/ubicaciones/:uuid/editar';
   static const perfil = '/perfil';
   static const registro = '/registro';
   static const registroSanitario = '/registro/sanitario';
   static const registroPeso = '/registro/peso';
   static const registroProduccion = '/registro/produccion';
+  static const registroOrdena = '/registro/ordena';
   static const registroReproduccion = '/registro/reproduccion';
   static const registroComercial = '/registro/comercial';
   static const registroMovimiento = '/registro/movimiento';
@@ -47,6 +50,8 @@ class AppRoutes {
   static const registroTratarLote = '/registro/tratar-lote';
   static const finanzas = '/finanzas';
   static const exportar = '/exportar';
+  static const perfilReporte = '/perfil/reporte/:tipo';
+  static const perfilBibliotecaItem = '/perfil/biblioteca/:id';
 
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
@@ -68,6 +73,7 @@ class AppRoutes {
   static const nameAgenda = 'agenda_page';
   static const nameAgendaNuevo = 'agenda_nuevo';
   static const nameAgendaTask = 'agenda_task';
+  static const nameReportes = 'reportes';
   static const nameUbicaciones = 'ubicaciones';
   static const nameUbicacionNueva = 'ubicacion_nueva';
   static const nameUbicacionDetalle = 'ubicacion_detalle';
@@ -77,6 +83,7 @@ class AppRoutes {
   static const nameRegistroSanitario = 'registro_sanitario';
   static const nameRegistroPeso = 'registro_peso';
   static const nameRegistroProduccion = 'registro_produccion';
+  static const nameRegistroOrdena = 'registro_ordena';
   static const nameRegistroReproduccion = 'registro_reproduccion';
   static const nameRegistroComercial = 'registro_comercial';
   static const nameRegistroMovimiento = 'registro_movimiento';
@@ -86,6 +93,8 @@ class AppRoutes {
   static const nameRegistroTratarLote = 'registro_tratar_lote';
   static const nameFinanzas = 'finanzas';
   static const nameExportar = 'exportar';
+  static const namePerfilReporte = 'perfil_reporte';
+  static const namePerfilBibliotecaItem = 'perfil_biblioteca_item';
 
   static String animalNuevoPath() => '/directorio/animales/nuevo';
   static String animalNuevoRapidoPath() => '/directorio/animales/nuevo-rapido';
@@ -109,9 +118,14 @@ class AppRoutes {
   static String loteNuevoPath() => '/directorio/lotes/nuevo';
   static String loteDetallePath(String uuid) => '/directorio/lotes/$uuid';
   static String loteEditarPath(String uuid) => '/directorio/lotes/$uuid/editar';
-  static String ubicacionNuevaPath() => '/ubicaciones/nueva';
-  static String ubicacionDetallePath(String uuid) => '/ubicaciones/$uuid';
-  static String ubicacionEditarPath(String uuid) => '/ubicaciones/$uuid/editar';
+  static String directorioUbicacionesPath() => '/directorio?tab=ubicaciones';
+  static String ubicacionNuevaPath() => '/directorio/ubicaciones/nueva';
+  static String ubicacionDetallePath(String uuid) =>
+      '/directorio/ubicaciones/$uuid';
+  static String ubicacionEditarPath(String uuid) =>
+      '/directorio/ubicaciones/$uuid/editar';
   static String agendaNuevoPath() => '/agenda/nuevo';
   static String registroTratarLotePath() => '/registro/tratar-lote';
+  static String perfilReportePath(String tipo) => '/perfil/reporte/$tipo';
+  static String perfilBibliotecaItemPath(String id) => '/perfil/biblioteca/$id';
 }

@@ -10,9 +10,11 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
 
 part 'app_event.dart';
 part 'app_state.dart';
@@ -32,11 +34,15 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   final Set<String> _supportedLanguageCodes;
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
-    await _purgeEventsOnce();
     await _syncAutomaticReminders();
 
     // Ejecutar migración de lotes si es necesaria
     try {
+      if (!locator.isRegistered<BatchMigrationService>() &&
+          (!locator.isRegistered<AnimalRepository>() ||
+              !locator.isRegistered<LotesRepository>())) {
+        return _finishStartup(emit);
+      }
       final migrationService = BatchMigrationService(
         animalRepository: locator(),
         lotesRepository: locator(),
@@ -51,33 +57,30 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       );
     }
 
-    final languageCode = await _resolveInitialLanguage();
-    emit(AppReady(languageCode: languageCode));
-  }
-
-  Future<void> _purgeEventsOnce() async {
-    final alreadyDone = _prefs.getBool(PrefsKeys.eventsInitialPurgeV1Done);
-    if (alreadyDone == true) return;
-
+    // Ejecutar migración de enums de ubicaciones (Spanish → English strings)
     try {
-      final eventosRepository = locator<AgendaRepository>();
-      await eventosRepository.clearAll();
-      await _prefs.setBool(PrefsKeys.eventsInitialPurgeV1Done, true);
-      LoggerService.i(
-        'Limpieza inicial de eventos aplicada (v1)',
-        tag: 'AppBloc',
-      );
+      if (locator.isRegistered<LocationEnumMigrationService>()) {
+        await locator<LocationEnumMigrationService>().runIfNeeded();
+      }
     } catch (e, st) {
       LoggerService.e(
-        'Error al limpiar eventos iniciales: $e',
+        'Error durante migracion de enums de ubicaciones: $e',
         tag: 'AppBloc',
         stackTrace: st,
       );
     }
+
+    await _finishStartup(emit);
+  }
+
+  Future<void> _finishStartup(Emitter<AppState> emit) async {
+    final languageCode = await _resolveInitialLanguage();
+    emit(AppReady(languageCode: languageCode));
   }
 
   Future<void> _syncAutomaticReminders() async {
     try {
+      if (!locator.isRegistered<AgendaReminderSyncService>()) return;
       final syncService = locator<AgendaReminderSyncService>();
       final generated = await syncService.sync();
       LoggerService.i(

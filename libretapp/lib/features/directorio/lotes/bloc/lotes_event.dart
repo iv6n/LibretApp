@@ -23,14 +23,14 @@ class LoadLotes extends LotesEvent {
 
 /// Evento para crear un nuevo lote
 class CreateLote extends LotesEvent {
-  const CreateLote({required this.nombre, this.descripcion, this.notas});
+  const CreateLote({required this.name, this.description, this.notes});
 
-  final String nombre;
-  final String? descripcion;
-  final String? notas;
+  final String name;
+  final String? description;
+  final String? notes;
 
   @override
-  List<Object> get props => [nombre, descripcion ?? '', notas ?? ''];
+  List<Object> get props => [name, description ?? '', notes ?? ''];
 }
 
 /// Evento para actualizar un lote existente

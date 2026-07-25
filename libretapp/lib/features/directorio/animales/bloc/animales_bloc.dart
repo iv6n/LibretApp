@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/core/constants/ui_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -250,7 +251,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
 
       final now = DateTime.now();
       final updated = current.copyWith(
-        currentPaddockId: event.locationId,
+        currentLocationId: event.locationId,
         initialLocationId:
             current.initialLocationId ??
             event.locationId ??
@@ -320,6 +321,10 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         final fields = <String?>[
           animal.visualId,
           animal.breed,
+          animal.crossBreed,
+          animal.sireBreed,
+          animal.damBreed,
+          animalSearchPresentationText(animal),
           animal.species.displayName,
           animal.category.displayName,
           animal.lifeStage.displayName,

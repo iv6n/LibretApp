@@ -12,6 +12,7 @@ class Perfil extends Equatable {
     required this.telefono,
     required this.finca,
     required this.direccion,
+    this.upp = '',
   });
   final String id;
   final String nombre;
@@ -20,6 +21,31 @@ class Perfil extends Equatable {
   final String telefono;
   final String finca;
   final String direccion;
+  final String upp;
+
+  String get fullName => '$nombre $apellido'.trim();
+
+  Perfil copyWith({
+    String? id,
+    String? nombre,
+    String? apellido,
+    String? email,
+    String? telefono,
+    String? finca,
+    String? direccion,
+    String? upp,
+  }) {
+    return Perfil(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      apellido: apellido ?? this.apellido,
+      email: email ?? this.email,
+      telefono: telefono ?? this.telefono,
+      finca: finca ?? this.finca,
+      direccion: direccion ?? this.direccion,
+      upp: upp ?? this.upp,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -29,6 +55,7 @@ class Perfil extends Equatable {
     'telefono': telefono,
     'finca': finca,
     'direccion': direccion,
+    'upp': upp,
   };
 
   factory Perfil.fromJson(Map<String, dynamic> json) => Perfil(
@@ -39,6 +66,7 @@ class Perfil extends Equatable {
     telefono: json['telefono'] as String? ?? '',
     finca: json['finca'] as String? ?? '',
     direccion: json['direccion'] as String? ?? '',
+    upp: json['upp'] as String? ?? '',
   );
 
   @override
@@ -50,5 +78,6 @@ class Perfil extends Equatable {
     telefono,
     finca,
     direccion,
+    upp,
   ];
 }

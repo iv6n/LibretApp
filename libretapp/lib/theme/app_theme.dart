@@ -4,23 +4,45 @@ library;
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF1F6F4A); // Dark ranch green
-  static const primaryDark = Color(0xFF0F3E2E); // Deeper for chrome
-  static const secondary = Color(0xFF27526E); // Muted blue accent
-  static const accent = Color(0xFFD8842A); // Warm amber accent
+  static const primary = Color(0xFF2F5D50); // Verde Bosque
+  static const primaryDark = Color(0xFF18362D); // Verde Bosque deep
+  static const secondary = Color(0xFF4A7C95); // Azul Vaquero
+  static const accent = Color(0xFF7B4B2A); // Cafe Cuero
+  static const earth = Color(0xFFB08968); // Cafe Tierra
+  static const amber = Color(0xFFC58B2A);
   static const success = Color(0xFF15803D);
-  static const warning = Color(0xFFCA8A04);
+  static const warning = amber;
   static const error = Color(0xFFB91C1C);
 }
 
 class LightColors {
-  static const surface = Color(0xFFF5F6F7); // Neutral light grey
-  static const surfaceAlt = Color(0xFFEFF1F3);
+  static const _cream = Color(0xFFF6F1E8); // Crema
+  static const _boneWhite = Color(0xFFFFFDF8); // Blanco Calido
+  static const _creamSoft = Color(0xFFFAF6EE); // Crema ligera
+
+  /// Page scaffold and app bar background.
+  static const background = _boneWhite;
+
+  /// Segmented tab track and accent surfaces.
+  static const elevated = _cream;
+
+  /// Card and chip surfaces — lighter than [elevated].
+  static const cardSurface = _creamSoft;
+
+  static const surface = cardSurface;
+
+  /// Inputs and subtle inset controls placed inside cream surfaces.
+  static const surfaceAlt = _boneWhite;
+
+  static const surfaceContainerLow = _boneWhite;
+  static const surfaceContainerHighest = _cream;
+
   static const textPrimary = Color(0xFF0F1F1A);
   static const textSecondary = Color(0xFF2F3F38);
   static const textMuted = Color(0xFF6A7C73);
-  static const border = Color(0xFFE1E4E6);
-  static const navBackground = Color(0xFFFFFFFF);
+  static const border = Color(0xFFE4D8C9);
+  static const borderSoft = Color(0xFFEDE2D3);
+  static const navBackground = Color(0xFFFFFDF8);
 }
 
 class DarkColors {
@@ -138,14 +160,19 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         tertiary: AppColors.accent,
-        surface: LightColors.surface,
+        surface: LightColors.cardSurface,
+        surfaceContainerLow: LightColors.surfaceContainerLow,
+        surfaceContainer: LightColors.cardSurface,
+        surfaceContainerHigh: LightColors.cardSurface,
+        surfaceContainerHighest: LightColors.surfaceContainerHighest,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onTertiary: const Color(0xFF24170C),
+        onTertiary: Colors.white,
         onSurface: LightColors.textPrimary,
         outline: LightColors.border,
+        outlineVariant: LightColors.borderSoft,
       ),
-      scaffoldBackgroundColor: LightColors.surface,
+      scaffoldBackgroundColor: LightColors.background,
       extensions: const [
         // Shell chrome palette (nav background/shadow, FAB colors).
         ShellChromeTheme(
@@ -158,21 +185,25 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
-        backgroundColor: LightColors.surface,
+        backgroundColor: LightColors.background,
         foregroundColor: LightColors.textPrimary,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: AppTextStyles.titleMd.copyWith(
           color: LightColors.textPrimary,
         ),
       ),
+      tabBarTheme: const TabBarThemeData(
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: WidgetStatePropertyAll<Color>(Colors.transparent),
+      ),
       cardTheme: CardThemeData(
         elevation: 2,
         margin: EdgeInsets.zero,
         color: Color.alphaBlend(
           Colors.black.withValues(alpha: 0.04),
-          LightColors.surface,
+          LightColors.cardSurface,
         ),
-        shadowColor: AppColors.primary.withValues(alpha: 0.08),
+        shadowColor: AppColors.accent.withValues(alpha: 0.08),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
@@ -197,12 +228,31 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.6),
         ),
         prefixIconColor: LightColors.textMuted,
         suffixIconColor: LightColors.textMuted,
         labelStyle: const TextStyle(color: LightColors.textMuted),
         hintStyle: const TextStyle(color: LightColors.textMuted),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
@@ -219,7 +269,7 @@ class AppTheme {
         ),
         side: const BorderSide(color: LightColors.border),
         selectedColor: AppColors.accent.withValues(alpha: 0.14),
-        backgroundColor: LightColors.surface,
+        backgroundColor: LightColors.cardSurface,
       ),
       dividerTheme: const DividerThemeData(
         space: AppSpacing.md,
@@ -242,7 +292,7 @@ class AppTheme {
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.accent,
-        foregroundColor: AppColors.primaryDark,
+        foregroundColor: Colors.white,
       ),
       textTheme: lightTextTheme,
       primaryTextTheme: lightTextTheme,
@@ -270,7 +320,7 @@ class AppTheme {
         surface: DarkColors.surface,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onTertiary: const Color(0xFF24170C),
+        onTertiary: Colors.white,
         onSurface: DarkColors.textPrimary,
         outline: DarkColors.border,
       ),
@@ -280,7 +330,7 @@ class AppTheme {
         const ShellChromeTheme(
           navBackground: DarkColors.navBackground,
           navShadow: Color(0x66000000),
-          fabBackground: AppColors.primary,
+          fabBackground: AppColors.accent,
           fabForeground: Colors.white,
         ),
       ],
@@ -290,6 +340,10 @@ class AppTheme {
         backgroundColor: DarkColors.navBackground,
         foregroundColor: DarkColors.textPrimary,
         surfaceTintColor: Colors.transparent,
+      ),
+      tabBarTheme: const TabBarThemeData(
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: WidgetStatePropertyAll<Color>(Colors.transparent),
       ),
       cardTheme: CardThemeData(
         elevation: 3,
@@ -330,6 +384,25 @@ class AppTheme {
         labelStyle: const TextStyle(color: DarkColors.textMuted),
         hintStyle: const TextStyle(color: DarkColors.textMuted),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+        ),
+      ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.sm),
@@ -367,7 +440,7 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
       ),
       textTheme: darkTextTheme,

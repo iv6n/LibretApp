@@ -118,7 +118,8 @@ class IsarAnimal {
   String? earTagColor;
 
   // ─── LOCATION ──────────────────────────────────────────────────────
-  String? currentPaddockId;
+  @Name('currentPaddockId')
+  String? currentLocationId;
   String? initialLocationId;
   DateTime? lastMovementDate;
 
@@ -215,7 +216,7 @@ extension IsarAnimalMapper on IsarAnimal {
       feedSupplements: feedSupplements,
       feedNotes: feedNotes,
       earTagColor: earTagColor,
-      currentPaddockId: currentPaddockId,
+      currentLocationId: currentLocationId,
       initialLocationId: initialLocationId,
       lastMovementDate: lastMovementDate,
       underObservation: underObservation,
@@ -307,7 +308,7 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..feedNotes = feedNotes
       ..earTagColor = earTagColor
       // ─── LOCATION ──────────────────────────────────────────────────
-      ..currentPaddockId = currentPaddockId
+      ..currentLocationId = currentLocationId
       ..initialLocationId = initialLocationId
       ..lastMovementDate = lastMovementDate
       // ─── MONITORING ────────────────────────────────────────────────

@@ -480,7 +480,7 @@ int _isarAnimalEstimateSize(
     }
   }
   {
-    final value = object.currentPaddockId;
+    final value = object.currentLocationId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -680,7 +680,7 @@ void _isarAnimalSerialize(
   writer.writeDateTime(offsets[14], object.creationDate);
   writer.writeString(offsets[15], object.crossBreed);
   writer.writeString(offsets[16], object.crossBreedType);
-  writer.writeString(offsets[17], object.currentPaddockId);
+  writer.writeString(offsets[17], object.currentLocationId);
   writer.writeString(offsets[18], object.customName);
   writer.writeDouble(offsets[19], object.dailyGainEstimate);
   writer.writeString(offsets[20], object.damBreed);
@@ -762,7 +762,7 @@ IsarAnimal _isarAnimalDeserialize(
   object.creationDate = reader.readDateTime(offsets[14]);
   object.crossBreed = reader.readStringOrNull(offsets[15]);
   object.crossBreedType = reader.readStringOrNull(offsets[16]);
-  object.currentPaddockId = reader.readStringOrNull(offsets[17]);
+  object.currentLocationId = reader.readStringOrNull(offsets[17]);
   object.customName = reader.readStringOrNull(offsets[18]);
   object.dailyGainEstimate = reader.readDoubleOrNull(offsets[19]);
   object.damBreed = reader.readStringOrNull(offsets[20]);
@@ -3271,7 +3271,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdIsNull() {
+      currentLocationIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'currentPaddockId',
@@ -3280,7 +3280,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdIsNotNull() {
+      currentLocationIdIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'currentPaddockId',
@@ -3289,7 +3289,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdEqualTo(
+      currentLocationIdEqualTo(
     String? value, {
     bool caseSensitive = true,
   }) {
@@ -3303,7 +3303,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdGreaterThan(
+      currentLocationIdGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -3319,7 +3319,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdLessThan(
+      currentLocationIdLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -3335,7 +3335,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdBetween(
+      currentLocationIdBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -3355,7 +3355,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdStartsWith(
+      currentLocationIdStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -3369,7 +3369,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdEndsWith(
+      currentLocationIdEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -3383,7 +3383,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdContains(String value, {bool caseSensitive = true}) {
+      currentLocationIdContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
         property: r'currentPaddockId',
@@ -3394,7 +3394,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdMatches(String pattern, {bool caseSensitive = true}) {
+      currentLocationIdMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
         property: r'currentPaddockId',
@@ -3405,7 +3405,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdIsEmpty() {
+      currentLocationIdIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'currentPaddockId',
@@ -3415,7 +3415,7 @@ extension IsarAnimalQueryFilter
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterFilterCondition>
-      currentPaddockIdIsNotEmpty() {
+      currentLocationIdIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'currentPaddockId',
@@ -10145,14 +10145,14 @@ extension IsarAnimalQuerySortBy
     });
   }
 
-  QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy> sortByCurrentPaddockId() {
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy> sortByCurrentLocationId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentPaddockId', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy>
-      sortByCurrentPaddockIdDesc() {
+      sortByCurrentLocationIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentPaddockId', Sort.desc);
     });
@@ -11043,14 +11043,14 @@ extension IsarAnimalQuerySortThenBy
     });
   }
 
-  QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy> thenByCurrentPaddockId() {
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy> thenByCurrentLocationId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentPaddockId', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAnimal, IsarAnimal, QAfterSortBy>
-      thenByCurrentPaddockIdDesc() {
+      thenByCurrentLocationIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentPaddockId', Sort.desc);
     });
@@ -11860,7 +11860,7 @@ extension IsarAnimalQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarAnimal, IsarAnimal, QDistinct> distinctByCurrentPaddockId(
+  QueryBuilder<IsarAnimal, IsarAnimal, QDistinct> distinctByCurrentLocationId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'currentPaddockId',
@@ -12364,7 +12364,7 @@ extension IsarAnimalQueryProperty
   }
 
   QueryBuilder<IsarAnimal, String?, QQueryOperations>
-      currentPaddockIdProperty() {
+      currentLocationIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currentPaddockId');
     });

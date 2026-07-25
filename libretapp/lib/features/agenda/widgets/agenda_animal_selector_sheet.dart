@@ -326,7 +326,7 @@ class _LotesTab extends StatelessWidget {
         return CheckboxListTile(
           value: selected.contains(lote.uuid),
           onChanged: (_) => onToggle(lote.uuid),
-          title: Text(lote.nombre),
+          title: Text(lote.name),
           subtitle: Text('${lote.animalUuids.length} animal(es)'),
           dense: true,
         );

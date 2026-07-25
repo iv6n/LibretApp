@@ -1,10 +1,11 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_filter_bar \u2014 inline filter bar for the animal list.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_filter_bar \u2014 inline filter bar for the animal list.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class AnimalFilterBar extends StatelessWidget {
   const AnimalFilterBar({
@@ -28,50 +29,14 @@ class AnimalFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    final chips = <_StageChipConfig>[
-      _StageChipConfig((c) => l10n.stageFilterCalf(c), [
-        LifeStage.calf,
-        LifeStage.calfMale,
-        LifeStage.calfFemale,
-      ], AnimalPalette.stageColor(LifeStage.calf)),
-      _StageChipConfig(
-        (c) => l10n.stageFilterHeifer(c),
-        [LifeStage.heifer],
-        AnimalPalette.stageColor(LifeStage.heifer),
-      ),
-      _StageChipConfig(
-        (c) => l10n.stageFilterYoungBull(c),
-        [LifeStage.youngBull],
-        AnimalPalette.stageColor(LifeStage.youngBull),
-      ),
-      _StageChipConfig((c) => l10n.stageFilterSteer(c), [
-        LifeStage.steer,
-      ], AnimalPalette.stageColor(LifeStage.steer)),
-      _StageChipConfig((c) => l10n.stageFilterCow(c), [
-        LifeStage.cow,
-      ], AnimalPalette.stageColor(LifeStage.cow)),
-      _StageChipConfig((c) => l10n.stageFilterBull(c), [
-        LifeStage.bull,
-      ], AnimalPalette.stageColor(LifeStage.bull)),
-      _StageChipConfig((c) => l10n.stageFilterColt(c), [
-        LifeStage.colt,
-        LifeStage.filly,
-      ], AnimalPalette.stageColor(LifeStage.colt)),
-      _StageChipConfig((c) => l10n.stageFilterHorse(c), [
-        LifeStage.horse,
-      ], AnimalPalette.stageColor(LifeStage.horse)),
-      _StageChipConfig((c) => l10n.stageFilterMare(c), [
-        LifeStage.mare,
-      ], AnimalPalette.stageColor(LifeStage.mare)),
-      _StageChipConfig(
-        (c) => l10n.stageFilterDonkey(c),
-        [LifeStage.donkey, LifeStage.donkeyFemale],
-        AnimalPalette.stageColor(LifeStage.donkey),
-      ),
-      _StageChipConfig((c) => l10n.stageFilterMule(c), [
-        LifeStage.mule,
-      ], AnimalPalette.stageColor(LifeStage.mule)),
-    ];
+    final chips = AnimalTaxonomy.filterStageGroups()
+        .map(
+          (stages) => _StageChipConfig(
+            _stageGroupLabel(stages),
+            stages,
+          ),
+        )
+        .toList();
 
     return Column(
       children: [
@@ -82,7 +47,7 @@ class AnimalFilterBar extends StatelessWidget {
             decoration: InputDecoration(
               hintText: l10n.animalsSearchHint,
               hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: Colors.green),
+              prefixIcon: const Icon(Icons.search, color: AppColors.accent),
               suffixIcon: searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
@@ -99,7 +64,7 @@ class AnimalFilterBar extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.green, width: 2),
+                borderSide: const BorderSide(color: AppColors.accent, width: 2),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -123,12 +88,16 @@ class AnimalFilterBar extends StatelessWidget {
               ),
               Row(
                 children: [
-                  const Icon(Icons.visibility, size: 18, color: Colors.green),
+                  const Icon(
+                    Icons.visibility,
+                    size: 18,
+                    color: AppColors.accent,
+                  ),
                   const SizedBox(width: 6),
                   Switch(
                     value: onlyAttention,
                     onChanged: onAttentionChanged,
-                    activeThumbColor: Colors.green,
+                    activeThumbColor: AppColors.accent,
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -149,20 +118,32 @@ class AnimalFilterBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Wrap(
             spacing: 8,
-            children: chips.map((cfg) => _buildStageChip(cfg)).toList(),
+            children: chips.map((cfg) => _buildStageChip(context, cfg)).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStageChip(_StageChipConfig config) {
+  Widget _buildStageChip(BuildContext context, _StageChipConfig config) {
     final isSelected = config.stages.any(selectedStages.contains);
-    final color = config.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = AnimalPalette.filterChipBackground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final foregroundColor = AnimalPalette.filterChipForeground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final borderColor = AnimalPalette.filterChipBorder(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
 
     return FilterChip(
       label: Text(
-        config.labelResolver(2),
+        config.label,
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
       selected: isSelected,
@@ -175,11 +156,11 @@ class AnimalFilterBar extends StatelessWidget {
         }
         onStagesChanged(updated);
       },
-      backgroundColor: color.withValues(alpha: 0.12),
-      selectedColor: color.withValues(alpha: 0.25),
-      side: BorderSide(color: isSelected ? color : Colors.grey[300]!),
+      backgroundColor: backgroundColor,
+      selectedColor: backgroundColor,
+      side: BorderSide(color: borderColor),
       labelStyle: TextStyle(
-        color: color,
+        color: foregroundColor,
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
       ),
       showCheckmark: false,
@@ -188,9 +169,13 @@ class AnimalFilterBar extends StatelessWidget {
 }
 
 class _StageChipConfig {
-  _StageChipConfig(this.labelResolver, this.stages, this.color);
+  _StageChipConfig(this.label, this.stages);
 
-  final String Function(int count) labelResolver;
+  final String label;
   final List<LifeStage> stages;
-  final Color color;
+}
+
+String _stageGroupLabel(List<LifeStage> stages) {
+  if (stages.length == 1) return stages.first.displayName;
+  return stages.map((stage) => stage.displayName).toSet().join(' / ');
 }

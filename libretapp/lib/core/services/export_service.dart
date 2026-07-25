@@ -7,6 +7,7 @@ import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/workforce_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -15,13 +16,16 @@ class ExportService {
     required AnimalRepository animalRepository,
     required LocationRepository locationRepository,
     required AgendaRepository eventosRepository,
+    required WorkforceRepository workforceRepository,
   }) : _animalRepository = animalRepository,
        _locationRepository = locationRepository,
-       _eventosRepository = eventosRepository;
+       _eventosRepository = eventosRepository,
+       _workforceRepository = workforceRepository;
 
   final AnimalRepository _animalRepository;
   final LocationRepository _locationRepository;
   final AgendaRepository _eventosRepository;
+  final WorkforceRepository _workforceRepository;
 
   /// Generates a .xlsx file with the selected sheets and returns its [File].
   Future<File> exportToExcel({
@@ -132,9 +136,24 @@ class ExportService {
       'Tipo',
       'ID Animal',
       'Ubicación',
+      'Estado',
+      'Prioridad',
+      'Progreso',
+      'Responsable',
+      'Equipo',
+      'Colaboradores',
+      'Checklist',
+      'Recurrencia',
+      'Actualizada',
     ], header: true);
 
     final eventList = await _eventosRepository.fetchEntries();
+    final workers = await _workforceRepository.fetchWorkers(
+      includeInactive: true,
+    );
+    final teams = await _workforceRepository.fetchTeams(includeInactive: true);
+    final workerNames = {for (final worker in workers) worker.id: worker.name};
+    final teamNames = {for (final team in teams) team.id: team.name};
     for (var i = 0; i < eventList.length; i++) {
       final e = eventList[i];
       _writeRow(sheet, i + 1, [
@@ -144,6 +163,19 @@ class ExportService {
         e.tipo,
         e.animalIds.join(', '),
         e.ubicacion,
+        e.estado,
+        e.prioridad,
+        '${e.completedAnimalIds.length}/${e.animalIds.length}',
+        workerNames[e.assigneeId] ?? '',
+        teamNames[e.workTeamId] ?? '',
+        e.collaboratorIds
+            .map((id) => workerNames[id] ?? id)
+            .join(', '),
+        '${e.checklist.where((item) => item.completed).length}/${e.checklist.length}',
+        e.recurrenceRule ?? '',
+        e.updatedAt == null
+            ? ''
+            : DateFormat('dd/MM/yyyy HH:mm').format(e.updatedAt!),
       ]);
     }
   }

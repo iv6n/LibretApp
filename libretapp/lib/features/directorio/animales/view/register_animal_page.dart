@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a view \u203a register_animal_page \u2014 page for registering a new animal.
+/// features \u203a directorio \u203a animales \u203a view \u203a register_animal_page \u2014 page for registering a new animal.
 library;
 
 import 'dart:convert';
@@ -41,17 +41,6 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     'Manejo',
     'Revisión',
   ];
-
-  static const _cattleOnlyCategories = <Category>{
-    Category.calf,
-    Category.heifer,
-    Category.youngBull,
-    Category.steer,
-    Category.cow,
-    Category.bull,
-    Category.oxen,
-    Category.weaned,
-  };
 
   final _step1FormKey = GlobalKey<FormState>();
 
@@ -108,6 +97,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   String? _selectedPaddockUuid;
   String? _selectedBatchUuid;
   ProductionSystem _productionSystem = ProductionSystem.rotational;
+  ProductionPurpose _productionPurpose = ProductionPurpose.undefined;
   String _housingType = 'Libre en potrero';
   String _shadingAvailability = 'Parcial';
   String _waterSource = 'Bebedero automatico';
@@ -226,6 +216,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _registrationDate = animal.lastMovementDate ?? animal.lastUpdateDate;
     _reproductiveStatus = animal.reproductiveStatus;
     _productionSystem = animal.productionSystem;
+    _productionPurpose = animal.productionPurpose;
     _originType = OriginType.values.firstWhere(
       (value) => value.name == animal.originType,
       orElse: () => OriginType.own,
@@ -242,13 +233,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _selectedDamUuid = animal.damUuid;
     _selectedSireUuid = animal.sireUuid;
     _selectedBatchUuid = animal.batchUuid;
-    _selectedPaddockUuid = animal.currentPaddockId;
+    _selectedPaddockUuid = animal.currentLocationId;
 
     final initialLocation = animal.initialLocationId;
     if (initialLocation != null) {
       _selectedProvenanceUuid = initialLocation;
       final location = _locations.where((item) => item.uuid == initialLocation);
-      if (location.isNotEmpty && location.first.type == LocationType.rancho) {
+      if (location.isNotEmpty && location.first.type.isRootType) {
         _selectedRanchUuid = initialLocation;
       } else {
         final paddock = _locations.where(
@@ -498,9 +489,27 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                         if (value == null) return;
                         setState(() {
                           _species = value;
-                          if (value != Species.cattle &&
-                              _cattleOnlyCategories.contains(_category)) {
-                            _category = Category.other;
+                          final ageMonths = _birthDate == null
+                              ? _parseOptionalInt(_ageMonthsCtrl.text) ?? 24
+                              : AnimalLifecycleCalculator.calculate(
+                                  birthDate: _birthDate!,
+                                  species: _species,
+                                  sex: _sex,
+                                ).ageMonths;
+                          final available = AnimalTaxonomy.categoriesFor(
+                            species: _species,
+                            sex: _sex,
+                            ageMonths: ageMonths,
+                          );
+                          if (!available.contains(_category)) {
+                            _category = AnimalTaxonomy.defaultCategory(
+                              species: _species,
+                              sex: _sex,
+                              ageMonths: ageMonths,
+                              neutered:
+                                  _reproductiveStatus ==
+                                  ReproductiveStatus.neutered,
+                            );
                           }
                         });
                       },
@@ -652,15 +661,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       decoration: const InputDecoration(
                         labelText: 'Arete / Identificacion',
                         hintText: '00 23 5132 1842',
-                        helperText: 'cada animal debe tener un arete unico.',
+                        helperText:
+                            'Recomendado para identificar y buscar al animal.',
                         suffixIcon: Icon(Icons.qr_code_scanner_outlined),
                       ),
-                      validator: (value) {
-                        if ((value ?? '').trim().isEmpty) {
-                          return 'Ingresa el arete';
-                        }
-                        return null;
-                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -978,13 +982,38 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                 .map(
                   (lote) => DropdownMenuItem(
                     value: lote.uuid,
-                    child: Text(lote.nombre),
+                    child: Text(lote.name),
                   ),
                 )
                 .toList(),
             onChanged: (value) {
               setState(() {
                 _selectedBatchUuid = value;
+              });
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<ProductionPurpose>(
+            initialValue: _productionPurpose,
+            decoration: const InputDecoration(labelText: 'Propósito de producción'),
+            items: [
+              const DropdownMenuItem(
+                value: ProductionPurpose.undefined,
+                child: Text('Sin asignar'),
+              ),
+              ...ProductionPurpose.values
+                  .where((value) => value != ProductionPurpose.undefined)
+                  .map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value.displayName),
+                    ),
+                  ),
+            ],
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                _productionPurpose = value;
               });
             },
           ),
@@ -1305,7 +1334,12 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           _buildReviewCard(
             title: 'Informacion basica',
             rows: [
-              _ReviewRow('Arete', _safeText(_earTagCtrl.text)),
+              _ReviewRow(
+                'Arete',
+                _earTagCtrl.text.trim().isEmpty
+                    ? 'Sin arete'
+                    : _safeText(_earTagCtrl.text),
+              ),
               _ReviewRow('Nombre', _safeText(_nameCtrl.text)),
               _ReviewRow('Especie', _species.displayName),
               _ReviewRow('Categoria', _category.displayName),
@@ -1355,6 +1389,12 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                 _locationNameByUuid(_selectedPaddockUuid),
               ),
               _ReviewRow('Lote', _loteNameByUuid(_selectedBatchUuid)),
+              _ReviewRow(
+                'Propósito',
+                _productionPurpose == ProductionPurpose.undefined
+                    ? 'Sin asignar'
+                    : _productionPurpose.displayName,
+              ),
               _ReviewRow('Sistema de manejo', _productionSystem.displayName),
               _ReviewRow('Alojamiento', _housingType),
               _ReviewRow('Sombra', _shadingAvailability),
@@ -2255,10 +2295,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         return;
       }
 
-      final duplicated = await _isEarTagDuplicated(_earTagCtrl.text.trim());
-      if (duplicated && mounted) {
-        _showMessage('El arete ya existe en otro registro.');
-        return;
+      if (_earTagCtrl.text.trim().isEmpty) {
+        final continueWithoutEarTag = await _confirmMissingEarTag();
+        if (!mounted || !continueWithoutEarTag) return;
+      } else {
+        final duplicated = await _isEarTagDuplicated(_earTagCtrl.text.trim());
+        if (duplicated && mounted) {
+          _showMessage('El arete ya existe en otro registro.');
+          return;
+        }
       }
     }
 
@@ -2329,6 +2374,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     'status': _status.name,
     'originType': _originType.name,
     'productionSystem': _productionSystem.name,
+    'productionPurpose': _productionPurpose.name,
     'healthMode': _healthMode.name,
     'reproductiveStatus': _reproductiveStatus.name,
     // Dates
@@ -2503,6 +2549,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         m['productionSystem'] as String?,
         _productionSystem,
       );
+      _productionPurpose = safeEnum(
+        ProductionPurpose.values,
+        m['productionPurpose'] as String?,
+        _productionPurpose,
+      );
       _healthMode = safeEnum(
         _InitialHealthMode.values,
         m['healthMode'] as String?,
@@ -2593,9 +2644,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   bool get _canFinishRegistration {
-    final earTag = _earTagCtrl.text.trim();
-    return earTag.isNotEmpty &&
-        Species.values.contains(_species) &&
+    return Species.values.contains(_species) &&
         Category.values.contains(_category);
   }
 
@@ -2615,6 +2664,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     if (widget.isEdit && _editingAnimal == null) {
       _showMessage('No se encontró el animal para editar.');
       return;
+    }
+
+    if (_earTagCtrl.text.trim().isEmpty) {
+      final continueWithoutEarTag = await _confirmMissingEarTag();
+      if (!mounted || !continueWithoutEarTag) return;
     }
 
     final birthDate = _birthDate ?? _estimatedBirthDate(_category);
@@ -2644,6 +2698,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       sex: _sex,
     );
     final resolvedAgeMonths = manualAgeMonths ?? lifecycle.ageMonths;
+    final resolvedLifeStage = AnimalTaxonomy.resolveLifeStage(
+      species: _species,
+      sex: _sex,
+      ageMonths: resolvedAgeMonths,
+      category: _category,
+      fallback: lifecycle.lifeStage,
+    );
 
     // Derive reproductive entity fields from reproduction drafts
     final derivedFirstService = _reproductions.isNotEmpty
@@ -2693,7 +2754,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             batchUuid: _selectedBatchUuid,
             species: _species,
             category: _category,
-            lifeStage: lifecycle.lifeStage,
+            lifeStage: resolvedLifeStage,
             sex: _sex,
             breed: _breedCtrl.text.trim().isEmpty
                 ? 'Desconocido'
@@ -2716,6 +2777,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             hasChronicIssues: _healthMode == _InitialHealthMode.problem,
             chronicNotes: _nullableText(_healthNotesCtrl.text),
             reproductiveStatus: _reproductiveStatus,
+            productionPurpose: _productionPurpose,
             productionSystem: _productionSystem,
             feedType: _nullableText(_feedTypeCtrl.text),
             coatColor: _nullableText(_coatColorCtrl.text),
@@ -2738,7 +2800,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             feedSupplements: _nullableText(_feedSupplements),
             feedNotes: _nullableText(_feedNotesCtrl.text),
             earTagColor: _nullableText(_earTagColor),
-            currentPaddockId: _selectedPaddockUuid,
+            currentLocationId: _selectedPaddockUuid,
             initialLocationId:
                 _editingAnimal!.initialLocationId ??
                 _selectedPaddockUuid ??
@@ -2762,7 +2824,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             batchUuid: _selectedBatchUuid,
             species: _species,
             category: _category,
-            lifeStage: lifecycle.lifeStage,
+            lifeStage: resolvedLifeStage,
             sex: _sex,
             breed: _breedCtrl.text.trim().isEmpty
                 ? 'Desconocido'
@@ -2789,7 +2851,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             firstServiceDate: derivedFirstService,
             lastServiceDate: derivedLastService,
             expectedCalvingDate: derivedCalvingDate,
-            productionPurpose: ProductionPurpose.undefined,
+            productionPurpose: _productionPurpose,
             productionStage: ProductionStage.unknown,
             productionSystem: _productionSystem,
             feedType: _nullableText(_feedTypeCtrl.text),
@@ -2814,7 +2876,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             feedSupplements: _nullableText(_feedSupplements),
             feedNotes: _nullableText(_feedNotesCtrl.text),
             earTagColor: _nullableText(_earTagColor),
-            currentPaddockId: _selectedPaddockUuid,
+            currentLocationId: _selectedPaddockUuid,
             initialLocationId: _selectedPaddockUuid ?? _selectedRanchUuid,
             lastMovementDate: _registrationDate,
             underObservation: healthTuple.underObservation,
@@ -2938,10 +3000,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   List<Category> get _availableCategories {
-    if (_species != Species.cattle) return const [Category.other];
     final birthDate = _birthDate;
+    final manualAge = _parseOptionalInt(_ageMonthsCtrl.text);
     if (birthDate == null) {
-      final base = _cattleOnlyCategories.toList(growable: true);
+      final base = AnimalTaxonomy.categoriesFor(
+        species: _species,
+        sex: _sex,
+        ageMonths: manualAge,
+      ).toList(growable: true);
       if (!base.contains(_category)) base.add(_category);
       return base;
     }
@@ -2952,25 +3018,21 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       sex: _sex,
     ).ageMonths;
 
-    final filtered = _categoriesForAge(ageMonths);
+    final filtered = AnimalTaxonomy.categoriesFor(
+      species: _species,
+      sex: _sex,
+      ageMonths: ageMonths,
+    );
     if (!filtered.contains(_category)) return [...filtered, _category];
     return filtered;
   }
 
   List<Category> _categoriesForAge(int ageMonths) {
-    if (ageMonths < 12) {
-      return [Category.calf, Category.weaned, Category.other];
-    }
-    if (ageMonths < 24) {
-      return [
-        Category.heifer,
-        Category.youngBull,
-        Category.steer,
-        Category.weaned,
-        Category.other,
-      ];
-    }
-    return [Category.cow, Category.bull, Category.oxen, Category.other];
+    return AnimalTaxonomy.categoriesFor(
+      species: _species,
+      sex: _sex,
+      ageMonths: ageMonths,
+    );
   }
 
   String? _estimatedAgeLabel(Category c) {
@@ -2987,6 +3049,16 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       case Category.bull:
       case Category.oxen:
         return 'Más de 24 meses estimado';
+      case Category.juvenile:
+        return '~0 a 12 meses estimado';
+      case Category.grower:
+        return '~12 a 24 meses estimado';
+      case Category.fattening:
+      case Category.production:
+      case Category.reproduction:
+      case Category.work:
+      case Category.guard:
+        return 'Adulto estimado';
       default:
         return null;
     }
@@ -3007,15 +3079,23 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       case Category.bull:
       case Category.oxen:
         return now.subtract(const Duration(days: 900));
+      case Category.juvenile:
+        return now.subtract(const Duration(days: 180));
+      case Category.grower:
+        return now.subtract(const Duration(days: 540));
+      case Category.fattening:
+      case Category.production:
+      case Category.reproduction:
+      case Category.work:
+      case Category.guard:
+        return now.subtract(const Duration(days: 900));
       default:
         return now.subtract(const Duration(days: 365));
     }
   }
 
   List<LocationEntity> get _ranches {
-    return _locations
-        .where((location) => location.type == LocationType.rancho)
-        .toList();
+    return _locations.where((location) => location.type.isRootType).toList();
   }
 
   LocationEntity? get _firstRanch {
@@ -3029,7 +3109,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       return _locations
           .where(
             (location) =>
-                location.type == LocationType.potrero ||
+                location.type == LocationType.pasture ||
                 location.type == LocationType.corral,
           )
           .toList();
@@ -3038,7 +3118,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     return _locations
         .where(
           (location) =>
-              (location.type == LocationType.potrero ||
+              (location.type == LocationType.pasture ||
                   location.type == LocationType.corral) &&
               location.parentUuid == selectedRanchUuid,
         )
@@ -3120,6 +3200,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     return result ?? false;
   }
 
+  Future<bool> _confirmMissingEarTag() {
+    return _confirmDiscardDialog(
+      title: 'Arete recomendado',
+      message:
+          'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
+      confirmLabel: 'Continuar sin arete',
+    );
+  }
+
   String _locationNameByUuid(String? uuid) {
     if (uuid == null) return '--';
     for (final location in _locations) {
@@ -3139,7 +3228,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   String _loteNameByUuid(String? uuid) {
     if (uuid == null) return '--';
     for (final lote in _lotes) {
-      if (lote.uuid == uuid) return lote.nombre;
+      if (lote.uuid == uuid) return lote.name;
     }
     return '--';
   }

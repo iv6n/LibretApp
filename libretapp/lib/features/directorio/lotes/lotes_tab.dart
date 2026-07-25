@@ -45,8 +45,8 @@ class _LotesTabState extends State<LotesTab> {
             itemBuilder: (context, index) {
               final lote = lotes[index];
               return ListTile(
-                title: Text(lote.nombre),
-                subtitle: Text(lote.descripcion ?? ''),
+                title: Text(lote.name),
+                subtitle: Text(lote.description ?? ''),
               );
             },
           );

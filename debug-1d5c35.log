@@ -1,0 +1,18 @@
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesInitial"},"timestamp":1780436267766}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesLoaded"},"timestamp":1780436268917}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"ubicaciones_view.dart:_buildBody","message":"rendering location tree","data":{"rootCount":2,"treeChildCount":2},"timestamp":1780436268938}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-1","isNested":false},"timestamp":1780436269548}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-2","isNested":false},"timestamp":1780436269680}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesLoaded"},"timestamp":1780436269842}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"ubicaciones_view.dart:_buildBody","message":"rendering location tree","data":{"rootCount":2,"treeChildCount":2},"timestamp":1780436269844}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-1","isNested":false},"timestamp":1780436269931}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-2","isNested":false},"timestamp":1780436269958}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesInitial"},"timestamp":1780436270462}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesLoaded"},"timestamp":1780436270559}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"ubicaciones_view.dart:_buildBody","message":"rendering location tree","data":{"rootCount":2,"treeChildCount":2},"timestamp":1780436270561}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-1","isNested":false},"timestamp":1780436270716}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-2","isNested":false},"timestamp":1780436270771}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"B","location":"ubicaciones_view.dart:_buildBody","message":"build body branch","data":{"stateType":"UbicacionesLoaded"},"timestamp":1780436270903}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"ubicaciones_view.dart:_buildBody","message":"rendering location tree","data":{"rootCount":2,"treeChildCount":2},"timestamp":1780436270927}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-1","isNested":false},"timestamp":1780436271010}
+{"sessionId":"1d5c35","runId":"pre-fix","hypothesisId":"A","location":"location_card.dart:build","message":"LocationCard build","data":{"uuid":"uuid-2","isNested":false},"timestamp":1780436271037}

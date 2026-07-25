@@ -5,6 +5,8 @@ import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar/isar_workforce.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
@@ -16,6 +18,8 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
+import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entry.dart';
+import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class IsarDatabase {
@@ -48,6 +52,11 @@ class IsarDatabase {
         IsarLocationSchema,
         IsarIncomeRecordSchema,
         IsarGeneralExpenseRecordSchema,
+        IsarMilkingSessionSchema,
+        IsarMilkingEntrySchema,
+        IsarAgendaEntrySchema,
+        IsarWorkerProfileSchema,
+        IsarWorkTeamSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode,
@@ -87,6 +96,11 @@ class IsarDatabase {
       await db.isarLocations.clear();
       await db.isarIncomeRecords.clear();
       await db.isarGeneralExpenseRecords.clear();
+      await db.isarMilkingEntrys.clear();
+      await db.isarMilkingSessions.clear();
+      await db.isarAgendaEntrys.clear();
+      await db.isarWorkerProfiles.clear();
+      await db.isarWorkTeams.clear();
     });
     LoggerService.w(
       'Todas las colecciones Isar fueron limpiadas',

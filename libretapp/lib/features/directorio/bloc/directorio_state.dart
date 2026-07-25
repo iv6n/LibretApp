@@ -1,9 +1,46 @@
-﻿/// features \u203a directorio \u203a bloc \u203a directorio_state \u2014 state for DirectorioBloc.
+/// features \u203a directorio \u203a bloc \u203a directorio_state \u2014 state for DirectorioBloc.
 library;
 
 import 'package:equatable/equatable.dart';
 
 enum CombinedSearchType { animal, lote, ubicacion }
+
+enum DirectorioSection { animales, lotes, ubicaciones }
+
+const defaultDirectorioSectionOrder = <DirectorioSection>[
+  DirectorioSection.animales,
+  DirectorioSection.ubicaciones,
+  DirectorioSection.lotes,
+];
+
+const defaultDirectorioVisibleSections = <DirectorioSection>{
+  DirectorioSection.animales,
+  DirectorioSection.ubicaciones,
+};
+
+extension DirectorioSectionX on DirectorioSection {
+  CombinedSearchType get searchType {
+    switch (this) {
+      case DirectorioSection.animales:
+        return CombinedSearchType.animal;
+      case DirectorioSection.lotes:
+        return CombinedSearchType.lote;
+      case DirectorioSection.ubicaciones:
+        return CombinedSearchType.ubicacion;
+    }
+  }
+
+  static DirectorioSection fromSearchType(CombinedSearchType type) {
+    switch (type) {
+      case CombinedSearchType.animal:
+        return DirectorioSection.animales;
+      case CombinedSearchType.lote:
+        return DirectorioSection.lotes;
+      case CombinedSearchType.ubicacion:
+        return DirectorioSection.ubicaciones;
+    }
+  }
+}
 
 extension CombinedSearchTypeX on CombinedSearchType {
   String get label {
@@ -59,14 +96,33 @@ class DirectorioLoading extends DirectorioState {
 /// Estado cuando los datos se han cargado
 class DirectorioLoaded extends DirectorioState {
   const DirectorioLoaded({
-    required this.activeTabIndex,
+    required this.activeSection,
+    this.orderedSections = defaultDirectorioSectionOrder,
+    this.visibleSections = defaultDirectorioVisibleSections,
     required this.isSearching,
     required this.searchResults,
     required this.searchQuery,
   });
 
-  /// Índice del tab activo (0: animales, 1: lotes, 2: ubicaciones)
-  final int activeTabIndex;
+  /// Active directory section.
+  final DirectorioSection activeSection;
+
+  /// Directory sections in the user-configured tab order.
+  final List<DirectorioSection> orderedSections;
+
+  /// Directory sections currently visible in the tab bar and search scope.
+  final Set<DirectorioSection> visibleSections;
+
+  /// Visible sections in the user-configured order.
+  List<DirectorioSection> get activeSections => orderedSections
+      .where(visibleSections.contains)
+      .toList(growable: false);
+
+  /// Legacy index used by older callers and tests.
+  int get activeTabIndex {
+    final index = activeSections.indexOf(activeSection);
+    return index < 0 ? 0 : index;
+  }
 
   /// Si está activa la búsqueda
   final bool isSearching;
@@ -78,13 +134,17 @@ class DirectorioLoaded extends DirectorioState {
   final String searchQuery;
 
   DirectorioLoaded copyWith({
-    int? activeTabIndex,
+    DirectorioSection? activeSection,
+    List<DirectorioSection>? orderedSections,
+    Set<DirectorioSection>? visibleSections,
     bool? isSearching,
     List<CombinedSearchResult>? searchResults,
     String? searchQuery,
   }) {
     return DirectorioLoaded(
-      activeTabIndex: activeTabIndex ?? this.activeTabIndex,
+      activeSection: activeSection ?? this.activeSection,
+      orderedSections: orderedSections ?? this.orderedSections,
+      visibleSections: visibleSections ?? this.visibleSections,
       isSearching: isSearching ?? this.isSearching,
       searchResults: searchResults ?? this.searchResults,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -93,7 +153,9 @@ class DirectorioLoaded extends DirectorioState {
 
   @override
   List<Object?> get props => [
-    activeTabIndex,
+    activeSection,
+    orderedSections,
+    visibleSections,
     isSearching,
     searchResults,
     searchQuery,

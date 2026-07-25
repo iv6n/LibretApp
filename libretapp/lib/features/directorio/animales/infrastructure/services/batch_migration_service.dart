@@ -51,7 +51,7 @@ class BatchMigrationService {
       final existingLotes = await _lotesRepository.getAll();
       final existingLotesByName = <String, String>{}; // nombre -> uuid
       for (final lote in existingLotes) {
-        existingLotesByName[lote.nombre] = lote.uuid;
+        existingLotesByName[lote.name] = lote.uuid;
       }
 
       // Crear LoteEntity para cada nombre si no existe

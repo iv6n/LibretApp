@@ -179,7 +179,7 @@ class AnimalApiMock implements AnimalRemoteDataSource {
       productionSystem: ProductionSystem.intensive,
       feedType: feedType,
       dailyGainEstimate: dailyGainEstimate,
-      currentPaddockId: paddockId,
+      currentLocationId: paddockId,
       lastMovementDate:
           lastMovementDate ?? now.subtract(const Duration(days: 5)),
       underObservation: underObservation,

@@ -21,6 +21,10 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
   late final TextEditingController _unitController;
   late final TextEditingController _reorderController;
   late final TextEditingController _notesController;
+  late final TextEditingController _activeIngredientController;
+  late final TextEditingController _batchController;
+  late final TextEditingController _withdrawalController;
+  late final TextEditingController _unitCostController;
   late InventoryCategory _category;
   DateTime? _expiryDate;
 
@@ -28,7 +32,7 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
   void initState() {
     super.initState();
     final i = widget.initial;
-    _category = i?.category ?? InventoryCategory.otro;
+    _category = i?.category ?? InventoryCategory.other;
     _expiryDate = i?.expiryDate;
     _nameController = TextEditingController(text: i?.name ?? '');
     _quantityController = TextEditingController(
@@ -39,6 +43,16 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
       text: i?.reorderThreshold?.toString() ?? '',
     );
     _notesController = TextEditingController(text: i?.notes ?? '');
+    _activeIngredientController = TextEditingController(
+      text: i?.activeIngredient ?? '',
+    );
+    _batchController = TextEditingController(text: i?.batchNumber ?? '');
+    _withdrawalController = TextEditingController(
+      text: i?.withdrawalDays?.toString() ?? '',
+    );
+    _unitCostController = TextEditingController(
+      text: i?.unitCost?.toString() ?? '',
+    );
   }
 
   @override
@@ -48,6 +62,10 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
     _unitController.dispose();
     _reorderController.dispose();
     _notesController.dispose();
+    _activeIngredientController.dispose();
+    _batchController.dispose();
+    _withdrawalController.dispose();
+    _unitCostController.dispose();
     super.dispose();
   }
 
@@ -180,6 +198,60 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                 value: _expiryDate,
                 onChanged: (date) => setState(() => _expiryDate = date),
               ),
+              if (_category == InventoryCategory.medicine) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _activeIngredientController,
+                  decoration: const InputDecoration(
+                    labelText: 'Principio activo (opcional)',
+                    prefixIcon: Icon(Icons.science_outlined),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _batchController,
+                        decoration: const InputDecoration(
+                          labelText: 'Lote del producto',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _withdrawalController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Retiro (días)',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) return null;
+                          final days = int.tryParse(value.trim());
+                          return days == null || days < 0 ? 'Valor inválido' : null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _unitCostController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Costo por unidad (opcional)',
+                    prefixIcon: Icon(Icons.payments_outlined),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null;
+                    final cost = double.tryParse(value.replaceAll(',', '.'));
+                    return cost == null || cost < 0 ? 'Valor inválido' : null;
+                  },
+                ),
+              ],
               const SizedBox(height: 12),
               TextFormField(
                 controller: _notesController,
@@ -222,6 +294,12 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
         ? null
         : double.tryParse(reorderRaw.replaceAll(',', '.'));
     final notes = _notesController.text.trim();
+    final activeIngredient = _activeIngredientController.text.trim();
+    final batch = _batchController.text.trim();
+    final withdrawalDays = int.tryParse(_withdrawalController.text.trim());
+    final unitCost = double.tryParse(
+      _unitCostController.text.trim().replaceAll(',', '.'),
+    );
 
     final item = InventoryItem(
       uuid: widget.initial?.uuid,
@@ -233,6 +311,10 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
       lastUpdated: DateTime.now(),
       category: _category,
       notes: notes.isEmpty ? null : notes,
+      activeIngredient: activeIngredient.isEmpty ? null : activeIngredient,
+      batchNumber: batch.isEmpty ? null : batch,
+      withdrawalDays: withdrawalDays,
+      unitCost: unitCost,
     );
 
     if (widget.onSubmit != null) {

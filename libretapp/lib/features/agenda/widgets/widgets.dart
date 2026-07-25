@@ -11,3 +11,4 @@ export 'agenda_month_header.dart';
 export 'agenda_search_bar.dart';
 export 'agenda_style.dart';
 export 'agenda_summary_card.dart';
+export 'agenda_workforce_sheet.dart';

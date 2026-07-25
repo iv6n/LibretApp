@@ -139,15 +139,15 @@ class _AnimalSearchSheetState extends State<_AnimalSearchSheet> {
                               (animal) => ListTile(
                                 leading: CircleAvatar(
                                   child: Text(
-                                    animal.earTagNumber.substring(0, 1),
+                                    _animalInitial(animal),
                                   ),
                                 ),
-                                title: Text(animal.earTagNumber),
+                                title: Text(primaryAnimalLabel(animal)),
                                 subtitle: Text(
-                                  animal.customName ?? animal.breed,
+                                  '${earTagDisplay(animal)} - ${breedSummary(animal)}',
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                onTap: () => _submit(animal.earTagNumber),
+                                onTap: () => _submit(primaryAnimalLabel(animal)),
                               ),
                             )
                             .toList(),
@@ -172,20 +172,20 @@ class _AnimalSearchSheetState extends State<_AnimalSearchSheet> {
                                     (animal) => ListTile(
                                       leading: CircleAvatar(
                                         child: Text(
-                                          animal.earTagNumber.substring(0, 1),
+                                          _animalInitial(animal),
                                         ),
                                       ),
-                                      title: Text(animal.earTagNumber),
+                                      title: Text(primaryAnimalLabel(animal)),
                                       subtitle: Text(
                                         [
-                                          if (animal.customName != null)
-                                            animal.customName,
-                                          animal.breed,
+                                          earTagDisplay(animal),
+                                          breedSummary(animal),
                                           animal.batchId,
                                         ].whereType<String>().join(' · '),
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                      onTap: () => _submit(animal.earTagNumber),
+                                      onTap: () =>
+                                          _submit(primaryAnimalLabel(animal)),
                                     ),
                                   )
                                   .toList(),
@@ -218,6 +218,8 @@ class _AnimalSearchSheetState extends State<_AnimalSearchSheet> {
             animal.customName ?? '',
             animal.visualId ?? '',
             animal.breed,
+            animal.crossBreed ?? '',
+            animalSearchPresentationText(animal),
             animal.batchId ?? '',
             animal.lifeStage.displayName,
             animal.sex.displayName,
@@ -236,6 +238,11 @@ class _AnimalSearchSheetState extends State<_AnimalSearchSheet> {
       });
     return sorted.take(8).toList();
   }
+}
+
+String _animalInitial(AnimalEntity animal) {
+  final label = primaryAnimalLabel(animal).trim();
+  return label.isEmpty ? '?' : label.substring(0, 1).toUpperCase();
 }
 
 class _Section extends StatelessWidget {

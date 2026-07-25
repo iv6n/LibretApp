@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
@@ -68,8 +68,7 @@ class AnimalesTabBloc extends Bloc<AnimalesTabEvent, AnimalesTabState> {
 
     final filtered = currentState.animales.where((animal) {
       final normalized = event.query.toLowerCase();
-      final label = '${animal.earTagNumber} ${animal.customName ?? ''}'
-          .toLowerCase();
+      final label = animalSearchPresentationText(animal).toLowerCase();
       return label.contains(normalized);
     }).toList();
 

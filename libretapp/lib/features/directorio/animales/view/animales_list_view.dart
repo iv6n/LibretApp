@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_view \u2014 stateless list layout for animals.
+/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_view \u2014 stateless list layout for animals.
 library;
 
 import 'dart:math' as math;
@@ -11,6 +11,7 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
@@ -21,7 +22,9 @@ import 'package:libretapp/features/ubicaciones/domain/repositories/location_repo
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalesListView extends StatefulWidget {
-  const AnimalesListView({super.key});
+  const AnimalesListView({super.key, this.shellInteractionsEnabled = true});
+
+  final bool shellInteractionsEnabled;
 
   @override
   State<AnimalesListView> createState() => _AnimalesListViewState();
@@ -31,6 +34,8 @@ class _AnimalesListViewState extends State<AnimalesListView>
     with TickerProviderStateMixin {
   static const double _listFabClearance = -39;
   static const double _nearListEndThreshold = 96;
+  static const double _estimatedQuickMenuHeight = 288;
+  static const double _quickMenuGap = 2;
   late final AnimalesListController _animalController;
   late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
@@ -38,6 +43,8 @@ class _AnimalesListViewState extends State<AnimalesListView>
   bool _isAtTop = true;
   bool _isNearListEnd = true;
   bool _isScrollingUp = false;
+  bool _quickMenuOpen = false;
+  double _quickMenuExtraPadding = 0;
   double _lastScrollOffset = 0;
 
   @override
@@ -111,6 +118,68 @@ class _AnimalesListViewState extends State<AnimalesListView>
     );
   }
 
+  Future<void> _ensureQuickMenuSpaceBelow(BuildContext menuContext) async {
+    final button = menuContext.findRenderObject() as RenderBox?;
+    if (button == null || !mounted || !_scrollController.hasClients) return;
+
+    final overlay =
+        Overlay.of(menuContext).context.findRenderObject() as RenderBox;
+    final bottomReserve = ShellInsets.bottomSafePadding(menuContext) + 8;
+
+    double deficitFor(RenderBox trigger) {
+      final origin = trigger.localToGlobal(Offset.zero, ancestor: overlay);
+      final triggerBottom = origin.dy + trigger.size.height;
+      final requiredBottom =
+          triggerBottom +
+          _estimatedQuickMenuHeight +
+          _quickMenuGap +
+          bottomReserve;
+      return requiredBottom - overlay.size.height;
+    }
+
+    var deficit = deficitFor(button);
+    if (deficit <= 0) return;
+
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    var targetOffset = (_scrollController.offset + deficit).clamp(
+      0.0,
+      maxExtent,
+    );
+
+    await _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+
+    if (!mounted || !_scrollController.hasClients) return;
+
+    var remainingDeficit = deficitFor(button);
+    if (remainingDeficit <= 0) return;
+
+    setState(() {
+      _quickMenuExtraPadding = remainingDeficit;
+    });
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || !_scrollController.hasClients) return;
+
+    final newMaxExtent = _scrollController.position.maxScrollExtent;
+    remainingDeficit = deficitFor(button);
+    if (remainingDeficit <= 0) return;
+
+    targetOffset = (_scrollController.offset + remainingDeficit).clamp(
+      0.0,
+      newMaxExtent,
+    );
+
+    await _scrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void _openAnimalDetail(AnimalEntity animal) {
     context.push(AppRoutes.animalDetallePath(animal.uuid));
   }
@@ -131,14 +200,20 @@ class _AnimalesListViewState extends State<AnimalesListView>
             final listBottomPadding = math.max(
               (isSelectionMode && isKeyboardFullyHidden)
                   ? MediaQuery.of(context).padding.bottom + 112
-                  : bottomInset + _listFabClearance,
+                  : bottomInset + _listFabClearance + _quickMenuExtraPadding,
               0.0,
             );
 
             final showRegisterFab =
                 isKeyboardFullyHidden &&
                 (state is! AnimalesLoaded || _isScrollingUp || _isNearListEnd);
-            final fabConfig = isSelectionMode || !showRegisterFab
+            final showScrollFab =
+                state is AnimalesLoaded &&
+                !state.isSearching &&
+                !_isAtTop &&
+                (_isScrollingUp || _isNearListEnd);
+            final fabConfig =
+                isSelectionMode || !showRegisterFab || _quickMenuOpen
                 ? null
                 : ShellFabConfig(
                     id: 'animales',
@@ -147,25 +222,42 @@ class _AnimalesListViewState extends State<AnimalesListView>
                     heroTag: 'fab_animales',
                     onPressed: () =>
                         context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                    secondary: showScrollFab
+                        ? ShellFabSecondaryAction(
+                            id: 'animales_scroll_top',
+                            icon: Icons.keyboard_arrow_up,
+                            heroTag: 'fab_animales_scroll_top',
+                            onPressed: _scrollToTop,
+                          )
+                        : null,
                   );
 
+            final scaffold = Scaffold(
+              body: _buildAnimalesTab(listBottomPadding, l10n),
+            );
+            final content = widget.shellInteractionsEnabled
+                ? ShellFabConfigScope(
+                    config: fabConfig,
+                    child: ShellChromeScope(
+                      visible: !isSelectionMode,
+                      child: scaffold,
+                    ),
+                  )
+                : scaffold;
+
             return PopScope(
-              canPop: !isSelectionMode,
+              canPop: !widget.shellInteractionsEnabled || !isSelectionMode,
               onPopInvokedWithResult: (didPop, _) {
-                if (didPop || !isSelectionMode) return;
+                if (didPop ||
+                    !widget.shellInteractionsEnabled ||
+                    !isSelectionMode) {
+                  return;
+                }
                 final bloc = context.read<AnimalesBloc>();
                 bloc.add(const ClearAnimalSelection());
                 bloc.add(const ClearSearch());
               },
-              child: ShellFabConfigScope(
-                config: fabConfig,
-                child: ShellChromeScope(
-                  visible: !isSelectionMode,
-                  child: Scaffold(
-                    body: _buildAnimalesTab(listBottomPadding, l10n),
-                  ),
-                ),
-              ),
+              child: content,
             );
           },
         );
@@ -231,22 +323,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 ),
               ],
             ),
-            if (!state.isSelectionMode &&
-                !state.isSearching &&
-                isKeyboardFullyHidden &&
-                !_isAtTop &&
-                (_isScrollingUp || _isNearListEnd))
-              Positioned(
-                right: 32,
-                bottom: ShellInsets.fabDockPadding(context, lift: -34),
-                child: FloatingActionButton.small(
-                  elevation: 2,
-
-                  heroTag: 'fab_animales_scroll_top',
-                  onPressed: _scrollToTop,
-                  child: const Icon(Icons.keyboard_arrow_up),
-                ),
-              ),
             if (state.isSelectionMode && isKeyboardFullyHidden)
               Positioned(
                 left: 12,
@@ -562,6 +638,22 @@ class _AnimalesListViewState extends State<AnimalesListView>
               location: locationResolver(animal),
               isSelected: state.selectedAnimalUuids.contains(animal.uuid),
               selectionEnabled: state.isSelectionMode,
+              onMenuAction: (action) => _handleAnimalCardMenuAction(
+                context,
+                animal: animal,
+                action: action,
+                onOpenDetail: () => onOpenDetail(animal),
+              ),
+              onQuickMenuOpenChanged: (open) {
+                if (!mounted) return;
+                setState(() {
+                  _quickMenuOpen = open;
+                  if (!open) {
+                    _quickMenuExtraPadding = 0;
+                  }
+                });
+              },
+              onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
               onTap: () {
                 if (state.isSelectionMode) {
                   context.read<AnimalesBloc>().add(
@@ -589,24 +681,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
   }
 }
 
-class _ClearFiltersChip extends StatelessWidget {
-  const _ClearFiltersChip({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: CircleAvatar(
-        radius: 14,
-        backgroundColor: Colors.grey[200],
-        child: const Icon(Icons.close, size: 16, color: Colors.black54),
-      ),
-    );
-  }
-}
-
 Widget _stageFilterChips({
   required AppLocalizations l10n,
   required Set<LifeStage> selectedStages,
@@ -616,160 +690,165 @@ Widget _stageFilterChips({
   required ValueChanged<Set<LifeStage>> onStagesChanged,
 }) {
   final hasStageFilters = selectedStages.isNotEmpty;
+  final totalCount = stageCounts.values.fold<int>(
+    0,
+    (sum, count) => sum + count,
+  );
   final configs = <_StageChipConfig>[
     _StageChipConfig((c) => l10n.stageFilterCalf(c), [
       LifeStage.calf,
       LifeStage.calfMale,
       LifeStage.calfFemale,
-    ], AnimalPalette.stageColor(LifeStage.calf)),
-    _StageChipConfig((c) => l10n.stageFilterHeifer(c), [
-      LifeStage.heifer,
-    ], AnimalPalette.stageColor(LifeStage.heifer)),
-    _StageChipConfig(
-      (c) => l10n.stageFilterYoungBull(c),
-      [LifeStage.youngBull],
-      AnimalPalette.stageColor(LifeStage.youngBull),
-    ),
-    _StageChipConfig((c) => l10n.stageFilterSteer(c), [
-      LifeStage.steer,
-    ], AnimalPalette.stageColor(LifeStage.steer)),
-    _StageChipConfig((c) => l10n.stageFilterCow(c), [
-      LifeStage.cow,
-    ], AnimalPalette.stageColor(LifeStage.cow)),
-    _StageChipConfig((c) => l10n.stageFilterBull(c), [
-      LifeStage.bull,
-    ], AnimalPalette.stageColor(LifeStage.bull)),
+    ]),
+    _StageChipConfig((c) => l10n.stageFilterHeifer(c), [LifeStage.heifer]),
+    _StageChipConfig((c) => l10n.stageFilterYoungBull(c), [
+      LifeStage.youngBull,
+    ]),
+    _StageChipConfig((c) => l10n.stageFilterSteer(c), [LifeStage.steer]),
+    _StageChipConfig((c) => l10n.stageFilterCow(c), [LifeStage.cow]),
+    _StageChipConfig((c) => l10n.stageFilterBull(c), [LifeStage.bull]),
     _StageChipConfig((c) => l10n.stageFilterColt(c), [
       LifeStage.colt,
       LifeStage.filly,
-    ], AnimalPalette.stageColor(LifeStage.colt)),
-    _StageChipConfig((c) => l10n.stageFilterHorse(c), [
-      LifeStage.horse,
-    ], AnimalPalette.stageColor(LifeStage.horse)),
-    _StageChipConfig((c) => l10n.stageFilterMare(c), [
-      LifeStage.mare,
-    ], AnimalPalette.stageColor(LifeStage.mare)),
+    ]),
+    _StageChipConfig((c) => l10n.stageFilterHorse(c), [LifeStage.horse]),
+    _StageChipConfig((c) => l10n.stageFilterMare(c), [LifeStage.mare]),
     _StageChipConfig((c) => l10n.stageFilterDonkey(c), [
       LifeStage.donkey,
       LifeStage.donkeyFemale,
-    ], AnimalPalette.stageColor(LifeStage.donkey)),
-    _StageChipConfig((c) => l10n.stageFilterMule(c), [
-      LifeStage.mule,
-    ], AnimalPalette.stageColor(LifeStage.mule)),
+    ]),
+    _StageChipConfig((c) => l10n.stageFilterMule(c), [LifeStage.mule]),
   ].where((cfg) => cfg.stages.any(availableStages.contains)).toList();
 
-  if (configs.isEmpty) return const SizedBox.shrink();
+  if (totalCount == 0 && configs.isEmpty) return const SizedBox.shrink();
 
   return SizedBox(
-    height: 38,
-    child: Row(
-      children: [
-        Expanded(
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            itemCount: configs.length + (hasStageFilters ? 2 : 0),
-            separatorBuilder: (context, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final bool isLeadingClear = hasStageFilters && index == 0;
-              final bool isTrailingClear =
-                  hasStageFilters && index == configs.length + 1;
+    height: 44,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+      itemCount: 1 + configs.length,
+      separatorBuilder: (context, _) => const SizedBox(width: 7),
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _StageFilterChip(
+            theme: theme,
+            label: l10n.stageFilterAll,
+            count: totalCount,
+            isSelected: !hasStageFilters,
+            onSelected: () => onStagesChanged({}),
+          );
+        }
 
-              if (isLeadingClear || isTrailingClear) {
-                return _ClearFiltersChip(onTap: () => onStagesChanged({}));
-              }
+        final config = configs[index - 1];
+        final isSelected = config.stages.any(selectedStages.contains);
+        final count = config.stages
+            .map((s) => stageCounts[s] ?? 0)
+            .fold<int>(0, (a, b) => a + b);
 
-              final configIndex = hasStageFilters ? index - 1 : index;
-              final config = configs[configIndex];
-              final isSelected = config.stages.any(selectedStages.contains);
-              final color = config.color;
-              final count = config.stages
-                  .map((s) => stageCounts[s] ?? 0)
-                  .fold<int>(0, (a, b) => a + b);
-              final chipLabel = config.labelResolver(count);
-              final neutralBg = theme.colorScheme.surfaceContainerHighest;
-              final neutralText = theme.colorScheme.onSurface.withValues(
-                alpha: 0.74,
-              );
-              final labelColor = isSelected ? Colors.white : neutralText;
-              final bgColor = isSelected ? color : neutralBg;
-              final borderColor = isSelected
-                  ? color.withValues(alpha: 0.9)
-                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.45);
-
-              return ChoiceChip(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                label: Padding(
-                  padding: const EdgeInsets.only(left: 0, right: 0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        chipLabel.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11.45,
-                          fontWeight: FontWeight.w600,
-                          color: labelColor,
-                        ),
-                      ),
-                      if (count > 0) ...[
-                        const SizedBox(width: 2),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color.fromARGB(255, 239, 239, 241),
-                            borderRadius: BorderRadius.circular(10),
-                            border: isSelected
-                                ? null
-                                : Border.all(
-                                    color: theme.colorScheme.outlineVariant
-                                        .withValues(alpha: 0.6),
-                                    width: 0.5,
-                                  ),
-                          ),
-                          child: Text(
-                            '$count',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? color : neutralText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                selected: isSelected,
-                onSelected: (selected) {
-                  final updated = Set<LifeStage>.from(selectedStages);
-                  if (selected) {
-                    updated.addAll(config.stages);
-                  } else {
-                    updated.removeAll(config.stages);
-                  }
-                  onStagesChanged(updated);
-                },
-                visualDensity: const VisualDensity(
-                  horizontal: -2,
-                  vertical: -2,
-                ),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: bgColor,
-                selectedColor: bgColor,
-                shape: StadiumBorder(side: BorderSide(color: borderColor)),
-                showCheckmark: false,
-              );
-            },
-          ),
-        ),
-      ],
+        return _StageFilterChip(
+          theme: theme,
+          label: config.labelResolver(count),
+          count: count,
+          isSelected: isSelected,
+          onSelected: () {
+            final updated = Set<LifeStage>.from(selectedStages);
+            if (isSelected) {
+              updated.removeAll(config.stages);
+            } else {
+              updated.addAll(config.stages);
+            }
+            onStagesChanged(updated);
+          },
+        );
+      },
     ),
   );
+}
+
+class _StageFilterChip extends StatelessWidget {
+  const _StageFilterChip({
+    required this.theme,
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final ThemeData theme;
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = theme.brightness == Brightness.dark;
+    final chipBackground = AnimalPalette.filterChipBackground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final chipForeground = AnimalPalette.filterChipForeground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final chipBorder = AnimalPalette.filterChipBorder(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+
+    return FilterChip(
+      selected: isSelected,
+      showCheckmark: false,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      backgroundColor: chipBackground,
+      selectedColor: chipBackground,
+      side: BorderSide(color: chipBorder),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: chipForeground,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          if (count > 0) ...[
+            const SizedBox(width: 3),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : AnimalPalette.cardFooterLight,
+                borderRadius: BorderRadius.circular(8),
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: chipBorder.withValues(alpha: 0.7),
+                        width: 0.5,
+                      ),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: chipForeground,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+      onSelected: (_) => onSelected(),
+    );
+  }
 }
 
 class AnimalesSearchAppBar extends StatefulWidget {
@@ -977,11 +1056,10 @@ class _AnimalesSearchAppBarState extends State<AnimalesSearchAppBar> {
 }
 
 class _StageChipConfig {
-  _StageChipConfig(this.labelResolver, this.stages, this.color);
+  _StageChipConfig(this.labelResolver, this.stages);
 
   final String Function(int count) labelResolver;
   final List<LifeStage> stages;
-  final Color color;
 }
 
 class _CenteredSection extends StatelessWidget {
@@ -1004,6 +1082,65 @@ Map<LifeStage, int> _countByStage(List<AnimalEntity> animals) {
     counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
   }
   return counts;
+}
+
+String _animalCardLabel(AnimalEntity animal) {
+  return primaryAnimalLabel(animal);
+}
+
+Future<void> _confirmDeleteAnimal(
+  BuildContext context,
+  AnimalEntity animal,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Eliminar animal'),
+      content: Text(
+        '¿Eliminar a ${_animalCardLabel(animal)}? Esta acción no se puede deshacer.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(ctx).colorScheme.error,
+          ),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Eliminar'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed == true && context.mounted) {
+    context.read<AnimalesBloc>().add(DeleteAnimal(animal.uuid));
+  }
+}
+
+void _handleAnimalCardMenuAction(
+  BuildContext context, {
+  required AnimalEntity animal,
+  required AnimalCardMenuAction action,
+  required VoidCallback onOpenDetail,
+}) {
+  switch (action) {
+    case AnimalCardMenuAction.viewDetail:
+      onOpenDetail();
+    case AnimalCardMenuAction.edit:
+      context.pushNamed(
+        AppRoutes.nameAnimalEditar,
+        pathParameters: {'uuid': animal.uuid},
+      );
+    case AnimalCardMenuAction.registerWeight:
+      context.push(AppRoutes.animalRegistroPesoPath(animal.uuid));
+    case AnimalCardMenuAction.registerHealth:
+      context.push(AppRoutes.animalRegistroSaludPath(animal.uuid));
+    case AnimalCardMenuAction.delete:
+      _confirmDeleteAnimal(context, animal);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1233,19 +1370,28 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
               }
             });
           },
-          selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-          checkmarkColor: theme.colorScheme.primary,
+          backgroundColor: AnimalPalette.filterChipBackground(
+            isSelected: isSelected,
+            isDark: theme.brightness == Brightness.dark,
+          ),
+          selectedColor: AnimalPalette.filterChipBackground(
+            isSelected: isSelected,
+            isDark: theme.brightness == Brightness.dark,
+          ),
+          checkmarkColor: AnimalPalette.uiAccent,
           side: BorderSide(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color: AnimalPalette.filterChipBorder(
+              isSelected: isSelected,
+              isDark: theme.brightness == Brightness.dark,
+            ),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 12,
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            color: AnimalPalette.filterChipForeground(
+              isSelected: isSelected,
+              isDark: theme.brightness == Brightness.dark,
+            ),
           ),
         );
       }).toList(),
@@ -1271,18 +1417,27 @@ class _SearchFilterSheetState extends State<_SearchFilterSheet> {
               }
             });
           },
-          selectedColor: theme.colorScheme.primary.withValues(alpha: 0.15),
+          backgroundColor: AnimalPalette.filterChipBackground(
+            isSelected: isSelected,
+            isDark: theme.brightness == Brightness.dark,
+          ),
+          selectedColor: AnimalPalette.filterChipBackground(
+            isSelected: isSelected,
+            isDark: theme.brightness == Brightness.dark,
+          ),
           side: BorderSide(
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color: AnimalPalette.filterChipBorder(
+              isSelected: isSelected,
+              isDark: theme.brightness == Brightness.dark,
+            ),
           ),
           labelStyle: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 12,
-            color: isSelected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.onSurface.withValues(alpha: 0.8),
+            color: AnimalPalette.filterChipForeground(
+              isSelected: isSelected,
+              isDark: theme.brightness == Brightness.dark,
+            ),
           ),
         );
       }).toList(),

@@ -64,7 +64,7 @@ class LotesTabBloc extends Bloc<LotesTabEvent, LotesTabState> {
     }
 
     final filtered = currentState.lotes.where((lote) {
-      final nombre = lote.nombre.toLowerCase();
+      final nombre = lote.name.toLowerCase();
       return nombre.contains(event.query.toLowerCase());
     }).toList();
 

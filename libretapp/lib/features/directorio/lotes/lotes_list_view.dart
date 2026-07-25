@@ -1,8 +1,9 @@
-﻿/// features \u203a directorio \u203a lotes \u203a lotes_list_view \u2014 stateless list layout for lotes.
+/// features \u203a directorio \u203a lotes \u203a lotes_list_view \u2014 stateless list layout for lotes.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
@@ -10,9 +11,12 @@ import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
+import 'package:libretapp/features/directorio/lotes/lote_card.dart';
 
 class LotesListView extends StatefulWidget {
-  const LotesListView({super.key});
+  const LotesListView({super.key, this.shellInteractionsEnabled = true});
+
+  final bool shellInteractionsEnabled;
 
   @override
   State<LotesListView> createState() => _LotesListViewState();
@@ -51,7 +55,7 @@ class _LotesListViewState extends State<LotesListView> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar lote'),
         content: Text(
-          '¿Deseas borrar "${lote.nombre}"? Esta acción no se puede deshacer.',
+          '¿Deseas borrar "${lote.name}"? Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
@@ -76,40 +80,42 @@ class _LotesListViewState extends State<LotesListView> {
     final bottomInset = ShellInsets.bottomSafePadding(context);
     final listBottomPadding = bottomInset + 2;
 
-    final fabConfig = ShellFabConfig(
-      id: 'lotes',
-      label: 'Agregar Lote',
-      icon: Icons.add,
-      heroTag: 'fab_lotes',
-      onPressed: _openCreateLotePage,
+    final scaffold = Scaffold(
+      body: BlocBuilder<LotesBloc, LotesState>(
+        builder: (context, state) {
+          if (state is LotesInitial || state is LotesLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is LotesError) {
+            return Center(child: Text(state.message));
+          }
+
+          if (state is! LotesLoaded) {
+            return const SizedBox.shrink();
+          }
+
+          final lotes = state.activeLotes;
+          return _buildLotesContent(
+            context: context,
+            lotes: lotes,
+            listBottomPadding: listBottomPadding,
+          );
+        },
+      ),
     );
 
+    if (!widget.shellInteractionsEnabled) return scaffold;
+
     return ShellFabConfigScope(
-      config: fabConfig,
-      child: Scaffold(
-        body: BlocBuilder<LotesBloc, LotesState>(
-          builder: (context, state) {
-            if (state is LotesInitial || state is LotesLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (state is LotesError) {
-              return Center(child: Text(state.message));
-            }
-
-            if (state is! LotesLoaded) {
-              return const SizedBox.shrink();
-            }
-
-            final lotes = state.activeLotes;
-            return _buildLotesContent(
-              context: context,
-              lotes: lotes,
-              listBottomPadding: listBottomPadding,
-            );
-          },
-        ),
+      config: ShellFabConfig(
+        id: 'lotes',
+        label: 'Agregar Lote',
+        icon: Icons.add,
+        heroTag: 'fab_lotes',
+        onPressed: _openCreateLotePage,
       ),
+      child: scaffold,
     );
   }
 
@@ -128,21 +134,53 @@ class _LotesListViewState extends State<LotesListView> {
       slivers: [
         const SliverToBoxAdapter(child: SizedBox(height: 8)),
         SliverPadding(
-          padding: EdgeInsets.fromLTRB(10, 2, 10, listBottomPadding),
+          padding: EdgeInsets.fromLTRB(4, 0, 4, listBottomPadding),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final lote = lotes[index];
               return _CenteredSection(
-                padding: EdgeInsets.zero,
-                child: LoteCard(
-                  lote: lote,
-                  onTap: () => _openLoteDetail(lote),
-                  onEdit: () {
-                    _openLoteDetail(lote);
-                  },
-                  onDelete: () {
-                    _confirmDeleteLote(lote);
-                  },
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Slidable(
+                  key: ValueKey('slide_${lote.uuid}'),
+                  startActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.22,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => _openLoteDetail(lote),
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_outlined,
+                        label: 'Editar',
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  endActionPane: ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.22,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => _confirmDeleteLote(lote),
+                        backgroundColor: Colors.red.shade600,
+                        foregroundColor: Colors.white,
+                        icon: Icons.delete_outline,
+                        label: 'Eliminar',
+                        borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  child: LoteCard(
+                    key: ValueKey('lote_${lote.uuid}'),
+                    lote: lote,
+                    onTap: () => _openLoteDetail(lote),
+                    onEdit: () => _openLoteDetail(lote),
+                    onDelete: () => _confirmDeleteLote(lote),
+                  ),
                 ),
               );
             }, childCount: lotes.length),
@@ -176,138 +214,6 @@ class _LotesListViewState extends State<LotesListView> {
         ],
       ),
     );
-  }
-}
-
-/// Widget de tarjeta para mostrar un lote
-class LoteCard extends StatelessWidget {
-  const LoteCard({
-    super.key,
-    required this.lote,
-    required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final LoteEntity lote;
-  final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.layers,
-                    size: 24,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          lote.nombre,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (lote.descripcion != null &&
-                            lote.descripcion!.isNotEmpty)
-                          Text(
-                            lote.descripcion!,
-                            style: theme.textTheme.bodySmall,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuButton(
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        onEdit();
-                      } else if (value == 'delete') {
-                        onDelete();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 18),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, size: 18, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'Eliminar',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.pets, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${lote.animalUuids.length} animal(es)',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    _formatDate(lote.fechaCreacion),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }
 

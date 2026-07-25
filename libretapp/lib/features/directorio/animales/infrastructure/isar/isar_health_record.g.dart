@@ -42,25 +42,40 @@ const IsarHealthRecordSchema = CollectionSchema(
       name: r'dose',
       type: IsarType.string,
     ),
-    r'nextDueDate': PropertySchema(
+    r'medicineBatch': PropertySchema(
       id: 5,
+      name: r'medicineBatch',
+      type: IsarType.string,
+    ),
+    r'nextDueDate': PropertySchema(
+      id: 6,
       name: r'nextDueDate',
       type: IsarType.dateTime,
     ),
     r'notes': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'notes',
       type: IsarType.string,
     ),
     r'product': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'product',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'type',
       type: IsarType.string,
+    ),
+    r'withdrawalDays': PropertySchema(
+      id: 10,
+      name: r'withdrawalDays',
+      type: IsarType.long,
+    ),
+    r'withdrawalEndDate': PropertySchema(
+      id: 11,
+      name: r'withdrawalEndDate',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _isarHealthRecordEstimateSize,
@@ -117,6 +132,12 @@ int _isarHealthRecordEstimateSize(
     }
   }
   {
+    final value = object.medicineBatch;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.notes;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -138,10 +159,13 @@ void _isarHealthRecordSerialize(
   writer.writeString(offsets[2], object.cause);
   writer.writeDateTime(offsets[3], object.date);
   writer.writeString(offsets[4], object.dose);
-  writer.writeDateTime(offsets[5], object.nextDueDate);
-  writer.writeString(offsets[6], object.notes);
-  writer.writeString(offsets[7], object.product);
-  writer.writeString(offsets[8], object.type);
+  writer.writeString(offsets[5], object.medicineBatch);
+  writer.writeDateTime(offsets[6], object.nextDueDate);
+  writer.writeString(offsets[7], object.notes);
+  writer.writeString(offsets[8], object.product);
+  writer.writeString(offsets[9], object.type);
+  writer.writeLong(offsets[10], object.withdrawalDays);
+  writer.writeDateTime(offsets[11], object.withdrawalEndDate);
 }
 
 IsarHealthRecord _isarHealthRecordDeserialize(
@@ -157,10 +181,13 @@ IsarHealthRecord _isarHealthRecordDeserialize(
   object.date = reader.readDateTime(offsets[3]);
   object.dose = reader.readStringOrNull(offsets[4]);
   object.id = id;
-  object.nextDueDate = reader.readDateTimeOrNull(offsets[5]);
-  object.notes = reader.readStringOrNull(offsets[6]);
-  object.product = reader.readString(offsets[7]);
-  object.type = reader.readString(offsets[8]);
+  object.medicineBatch = reader.readStringOrNull(offsets[5]);
+  object.nextDueDate = reader.readDateTimeOrNull(offsets[6]);
+  object.notes = reader.readStringOrNull(offsets[7]);
+  object.product = reader.readString(offsets[8]);
+  object.type = reader.readString(offsets[9]);
+  object.withdrawalDays = reader.readLongOrNull(offsets[10]);
+  object.withdrawalEndDate = reader.readDateTimeOrNull(offsets[11]);
   return object;
 }
 
@@ -182,13 +209,19 @@ P _isarHealthRecordDeserializeProp<P>(
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readLongOrNull(offset)) as P;
+    case 11:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1044,6 +1077,160 @@ extension IsarHealthRecordQueryFilter
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'medicineBatch',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'medicineBatch',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'medicineBatch',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'medicineBatch',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'medicineBatch',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'medicineBatch',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      medicineBatchIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'medicineBatch',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
       nextDueDateIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1542,6 +1729,154 @@ extension IsarHealthRecordQueryFilter
       ));
     });
   }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'withdrawalDays',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'withdrawalDays',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'withdrawalDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'withdrawalDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'withdrawalDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalDaysBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'withdrawalDays',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'withdrawalEndDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'withdrawalEndDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'withdrawalEndDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'withdrawalEndDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'withdrawalEndDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      withdrawalEndDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'withdrawalEndDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension IsarHealthRecordQueryObject
@@ -1620,6 +1955,20 @@ extension IsarHealthRecordQuerySortBy
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByMedicineBatch() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineBatch', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByMedicineBatchDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineBatch', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
       sortByNextDueDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextDueDate', Sort.asc);
@@ -1670,6 +2019,34 @@ extension IsarHealthRecordQuerySortBy
       sortByTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByWithdrawalDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalDays', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByWithdrawalDaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalDays', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByWithdrawalEndDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalEndDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByWithdrawalEndDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalEndDate', Sort.desc);
     });
   }
 }
@@ -1757,6 +2134,20 @@ extension IsarHealthRecordQuerySortThenBy
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByMedicineBatch() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineBatch', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByMedicineBatchDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineBatch', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
       thenByNextDueDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nextDueDate', Sort.asc);
@@ -1809,6 +2200,34 @@ extension IsarHealthRecordQuerySortThenBy
       return query.addSortBy(r'type', Sort.desc);
     });
   }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByWithdrawalDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalDays', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByWithdrawalDaysDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalDays', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByWithdrawalEndDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalEndDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByWithdrawalEndDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'withdrawalEndDate', Sort.desc);
+    });
+  }
 }
 
 extension IsarHealthRecordQueryWhereDistinct
@@ -1848,6 +2267,14 @@ extension IsarHealthRecordQueryWhereDistinct
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
+      distinctByMedicineBatch({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'medicineBatch',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
       distinctByNextDueDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'nextDueDate');
@@ -1872,6 +2299,20 @@ extension IsarHealthRecordQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'type', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
+      distinctByWithdrawalDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'withdrawalDays');
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
+      distinctByWithdrawalEndDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'withdrawalEndDate');
     });
   }
 }
@@ -1916,6 +2357,13 @@ extension IsarHealthRecordQueryProperty
     });
   }
 
+  QueryBuilder<IsarHealthRecord, String?, QQueryOperations>
+      medicineBatchProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'medicineBatch');
+    });
+  }
+
   QueryBuilder<IsarHealthRecord, DateTime?, QQueryOperations>
       nextDueDateProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -1938,6 +2386,20 @@ extension IsarHealthRecordQueryProperty
   QueryBuilder<IsarHealthRecord, String, QQueryOperations> typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, int?, QQueryOperations>
+      withdrawalDaysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'withdrawalDays');
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, DateTime?, QQueryOperations>
+      withdrawalEndDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'withdrawalEndDate');
     });
   }
 }

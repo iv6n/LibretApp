@@ -22,6 +22,7 @@ class _FormFakeLocationRepository implements LocationRepository {
 
   final List<LocationEntity> _data;
   final StreamController<List<LocationEntity>> _controller;
+  LocationEntity? lastUpsert;
   Completer<void>? upsertCompleter;
   bool failOnUpsert = false;
 
@@ -45,6 +46,8 @@ class _FormFakeLocationRepository implements LocationRepository {
     if (failOnUpsert) {
       throw StateError('fallo de guardado');
     }
+
+    lastUpsert = location;
 
     final index = _data.indexWhere((item) => item.uuid == location.uuid);
     if (index >= 0) {
@@ -182,12 +185,12 @@ LocationEntity _location({required String uuid, required String name}) {
   return LocationEntity(
     uuid: uuid,
     name: name,
-    type: LocationType.potrero,
+    type: LocationType.pasture,
     surfaceArea: 10,
     capacity: 25,
     waterSource: 'Pozo',
     terrainType: 'Plano',
-    status: LocationStatus.disponible,
+    status: LocationStatus.available,
   );
 }
 
@@ -266,6 +269,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _fillValidForm(tester);
+      await tester.ensureVisible(find.text('Crear ubicación'));
       await tester.tap(find.text('Crear ubicación'));
       await tester.pump();
 
@@ -291,6 +295,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _fillValidForm(tester);
+      await tester.ensureVisible(find.text('Crear ubicación'));
       await tester.tap(find.text('Crear ubicación'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -300,5 +305,54 @@ void main() {
       expect(find.text('Crear ubicación'), findsOneWidget);
       expect(observer.popCount, 0);
     });
+
+    testWidgets(
+      'guarda propiedades adaptativas en fields dedicados y attributes',
+      (tester) async {
+        await tester.pumpWidget(_buildTestHost(bloc, observer));
+        await tester.tap(find.text('Abrir formulario'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(ChoiceChip).first);
+        await tester.pump();
+
+        await _fillValidForm(tester);
+
+        await tester.enterText(
+          find.byType(TextFormField).at(7),
+          '{"type":"Point","coordinates":[-99.1,19.3]}',
+        );
+        await tester.enterText(find.byType(TextFormField).at(5), 'RCH-001');
+        await tester.ensureVisible(find.byType(Switch).first);
+        await tester.tap(find.byType(Switch).first);
+
+        await tester.ensureVisible(find.text('Crear ubicación'));
+        await tester.tap(find.text('Crear ubicación'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final saved = repository.lastUpsert;
+        expect(saved, isNotNull);
+        expect(saved!.isShared, isTrue);
+        expect(saved.geometry, '{"type":"Point","coordinates":[-99.1,19.3]}');
+
+        final geometryAttr = saved.attributes.firstWhere(
+          (item) => item.key == 'geometry',
+        );
+        final registryAttr = saved.attributes.firstWhere(
+          (item) => item.key == 'registryCode',
+        );
+        final sharedAttr = saved.attributes.firstWhere(
+          (item) => item.key == 'isShared',
+        );
+
+        expect(
+          geometryAttr.textValue,
+          '{"type":"Point","coordinates":[-99.1,19.3]}',
+        );
+        expect(registryAttr.textValue, 'RCH-001');
+        expect(sharedAttr.boolValue, isTrue);
+      },
+    );
   });
 }

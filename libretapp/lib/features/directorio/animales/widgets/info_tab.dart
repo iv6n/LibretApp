@@ -9,7 +9,6 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
-import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/location_batch_sheet.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -55,7 +54,7 @@ class _InfoTabState extends State<InfoTab> {
     try {
       final lote = await _lotesRepository.getByUuid(widget.animal.batchUuid!);
       if (mounted && lote != null) {
-        setState(() => _batchName = lote.nombre);
+        setState(() => _batchName = lote.name);
       }
     } catch (e, st) {
       LoggerService.w(
@@ -117,12 +116,29 @@ class _InfoTabState extends State<InfoTab> {
     final batchDisplay = _loadingBatchName
         ? '(cargando...)'
         : (_batchName ?? l10n.valueNoData);
+    final geneticsLabel = breedSummary(widget.animal);
+    final shortGeneticsLabel = breedSummary(widget.animal, abbreviated: true);
+    final weightLabel = widget.animal.weight != null
+        ? '${widget.animal.weight!.toStringAsFixed(1)} kg'
+        : l10n.valueNoData;
+    final locationDisplay =
+        widget.animal.currentLocationId ??
+        widget.animal.initialLocationId ??
+        l10n.valueNoData;
 
     return SingleChildScrollView(
       key: const PageStorageKey('info_scroll'),
       padding: EdgeInsets.fromLTRB(16, 14, 16, listBottomPadding),
       child: Column(
         children: [
+          _ProfileSummaryPanel(
+            animal: widget.animal,
+            accent: stageColor,
+            geneticsLabel: geneticsLabel,
+            shortGeneticsLabel: shortGeneticsLabel,
+            weightLabel: weightLabel,
+            locationLabel: locationDisplay,
+          ),
           InfoSection(
             title: l10n.sectionIdentification,
             icon: Icons.badge_outlined,
@@ -130,7 +146,7 @@ class _InfoTabState extends State<InfoTab> {
             children: [
               InfoRow(
                 label: l10n.labelEarTag,
-                value: widget.animal.earTagNumber,
+                value: earTagDisplay(widget.animal),
                 icon: Icons.sell_outlined,
               ),
               InfoRow(
@@ -181,6 +197,41 @@ class _InfoTabState extends State<InfoTab> {
                 value: widget.animal.breed,
                 icon: Icons.biotech_outlined,
               ),
+              InfoRow(
+                label: 'Genetica',
+                value: geneticsLabel,
+                icon: Icons.hub_outlined,
+              ),
+              if ((widget.animal.crossBreed ?? '').trim().isNotEmpty)
+                InfoRow(
+                  label: 'Cruza resumida',
+                  value: shortGeneticsLabel,
+                  icon: Icons.merge_type_outlined,
+                ),
+              if ((widget.animal.crossBreedType ?? '').trim().isNotEmpty)
+                InfoRow(
+                  label: 'Tipo de cruza',
+                  value: widget.animal.crossBreedType!.trim(),
+                  icon: Icons.account_tree_outlined,
+                ),
+              if ((widget.animal.sireBreed ?? '').trim().isNotEmpty)
+                InfoRow(
+                  label: 'Raza padre',
+                  value: widget.animal.sireBreed!.trim(),
+                  icon: Icons.male_outlined,
+                ),
+              if ((widget.animal.damBreed ?? '').trim().isNotEmpty)
+                InfoRow(
+                  label: 'Raza madre',
+                  value: widget.animal.damBreed!.trim(),
+                  icon: Icons.female_outlined,
+                ),
+              if (widget.animal.bloodPercentage != null)
+                InfoRow(
+                  label: 'Porcentaje de sangre',
+                  value: '${widget.animal.bloodPercentage}%',
+                  icon: Icons.percent_outlined,
+                ),
               InfoRow(
                 label: l10n.labelSex,
                 value: widget.animal.sex.displayName,
@@ -293,7 +344,7 @@ class _InfoTabState extends State<InfoTab> {
             children: [
               InfoRow(
                 label: l10n.labelPaddock,
-                value: widget.animal.currentPaddockId ?? l10n.valueNoData,
+                value: widget.animal.currentLocationId ?? l10n.valueNoData,
                 icon: Icons.map_outlined,
               ),
               InfoRow(
@@ -344,6 +395,235 @@ class _InfoTabState extends State<InfoTab> {
                 icon: Icons.event_outlined,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileSummaryPanel extends StatelessWidget {
+  const _ProfileSummaryPanel({
+    required this.animal,
+    required this.accent,
+    required this.geneticsLabel,
+    required this.shortGeneticsLabel,
+    required this.weightLabel,
+    required this.locationLabel,
+  });
+
+  final AnimalEntity animal;
+  final Color accent;
+  final String geneticsLabel;
+  final String shortGeneticsLabel;
+  final String weightLabel;
+  final String locationLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final healthColor = detailColorFromHex(animal.healthStatus.hexColor);
+    final riskColor = detailColorFromHex(animal.riskLevel.hexColor);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.30)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: accent.withValues(alpha: 0.36)),
+                  ),
+                  child: Icon(Icons.pets_outlined, color: accent, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        primaryAnimalLabel(animal),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${earTagDisplay(animal)} - ${animal.species.displayName}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _SummaryChip(label: shortGeneticsLabel, color: accent),
+                _SummaryChip(label: animal.sex.displayName, color: accent),
+                _SummaryChip(label: animal.lifeStage.displayName, color: accent),
+                _SummaryChip(
+                  label: animal.healthStatus.displayName,
+                  color: healthColor,
+                ),
+                _SummaryChip(label: animal.riskLevel.displayName, color: riskColor),
+              ],
+            ),
+            const SizedBox(height: 14),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 560;
+                final children = [
+                  _SummaryMetric(
+                    label: 'Edad',
+                    value: formatAge(animal.ageMonths),
+                    icon: Icons.schedule_outlined,
+                  ),
+                  _SummaryMetric(
+                    label: 'Peso',
+                    value: weightLabel,
+                    icon: Icons.monitor_weight_outlined,
+                  ),
+                  _SummaryMetric(
+                    label: 'Ubicacion',
+                    value: locationLabel,
+                    icon: Icons.place_outlined,
+                  ),
+                  _SummaryMetric(
+                    label: 'Genetica',
+                    value: geneticsLabel,
+                    icon: Icons.hub_outlined,
+                  ),
+                ];
+
+                if (compact) {
+                  return Column(
+                    children: children
+                        .map(
+                          (child) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: child,
+                          ),
+                        )
+                        .toList(),
+                  );
+                }
+
+                return Wrap(spacing: 8, runSpacing: 8, children: children);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 152,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.46),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ],
       ),

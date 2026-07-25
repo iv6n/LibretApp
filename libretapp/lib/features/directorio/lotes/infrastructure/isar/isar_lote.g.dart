@@ -131,14 +131,14 @@ int _isarLoteEstimateSize(
     }
   }
   {
-    final value = object.descripcion;
+    final value = object.description;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.nombre.length * 3;
+  bytesCount += 3 + object.name.length * 3;
   {
-    final value = object.notas;
+    final value = object.notes;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -159,15 +159,15 @@ void _isarLoteSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeBool(offsets[0], object.activo);
+  writer.writeBool(offsets[0], object.active);
   writer.writeStringList(offsets[1], object.animalUuids);
   writer.writeString(offsets[2], object.currentLocationId);
-  writer.writeString(offsets[3], object.descripcion);
-  writer.writeDateTime(offsets[4], object.fechaCierre);
-  writer.writeDateTime(offsets[5], object.fechaCreacion);
+  writer.writeString(offsets[3], object.description);
+  writer.writeDateTime(offsets[4], object.closedAt);
+  writer.writeDateTime(offsets[5], object.createdAt);
   writer.writeDateTime(offsets[6], object.lastUpdateDate);
-  writer.writeString(offsets[7], object.nombre);
-  writer.writeString(offsets[8], object.notas);
+  writer.writeString(offsets[7], object.name);
+  writer.writeString(offsets[8], object.notes);
   writer.writeString(offsets[9], object.remoteId);
   writer.writeDateTime(offsets[10], object.syncDate);
   writer.writeBool(offsets[11], object.synced);
@@ -181,16 +181,16 @@ IsarLote _isarLoteDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = IsarLote();
-  object.activo = reader.readBool(offsets[0]);
+  object.active = reader.readBool(offsets[0]);
   object.animalUuids = reader.readStringList(offsets[1]) ?? [];
   object.currentLocationId = reader.readStringOrNull(offsets[2]);
-  object.descripcion = reader.readStringOrNull(offsets[3]);
-  object.fechaCierre = reader.readDateTimeOrNull(offsets[4]);
-  object.fechaCreacion = reader.readDateTime(offsets[5]);
+  object.description = reader.readStringOrNull(offsets[3]);
+  object.closedAt = reader.readDateTimeOrNull(offsets[4]);
+  object.createdAt = reader.readDateTime(offsets[5]);
   object.id = id;
   object.lastUpdateDate = reader.readDateTime(offsets[6]);
-  object.nombre = reader.readString(offsets[7]);
-  object.notas = reader.readStringOrNull(offsets[8]);
+  object.name = reader.readString(offsets[7]);
+  object.notes = reader.readStringOrNull(offsets[8]);
   object.remoteId = reader.readStringOrNull(offsets[9]);
   object.syncDate = reader.readDateTimeOrNull(offsets[10]);
   object.synced = reader.readBool(offsets[11]);
@@ -423,7 +423,7 @@ extension IsarLoteQueryWhere on QueryBuilder<IsarLote, IsarLote, QWhereClause> {
 
 extension IsarLoteQueryFilter
     on QueryBuilder<IsarLote, IsarLote, QFilterCondition> {
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> activoEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> activeEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -811,7 +811,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionIsNull() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'descripcion',
@@ -820,7 +820,7 @@ extension IsarLoteQueryFilter
   }
 
   QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      descripcionIsNotNull() {
+      descriptionIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'descripcion',
@@ -828,7 +828,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionEqualTo(
     String? value, {
     bool caseSensitive = true,
   }) {
@@ -842,7 +842,7 @@ extension IsarLoteQueryFilter
   }
 
   QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      descripcionGreaterThan(
+      descriptionGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -857,7 +857,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionLessThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -872,7 +872,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionBetween(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -891,7 +891,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionStartsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -904,7 +904,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionEndsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -917,7 +917,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionContains(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionContains(
       String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -929,7 +929,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionMatches(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -941,7 +941,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descripcionIsEmpty() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'descripcion',
@@ -951,7 +951,7 @@ extension IsarLoteQueryFilter
   }
 
   QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      descripcionIsNotEmpty() {
+      descriptionIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'descripcion',
@@ -960,7 +960,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCierreIsNull() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'fechaCierre',
@@ -968,8 +968,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      fechaCierreIsNotNull() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'fechaCierre',
@@ -977,7 +976,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCierreEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtEqualTo(
       DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -987,8 +986,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      fechaCierreGreaterThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtGreaterThan(
     DateTime? value, {
     bool include = false,
   }) {
@@ -1001,7 +999,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCierreLessThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtLessThan(
     DateTime? value, {
     bool include = false,
   }) {
@@ -1014,7 +1012,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCierreBetween(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> closedAtBetween(
     DateTime? lower,
     DateTime? upper, {
     bool includeLower = true,
@@ -1031,7 +1029,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCreacionEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> createdAtEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1041,8 +1039,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
-      fechaCreacionGreaterThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> createdAtGreaterThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1055,7 +1052,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCreacionLessThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> createdAtLessThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1068,7 +1065,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> fechaCreacionBetween(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> createdAtBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
@@ -1192,7 +1189,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1205,7 +1202,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreGreaterThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1220,7 +1217,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreLessThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1235,7 +1232,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreBetween(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1254,7 +1251,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreStartsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1267,7 +1264,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreEndsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1280,7 +1277,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreContains(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameContains(
       String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1292,7 +1289,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreMatches(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1304,7 +1301,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreIsEmpty() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'nombre',
@@ -1313,7 +1310,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nombreIsNotEmpty() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> nameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'nombre',
@@ -1322,7 +1319,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasIsNull() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'notas',
@@ -1330,7 +1327,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasIsNotNull() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'notas',
@@ -1338,7 +1335,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasEqualTo(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesEqualTo(
     String? value, {
     bool caseSensitive = true,
   }) {
@@ -1351,7 +1348,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasGreaterThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1366,7 +1363,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasLessThan(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1381,7 +1378,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasBetween(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -1400,7 +1397,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasStartsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1413,7 +1410,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasEndsWith(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1426,7 +1423,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasContains(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesContains(
       String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1438,7 +1435,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasMatches(
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1450,7 +1447,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasIsEmpty() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'notas',
@@ -1459,7 +1456,7 @@ extension IsarLoteQueryFilter
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notasIsNotEmpty() {
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> notesIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'notas',
@@ -1831,13 +1828,13 @@ extension IsarLoteQueryLinks
     on QueryBuilder<IsarLote, IsarLote, QFilterCondition> {}
 
 extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByActivo() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'activo', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByActivoDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'activo', Sort.desc);
     });
@@ -1855,37 +1852,37 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDescripcion() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDescripcionDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDescriptionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFechaCierre() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByClosedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCierre', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFechaCierreDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByClosedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCierre', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFechaCreacion() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCreacion', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFechaCreacionDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCreacion', Sort.desc);
     });
@@ -1903,25 +1900,25 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNombre() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nombre', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNombreDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nombre', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNotas() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notas', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNotasDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByNotesDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notas', Sort.desc);
     });
@@ -1978,13 +1975,13 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
 
 extension IsarLoteQuerySortThenBy
     on QueryBuilder<IsarLote, IsarLote, QSortThenBy> {
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByActivo() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'activo', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByActivoDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'activo', Sort.desc);
     });
@@ -2002,37 +1999,37 @@ extension IsarLoteQuerySortThenBy
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDescripcion() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDescripcionDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDescriptionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFechaCierre() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByClosedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCierre', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFechaCierreDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByClosedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCierre', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFechaCreacion() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCreacion', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFechaCreacionDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fechaCreacion', Sort.desc);
     });
@@ -2062,25 +2059,25 @@ extension IsarLoteQuerySortThenBy
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNombre() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nombre', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNombreDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'nombre', Sort.desc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNotas() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notas', Sort.asc);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNotasDesc() {
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByNotesDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notas', Sort.desc);
     });
@@ -2137,7 +2134,7 @@ extension IsarLoteQuerySortThenBy
 
 extension IsarLoteQueryWhereDistinct
     on QueryBuilder<IsarLote, IsarLote, QDistinct> {
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByActivo() {
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByActive() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'activo');
     });
@@ -2157,20 +2154,20 @@ extension IsarLoteQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByDescripcion(
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByDescription(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'descripcion', caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByFechaCierre() {
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByClosedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fechaCierre');
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByFechaCreacion() {
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fechaCreacion');
     });
@@ -2182,14 +2179,14 @@ extension IsarLoteQueryWhereDistinct
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByNombre(
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'nombre', caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByNotas(
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByNotes(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'notas', caseSensitive: caseSensitive);
@@ -2231,7 +2228,7 @@ extension IsarLoteQueryProperty
     });
   }
 
-  QueryBuilder<IsarLote, bool, QQueryOperations> activoProperty() {
+  QueryBuilder<IsarLote, bool, QQueryOperations> activeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'activo');
     });
@@ -2250,19 +2247,19 @@ extension IsarLoteQueryProperty
     });
   }
 
-  QueryBuilder<IsarLote, String?, QQueryOperations> descripcionProperty() {
+  QueryBuilder<IsarLote, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'descripcion');
     });
   }
 
-  QueryBuilder<IsarLote, DateTime?, QQueryOperations> fechaCierreProperty() {
+  QueryBuilder<IsarLote, DateTime?, QQueryOperations> closedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fechaCierre');
     });
   }
 
-  QueryBuilder<IsarLote, DateTime, QQueryOperations> fechaCreacionProperty() {
+  QueryBuilder<IsarLote, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fechaCreacion');
     });
@@ -2274,13 +2271,13 @@ extension IsarLoteQueryProperty
     });
   }
 
-  QueryBuilder<IsarLote, String, QQueryOperations> nombreProperty() {
+  QueryBuilder<IsarLote, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'nombre');
     });
   }
 
-  QueryBuilder<IsarLote, String?, QQueryOperations> notasProperty() {
+  QueryBuilder<IsarLote, String?, QQueryOperations> notesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notas');
     });

@@ -79,12 +79,12 @@ class LotesRepositoryIsar implements LotesRepository {
 
     final isarLote = IsarLote()
       ..uuid = uuid
-      ..nombre = nombre
-      ..descripcion = descripcion
+      ..name = nombre
+      ..description = descripcion
       ..animalUuids = []
-      ..fechaCreacion = now
-      ..activo = true
-      ..notas = notas
+      ..createdAt = now
+      ..active = true
+      ..notes = notas
       ..lastUpdateDate = now
       ..synced = false;
 
@@ -119,7 +119,15 @@ class LotesRepositoryIsar implements LotesRepository {
     final isar = await _isar;
 
     await isar.writeTxn(() async {
-      await isar.isarLotes.where().uuidEqualTo(uuid).deleteFirst();
+      final lote = await isar.isarLotes.where().uuidEqualTo(uuid).findFirst();
+      if (lote != null) {
+        lote
+          ..active = false
+          ..closedAt = DateTime.now()
+          ..lastUpdateDate = DateTime.now()
+          ..synced = false;
+        await isar.isarLotes.put(lote);
+      }
     });
   }
 
@@ -219,14 +227,14 @@ class LotesRepositoryIsar implements LotesRepository {
   @override
   Future<List<LoteEntity>> getActiveLotes() async {
     final isar = await _isar;
-    final lotes = await isar.isarLotes.filter().activoEqualTo(true).findAll();
+    final lotes = await isar.isarLotes.filter().activeEqualTo(true).findAll();
     return lotes.map((l) => l.toEntity()).toList();
   }
 
   @override
   Future<List<LoteEntity>> getInactiveLotes() async {
     final isar = await _isar;
-    final lotes = await isar.isarLotes.filter().activoEqualTo(false).findAll();
+    final lotes = await isar.isarLotes.filter().activeEqualTo(false).findAll();
     return lotes.map((l) => l.toEntity()).toList();
   }
 
@@ -250,13 +258,13 @@ class LotesRepositoryIsar implements LotesRepository {
     final loteSeeds = [
       LoteEntity(
         uuid: 'lote-ordeño-a',
-        nombre: 'Lote A - Ordeño',
-        descripcion: 'Lote de vacas en ordeño',
+        name: 'Lote A - Ordeño',
+        description: 'Lote de vacas en ordeño',
         animalUuids: const ['uuid-bessie', 'uuid-lola', 'uuid-estrella'],
-        fechaCreacion: now.subtract(const Duration(days: 180)),
-        fechaCierre: null,
-        activo: true,
-        notas: 'Lote productivo de vacas lecheras',
+        createdAt: now.subtract(const Duration(days: 180)),
+        closedAt: null,
+        active: true,
+        notes: 'Lote productivo de vacas lecheras',
         lastUpdateDate: now,
         synced: false,
         remoteId: null,
@@ -264,13 +272,13 @@ class LotesRepositoryIsar implements LotesRepository {
       ),
       LoteEntity(
         uuid: 'lote-engorde-b',
-        nombre: 'Lote B - Engorde',
-        descripcion: 'Lote de engorde y cría',
+        name: 'Lote B - Engorde',
+        description: 'Lote de engorde y cría',
         animalUuids: const ['uuid-pampa', 'uuid-aurora', 'uuid-brisa'],
-        fechaCreacion: now.subtract(const Duration(days: 150)),
-        fechaCierre: null,
-        activo: true,
-        notas: 'Lote de hembras jóvenes en crecimiento',
+        createdAt: now.subtract(const Duration(days: 150)),
+        closedAt: null,
+        active: true,
+        notes: 'Lote de hembras jóvenes en crecimiento',
         lastUpdateDate: now,
         synced: false,
         remoteId: null,
@@ -278,13 +286,13 @@ class LotesRepositoryIsar implements LotesRepository {
       ),
       LoteEntity(
         uuid: 'lote-cria-c',
-        nombre: 'Lote C - Cría',
-        descripcion: 'Lote de reproducción',
+        name: 'Lote C - Cría',
+        description: 'Lote de reproducción',
         animalUuids: const ['uuid-gaia', 'uuid-rosario'],
-        fechaCreacion: now.subtract(const Duration(days: 200)),
-        fechaCierre: null,
-        activo: true,
-        notas: 'Lote de hembras en reproducción',
+        createdAt: now.subtract(const Duration(days: 200)),
+        closedAt: null,
+        active: true,
+        notes: 'Lote de hembras en reproducción',
         lastUpdateDate: now,
         synced: false,
         remoteId: null,

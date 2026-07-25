@@ -40,6 +40,22 @@ void main() {
 
       directorioBloc.add(const LoadDirectorioData());
       await _flushEvents();
+      directorioBloc.add(
+        const SetDirectorioSectionConfig(
+          orderedSections: [
+            DirectorioSection.animales,
+            DirectorioSection.lotes,
+            DirectorioSection.ubicaciones,
+          ],
+          visibleSections: {
+            DirectorioSection.animales,
+            DirectorioSection.lotes,
+            DirectorioSection.ubicaciones,
+          },
+          activeSection: DirectorioSection.animales,
+        ),
+      );
+      await _flushEvents();
     });
 
     tearDown(() async {
@@ -85,6 +101,13 @@ void main() {
               .whereType<LoadUbicacionesTab>(),
           hasLength(1),
         );
+        final loaded = bloc.state as DirectorioLoaded;
+        expect(loaded.orderedSections, defaultDirectorioSectionOrder);
+        expect(loaded.visibleSections, defaultDirectorioVisibleSections);
+        expect(loaded.activeSections, [
+          DirectorioSection.animales,
+          DirectorioSection.ubicaciones,
+        ]);
 
         await bloc.close();
         await recordingAnimalesTabBloc.close();
@@ -160,6 +183,152 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    test('search ignores hidden directory sections', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-visible',
+        earTagNumber: 'Coincide Animal',
+      );
+      final lote = _buildLote(uuid: 'lote-hidden', nombre: 'Coincide Lote');
+      final location = _buildLocation(
+        uuid: 'ubic-visible',
+        name: 'Coincide Ubicacion',
+      );
+
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      lotesTabBloc.add(LotesTabStreamUpdated([lote]));
+      ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
+      await _flushEvents();
+
+      directorioBloc.add(
+        const SetDirectorioVisibleSections(
+          visibleSections: {
+            DirectorioSection.animales,
+            DirectorioSection.ubicaciones,
+          },
+          activeSection: DirectorioSection.ubicaciones,
+        ),
+      );
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('coincide'));
+      await _flushEvents();
+
+      final loaded = directorioBloc.state as DirectorioLoaded;
+      expect(loaded.activeSection, DirectorioSection.ubicaciones);
+      expect(loaded.searchResults.map((result) => result.type), [
+        CombinedSearchType.ubicacion,
+        CombinedSearchType.animal,
+      ]);
+    });
+
+    test(
+      'visible sections event falls back when active section is hidden',
+      () async {
+        directorioBloc.add(
+          const SetDirectorioVisibleSections(
+            visibleSections: {DirectorioSection.ubicaciones},
+            activeSection: DirectorioSection.lotes,
+          ),
+        );
+        await _flushEvents();
+
+        final loaded = directorioBloc.state as DirectorioLoaded;
+        expect(loaded.visibleSections, {DirectorioSection.ubicaciones});
+        expect(loaded.activeSection, DirectorioSection.ubicaciones);
+      },
+    );
+
+    test('section config changes order and keeps active section when visible', () async {
+        directorioBloc.add(
+          const SetDirectorioSectionConfig(
+            orderedSections: [
+              DirectorioSection.ubicaciones,
+              DirectorioSection.animales,
+              DirectorioSection.lotes,
+            ],
+            visibleSections: {
+              DirectorioSection.ubicaciones,
+              DirectorioSection.animales,
+            },
+            activeSection: DirectorioSection.animales,
+          ),
+        );
+        await _flushEvents();
+
+        final loaded = directorioBloc.state as DirectorioLoaded;
+        expect(loaded.activeSection, DirectorioSection.animales);
+        expect(loaded.activeSections, [
+          DirectorioSection.ubicaciones,
+          DirectorioSection.animales,
+        ]);
+      },
+    );
+
+    test('ChangeDirectorioTab uses the custom visible section order', () async {
+      directorioBloc.add(
+        const SetDirectorioSectionConfig(
+          orderedSections: [
+            DirectorioSection.ubicaciones,
+            DirectorioSection.animales,
+            DirectorioSection.lotes,
+          ],
+          visibleSections: {
+            DirectorioSection.ubicaciones,
+            DirectorioSection.animales,
+          },
+          activeSection: DirectorioSection.animales,
+        ),
+      );
+      await _flushEvents();
+
+      directorioBloc.add(const ChangeDirectorioTab(0));
+      await _flushEvents();
+
+      final loaded = directorioBloc.state as DirectorioLoaded;
+      expect(loaded.activeSection, DirectorioSection.ubicaciones);
+      expect(loaded.activeTabIndex, 0);
+    });
+
+    test('search fallback respects custom section order', () async {
+      final animal = _buildAnimal(
+        uuid: 'animal-custom-order',
+        earTagNumber: 'Coincide Animal',
+      );
+      final location = _buildLocation(
+        uuid: 'ubic-custom-order',
+        name: 'Coincide Ubicacion',
+      );
+
+      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+      ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
+      await _flushEvents();
+
+      directorioBloc.add(
+        const SetDirectorioSectionConfig(
+          orderedSections: [
+            DirectorioSection.ubicaciones,
+            DirectorioSection.animales,
+            DirectorioSection.lotes,
+          ],
+          visibleSections: {
+            DirectorioSection.ubicaciones,
+            DirectorioSection.animales,
+          },
+          activeSection: DirectorioSection.animales,
+        ),
+      );
+      await _flushEvents();
+
+      directorioBloc.add(const PerformCombinedSearch('coincide'));
+      await _flushEvents();
+
+      final loaded = directorioBloc.state as DirectorioLoaded;
+      expect(loaded.searchResults.map((result) => result.type), [
+        CombinedSearchType.animal,
+        CombinedSearchType.ubicacion,
+      ]);
     });
 
     test('matches by id even when name does not match', () async {
@@ -707,8 +876,8 @@ LoteEntity _buildLote({required String uuid, required String nombre}) {
   final now = DateTime(2024, 1, 1);
   return LoteEntity(
     uuid: uuid,
-    nombre: nombre,
-    fechaCreacion: now,
+    name: nombre,
+    createdAt: now,
     lastUpdateDate: now,
   );
 }
@@ -753,12 +922,12 @@ LocationEntity _buildLocation({required String uuid, required String name}) {
   return LocationEntity(
     uuid: uuid,
     name: name,
-    type: LocationType.potrero,
+    type: LocationType.pasture,
     surfaceArea: 1,
     capacity: 10,
     waterSource: 'Ninguna',
     terrainType: 'Plano',
-    status: LocationStatus.disponible,
+    status: LocationStatus.available,
   );
 }
 

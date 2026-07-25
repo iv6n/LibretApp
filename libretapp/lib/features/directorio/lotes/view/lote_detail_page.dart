@@ -80,7 +80,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar lote'),
         content: Text(
-          '¿Deseas borrar "${lote.nombre}"? Esta acción no se puede deshacer.',
+          '¿Deseas borrar "${lote.name}"? Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
@@ -131,7 +131,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
     }
 
     final available = locations
-        .where((l) => l.status != LocationStatus.clausurado)
+        .where((l) => l.status != LocationStatus.closed)
         .toList();
 
     if (!mounted) return;
@@ -161,7 +161,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Mover lote "${lote.nombre}"',
+                          'Mover lote "${lote.name}"',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -231,9 +231,9 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
     final moveFutures = <Future<void>>[];
     for (final rawAnimal in animals) {
       final animal = rawAnimal;
-      final oldLocId = animal.currentPaddockId;
+      final oldLocId = animal.currentLocationId;
       final updatedAnimal = animal.copyWith(
-        currentPaddockId: selectedUuid,
+        currentLocationId: selectedUuid,
         initialLocationId: animal.initialLocationId ?? selectedUuid,
         lastMovementDate: now,
         lastUpdateDate: now,
@@ -359,15 +359,15 @@ class _LoteDetailContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text(
-          lote.nombre,
+          lote.name,
           style: theme.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          lote.descripcion?.trim().isNotEmpty == true
-              ? lote.descripcion!
+          lote.description?.trim().isNotEmpty == true
+              ? lote.description!
               : 'Sin descripción',
         ),
         const SizedBox(height: 16),
@@ -379,9 +379,9 @@ class _LoteDetailContent extends StatelessWidget {
               children: [
                 Text('Animales: ${lote.animalUuids.length}'),
                 const SizedBox(height: 6),
-                Text('Estado: ${lote.activo ? 'Activo' : 'Inactivo'}'),
+                Text('Estado: ${lote.active ? 'Activo' : 'Inactivo'}'),
                 const SizedBox(height: 6),
-                Text('Creado: ${lote.fechaCreacion}'),
+                Text('Creado: ${lote.createdAt}'),
               ],
             ),
           ),

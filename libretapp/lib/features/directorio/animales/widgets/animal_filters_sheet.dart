@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_filters_sheet \u2014 bottom sheet for filtering the animal list.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_filters_sheet \u2014 bottom sheet for filtering the animal list.
 library;
 
 import 'package:flutter/material.dart';
@@ -51,7 +51,7 @@ class _FiltersContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final chips = _buildStageChips(l10n);
+    final chips = _buildStageChips();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -90,7 +90,7 @@ class _FiltersContent extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: chips.map((cfg) => _buildStageChip(cfg)).toList(),
+            children: chips.map((cfg) => _buildStageChip(context, cfg)).toList(),
           ),
           const SizedBox(height: 8),
         ],
@@ -98,62 +98,36 @@ class _FiltersContent extends StatelessWidget {
     );
   }
 
-  List<_StageChipConfig> _buildStageChips(AppLocalizations l10n) {
-    return <_StageChipConfig>[
-      _StageChipConfig((c) => l10n.stageFilterCalf(c), [
-        LifeStage.calf,
-        LifeStage.calfMale,
-        LifeStage.calfFemale,
-      ], AnimalPalette.stageColor(LifeStage.calf)),
-      _StageChipConfig(
-        (c) => l10n.stageFilterHeifer(c),
-        [LifeStage.heifer],
-        AnimalPalette.stageColor(LifeStage.heifer),
-      ),
-      _StageChipConfig(
-        (c) => l10n.stageFilterYoungBull(c),
-        [LifeStage.youngBull],
-        AnimalPalette.stageColor(LifeStage.youngBull),
-      ),
-      _StageChipConfig((c) => l10n.stageFilterSteer(c), [
-        LifeStage.steer,
-      ], AnimalPalette.stageColor(LifeStage.steer)),
-      _StageChipConfig((c) => l10n.stageFilterCow(c), [
-        LifeStage.cow,
-      ], AnimalPalette.stageColor(LifeStage.cow)),
-      _StageChipConfig((c) => l10n.stageFilterBull(c), [
-        LifeStage.bull,
-      ], AnimalPalette.stageColor(LifeStage.bull)),
-      _StageChipConfig((c) => l10n.stageFilterColt(c), [
-        LifeStage.colt,
-        LifeStage.filly,
-      ], AnimalPalette.stageColor(LifeStage.colt)),
-      _StageChipConfig((c) => l10n.stageFilterHorse(c), [
-        LifeStage.horse,
-      ], AnimalPalette.stageColor(LifeStage.horse)),
-      _StageChipConfig((c) => l10n.stageFilterMare(c), [
-        LifeStage.mare,
-      ], AnimalPalette.stageColor(LifeStage.mare)),
-      _StageChipConfig(
-        (c) => l10n.stageFilterDonkey(c),
-        [LifeStage.donkey, LifeStage.donkeyFemale],
-        AnimalPalette.stageColor(LifeStage.donkey),
-      ),
-      _StageChipConfig((c) => l10n.stageFilterMule(c), [
-        LifeStage.mule,
-      ], AnimalPalette.stageColor(LifeStage.mule)),
-    ];
+  List<_StageChipConfig> _buildStageChips() {
+    return AnimalTaxonomy.filterStageGroups()
+        .map(
+          (stages) => _StageChipConfig(
+            _stageGroupLabel(stages),
+            stages,
+          ),
+        )
+        .toList();
   }
 
-  Widget _buildStageChip(_StageChipConfig config) {
+  Widget _buildStageChip(BuildContext context, _StageChipConfig config) {
     final isSelected = config.stages.any(selectedStages.contains);
-    final color = config.color;
-    final labelColor = isSelected ? Colors.white : color.withValues(alpha: 0.9);
-    final bgColor = isSelected ? color : color.withValues(alpha: 0.18);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = AnimalPalette.filterChipBackground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final foregroundColor = AnimalPalette.filterChipForeground(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
+    final borderColor = AnimalPalette.filterChipBorder(
+      isSelected: isSelected,
+      isDark: isDark,
+    );
 
     return FilterChip(
       label: Text(
-        config.labelResolver(2),
+        config.label,
         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
       selected: isSelected,
@@ -166,11 +140,11 @@ class _FiltersContent extends StatelessWidget {
         }
         onStagesChanged(updated);
       },
-      backgroundColor: bgColor,
-      selectedColor: bgColor,
-      side: BorderSide(color: isSelected ? color : Colors.transparent),
+      backgroundColor: backgroundColor,
+      selectedColor: backgroundColor,
+      side: BorderSide(color: borderColor),
       labelStyle: TextStyle(
-        color: labelColor,
+        color: foregroundColor,
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
       ),
       showCheckmark: false,
@@ -179,9 +153,13 @@ class _FiltersContent extends StatelessWidget {
 }
 
 class _StageChipConfig {
-  const _StageChipConfig(this.labelResolver, this.stages, this.color);
+  const _StageChipConfig(this.label, this.stages);
 
-  final String Function(int count) labelResolver;
+  final String label;
   final List<LifeStage> stages;
-  final Color color;
+}
+
+String _stageGroupLabel(List<LifeStage> stages) {
+  if (stages.length == 1) return stages.first.displayName;
+  return stages.map((stage) => stage.displayName).toSet().join(' / ');
 }

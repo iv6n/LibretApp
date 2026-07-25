@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 /// Shows a bottom sheet for assigning location and batch to an animal.
 Future<void> showAssignmentSheet(
@@ -24,7 +25,7 @@ Future<void> showAssignmentSheet(
   final batches = _uniqueBatches(animals);
 
   String? selectedLocation =
-      (animal.currentPaddockId ?? animal.initialLocationId)?.trim();
+      (animal.currentLocationId ?? animal.initialLocationId)?.trim();
   String? selectedBatch = animal.batchId;
   var creatingBatch = false;
   final newBatchCtrl = TextEditingController();
@@ -64,7 +65,7 @@ Future<void> showAssignmentSheet(
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.route_outlined, color: Colors.blue),
+                      Icon(Icons.route_outlined, color: AppColors.secondary),
                       SizedBox(width: 8),
                       Text(
                         'Asignar ubicación y lote',
@@ -183,7 +184,9 @@ Future<void> showAssignmentSheet(
   if (saved == true) {
     messenger.showSnackBar(
       SnackBar(
-        content: Text('Asignación actualizada para ${animal.earTagNumber}'),
+        content: Text(
+          'Asignacion actualizada para ${primaryAnimalLabel(animal)}',
+        ),
       ),
     );
   }

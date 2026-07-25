@@ -46,7 +46,7 @@ class _AssignAnimalsPageState extends State<AssignAnimalsPage> {
                     final animal = animals[index];
                     final checked = _selected.contains(animal.uuid);
                     final currentLocId =
-                        animal.currentPaddockId ?? animal.initialLocationId;
+                        animal.currentLocationId ?? animal.initialLocationId;
                     final currentLocName = currentLocId != null
                         ? widget.allLocations
                               .where((l) => l.uuid == currentLocId)

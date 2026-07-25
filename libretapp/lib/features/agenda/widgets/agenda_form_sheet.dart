@@ -7,6 +7,7 @@ import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_animal_selector_sheet.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_constants.dart';
+import 'package:libretapp/features/agenda/widgets/agenda_workforce_sheet.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
 Future<void> showAgendaFormSheet({
@@ -71,12 +72,18 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
   late final TextEditingController _descripcionController;
   late final TextEditingController _notasController;
   late final TextEditingController _ubicacionController;
+  late final TextEditingController _checklistController;
   String? _locationUuid;
 
   late DateTime _fechaSeleccionada;
   late String _tipoSeleccionado;
   late List<String> _selectedAnimalIds;
   late List<String> _selectedLoteIds;
+  late String _prioridad;
+  String? _assigneeId;
+  String? _workTeamId;
+  late List<String> _collaboratorIds;
+  String? _recurrenceRule;
 
   @override
   void initState() {
@@ -90,11 +97,21 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
       text: widget.entry?.ubicacion ?? '',
     );
     _locationUuid = widget.entry?.locationUuid;
+    _checklistController = TextEditingController(
+      text: widget.entry?.checklist.map((item) => item.label).join('\n') ?? '',
+    );
 
     _fechaSeleccionada = widget.entry?.fecha ?? widget.initialDate;
     _tipoSeleccionado = widget.entry?.tipo ?? agendaTipos.first;
     _selectedAnimalIds = List<String>.from(widget.entry?.animalIds ?? []);
     _selectedLoteIds = List<String>.from(widget.entry?.loteIds ?? []);
+    _prioridad = widget.entry?.prioridad ?? AgendaPrioridad.normal;
+    _assigneeId = widget.entry?.assigneeId;
+    _workTeamId = widget.entry?.workTeamId;
+    _collaboratorIds = List<String>.from(
+      widget.entry?.collaboratorIds ?? const [],
+    );
+    _recurrenceRule = widget.entry?.recurrenceRule;
   }
 
   @override
@@ -103,11 +120,13 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
     _descripcionController.dispose();
     _notasController.dispose();
     _ubicacionController.dispose();
+    _checklistController.dispose();
     super.dispose();
   }
 
   void _save() {
     if (!_formKey.currentState!.validate()) return;
+    final now = DateTime.now();
     final String ubicacion;
     if (_locationUuid != null && widget.locations.isNotEmpty) {
       ubicacion =
@@ -121,6 +140,29 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
           ? 'Sin ubicación'
           : _ubicacionController.text.trim();
     }
+    final previousChecklist = <String, AgendaChecklistItem>{
+      for (final item in widget.entry?.checklist ?? const <AgendaChecklistItem>[])
+        item.label.trim().toLowerCase(): item,
+    };
+    final checklist = _checklistController.text
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .map(
+          (label) =>
+              previousChecklist[label.toLowerCase()] ??
+              AgendaChecklistItem(id: generateId(), label: label),
+        )
+        .toList(growable: false);
+    final activities = <AgendaActivity>[
+      ...widget.entry?.activities ?? const <AgendaActivity>[],
+      AgendaActivity(
+        id: generateId(),
+        type: widget.entry == null ? 'created' : 'updated',
+        timestamp: now,
+      ),
+    ];
+
     final saved = AgendaEntry(
       id: widget.entry?.id ?? generateId(),
       titulo: _tituloController.text.trim(),
@@ -135,6 +177,18 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
       completedAnimalIds: widget.entry?.completedAnimalIds ?? const [],
       notas: _notasController.text.trim(),
       fechaCompletado: widget.entry?.fechaCompletado,
+      prioridad: _prioridad,
+      assigneeId: _assigneeId,
+      collaboratorIds: _collaboratorIds,
+      workTeamId: _workTeamId,
+      createdById: widget.entry?.createdById,
+      createdAt: widget.entry?.createdAt ?? now,
+      updatedAt: now,
+      recurrenceRule: _recurrenceRule,
+      blockedReason: widget.entry?.blockedReason,
+      checklist: checklist,
+      activities: activities,
+      evidence: widget.entry?.evidence ?? const [],
     );
     widget.onSave(saved);
     if (widget.popOnSave) {
@@ -173,7 +227,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
             ),
             const SizedBox(height: 14),
             DropdownButtonFormField<String>(
-              value: _tipoSeleccionado,
+              initialValue: _tipoSeleccionado,
               items: agendaTipos
                   .map(
                     (tipo) => DropdownMenuItem(value: tipo, child: Text(tipo)),
@@ -185,6 +239,23 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
               decoration: const InputDecoration(
                 labelText: 'Tipo de tarea',
                 prefixIcon: Icon(Icons.category_outlined),
+              ),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: _prioridad,
+              items: const [
+                DropdownMenuItem(value: AgendaPrioridad.baja, child: Text('Prioridad baja')),
+                DropdownMenuItem(value: AgendaPrioridad.normal, child: Text('Prioridad normal')),
+                DropdownMenuItem(value: AgendaPrioridad.alta, child: Text('Prioridad alta')),
+                DropdownMenuItem(value: AgendaPrioridad.urgente, child: Text('Prioridad urgente')),
+              ],
+              onChanged: (value) => setState(() {
+                _prioridad = value ?? AgendaPrioridad.normal;
+              }),
+              decoration: const InputDecoration(
+                labelText: 'Prioridad',
+                prefixIcon: Icon(Icons.flag_outlined),
               ),
             ),
             const SizedBox(height: 10),
@@ -205,6 +276,33 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
                 prefixIcon: Icon(Icons.description_outlined),
               ),
               maxLines: 2,
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final result = await showWorkforceSelector(
+                  context: context,
+                  assigneeId: _assigneeId,
+                  teamId: _workTeamId,
+                  collaboratorIds: _collaboratorIds,
+                );
+                if (result == null || !mounted) return;
+                setState(() {
+                  _assigneeId = result.assigneeId;
+                  _workTeamId = result.teamId;
+                  _collaboratorIds = result.collaboratorIds;
+                });
+              },
+              icon: const Icon(Icons.assignment_ind_outlined),
+              label: Text(
+                _assigneeId == null && _workTeamId == null
+                    ? 'Asignar responsable / cuadrilla'
+                    : 'Asignación configurada · ${_collaboratorIds.length} colaborador(es)',
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                alignment: Alignment.centerLeft,
+              ),
             ),
             const SizedBox(height: 10),
             OutlinedButton.icon(
@@ -243,7 +341,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
               )
             else
               DropdownButtonFormField<String?>(
-                value: _locationUuid,
+                initialValue: _locationUuid,
                 decoration: const InputDecoration(
                   labelText: 'Ubicación (opcional)',
                   prefixIcon: Icon(Icons.place_outlined),
@@ -275,9 +373,65 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
                   lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
                 );
                 if (picked != null) {
-                  setState(() => _fechaSeleccionada = picked);
+                  setState(() {
+                    _fechaSeleccionada = DateTime(
+                      picked.year,
+                      picked.month,
+                      picked.day,
+                      _fechaSeleccionada.hour,
+                      _fechaSeleccionada.minute,
+                    );
+                  });
                 }
               },
+            ),
+            const SizedBox(height: 10),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.schedule_outlined),
+              title: const Text('Hora límite'),
+              subtitle: Text(DateFormat('HH:mm').format(_fechaSeleccionada)),
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(_fechaSeleccionada),
+                );
+                if (picked == null) return;
+                setState(() {
+                  _fechaSeleccionada = DateTime(
+                    _fechaSeleccionada.year,
+                    _fechaSeleccionada.month,
+                    _fechaSeleccionada.day,
+                    picked.hour,
+                    picked.minute,
+                  );
+                });
+              },
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String?>(
+              initialValue: _recurrenceRule,
+              decoration: const InputDecoration(
+                labelText: 'Repetición',
+                prefixIcon: Icon(Icons.repeat),
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('No repetir')),
+                DropdownMenuItem(value: 'weekly', child: Text('Cada semana')),
+                DropdownMenuItem(value: 'monthly', child: Text('Cada mes')),
+              ],
+              onChanged: (value) => setState(() => _recurrenceRule = value),
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _checklistController,
+              decoration: const InputDecoration(
+                labelText: 'Checklist (un paso por línea)',
+                prefixIcon: Icon(Icons.checklist_outlined),
+                alignLabelWithHint: true,
+              ),
+              minLines: 2,
+              maxLines: 5,
             ),
             const SizedBox(height: 10),
             TextFormField(

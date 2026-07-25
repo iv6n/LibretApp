@@ -25,8 +25,9 @@ class ShellChromeVisibility extends InheritedWidget {
 
 /// Contract for shells that can show/hide their chrome (nav bar + FAB).
 abstract class ShellChromeHostState<T extends StatefulWidget> extends State<T> {
-  void updateChromeVisibility(bool visible);
-  void removeChromeVisibility(bool visible);
+  int get activeBranchIndex;
+  void updateChromeVisibility(bool visible, {required int branchIndex});
+  void removeChromeVisibility(bool visible, {required int branchIndex});
 }
 
 /// Allows pages to request shell chrome visibility changes.
@@ -46,11 +47,17 @@ class ShellChromeScope extends StatefulWidget {
 
 class _ShellChromeScopeState extends State<ShellChromeScope> {
   ShellChromeHostState? _host;
+  int? _branchIndex;
+  int _notificationGeneration = 0;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _host = context.findAncestorStateOfType<ShellChromeHostState>();
+    final nextHost = context.findAncestorStateOfType<ShellChromeHostState>();
+    if (!identical(_host, nextHost) || _branchIndex == null) {
+      _branchIndex = nextHost?.activeBranchIndex;
+    }
+    _host = nextHost;
     _notifyHost();
   }
 
@@ -64,15 +71,27 @@ class _ShellChromeScopeState extends State<ShellChromeScope> {
 
   @override
   void dispose() {
-    _host?.removeChromeVisibility(widget.visible);
+    _notificationGeneration++;
+    final host = _host;
+    final branchIndex = _branchIndex;
+    final visible = widget.visible;
+    if (host != null && branchIndex != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        host.removeChromeVisibility(visible, branchIndex: branchIndex);
+      });
+    }
     super.dispose();
   }
 
   void _notifyHost() {
-    if (_host == null) return;
+    final host = _host;
+    final branchIndex = _branchIndex;
+    if (host == null || branchIndex == null) return;
+    final generation = ++_notificationGeneration;
+    final visible = widget.visible;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _host?.updateChromeVisibility(widget.visible);
+      if (!mounted || generation != _notificationGeneration) return;
+      host.updateChromeVisibility(visible, branchIndex: branchIndex);
     });
   }
 

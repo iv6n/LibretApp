@@ -1,4 +1,4 @@
-﻿/// features \u203a inicio \u203a widgets \u203a quick_summary_section \u2014 summary statistics section on the home dashboard.
+/// features \u203a inicio \u203a widgets \u203a quick_summary_section \u2014 summary statistics section on the home dashboard.
 library;
 
 import 'package:flutter/material.dart';
@@ -36,7 +36,7 @@ class QuickSummarySection extends StatelessWidget {
               ),
               child: Text(
                 'Total: ${data.totalAnimals}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
@@ -52,7 +52,7 @@ class QuickSummarySection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(vertical: 2),
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, i) => _CategoryCard(summary: items[i]),
           ),
         ),
@@ -84,6 +84,20 @@ class _CategoryCard extends StatelessWidget {
         return 'assets/images/novillo.png';
       case Category.weaned:
         return 'assets/images/becerro.png';
+      case Category.juvenile:
+        return 'assets/images/becerro.png';
+      case Category.grower:
+        return 'assets/images/novillo.png';
+      case Category.fattening:
+        return 'assets/images/novillo.png';
+      case Category.production:
+        return 'assets/images/vaca.png';
+      case Category.reproduction:
+        return 'assets/images/toro.png';
+      case Category.work:
+        return 'assets/images/caballo.png';
+      case Category.guard:
+        return 'assets/images/canino.png';
       case Category.other:
         return null;
     }

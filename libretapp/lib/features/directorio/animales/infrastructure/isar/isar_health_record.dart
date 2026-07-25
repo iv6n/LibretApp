@@ -21,6 +21,9 @@ class IsarHealthRecord {
   String? notes;
   DateTime? nextDueDate;
   String? cause;
+  String? medicineBatch;
+  int? withdrawalDays;
+  DateTime? withdrawalEndDate;
 }
 
 extension IsarHealthRecordMapper on IsarHealthRecord {
@@ -35,6 +38,9 @@ extension IsarHealthRecordMapper on IsarHealthRecord {
       notes: notes,
       nextDueDate: nextDueDate,
       cause: cause,
+      medicineBatch: medicineBatch,
+      withdrawalDays: withdrawalDays,
+      withdrawalEndDate: withdrawalEndDate,
     );
   }
 }
@@ -51,6 +57,10 @@ extension HealthRecordToIsar on HealthRecord {
       ..notes = notes
       ..nextDueDate = nextDueDate
       ..cause = cause;
+    model
+      ..medicineBatch = medicineBatch
+      ..withdrawalDays = withdrawalDays
+      ..withdrawalEndDate = withdrawalEndDate;
 
     if (id != null) {
       final parsed = int.tryParse(id!);

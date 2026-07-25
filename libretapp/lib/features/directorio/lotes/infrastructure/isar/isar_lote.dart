@@ -1,4 +1,8 @@
 ﻿/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a isar \u203a isar_lote \u2014 Isar schema for the Lote model.
+///
+/// @Name annotations preserve the original Spanish column names in the Isar
+/// store so that existing data survives the Dart field rename without a
+/// data migration.
 library;
 
 import 'package:isar/isar.dart';
@@ -6,7 +10,6 @@ import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.
 
 part 'isar_lote.g.dart';
 
-/// Modelo de persistencia Isar para Lotes
 @collection
 class IsarLote {
   Id id = Isar.autoIncrement;
@@ -14,15 +17,26 @@ class IsarLote {
   @Index(unique: true)
   late String uuid;
 
-  late String nombre;
-  String? descripcion;
+  @Name('nombre')
+  late String name;
+
+  @Name('descripcion')
+  String? description;
+
   late List<String> animalUuids;
 
-  late DateTime fechaCreacion;
-  DateTime? fechaCierre;
+  @Name('fechaCreacion')
+  late DateTime createdAt;
 
-  late bool activo;
-  String? notas;
+  @Name('fechaCierre')
+  DateTime? closedAt;
+
+  @Name('activo')
+  late bool active;
+
+  @Name('notas')
+  String? notes;
+
   String? currentLocationId;
 
   late bool synced;
@@ -33,18 +47,17 @@ class IsarLote {
 }
 
 extension IsarLoteMapper on IsarLote {
-  /// Convierte una entidad de base de datos Isar a entidad de dominio
   LoteEntity toEntity() {
     return LoteEntity(
       id: id,
       uuid: uuid,
-      nombre: nombre,
-      descripcion: descripcion,
+      name: name,
+      description: description,
       animalUuids: animalUuids,
-      fechaCreacion: fechaCreacion,
-      fechaCierre: fechaCierre,
-      activo: activo,
-      notas: notas,
+      createdAt: createdAt,
+      closedAt: closedAt,
+      active: active,
+      notes: notes,
       currentLocationId: currentLocationId,
       lastUpdateDate: lastUpdateDate,
       synced: synced,
@@ -53,16 +66,15 @@ extension IsarLoteMapper on IsarLote {
     );
   }
 
-  /// Actualiza este modelo Isar con datos de una entidad de dominio
   void updateFromEntity(LoteEntity entity) {
     uuid = entity.uuid;
-    nombre = entity.nombre;
-    descripcion = entity.descripcion;
+    name = entity.name;
+    description = entity.description;
     animalUuids = entity.animalUuids;
-    fechaCreacion = entity.fechaCreacion;
-    fechaCierre = entity.fechaCierre;
-    activo = entity.activo;
-    notas = entity.notas;
+    createdAt = entity.createdAt;
+    closedAt = entity.closedAt;
+    active = entity.active;
+    notes = entity.notes;
     currentLocationId = entity.currentLocationId;
     lastUpdateDate = entity.lastUpdateDate;
     synced = entity.synced;
@@ -72,18 +84,17 @@ extension IsarLoteMapper on IsarLote {
 }
 
 extension IsarLoteFromEntityMapper on LoteEntity {
-  /// Crea un modelo Isar desde una entidad de dominio
   IsarLote toIsarLote() {
     return IsarLote()
       ..uuid = uuid
-      ..nombre = nombre
-      ..descripcion = descripcion
+      ..name = name
+      ..description = description
       ..animalUuids = animalUuids
-      ..fechaCreacion = fechaCreacion
-      ..fechaCierre = fechaCierre
+      ..createdAt = createdAt
+      ..closedAt = closedAt
       ..currentLocationId = currentLocationId
-      ..activo = activo
-      ..notas = notas
+      ..active = active
+      ..notes = notes
       ..lastUpdateDate = lastUpdateDate
       ..synced = synced
       ..remoteId = remoteId

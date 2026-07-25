@@ -6,6 +6,7 @@ import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
 
 abstract class UbicacionesEvent extends Equatable {
   const UbicacionesEvent();
@@ -58,7 +59,34 @@ class SearchQueryChanged extends UbicacionesEvent {
   List<Object> get props => [query];
 }
 
-class ClearSearch extends UbicacionesEvent {}
+class ClearSearch extends UbicacionesEvent {
+  const ClearSearch();
+}
+
+class SelectParentFilter extends UbicacionesEvent {
+  const SelectParentFilter(this.ranchoUuid);
+  final String? ranchoUuid;
+
+  @override
+  List<Object> get props => [if (ranchoUuid != null) ranchoUuid!];
+}
+
+class ToggleCategoryFilter extends UbicacionesEvent {
+  const ToggleCategoryFilter({required this.category, required this.selected});
+  final LocationCategory category;
+  final bool selected;
+
+  @override
+  List<Object> get props => [category, selected];
+}
+
+class ClearCategoryFilters extends UbicacionesEvent {
+  const ClearCategoryFilters();
+}
+
+class ClearAllFilters extends UbicacionesEvent {
+  const ClearAllFilters();
+}
 
 class UbicacionesStreamUpdated extends UbicacionesEvent {
   const UbicacionesStreamUpdated(this.ubicaciones);

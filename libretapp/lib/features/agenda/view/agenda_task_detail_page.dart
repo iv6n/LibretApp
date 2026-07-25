@@ -1,9 +1,12 @@
 /// features › agenda › view › agenda_task_detail_page — step-by-step task execution for an agenda entry.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
@@ -14,6 +17,7 @@ import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AgendaTaskDetailPage extends StatefulWidget {
   const AgendaTaskDetailPage({super.key, required this.entry});
@@ -56,7 +60,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     for (final loteUuid in _entry.loteIds) {
       final lote = await lotesRepo.getByUuid(loteUuid);
       if (lote == null) continue;
-      loteNames[loteUuid] = lote.nombre;
+      loteNames[loteUuid] = lote.name;
       final members = <AnimalEntity>[];
       for (final animalUuid in lote.animalUuids) {
         final a = await animalRepo.getByUuid(animalUuid);
@@ -116,6 +120,147 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
         fechaCompletado: allDone ? DateTime.now() : _entry.fechaCompletado,
       );
     });
+  }
+
+  void _changeStatus(String status, {String reason = ''}) {
+    context.read<AgendaBloc>().add(
+      ChangeAgendaStatus(entryId: _entry.id, status: status, reason: reason),
+    );
+    final now = DateTime.now();
+    setState(() {
+      _entry = _entry.copyWith(
+        estado: status,
+        blockedReason: status == AgendaEstado.bloqueado ? reason : null,
+        fechaCompletado:
+            status == AgendaEstado.completado || status == AgendaEstado.verificado
+            ? now
+            : _entry.fechaCompletado,
+        updatedAt: now,
+      );
+    });
+  }
+
+  Future<void> _blockTask() async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Bloquear tarea'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Motivo',
+            hintText: 'Ej. falta medicamento o no se encontró el animal',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isNotEmpty) Navigator.pop(dialogContext, value);
+            },
+            child: const Text('Bloquear'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (reason != null) _changeStatus(AgendaEstado.bloqueado, reason: reason);
+  }
+
+  void _toggleChecklist(AgendaChecklistItem item, bool completed) {
+    context.read<AgendaBloc>().add(
+      ToggleAgendaChecklistItem(
+        entryId: _entry.id,
+        itemId: item.id,
+        completed: completed,
+      ),
+    );
+    setState(() {
+      _entry = _entry.copyWith(
+        checklist: _entry.checklist
+            .map(
+              (current) => current.id == item.id
+                  ? current.copyWith(
+                      completed: completed,
+                      completedAt: completed ? DateTime.now() : null,
+                    )
+                  : current,
+            )
+            .toList(growable: false),
+      );
+    });
+  }
+
+  Future<void> _addEvidence() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tomar foto'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Elegir de galería'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 82,
+      maxWidth: 2048,
+    );
+    if (picked == null) return;
+
+    final now = DateTime.now();
+    final documents = await getApplicationDocumentsDirectory();
+    final evidenceDir = Directory('${documents.path}/agenda_evidence');
+    await evidenceDir.create(recursive: true);
+    final extension = picked.path.contains('.')
+        ? picked.path.substring(picked.path.lastIndexOf('.'))
+        : '.jpg';
+    final saved = await File(picked.path).copy(
+      '${evidenceDir.path}/${_entry.id}-${now.microsecondsSinceEpoch}$extension',
+    );
+    if (!mounted) return;
+
+    final updated = _entry.copyWith(
+      evidence: [
+        ..._entry.evidence,
+        AgendaEvidence(
+          id: 'evidence-${now.microsecondsSinceEpoch}',
+          path: saved.path,
+          createdAt: now,
+        ),
+      ],
+      activities: [
+        ..._entry.activities,
+        AgendaActivity(
+          id: 'activity-${now.microsecondsSinceEpoch}',
+          type: 'evidence_added',
+          timestamp: now,
+          note: 'Se adjuntó evidencia fotográfica',
+        ),
+      ],
+      updatedAt: now,
+    );
+    context.read<AgendaBloc>().add(UpdateAgendaEntry(updated));
+    setState(() => _entry = updated);
   }
 
   Future<void> _openRegistroForm(
@@ -289,6 +434,124 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
 
                   const SizedBox(height: 20),
 
+                  _TaskStatusActions(
+                    status: _entry.estado,
+                    canComplete: total == 0 || completedCount >= total,
+                    onStart: () => _changeStatus(AgendaEstado.enProgreso),
+                    onBlock: _blockTask,
+                    onComplete: () => _changeStatus(AgendaEstado.completado),
+                    onVerify: () => _changeStatus(AgendaEstado.verificado),
+                  ),
+
+                  if (_entry.blockedReason?.isNotEmpty == true) ...[
+                    const SizedBox(height: 8),
+                    Card(
+                      color: theme.colorScheme.errorContainer,
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.report_problem_outlined,
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
+                        title: const Text('Motivo del bloqueo'),
+                        subtitle: Text(_entry.blockedReason!),
+                      ),
+                    ),
+                  ],
+
+                  if (_entry.checklist.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _SectionTitle(
+                      title: 'Checklist (${_entry.checklist.where((item) => item.completed).length}/${_entry.checklist.length})',
+                      icon: Icons.checklist_outlined,
+                    ),
+                    const SizedBox(height: 8),
+                    Card(
+                      elevation: 0,
+                      child: Column(
+                        children: _entry.checklist
+                            .map(
+                              (item) => CheckboxListTile(
+                                value: item.completed,
+                                title: Text(item.label),
+                                onChanged: (value) =>
+                                    _toggleChecklist(item, value == true),
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: _SectionTitle(
+                          title: 'Evidencia',
+                          icon: Icons.photo_camera_back_outlined,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: _addEvidence,
+                        icon: const Icon(Icons.add_a_photo_outlined),
+                        label: const Text('Agregar'),
+                      ),
+                    ],
+                  ),
+                  if (_entry.evidence.isEmpty)
+                    Text(
+                      'Sin fotografías adjuntas.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 96,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: _entry.evidence.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 8),
+                        itemBuilder: (_, index) => ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            File(_entry.evidence[index].path),
+                            width: 96,
+                            height: 96,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => const SizedBox.square(
+                              dimension: 96,
+                              child: ColoredBox(
+                                color: Color(0xFFE0E0E0),
+                                child: Icon(Icons.broken_image_outlined),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  if (_entry.activities.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    _SectionTitle(
+                      title: 'Bitácora',
+                      icon: Icons.history_outlined,
+                    ),
+                    const SizedBox(height: 8),
+                    ..._entry.activities.reversed.take(5).map(
+                      (activity) => ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.circle, size: 10),
+                        title: Text(_activityLabel(activity.type)),
+                        subtitle: Text(
+                          DateFormat('dd/MM/yyyy HH:mm').format(activity.timestamp),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 20),
+
                   // Progress section
                   if (total > 0) ...[
                     Row(
@@ -393,7 +656,8 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                             ),
                             const SizedBox(height: 4),
                             FilledButton.tonal(
-                              onPressed: () => _markCompleted('__task_done__'),
+                              onPressed: () =>
+                                  _changeStatus(AgendaEstado.completado),
                               child: const Text('Marcar tarea como completada'),
                             ),
                           ],
@@ -404,6 +668,72 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
               ),
             ),
     );
+  }
+}
+
+class _TaskStatusActions extends StatelessWidget {
+  const _TaskStatusActions({
+    required this.status,
+    required this.canComplete,
+    required this.onStart,
+    required this.onBlock,
+    required this.onComplete,
+    required this.onVerify,
+  });
+
+  final String status;
+  final bool canComplete;
+  final VoidCallback onStart;
+  final VoidCallback onBlock;
+  final VoidCallback onComplete;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == AgendaEstado.verificado || status == AgendaEstado.cancelado) {
+      return const SizedBox.shrink();
+    }
+
+    final actions = <Widget>[];
+    if (status == AgendaEstado.pendiente || status == AgendaEstado.bloqueado) {
+      actions.add(
+        FilledButton.icon(
+          onPressed: onStart,
+          icon: const Icon(Icons.play_arrow),
+          label: Text(
+            status == AgendaEstado.bloqueado ? 'Reanudar' : 'Iniciar',
+          ),
+        ),
+      );
+    }
+    if (status == AgendaEstado.enProgreso) {
+      actions.add(
+        OutlinedButton.icon(
+          onPressed: onBlock,
+          icon: const Icon(Icons.pause_circle_outline),
+          label: const Text('Bloquear'),
+        ),
+      );
+      actions.add(
+        FilledButton.icon(
+          onPressed: canComplete ? onComplete : null,
+          icon: const Icon(Icons.task_alt),
+          label: const Text('Completar'),
+        ),
+      );
+    }
+    if (status == AgendaEstado.completado) {
+      actions.add(
+        FilledButton.icon(
+          onPressed: onVerify,
+          icon: const Icon(Icons.verified_outlined),
+          label: const Text('Verificar'),
+        ),
+      );
+    }
+
+    if (actions.isEmpty) return const SizedBox.shrink();
+    return Wrap(spacing: 8, runSpacing: 8, children: actions);
   }
 }
 
@@ -541,4 +871,16 @@ class _AnimalTaskRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _activityLabel(String type) {
+  if (type == 'created') return 'Tarea creada';
+  if (type == 'updated') return 'Tarea actualizada';
+  if (type == 'animal_completed') return 'Animal completado';
+  if (type == 'checklist_completed') return 'Paso del checklist completado';
+  if (type == 'checklist_reopened') return 'Paso del checklist reabierto';
+  if (type.startsWith('status_changed:')) {
+    return 'Estado: ${labelForEstado(type.substring('status_changed:'.length))}';
+  }
+  return type;
 }

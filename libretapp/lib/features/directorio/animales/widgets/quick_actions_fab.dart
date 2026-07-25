@@ -11,6 +11,7 @@ class QuickActionsFab extends StatelessWidget {
     required this.onAddWeight,
     required this.onAddReproduction,
     required this.onAddProduction,
+    required this.onAddMilking,
     required this.onAddHealth,
     required this.onAddCommercial,
     required this.onAddMovement,
@@ -21,6 +22,7 @@ class QuickActionsFab extends StatelessWidget {
   final VoidCallback onAddWeight;
   final VoidCallback onAddReproduction;
   final VoidCallback onAddProduction;
+  final VoidCallback onAddMilking;
   final VoidCallback onAddHealth;
   final VoidCallback onAddCommercial;
   final VoidCallback onAddMovement;
@@ -41,6 +43,7 @@ class QuickActionsFab extends StatelessWidget {
         l10n.detailActionProduction,
         onAddProduction,
       ),
+      _QuickAction(Icons.water_drop, 'Ordeña', onAddMilking),
       _QuickAction(
         Icons.medical_services,
         l10n.detailActionHealth,
@@ -95,7 +98,6 @@ class _QuickActionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.detailQuickActionsTitle)),
       body: SafeArea(

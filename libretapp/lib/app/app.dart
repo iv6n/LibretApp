@@ -42,8 +42,8 @@ class MyApp extends StatelessWidget {
                 final brightness = Theme.of(context).brightness;
                 final base = brightness == Brightness.dark
                     ? Colors.black
-                    : Colors.white;
-                // Stronger fade: intensify stops and swap to white in light mode.
+                    : LightColors.background;
+                // Stronger fade: intensify stops and use the light background tone.
                 final topOpacity = brightness == Brightness.dark ? 0.28 : 0.24;
                 final midOpacity = brightness == Brightness.dark ? 0.48 : 0.40;
                 final bottomOpacity = brightness == Brightness.dark

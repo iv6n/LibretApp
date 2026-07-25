@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_card \u2014 reusable animal card widget.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_card \u2014 reusable animal card widget.
 library;
 
 import 'package:flutter/material.dart';
@@ -8,6 +8,14 @@ import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
+enum AnimalCardMenuAction {
+  viewDetail,
+  edit,
+  registerWeight,
+  registerHealth,
+  delete,
+}
+
 class AnimalCard extends StatelessWidget {
   const AnimalCard({
     super.key,
@@ -15,6 +23,9 @@ class AnimalCard extends StatelessWidget {
     this.location,
     this.onTap,
     this.onLongPress,
+    this.onMenuAction,
+    this.onQuickMenuOpenChanged,
+    this.onPrepareQuickMenu,
     this.isSelected = false,
     this.selectionEnabled = false,
   });
@@ -23,29 +34,41 @@ class AnimalCard extends StatelessWidget {
   final LocationEntity? location;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final ValueChanged<AnimalCardMenuAction>? onMenuAction;
+  final ValueChanged<bool>? onQuickMenuOpenChanged;
+  final Future<void> Function(BuildContext menuContext)? onPrepareQuickMenu;
   final bool isSelected;
   final bool selectionEnabled;
 
   @override
   Widget build(BuildContext context) {
-    final stageColor = AnimalPalette.stageColor(animal.lifeStage);
-    final profile = profileVisualFor(animal, stageColor);
+    final stageColor = AnimalPalette.categoryColor(animal.category);
+    final speciesColor = AnimalPalette.speciesColor(animal.species);
+    final profile = profileVisualFor(animal, speciesColor);
     final stageLabel = animal.lifeStage.displayName;
     final purposeLabel = _purposeShortLabel(animal.productionPurpose);
+    final showPurpose = animal.productionPurpose != ProductionPurpose.undefined;
+    final purposeKpiLabel = _purposeKpiLabel(animal);
 
     final stageAsset = profile.asset;
     final avatarBorderColor = _avatarBorderColor(animal, context);
-    final healthColor = colorFromHex(animal.healthStatus.hexColor);
-    final riskColor = colorFromHex(animal.riskLevel.hexColor);
+    final healthAccentColor = _isNeutralHealthStatus(animal.healthStatus)
+        ? null
+        : colorFromHex(animal.healthStatus.hexColor);
+    final riskAccentColor = _isNeutralRiskLevel(animal.riskLevel)
+        ? null
+        : colorFromHex(animal.riskLevel.hexColor);
     final locationLabel = location?.name ?? 'Sin ubicación';
-    final breedLabel = animal.breed.isNotEmpty
-        ? animal.breed
-        : animal.species.displayName;
-    final secondaryLabel = (animal.customName ?? '').isNotEmpty
-        ? animal.customName!
-        : (animal.visualId ?? '').isNotEmpty
-        ? animal.visualId!
-        : (animal.breed.isNotEmpty ? animal.breed : animal.species.displayName);
+    final hasEarTag = animal.earTagNumber.trim().isNotEmpty;
+    final breedLabel = breedSummary(animal, abbreviated: true);
+    final headerLabel = primaryAnimalLabel(animal);
+    final secondaryLabel = hasEarTag
+        ? ((animal.customName ?? '').trim().isNotEmpty
+              ? animal.customName!.trim()
+              : (animal.visualId ?? '').trim().isNotEmpty
+              ? animal.visualId!.trim()
+              : breedSummary(animal))
+        : earTagDisplay(animal);
     final ageMonths = animal.ageMonths;
     final ageYears = ageMonths ~/ 12;
     final ageRemainderMonths = ageMonths % 12;
@@ -61,33 +84,18 @@ class AnimalCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final purposeChipColor = colorScheme.secondary;
     final cardOverlay = theme.brightness == Brightness.dark
         ? Colors.black.withValues(alpha: 0.1)
         : Colors.black.withValues(alpha: 0.035);
     final selectedOverlay = isSelected
-        ? stageColor.withValues(alpha: 0.16)
+        ? AnimalPalette.uiAccent.withValues(alpha: 0.12)
         : Colors.transparent;
     final baseCard = Color.alphaBlend(cardOverlay, colorScheme.surface);
     final cardColor = Color.alphaBlend(selectedOverlay, baseCard);
-    final headerColor = theme.brightness == Brightness.dark
-        ? Color.alphaBlend(
-            Colors.white.withValues(alpha: 0.035),
-            colorScheme.surface,
-          )
-        : const Color.fromARGB(255, 226, 231, 236);
-    final headerPrimaryTextColor = theme.brightness == Brightness.dark
-        ? colorScheme.onSurface
-        : const Color(0xFF233041);
-    final headerSecondaryTextColor = theme.brightness == Brightness.dark
-        ? colorScheme.onSurface.withValues(alpha: 0.76)
-        : const Color(0xFF3A4758);
-    final footerColor = theme.brightness == Brightness.dark
-        ? Color.alphaBlend(
-            Colors.white.withValues(alpha: 0.035),
-            colorScheme.surface,
-          )
-        : const Color.fromARGB(255, 238, 241, 241);
+    final headerColor = AnimalPalette.cardHeader(context);
+    final headerPrimaryTextColor = AnimalPalette.cardTextPrimary(context);
+    final headerSecondaryTextColor = AnimalPalette.cardTextSecondary(context);
+    final footerColor = AnimalPalette.cardFooter(context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
@@ -96,9 +104,7 @@ class AnimalCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(
-          color: isSelected
-              ? stageColor.withValues(alpha: 0.95)
-              : colorScheme.outlineVariant.withValues(alpha: 0.38),
+          color: AnimalPalette.cardBorder(context, isSelected: isSelected),
           width: isSelected ? 1.5 : 1,
         ),
       ),
@@ -126,6 +132,7 @@ class AnimalCard extends StatelessWidget {
                         borderColor: avatarBorderColor,
                         stageAsset: stageAsset,
                         profile: profile,
+                        colorFilter: profile.colorFilter,
                         profilePhoto: animal.profilePhoto,
                       ),
                       const SizedBox(width: 10),
@@ -137,38 +144,64 @@ class AnimalCard extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Expanded(
-                                  child: FormattedEarTag(
-                                    earTag: animal.earTagNumber,
-                                    prefixStyle: textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                      color: headerPrimaryTextColor,
-                                      letterSpacing: -0.45,
-                                      height: 1.05,
-                                    ),
-                                    separatorStyle: textTheme.titleLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 20,
-                                          color: headerPrimaryTextColor,
-                                          letterSpacing: 1.8,
-                                          height: 1.05,
+                                  child: hasEarTag
+                                      ? FormattedEarTag(
+                                          earTag: animal.earTagNumber,
+                                          prefixStyle: textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 16,
+                                                color: headerPrimaryTextColor,
+                                                letterSpacing: -0.45,
+                                                height: 1.05,
+                                              ),
+                                          separatorStyle: textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 20,
+                                                color: headerPrimaryTextColor,
+                                                letterSpacing: 1.8,
+                                                height: 1.05,
+                                              ),
+                                          suffixStyle: textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 18,
+                                                color: headerPrimaryTextColor,
+                                                letterSpacing: -0.45,
+                                                height: 1.05,
+                                              ),
+                                        )
+                                      : Text(
+                                          headerLabel,
+                                          style: textTheme.titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 18,
+                                                color: headerPrimaryTextColor,
+                                                height: 1.05,
+                                              ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                    suffixStyle: textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 18,
-                                      color: headerPrimaryTextColor,
-                                      letterSpacing: -0.45,
-                                      height: 1.05,
-                                    ),
+                                ),
+                                const SizedBox(width: 6),
+                                if (!selectionEnabled && onMenuAction != null)
+                                  _AnimalCardQuickMenu(
+                                    stageLabel: stageLabel,
+                                    stageColor: stageColor,
+                                    iconColor: headerSecondaryTextColor,
+                                    onSelected: onMenuAction!,
+                                    onMenuOpenChanged: onQuickMenuOpenChanged,
+                                    onPrepareQuickMenu: onPrepareQuickMenu,
+                                  )
+                                else
+                                  TagChip(
+                                    fontSize: 10,
+                                    label: stageLabel.toUpperCase(),
+                                    accentColor: stageColor,
+                                    outlined: false,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                TagChip(
-                                  fontSize: 10,
-                                  label: stageLabel.toUpperCase(),
-                                  color: stageColor,
-                                ),
                                 if (selectionEnabled) ...[
                                   const SizedBox(width: 6),
                                   AnimatedContainer(
@@ -243,13 +276,43 @@ class AnimalCard extends StatelessWidget {
                                 TagChip(
                                   fontSize: 11,
                                   label: breedLabel.toUpperCase(),
-                                  color: purposeChipColor,
+                                  accentColor: AnimalPalette.summaryChipAccent(
+                                    context,
+                                  ),
+                                  textColor: AnimalPalette.summaryChipText,
+                                  tintOpacity: 0.10,
+                                  borderOpacity: 0.28,
                                 ),
-                                TagChip(
-                                  fontSize: 11,
-                                  label: purposeLabel.toUpperCase(),
-                                  color: purposeChipColor,
-                                ),
+                                if (showPurpose)
+                                  TagChip(
+                                    fontSize: 11,
+                                    label: purposeLabel.toUpperCase(),
+                                    accentColor:
+                                        AnimalPalette.summaryChipAccent(
+                                          context,
+                                        ),
+                                    textColor:
+                                        AnimalPalette.purposeSummaryTextColor(
+                                          animal.productionPurpose,
+                                        ),
+                                    tintOpacity: 0.10,
+                                    borderOpacity: 0.28,
+                                  ),
+                                if (showPurpose && purposeKpiLabel != null)
+                                  TagChip(
+                                    fontSize: 11,
+                                    label: purposeKpiLabel.toUpperCase(),
+                                    accentColor:
+                                        AnimalPalette.summaryChipAccent(
+                                          context,
+                                        ),
+                                    textColor:
+                                        AnimalPalette.purposeSummaryTextColor(
+                                          animal.productionPurpose,
+                                        ),
+                                    tintOpacity: 0.10,
+                                    borderOpacity: 0.28,
+                                  ),
                               ],
                             ),
                           ],
@@ -265,11 +328,7 @@ class AnimalCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: footerColor,
                 border: Border(
-                  top: BorderSide(
-                    color: theme.brightness == Brightness.dark
-                        ? colorScheme.outlineVariant.withValues(alpha: 0.42)
-                        : const Color(0xFFD9DEE8),
-                  ),
+                  top: BorderSide(color: AnimalPalette.cardDivider(context)),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
@@ -287,19 +346,18 @@ class AnimalCard extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: Wrap(
                         alignment: WrapAlignment.end,
-                        spacing: 2,
-                        runSpacing: 3,
+                        spacing: 6,
+                        runSpacing: 4,
                         children: [
                           _StatusPill(
-                            icon: Icons.monitor_heart,
+                            icon: Icons.add_circle,
                             label: animal.healthStatus.displayName,
-                            color: healthColor,
-                            emphasizeGreen: true,
+                            accentColor: healthAccentColor,
                           ),
                           _StatusPill(
                             icon: Icons.shield_outlined,
                             label: animal.riskLevel.displayName,
-                            color: riskColor,
+                            accentColor: riskAccentColor,
                           ),
                         ],
                       ),
@@ -315,22 +373,156 @@ class AnimalCard extends StatelessWidget {
   }
 }
 
+class _AnimalCardQuickMenu extends StatelessWidget {
+  const _AnimalCardQuickMenu({
+    required this.stageLabel,
+    required this.stageColor,
+    required this.iconColor,
+    required this.onSelected,
+    this.onMenuOpenChanged,
+    this.onPrepareQuickMenu,
+  });
+
+  final String stageLabel;
+  final Color stageColor;
+  final Color iconColor;
+  final ValueChanged<AnimalCardMenuAction> onSelected;
+  final ValueChanged<bool>? onMenuOpenChanged;
+  final Future<void> Function(BuildContext menuContext)? onPrepareQuickMenu;
+
+  Future<void> _openMenu(BuildContext context) async {
+    onMenuOpenChanged?.call(true);
+    try {
+      await onPrepareQuickMenu?.call(context);
+      if (!context.mounted) return;
+
+      final button = context.findRenderObject() as RenderBox?;
+      if (button == null) return;
+
+      final overlay =
+          Overlay.of(context).context.findRenderObject() as RenderBox;
+      final origin = button.localToGlobal(Offset.zero, ancestor: overlay);
+      final menuTop = origin.dy + button.size.height + 2;
+
+      final selected = await showMenu<AnimalCardMenuAction>(
+        context: context,
+        position: RelativeRect.fromRect(
+          Rect.fromLTWH(origin.dx, menuTop, button.size.width, 0),
+          Offset.zero & overlay.size,
+        ),
+        items: _buildAnimalCardMenuItems(),
+      );
+
+      if (selected != null) {
+        onSelected(selected);
+      }
+    } finally {
+      onMenuOpenChanged?.call(false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Acciones',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _openMenu(context),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TagChip(
+              fontSize: 10,
+              label: stageLabel.toUpperCase(),
+              accentColor: stageColor,
+              outlined: false,
+            ),
+            Icon(Icons.more_vert, size: 24, color: iconColor),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+List<PopupMenuEntry<AnimalCardMenuAction>> _buildAnimalCardMenuItems() {
+  return [
+    const PopupMenuItem(
+      value: AnimalCardMenuAction.viewDetail,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.visibility_outlined, size: 20),
+        title: Text('Ver detalle'),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    const PopupMenuItem(
+      value: AnimalCardMenuAction.edit,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.edit_outlined, size: 20),
+        title: Text('Editar'),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    const PopupMenuItem(
+      value: AnimalCardMenuAction.registerWeight,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.monitor_weight_outlined, size: 20),
+        title: Text('Registrar peso'),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    const PopupMenuItem(
+      value: AnimalCardMenuAction.registerHealth,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.medical_services_outlined, size: 20),
+        title: Text('Registrar salud'),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+    const PopupMenuDivider(),
+    PopupMenuItem(
+      value: AnimalCardMenuAction.delete,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(
+          Icons.delete_outline,
+          size: 20,
+          color: Colors.red.shade700,
+        ),
+        title: Text('Eliminar', style: TextStyle(color: Colors.red.shade700)),
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
+    ),
+  ];
+}
+
 class _Avatar extends StatelessWidget {
   const _Avatar({
     required this.borderColor,
     required this.stageAsset,
     required this.profile,
+    this.colorFilter,
     this.profilePhoto,
   });
 
   final Color borderColor;
   final String stageAsset;
   final AnimalProfileVisual profile;
+  final ColorFilter? colorFilter;
   final String? profilePhoto;
 
   @override
   Widget build(BuildContext context) {
-    const avatarBackgroundColor = Color.fromARGB(255, 240, 241, 241);
+    final avatarBackgroundColor = AnimalPalette.avatarBackgroundLight;
     final hasPhoto = (profilePhoto ?? '').trim().isNotEmpty;
     final photoUri = Uri.tryParse((profilePhoto ?? '').trim());
     final canLoadNetworkPhoto =
@@ -359,29 +551,26 @@ class _Avatar extends StatelessWidget {
                 ? Image.network(
                     profilePhoto!.trim(),
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      stageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(
-                        profile.fallbackIcon,
-                        color: profile.color,
-                        size: 30,
-                      ),
-                    ),
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildProfileAsset(),
                   )
-                : Image.asset(
-                    stageAsset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      profile.fallbackIcon,
-                      color: profile.color,
-                      size: 30,
-                    ),
-                  ),
+                : _buildProfileAsset(),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildProfileAsset() {
+    final image = Image.asset(
+      stageAsset,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          Icon(profile.fallbackIcon, color: profile.color, size: 30),
+    );
+    final filter = colorFilter;
+    if (filter == null) return image;
+    return ColorFiltered(colorFilter: filter, child: image);
   }
 }
 
@@ -396,7 +585,7 @@ Color _avatarBorderColor(AnimalEntity animal, BuildContext context) {
   if (animal.underObservation) {
     return const Color(0xFFE1882F);
   }
-  return Theme.of(context).colorScheme.outlineVariant;
+  return AnimalPalette.speciesColor(animal.species);
 }
 
 class _InlineInfo extends StatelessWidget {
@@ -437,53 +626,67 @@ class _InlineInfo extends StatelessWidget {
   }
 }
 
+bool _isNeutralHealthStatus(HealthStatus status) {
+  switch (status) {
+    case HealthStatus.good:
+    case HealthStatus.excellent:
+    case HealthStatus.unknown:
+      return true;
+    case HealthStatus.fair:
+    case HealthStatus.poor:
+    case HealthStatus.critical:
+      return false;
+  }
+}
+
+bool _isNeutralRiskLevel(RiskLevel level) {
+  switch (level) {
+    case RiskLevel.none:
+    case RiskLevel.low:
+      return true;
+    case RiskLevel.medium:
+    case RiskLevel.high:
+    case RiskLevel.critical:
+      return false;
+  }
+}
+
 class _StatusPill extends StatelessWidget {
   const _StatusPill({
     required this.icon,
     required this.label,
-    required this.color,
-    this.emphasizeGreen = false,
+    this.accentColor,
   });
 
   final IconData icon;
   final String label;
-  final Color color;
-  final bool emphasizeGreen;
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
-    final tonedColor = _mutedColor(color, strength: 0.34);
-    final bool isGreenTone =
-        tonedColor.g > tonedColor.r && tonedColor.g > tonedColor.b;
-    final bool useStrongBg = emphasizeGreen && isGreenTone;
-    final Color strongTone = Color.alphaBlend(
-      Colors.black.withValues(alpha: 0.2),
-      tonedColor,
-    );
-    final Color pillBg = useStrongBg
-        ? strongTone.withValues(alpha: 0.95)
-        : tonedColor.withValues(alpha: 0.4);
-    final double luminance = pillBg.computeLuminance();
-    final bool isLight = luminance > 0.65;
-    final Color pillText = isLight ? Colors.black : Colors.white;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colors = _statusPillColors(isDark: isDark, accentColor: accentColor);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: pillBg,
-        borderRadius: BorderRadius.circular(18),
+        color: colors.background,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colors.border, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: pillText),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: colors.foreground),
+          const SizedBox(width: 5),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.1,
-              color: pillText,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              letterSpacing: 0,
+              color: colors.foreground,
             ),
           ),
         ],
@@ -492,42 +695,101 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
+({Color background, Color foreground, Color border}) _statusPillColors({
+  required bool isDark,
+  required Color? accentColor,
+}) {
+  if (accentColor == null) {
+    final foreground = isDark
+        ? const Color(0xFFB8C0CA)
+        : const Color(0xFF5A6575);
+    return (
+      background: isDark ? const Color(0xFF3A424D) : const Color(0xFFE8ECF0),
+      foreground: foreground,
+      border: foreground.withValues(alpha: isDark ? 0.28 : 0.24),
+    );
+  }
+
+  final toned = _mutedColor(accentColor, strength: isDark ? 0.18 : 0.28);
+  final foreground = Color.lerp(
+    toned,
+    isDark ? Colors.white : const Color(0xFF1E2836),
+    isDark ? 0.28 : 0.42,
+  )!;
+  return (
+    background: toned.withValues(alpha: isDark ? 0.24 : 0.16),
+    foreground: foreground,
+    border: toned.withValues(alpha: isDark ? 0.42 : 0.38),
+  );
+}
+
 class TagChip extends StatelessWidget {
   const TagChip({
     super.key,
     required this.label,
-    required this.color,
-    this.alpha = 0.80,
+    required this.accentColor,
+    this.textColor,
     this.fontSize = 12,
+    this.tintOpacity = 0.15,
+    this.borderOpacity = 0.72,
+    this.outlined = true,
+    this.solidAlpha = 0.80,
   });
 
   final String label;
-  final Color color;
-  final double alpha;
+  final Color accentColor;
+  final Color? textColor;
   final double fontSize;
+  final double tintOpacity;
+  final double borderOpacity;
+  final bool outlined;
+  final double solidAlpha;
 
   @override
   Widget build(BuildContext context) {
-    final tonedColor = _mutedColor(color, strength: 0.5);
-    final double luminance = tonedColor.computeLuminance();
-    final textColor = luminance > 0.65 ? Colors.black87 : Colors.white;
-    final bgColor = tonedColor.withValues(alpha: alpha);
+    if (!outlined) {
+      final tonedColor = _mutedColor(accentColor, strength: 0.5);
+      final luminance = tonedColor.computeLuminance();
+      final labelColor = luminance > 0.65 ? Colors.black87 : Colors.white;
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: tonedColor.withValues(alpha: solidAlpha),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: tonedColor.withValues(alpha: 0.28),
+            width: 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: labelColor,
+            fontWeight: FontWeight.w800,
+            fontSize: fontSize,
+          ),
+        ),
+      );
+    }
+
+    final labelColor = textColor ?? accentColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: accentColor.withValues(alpha: tintOpacity),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: tonedColor.withValues(alpha: 0.28),
-          width: 0.8,
+          color: accentColor.withValues(alpha: borderOpacity),
+          width: 1,
         ),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w800,
+          color: labelColor,
+          fontWeight: FontWeight.w700,
           fontSize: fontSize,
         ),
       ),
@@ -540,71 +802,26 @@ class AnimalProfileVisual {
     required this.color,
     required this.asset,
     required this.fallbackIcon,
+    this.colorFilter,
   });
 
   final Color color;
   final String asset;
   final IconData fallbackIcon;
+  final ColorFilter? colorFilter;
 }
 
 AnimalProfileVisual profileVisualFor(AnimalEntity animal, Color stageColor) {
-  switch (animal.lifeStage) {
-    case LifeStage.calf:
-    case LifeStage.calfMale:
-    case LifeStage.calfFemale:
-    case LifeStage.colt:
-    case LifeStage.filly:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/becerro.png',
-        fallbackIcon: Icons.child_care,
-      );
-    case LifeStage.heifer:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/vaquilla.png',
-        fallbackIcon: Icons.pets,
-      );
-    case LifeStage.cow:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/vaca.png',
-        fallbackIcon: Icons.pets,
-      );
-    case LifeStage.bull:
-    case LifeStage.youngBull:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/toro.png',
-        fallbackIcon: Icons.agriculture,
-      );
-    case LifeStage.horse:
-    case LifeStage.mare:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/caballo.png',
-        fallbackIcon: Icons.pets,
-      );
-    case LifeStage.donkey:
-    case LifeStage.donkeyFemale:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/burro.png',
-        fallbackIcon: Icons.pets,
-      );
-    case LifeStage.mule:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/mula.png',
-        fallbackIcon: Icons.pets,
-      );
-    case LifeStage.steer:
-      return AnimalProfileVisual(
-        color: stageColor,
-        asset: 'assets/images/novillo.png',
-        fallbackIcon: Icons.pets,
-      );
-  }
+  return AnimalProfileVisual(
+    color: stageColor,
+    asset: AnimalTaxonomy.assetForStage(animal.lifeStage),
+    colorFilter: null,
+    fallbackIcon: animal.species == Species.poultry
+        ? Icons.egg_alt_outlined
+        : animal.species == Species.canine
+        ? Icons.pets
+        : Icons.agriculture,
+  );
 }
 
 Color colorFromHex(String hex) {
@@ -720,13 +937,13 @@ class FormattedEarTag extends StatelessWidget {
 String _purposeShortLabel(ProductionPurpose purpose) {
   switch (purpose) {
     case ProductionPurpose.meat:
-      return 'Carne';
+      return 'Engorda';
     case ProductionPurpose.dairy:
       return 'Leche';
     case ProductionPurpose.breeding:
       return 'Cría';
     case ProductionPurpose.dual:
-      return 'Dual';
+      return 'Reproductor';
     case ProductionPurpose.work:
       return 'Trabajo';
     case ProductionPurpose.companion:
@@ -736,4 +953,108 @@ String _purposeShortLabel(ProductionPurpose purpose) {
     case ProductionPurpose.other:
       return 'Otro';
   }
+}
+
+/// Contextual KPI shown next to the purpose chip. Returns null when there is
+/// no meaningful data for the animal's purpose.
+String? _purposeKpiLabel(AnimalEntity animal) {
+  switch (animal.productionPurpose) {
+    case ProductionPurpose.meat:
+      final weight = animal.weight;
+      if (weight == null || weight <= 0) return null;
+      final weightText = _formatKg(weight);
+      final gain = animal.dailyGainEstimate;
+      if (gain != null && gain > 0) {
+        return '$weightText +${_formatKg(gain)}/día';
+      }
+      return weightText;
+    case ProductionPurpose.dual:
+    case ProductionPurpose.breeding:
+      if (animal.reproductiveStatus == ReproductiveStatus.pregnant) {
+        final months = _pregnancyMonths(animal);
+        if (months != null) {
+          return '$months ${months == 1 ? 'mes' : 'meses'} preñez';
+        }
+        return 'Gestante';
+      }
+      return _reproductiveShortLabel(animal.reproductiveStatus);
+    case ProductionPurpose.dairy:
+      switch (animal.reproductiveStatus) {
+        case ReproductiveStatus.lactating:
+          return 'Lactante';
+        case ReproductiveStatus.dry:
+          return 'Seca';
+        case ReproductiveStatus.pregnant:
+          final months = _pregnancyMonths(animal);
+          if (months != null) {
+            return '$months ${months == 1 ? 'mes' : 'meses'} preñez';
+          }
+          return 'Gestante';
+        case ReproductiveStatus.virgin:
+        case ReproductiveStatus.active:
+        case ReproductiveStatus.neutered:
+        case ReproductiveStatus.retired:
+        case ReproductiveStatus.unknown:
+          return null;
+      }
+    case ProductionPurpose.work:
+      final years = animal.ageMonths ~/ 12;
+      if (years > 0) {
+        return '$years año${years == 1 ? '' : 's'}';
+      }
+      final months = animal.ageMonths;
+      if (months <= 0) return null;
+      return '$months ${months == 1 ? 'mes' : 'meses'}';
+    case ProductionPurpose.companion:
+    case ProductionPurpose.undefined:
+    case ProductionPurpose.other:
+      return null;
+  }
+}
+
+String? _reproductiveShortLabel(ReproductiveStatus status) {
+  switch (status) {
+    case ReproductiveStatus.virgin:
+      return 'Virgen';
+    case ReproductiveStatus.active:
+      return 'Activa';
+    case ReproductiveStatus.lactating:
+      return 'Lactante';
+    case ReproductiveStatus.dry:
+      return 'Seca';
+    case ReproductiveStatus.pregnant:
+      return 'Gestante';
+    case ReproductiveStatus.neutered:
+    case ReproductiveStatus.retired:
+    case ReproductiveStatus.unknown:
+      return null;
+  }
+}
+
+/// Standard bovine gestation length in days (see reproduction_scheduler).
+const int _gestationDays = 283;
+
+int? _pregnancyMonths(AnimalEntity animal) {
+  final now = DateTime.now();
+  DateTime? serviceDate = animal.lastServiceDate ?? animal.firstServiceDate;
+  if (serviceDate == null && animal.expectedCalvingDate != null) {
+    serviceDate = animal.expectedCalvingDate!.subtract(
+      const Duration(days: _gestationDays),
+    );
+  }
+  if (serviceDate == null) return null;
+  if (serviceDate.isAfter(now)) return 0;
+
+  final days = now.difference(serviceDate).inDays;
+  var months = (days / 30.44).floor();
+  if (months < 0) months = 0;
+  if (months > 9) months = 9;
+  return months;
+}
+
+String _formatKg(double value) {
+  final rounded = value % 1 == 0
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
+  return '$rounded kg';
 }

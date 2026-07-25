@@ -1,4 +1,7 @@
 /// features > directorio > lotes > infrastructure > lote_dto - JSON DTO for lote backups.
+///
+/// Dart fields use English names; JSON keys preserve old Spanish names for
+/// backward-compatible backup/restore (existing export files continue to work).
 library;
 
 import 'dart:convert';
@@ -9,13 +12,13 @@ class LoteDto {
   const LoteDto({
     this.id,
     required this.uuid,
-    required this.nombre,
-    this.descripcion,
+    required this.name,
+    this.description,
     required this.animalUuids,
-    required this.fechaCreacion,
-    this.fechaCierre,
-    required this.activo,
-    this.notas,
+    required this.createdAt,
+    this.closedAt,
+    required this.active,
+    this.notes,
     required this.lastUpdateDate,
     required this.synced,
     this.remoteId,
@@ -24,13 +27,13 @@ class LoteDto {
 
   final int? id;
   final String uuid;
-  final String nombre;
-  final String? descripcion;
+  final String name;
+  final String? description;
   final List<String> animalUuids;
-  final String fechaCreacion;
-  final String? fechaCierre;
-  final bool activo;
-  final String? notas;
+  final String createdAt;
+  final String? closedAt;
+  final bool active;
+  final String? notes;
   final String lastUpdateDate;
   final bool synced;
   final String? remoteId;
@@ -40,13 +43,13 @@ class LoteDto {
     return LoteDto(
       id: entity.id,
       uuid: entity.uuid,
-      nombre: entity.nombre,
-      descripcion: entity.descripcion,
+      name: entity.name,
+      description: entity.description,
       animalUuids: List<String>.unmodifiable(entity.animalUuids),
-      fechaCreacion: entity.fechaCreacion.toIso8601String(),
-      fechaCierre: entity.fechaCierre?.toIso8601String(),
-      activo: entity.activo,
-      notas: entity.notas,
+      createdAt: entity.createdAt.toIso8601String(),
+      closedAt: entity.closedAt?.toIso8601String(),
+      active: entity.active,
+      notes: entity.notes,
       lastUpdateDate: entity.lastUpdateDate.toIso8601String(),
       synced: entity.synced,
       remoteId: entity.remoteId,
@@ -58,14 +61,15 @@ class LoteDto {
     return LoteDto(
       id: json['id'] as int?,
       uuid: json['uuid'] as String,
-      nombre: json['nombre'] as String,
-      descripcion: json['descripcion'] as String?,
+      // Support both old Spanish key and new English key for restore compat.
+      name: (json['nombre'] ?? json['name']) as String,
+      description: (json['descripcion'] ?? json['description']) as String?,
       animalUuids: (json['animalUuids'] as List<dynamic>? ?? const <dynamic>[])
           .cast<String>(),
-      fechaCreacion: json['fechaCreacion'] as String,
-      fechaCierre: json['fechaCierre'] as String?,
-      activo: json['activo'] as bool? ?? true,
-      notas: json['notas'] as String?,
+      createdAt: (json['fechaCreacion'] ?? json['createdAt']) as String,
+      closedAt: (json['fechaCierre'] ?? json['closedAt']) as String?,
+      active: (json['activo'] ?? json['active']) as bool? ?? true,
+      notes: (json['notas'] ?? json['notes']) as String?,
       lastUpdateDate: json['lastUpdateDate'] as String,
       synced: json['synced'] as bool? ?? false,
       remoteId: json['remoteId'] as String?,
@@ -80,13 +84,13 @@ class LoteDto {
     return LoteEntity(
       id: id,
       uuid: uuid,
-      nombre: nombre,
-      descripcion: descripcion,
+      name: name,
+      description: description,
       animalUuids: List<String>.unmodifiable(animalUuids),
-      fechaCreacion: DateTime.parse(fechaCreacion),
-      fechaCierre: _parseDate(fechaCierre),
-      activo: activo,
-      notas: notas,
+      createdAt: DateTime.parse(createdAt),
+      closedAt: _parseDate(closedAt),
+      active: active,
+      notes: notes,
       lastUpdateDate: DateTime.parse(lastUpdateDate),
       synced: synced,
       remoteId: remoteId,
@@ -98,13 +102,13 @@ class LoteDto {
     return {
       'id': id,
       'uuid': uuid,
-      'nombre': nombre,
-      'descripcion': descripcion,
+      'nombre': name, // keep Spanish key for export backward-compat
+      'descripcion': description,
       'animalUuids': animalUuids,
-      'fechaCreacion': fechaCreacion,
-      'fechaCierre': fechaCierre,
-      'activo': activo,
-      'notas': notas,
+      'fechaCreacion': createdAt,
+      'fechaCierre': closedAt,
+      'activo': active,
+      'notas': notes,
       'lastUpdateDate': lastUpdateDate,
       'synced': synced,
       'remoteId': remoteId,

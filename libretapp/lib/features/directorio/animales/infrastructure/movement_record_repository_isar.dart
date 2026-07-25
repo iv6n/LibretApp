@@ -7,6 +7,8 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_movement_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
+import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class MovementRecordRepositoryIsar implements MovementRecordRepository {
   MovementRecordRepositoryIsar(this._database);
@@ -37,6 +39,18 @@ class MovementRecordRepositoryIsar implements MovementRecordRepository {
     await isar.writeTxn(() async {
       final id = await isar.isarMovementRecords.put(model);
       model.id = id;
+      final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+      if (animal != null) {
+        final destination =
+            await isar.isarLocations.where().uuidEqualTo(record.toLocation).findFirst() ??
+            await isar.isarLocations.filter().nameEqualTo(record.toLocation).findFirst();
+        animal
+          ..currentLocationId = destination?.uuid
+          ..lastMovementDate = record.date
+          ..lastUpdateDate = DateTime.now()
+          ..synced = false;
+        await isar.isarAnimals.put(animal);
+      }
     });
     final saved = model.toEntity();
     LoggerService.i(

@@ -8,26 +8,32 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class _BlocFakeLocationRepository implements LocationRepository {
-  _BlocFakeLocationRepository(List<LocationEntity> seed)
-    : _data = List<LocationEntity>.from(seed),
-      _controller = StreamController<List<LocationEntity>>.broadcast();
+  _BlocFakeLocationRepository(
+    List<LocationEntity> seed, {
+    this.emitInitialWatchEvent = true,
+  }) : _data = List<LocationEntity>.from(seed),
+       _controller = StreamController<List<LocationEntity>>.broadcast();
 
   final List<LocationEntity> _data;
   final StreamController<List<LocationEntity>> _controller;
+  final bool emitInitialWatchEvent;
   bool failOnUpsert = false;
 
   @override
   Stream<List<LocationEntity>> watchAll() {
-    Future<void>.microtask(() {
-      if (!_controller.isClosed) {
-        _controller.add(List<LocationEntity>.from(_data));
-      }
-    });
+    if (emitInitialWatchEvent) {
+      Future<void>.microtask(() {
+        if (!_controller.isClosed) {
+          _controller.add(List<LocationEntity>.from(_data));
+        }
+      });
+    }
     return _controller.stream;
   }
 
@@ -159,16 +165,22 @@ class _BlocFakeLocationRepository implements LocationRepository {
   }
 }
 
-LocationEntity _location({required String uuid, required String name}) {
+LocationEntity _location({
+  required String uuid,
+  required String name,
+  String? parentUuid,
+  LocationType type = LocationType.pasture,
+}) {
   return LocationEntity(
     uuid: uuid,
     name: name,
-    type: LocationType.potrero,
+    parentUuid: parentUuid,
+    type: type,
     surfaceArea: 10,
     capacity: 25,
     waterSource: 'Pozo',
     terrainType: 'Plano',
-    status: LocationStatus.disponible,
+    status: LocationStatus.available,
   );
 }
 
@@ -222,6 +234,116 @@ void main() {
       expect(emitted.any((state) => state is UbicacionesError), isTrue);
 
       await subscription.cancel();
+      await bloc.close();
+      await repository.dispose();
+    });
+
+    test('carga por bootstrap cuando watchAll no emite al inicio', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(uuid: 'u1', name: 'Base'),
+      ], emitInitialWatchEvent: false);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+
+      expect(bloc.state, isA<UbicacionesLoaded>());
+      final loaded = bloc.state as UbicacionesLoaded;
+      expect(loaded.allUbicaciones, hasLength(1));
+      expect(loaded.allUbicaciones.first.uuid, 'u1');
+
+      await bloc.close();
+      await repository.dispose();
+    });
+
+    test('aplica filtro por categoria sobre resultados visibles', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(uuid: 'u1', name: 'Potrero', type: LocationType.pasture),
+        _location(uuid: 'u2', name: 'Campo', type: LocationType.field),
+      ]);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      bloc.add(
+        const ToggleCategoryFilter(
+          category: LocationCategory.livestock,
+          selected: true,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final loaded = bloc.state as UbicacionesLoaded;
+      expect(loaded.selectedCategoryFilters, contains(LocationCategory.livestock));
+      expect(loaded.visibleUbicaciones, hasLength(1));
+      expect(loaded.visibleUbicaciones.first.uuid, 'u1');
+
+      await bloc.close();
+      await repository.dispose();
+    });
+
+    test('filtro de rancho incluye rancho y descendientes', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(uuid: 'rootA', name: 'Rancho A', type: LocationType.ranch),
+        _location(
+          uuid: 'childA',
+          name: 'Potrero A',
+          parentUuid: 'rootA',
+          type: LocationType.pasture,
+        ),
+        _location(uuid: 'rootB', name: 'Rancho B', type: LocationType.ranch),
+      ]);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      bloc.add(const SelectParentFilter('rootA'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final loaded = bloc.state as UbicacionesLoaded;
+      final visibleUuids = loaded.visibleUbicaciones.map((e) => e.uuid).toSet();
+      expect(visibleUuids, contains('rootA'));
+      expect(visibleUuids, contains('childA'));
+      expect(visibleUuids, isNot(contains('rootB')));
+
+      await bloc.close();
+      await repository.dispose();
+    });
+
+    test('permite ejido como sub-ubicacion bajo monte comunal', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(
+          uuid: 'monte',
+          name: 'Monte Ejidal Comunal',
+          type: LocationType.monte,
+        ).copyWith(isCommunal: true),
+      ]);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      bloc.add(
+        UpsertUbicacion(
+          _location(
+            uuid: 'derecho',
+            name: 'Derecho Ejidal',
+            parentUuid: 'monte',
+            type: LocationType.ejido,
+          ),
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(bloc.state, isA<UbicacionesLoaded>());
+      final loaded = bloc.state as UbicacionesLoaded;
+      expect(
+        loaded.allUbicaciones.any((l) => l.uuid == 'derecho'),
+        isTrue,
+      );
+
       await bloc.close();
       await repository.dispose();
     });

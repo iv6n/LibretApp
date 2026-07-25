@@ -56,6 +56,8 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
   final _appliedByCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   final _causeCtrl = TextEditingController();
+  final _medicineBatchCtrl = TextEditingController();
+  final _withdrawalDaysCtrl = TextEditingController();
   var _type = HealthRecordType.vaccine;
   var _date = DateTime.now();
   DateTime? _nextDate;
@@ -68,6 +70,8 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
     _appliedByCtrl.dispose();
     _notesCtrl.dispose();
     _causeCtrl.dispose();
+    _medicineBatchCtrl.dispose();
+    _withdrawalDaysCtrl.dispose();
     super.dispose();
   }
 
@@ -94,6 +98,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
       return;
     }
 
+    final withdrawalDays = int.tryParse(_withdrawalDaysCtrl.text.trim());
     final record = HealthRecord(
       date: _date,
       type: _type,
@@ -105,6 +110,13 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       nextDueDate: _nextDate,
       cause: _causeCtrl.text.trim().isEmpty ? null : _causeCtrl.text.trim(),
+      medicineBatch: _medicineBatchCtrl.text.trim().isEmpty
+          ? null
+          : _medicineBatchCtrl.text.trim(),
+      withdrawalDays: withdrawalDays,
+      withdrawalEndDate: withdrawalDays == null || withdrawalDays == 0
+          ? null
+          : _date.add(Duration(days: withdrawalDays)),
     );
     context.read<RegistroBloc>().add(
       RegistroSanitarioSubmitted(
@@ -185,6 +197,32 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                       decoration: InputDecoration(
                         labelText: l10n.detailFormHealthAppliedBy,
                         border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _medicineBatchCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Lote del medicamento',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _withdrawalDaysCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Retiro (días)',
+                        helperText: 'Carne/leche',
+                        border: OutlineInputBorder(),
                       ),
                     ),
                   ),

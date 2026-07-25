@@ -5,7 +5,7 @@ import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
+
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
@@ -15,6 +15,8 @@ import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
+const _resetLocationSeed = bool.fromEnvironment('LIBRET_RESET_LOCATION_SEED');
+
 class IsarLocationRepository implements LocationRepository {
   IsarLocationRepository(this._database);
 
@@ -23,6 +25,7 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Stream<List<LocationEntity>> watchAll() async* {
     final isar = await _database.initialize();
+    await _ensureSeed(isar);
     yield* isar.isarLocations
         .where()
         .watch(fireImmediately: true)
@@ -32,6 +35,7 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Future<List<LocationEntity>> getAll() async {
     final isar = await _database.initialize();
+    await _ensureSeed(isar);
     final items = await isar.isarLocations.where().findAll();
     return items.map((e) => e.toEntity()).toList(growable: false);
   }
@@ -56,25 +60,11 @@ class IsarLocationRepository implements LocationRepository {
       await isar.isarLocations.put(model);
 
       if (previousParent != location.parentUuid && previousParent != null) {
-        final oldParent = await isar.isarLocations
-            .where()
-            .uuidEqualTo(previousParent)
-            .findFirst();
-        if (oldParent != null) {
-          oldParent.childUuids.remove(location.uuid);
-          await isar.isarLocations.put(oldParent);
-        }
+        // No childUuids maintenance needed — parentUuid is the source of truth.
       }
 
       if (location.parentUuid != null) {
-        final parent = await isar.isarLocations
-            .where()
-            .uuidEqualTo(location.parentUuid!)
-            .findFirst();
-        if (parent != null && !parent.childUuids.contains(location.uuid)) {
-          parent.childUuids.add(location.uuid);
-          await isar.isarLocations.put(parent);
-        }
+        // Parent relationship maintained via parentUuid only.
       }
     });
   }
@@ -88,14 +78,7 @@ class IsarLocationRepository implements LocationRepository {
           .uuidEqualTo(uuid)
           .findFirst();
       if (location?.parentUuid != null) {
-        final parent = await isar.isarLocations
-            .where()
-            .uuidEqualTo(location!.parentUuid!)
-            .findFirst();
-        if (parent != null) {
-          parent.childUuids.remove(uuid);
-          await isar.isarLocations.put(parent);
-        }
+        // Parent relationship maintained via parentUuid only.
       }
 
       final deleted = await isar.isarLocations.deleteByUuid(uuid);
@@ -313,494 +296,667 @@ class IsarLocationRepository implements LocationRepository {
     });
   }
 
-  // ignore: unused_element
   Future<void> _ensureSeed(Isar isar) async {
     final count = await isar.isarLocations.count();
-    if (count > 0) return;
+    if (count > 0) await _migrateEjidoParentIfNeeded(isar);
+    if (count > 0 && !_resetLocationSeed) return;
+
+    if (count > 0 && _resetLocationSeed) {
+      await isar.writeTxn(() async {
+        await isar.isarLocations.clear();
+      });
+      LoggerService.w(
+        'LIBRET_RESET_LOCATION_SEED activo: ubicaciones locales limpiadas',
+        tag: 'IsarLocation',
+      );
+    }
 
     final now = DateTime.now();
+    // ── Root locations ─────────────────────────────────────────────────────
+    final propCasa = LocationEntity(
+      uuid: 'prop-casa',
+      name: 'Propiedad Casa',
+      type: LocationType.homestead,
+      surfaceArea: 0.5,
+      capacity: 5,
+      waterSource: 'Toma municipal',
+      terrainType: 'Compactado',
+      status: LocationStatus.available,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 1)),
+          animals: 2,
+          notes: 'Revisión general',
+        ),
+      ],
+    );
+
+    final milpaProp = LocationEntity(
+      uuid: 'milpa-prop',
+      name: 'Propiedad Milpa',
+      type: LocationType.finca,
+      surfaceArea: 6.0,
+      capacity: 18,
+      waterSource: 'Aguadas propias',
+      terrainType: 'Franco arcilloso',
+      status: LocationStatus.available,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 2)),
+          animals: 0,
+          notes: 'Revisión cultivos y corrales',
+        ),
+      ],
+      costs: [
+        CostRecord(
+          date: now.subtract(const Duration(days: 14)),
+          maintenance: 300,
+          fences: 150,
+          repairs: 0,
+          labor: 200,
+          total: 650,
+        ),
+      ],
+    );
+
+    final ejidoDerecho = LocationEntity(
+      uuid: 'ejido-derecho',
+      name: 'Derecho Ejidal',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.ejido,
+      surfaceArea: 0,
+      capacity: 20,
+      waterSource: 'Sistemas de agua comunal',
+      terrainType: 'Monte comunal',
+      status: LocationStatus.available,
+      isCommunal: true,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 5)),
+          animals: 18,
+          notes: 'Conteo en agostadero',
+        ),
+      ],
+    );
+
+    final monteEjidal = LocationEntity(
+      uuid: 'monte-ejidal',
+      name: 'Monte Ejidal Comunal',
+      type: LocationType.monte,
+      surfaceArea: 1000,
+      capacity: 300,
+      waterSource: '5 presas + 3 manantiales naturales',
+      terrainType: 'Lomeríos con monte nativo',
+      status: LocationStatus.available,
+      isCommunal: true,
+      isShared: true,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 7)),
+          animals: 0,
+          notes: 'Inspección comunal de linderos',
+        ),
+      ],
+    );
+
+    // ── Home property children ──────────────────────────────────────────────
+    final casaHouse = LocationEntity(
+      uuid: 'casa-house',
+      name: 'Casa',
+      parentUuid: 'prop-casa',
+      type: LocationType.house,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Toma municipal',
+      terrainType: 'Construcción',
+      status: LocationStatus.inUse,
+    );
+
+    final casaBodega = LocationEntity(
+      uuid: 'casa-bodega',
+      name: 'Bodega Heno / Herramientas',
+      parentUuid: 'prop-casa',
+      type: LocationType.warehouse,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: '',
+      terrainType: 'Nave techada',
+      status: LocationStatus.inUse,
+      inventory: [
+        InventoryItem(
+          uuid: 'item-heno-1',
+          name: 'Pacas de heno',
+          category: InventoryCategory.feed,
+          quantity: 40,
+          unit: 'paca',
+          notes: 'Heno de alfalfa',
+        ),
+        InventoryItem(
+          uuid: 'item-tool-1',
+          name: 'Herramienta general',
+          category: InventoryCategory.tool,
+          quantity: 1,
+          unit: 'juego',
+          notes: 'Picos, palas, machetes',
+        ),
+      ],
+    );
+
+    final casaCorral1 = LocationEntity(
+      uuid: 'casa-corral-1',
+      name: 'Corral 1',
+      parentUuid: 'prop-casa',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 3,
+      waterSource: 'Bebedero compartido',
+      terrainType: 'Tierra apisonada',
+      status: LocationStatus.inUse,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 1)),
+          animals: 2,
+          notes: '2 vacas en resguardo',
+        ),
+      ],
+    );
+
+    final casaCorral2 = LocationEntity(
+      uuid: 'casa-corral-2',
+      name: 'Corral 2',
+      parentUuid: 'prop-casa',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 3,
+      waterSource: 'Bebedero compartido',
+      terrainType: 'Tierra apisonada',
+      status: LocationStatus.available,
+    );
+
+    final casaBebedero = LocationEntity(
+      uuid: 'casa-bebedero',
+      name: 'Bebedero Compartido',
+      parentUuid: 'prop-casa',
+      type: LocationType.trough,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Toma directa',
+      terrainType: 'Cemento',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 1)),
+          level: 80,
+          type: WaterType.trough,
+          notes: 'Lleno, sin fugas',
+        ),
+      ],
+    );
+
+    // ── Milpa children ──────────────────────────────────────────────────────
+    final milpaBodega = LocationEntity(
+      uuid: 'milpa-bodega',
+      name: 'Bodega Heno',
+      parentUuid: 'milpa-prop',
+      type: LocationType.warehouse,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: '',
+      terrainType: 'Lamina y block',
+      status: LocationStatus.available,
+      inventory: [
+        InventoryItem(
+          uuid: 'item-heno-milpa',
+          name: 'Pacas de heno',
+          category: InventoryCategory.feed,
+          quantity: 80,
+          unit: 'paca',
+          notes: 'Para becerros y suplemento',
+        ),
+      ],
+    );
+
+    final milpaCorralA = LocationEntity(
+      uuid: 'milpa-corral-a',
+      name: 'Corral A',
+      parentUuid: 'milpa-prop',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 5,
+      waterSource: 'Aguada 1',
+      terrainType: 'Tierra',
+      status: LocationStatus.available,
+    );
+
+    final milpaCorralB = LocationEntity(
+      uuid: 'milpa-corral-b',
+      name: 'Corral B',
+      parentUuid: 'milpa-prop',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 5,
+      waterSource: 'Aguada 2',
+      terrainType: 'Tierra',
+      status: LocationStatus.available,
+    );
+
+    final milpaCorralBecerros = LocationEntity(
+      uuid: 'milpa-corral-becerros',
+      name: 'Corral Becerros',
+      parentUuid: 'milpa-prop',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 8,
+      waterSource: 'Bebedero interno',
+      terrainType: 'Tierra con sombra',
+      status: LocationStatus.available,
+    );
+
+    final milpaCampo = LocationEntity(
+      uuid: 'milpa-campo',
+      name: 'Campo Cultivado',
+      parentUuid: 'milpa-prop',
+      type: LocationType.milpa,
+      surfaceArea: 4.0,
+      capacity: 0,
+      waterSource: 'Temporal (lluvia)',
+      terrainType: 'Franco arcilloso profundo',
+      status: LocationStatus.inPreparation,
+      seedings: [
+        SeedingRecord(
+          date: now.subtract(const Duration(days: 20)),
+          crop: 'Maíz criollo',
+          surface: 4.0,
+          cost: 3200,
+        ),
+      ],
+      irrigations: [
+        IrrigationRecord(
+          date: now.subtract(const Duration(days: 5)),
+          type: 'Temporal natural',
+          duration: Duration.zero,
+          cost: 0,
+        ),
+      ],
+    );
+
+    final milpaAguada1 = LocationEntity(
+      uuid: 'milpa-aguada-1',
+      name: 'Aguada 1',
+      parentUuid: 'milpa-prop',
+      type: LocationType.pond,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Captación pluvial',
+      terrainType: 'Arcilla compactada',
+      status: LocationStatus.inUse,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 3)),
+          level: 65,
+          type: WaterType.pond,
+          notes: 'Nivel regular, sin animales muertos',
+        ),
+      ],
+    );
+
+    final milpaAguada2 = LocationEntity(
+      uuid: 'milpa-aguada-2',
+      name: 'Aguada 2',
+      parentUuid: 'milpa-prop',
+      type: LocationType.pond,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Captación pluvial',
+      terrainType: 'Arcilla compactada',
+      status: LocationStatus.inUse,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 3)),
+          level: 55,
+          type: WaterType.pond,
+          notes: 'Nivel bajo por temporada seca',
+        ),
+      ],
+    );
+
+    // ── Ejido right children ────────────────────────────────────────────────
+    final ejidoCorralPriv = LocationEntity(
+      uuid: 'ejido-corral-priv',
+      name: 'Corral Privado',
+      parentUuid: 'ejido-derecho',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 20,
+      waterSource: 'Sistema de agua comunal',
+      terrainType: 'Tierra con cerco propio',
+      status: LocationStatus.inUse,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 4)),
+          animals: 18,
+          notes: 'Ganado en agostadero comunal, corral para encierro nocturno',
+        ),
+      ],
+    );
+
+    final ejidoBebedero1 = LocationEntity(
+      uuid: 'ejido-bebedero-1',
+      name: 'Bebedero Derecho 1',
+      parentUuid: 'ejido-derecho',
+      type: LocationType.trough,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Red de agua comunal',
+      terrainType: 'Compactado con grava',
+      status: LocationStatus.inUse,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 3)),
+          level: 70,
+          type: WaterType.trough,
+          notes: 'Abastecimiento estable para encierro nocturno',
+        ),
+      ],
+    );
+
+    // ── Monte ejidal children ───────────────────────────────────────────────
+    final montePresa1 = LocationEntity(
+      uuid: 'monte-presa-1',
+      name: 'Presa 1',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.dam,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Escurrimiento natural',
+      terrainType: 'Arcilla',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 6)),
+          level: 72,
+          type: WaterType.dam,
+          notes: 'Nivel estable',
+        ),
+      ],
+    );
+
+    final montePresa2 = LocationEntity(
+      uuid: 'monte-presa-2',
+      name: 'Presa 2',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.dam,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Escurrimiento natural',
+      terrainType: 'Arcilla',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 6)),
+          level: 60,
+          type: WaterType.dam,
+          notes: 'Ligero descenso por calor',
+        ),
+      ],
+    );
+
+    final montePresa3 = LocationEntity(
+      uuid: 'monte-presa-3',
+      name: 'Presa 3',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.dam,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Escurrimiento natural',
+      terrainType: 'Arcilla',
+      status: LocationStatus.available,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 10)),
+          level: 85,
+          type: WaterType.dam,
+          notes: 'Nivel alto, reciente lluvia',
+        ),
+      ],
+    );
+
+    final montePresa4 = LocationEntity(
+      uuid: 'monte-presa-4',
+      name: 'Presa 4',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.dam,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Escurrimiento natural',
+      terrainType: 'Arcilla',
+      status: LocationStatus.resting,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 15)),
+          level: 30,
+          type: WaterType.dam,
+          notes: 'Bajo — zona en descanso',
+        ),
+      ],
+    );
+
+    final montePresa5 = LocationEntity(
+      uuid: 'monte-presa-5',
+      name: 'Presa 5',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.dam,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Escurrimiento natural',
+      terrainType: 'Arcilla',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 4)),
+          level: 78,
+          type: WaterType.dam,
+          notes: 'Uso activo ganado ejidal',
+        ),
+      ],
+    );
+
+    final monteRepreso1 = LocationEntity(
+      uuid: 'monte-represo-1',
+      name: 'Represo 1',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.reservoir,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Captación de escurrimiento',
+      terrainType: 'Arcilla compactada',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 5)),
+          level: 68,
+          type: WaterType.dam,
+          notes: 'Represo comunal operativo',
+        ),
+      ],
+    );
+
+    final monteCorralComunal = LocationEntity(
+      uuid: 'monte-corral-comunal',
+      name: 'Corral Comunal',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.corral,
+      surfaceArea: 0,
+      capacity: 40,
+      waterSource: 'Toma desde represo',
+      terrainType: 'Tierra con cerco de madera',
+      status: LocationStatus.inUse,
+      isShared: true,
+      visits: [
+        VisitRecord(
+          date: now.subtract(const Duration(days: 2)),
+          animals: 24,
+          notes: 'Uso rotativo de productores del ejido',
+        ),
+      ],
+    );
+
+    final monteBebederoComunal = LocationEntity(
+      uuid: 'monte-bebedero-comunal',
+      name: 'Bebedero Comunal',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.trough,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Alimentado por represo',
+      terrainType: 'Plataforma compactada',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 1)),
+          level: 82,
+          type: WaterType.trough,
+          notes: 'Llenado diario para ganado en monte',
+        ),
+      ],
+    );
+
+    final monteManantial1 = LocationEntity(
+      uuid: 'monte-manantial-1',
+      name: 'Manantial 1',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.spring,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Manantial natural perenne',
+      terrainType: 'Rocoso',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 2)),
+          level: 90,
+          type: WaterType.spring,
+          notes: 'Flujo constante todo el año',
+        ),
+      ],
+    );
+
+    final monteManantial2 = LocationEntity(
+      uuid: 'monte-manantial-2',
+      name: 'Manantial 2',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.spring,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Manantial natural',
+      terrainType: 'Rocoso con vegetación',
+      status: LocationStatus.inUse,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 8)),
+          level: 75,
+          type: WaterType.spring,
+          notes: 'Flujo moderado',
+        ),
+      ],
+    );
+
+    final monteManantial3 = LocationEntity(
+      uuid: 'monte-manantial-3',
+      name: 'Manantial 3',
+      parentUuid: 'monte-ejidal',
+      type: LocationType.spring,
+      surfaceArea: 0,
+      capacity: 0,
+      waterSource: 'Manantial estacional',
+      terrainType: 'Rocoso',
+      status: LocationStatus.available,
+      isShared: true,
+      waters: [
+        WaterRecord(
+          date: now.subtract(const Duration(days: 20)),
+          level: 40,
+          type: WaterType.spring,
+          notes: 'Solo activo en temporada de lluvias',
+        ),
+      ],
+    );
+
     final seeds = [
-      LocationEntity(
-        uuid: 'monte',
-        name: 'Monte',
-        parentUuid: 'rancho-trabajo',
-        type: LocationType.potrero,
-        surfaceArea: 45.8,
-        capacity: 120,
-        waterSource: 'Arroyo natural',
-        terrainType: 'Montañoso con pastizal',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 68,
-            unit: '%',
-          ),
-          DynamicAttribute.number(
-            key: 'pastura',
-            label: 'Pastura',
-            value: 80,
-            unit: '%',
-          ),
-          DynamicAttribute.integer(
-            key: 'animales',
-            label: 'Animales',
-            value: 98,
-          ),
-          DynamicAttribute.number(
-            key: 'capacidad',
-            label: 'Capacidad',
-            value: 120,
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 4)),
-            animals: 98,
-            notes: 'Inspección de cercas en zona alta',
-          ),
-          VisitRecord(
-            date: now.subtract(const Duration(days: 11)),
-            animals: 95,
-            notes: 'Conteo de hacienda',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 2)),
-            level: 68,
-            type: WaterType.pozo,
-            notes: 'Nivel adecuado post-lluvia',
-          ),
-        ],
-        salts: [
-          SaltRecord(
-            date: now.subtract(const Duration(days: 3)),
-            quantityKg: 120,
-            notes: 'Mineralizada, repuesto reciente',
-          ),
-        ],
-        shades: [
-          ShadeRecord(
-            date: now.subtract(const Duration(days: 5)),
-            shadePercent: 45,
-            condition: 'Árboles nativos, sombra moderada',
-          ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 5)),
-            grassType: 'Pasto natural mixto con flechilla',
-            condition: 'Vegetación exuberante por estación',
-            carryingCapacity: 2.6,
-          ),
-        ],
-        rains: [
-          RainRecord(
-            date: now.subtract(const Duration(days: 2)),
-            millimeters: 22,
-            location: 'Monte',
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 25)),
-            maintenance: 300,
-            fences: 150,
-            repairs: 80,
-            labor: 200,
-            total: 730,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'potrero',
-        name: 'Potrero',
-        parentUuid: 'rancho-trabajo',
-        type: LocationType.potrero,
-        surfaceArea: 32.5,
-        capacity: 95,
-        waterSource: 'Perforación con molino',
-        terrainType: 'Plano con ligeras depresiones',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 75,
-            unit: '%',
-          ),
-          DynamicAttribute.number(
-            key: 'pastura',
-            label: 'Pastura',
-            value: 78,
-            unit: '%',
-          ),
-          DynamicAttribute.integer(
-            key: 'animales',
-            label: 'Animales',
-            value: 78,
-          ),
-          DynamicAttribute.number(
-            key: 'capacidad',
-            label: 'Capacidad',
-            value: 95,
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 1)),
-            animals: 78,
-            notes: 'Movimiento de hacienda desde Rancho',
-          ),
-          VisitRecord(
-            date: now.subtract(const Duration(days: 8)),
-            animals: 75,
-            notes: 'Rotación periódica',
-          ),
-          VisitRecord(
-            date: now.subtract(const Duration(days: 15)),
-            animals: 82,
-            notes: 'Inspección de alambrado',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 1)),
-            level: 75,
-            type: WaterType.pozo,
-            notes: 'Sistema automático en funcionamiento',
-          ),
-        ],
-        salts: [
-          SaltRecord(
-            date: now.subtract(const Duration(days: 2)),
-            quantityKg: 80,
-            notes: 'Bloques parciales, reponer en 4 días',
-          ),
-        ],
-        shades: [
-          ShadeRecord(
-            date: now.subtract(const Duration(days: 6)),
-            shadePercent: 35,
-            condition: 'Malla sombra parcial, buen estado',
-          ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 3)),
-            grassType: 'Brachiaria Brizantha + Estrella africana',
-            condition: 'Muy bueno - pastoreo rotativo',
-            carryingCapacity: 2.9,
-          ),
-        ],
-        irrigations: [
-          IrrigationRecord(
-            date: now.subtract(const Duration(days: 10)),
-            type: 'Riego por goteo (suplementario)',
-            duration: const Duration(hours: 2),
-            cost: 45,
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 18)),
-            maintenance: 200,
-            fences: 120,
-            repairs: 30,
-            labor: 100,
-            total: 450,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'milpa-alfalfa',
-        name: 'Milpa Alfalfa Norte',
-        parentUuid: 'rancho-trabajo',
-        type: LocationType.siembra,
-        surfaceArea: 18.2,
-        capacity: 0,
-        waterSource: 'Canal de riego',
-        terrainType: 'Franco arcilloso',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.number(
-            key: 'crecimiento_pct',
-            label: 'Crecimiento',
-            value: 74,
-            unit: '%',
-          ),
-          DynamicAttribute.text(
-            key: 'ciclo_cosecha',
-            label: 'Ciclo de cosecha',
-            value: '65 días',
-          ),
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 81,
-            unit: '%',
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 2)),
-            animals: 0,
-            notes: 'Revisión de brote parejo',
-          ),
-        ],
-        seedings: [
-          SeedingRecord(
-            date: now.subtract(const Duration(days: 34)),
-            crop: 'Alfalfa',
-            surface: 18.2,
-            cost: 6400,
-          ),
-        ],
-        irrigations: [
-          IrrigationRecord(
-            date: now.subtract(const Duration(days: 1)),
-            type: 'Aspersión',
-            duration: const Duration(hours: 3),
-            cost: 180,
-          ),
-          IrrigationRecord(
-            date: now.subtract(const Duration(days: 6)),
-            type: 'Aspersión',
-            duration: const Duration(hours: 2, minutes: 30),
-            cost: 160,
-          ),
-        ],
-        rains: [
-          RainRecord(
-            date: now.subtract(const Duration(days: 3)),
-            millimeters: 16,
-            location: 'Milpa Alfalfa Norte',
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 5)),
-            maintenance: 90,
-            fences: 0,
-            repairs: 40,
-            labor: 220,
-            total: 350,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'corral-engorda',
-        name: 'Corral de Engorda',
-        parentUuid: 'rancho-trabajo',
-        type: LocationType.corral,
-        surfaceArea: 5.4,
-        capacity: 64,
-        waterSource: 'Bebedero automático',
-        terrainType: 'Concreto con cama seca',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.number(
-            key: 'ganancia_diaria',
-            label: 'Ganancia diaria',
-            value: 1.35,
-            unit: 'kg/día',
-          ),
-          DynamicAttribute.text(
-            key: 'dieta',
-            label: 'Dieta',
-            value: 'Finalización 14% proteína + silo',
-          ),
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 88,
-            unit: '%',
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 1)),
-            animals: 42,
-            notes: 'Monitoreo de consumo y lote de salida',
-          ),
-          VisitRecord(
-            date: now.subtract(const Duration(days: 7)),
-            animals: 39,
-            notes: 'Ajuste de dieta de finalización',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 1)),
-            level: 88,
-            type: WaterType.pila,
-            notes: 'Línea de bebederos presurizada',
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 3)),
-            maintenance: 120,
-            fences: 0,
-            repairs: 65,
-            labor: 140,
-            total: 325,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'almacen-equipo',
-        name: 'Almacén de Equipo',
-        parentUuid: 'rancho-trabajo',
-        type: LocationType.rancho,
-        surfaceArea: 1.2,
-        capacity: 0,
-        waterSource: 'No aplica',
-        terrainType: 'Nave techada',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.text(
-            key: 'equipos',
-            label: 'Equipo principal',
-            value: 'Monturas, piolas, herramienta y herrajes',
-          ),
-          DynamicAttribute.integer(
-            key: 'inventario_total',
-            label: 'Piezas',
-            value: 127,
-          ),
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 0,
-            unit: '%',
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 3)),
-            animals: 0,
-            notes: 'Inventario semanal de equipo de trabajo',
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 12)),
-            maintenance: 180,
-            fences: 0,
-            repairs: 240,
-            labor: 120,
-            total: 540,
-          ),
-        ],
-      ),
-      LocationEntity(
-        uuid: 'rancho-trabajo',
-        name: 'Rancho',
-        childUuids: const [
-          'monte',
-          'potrero',
-          'milpa-alfalfa',
-          'corral-engorda',
-          'almacen-equipo',
-        ],
-        type: LocationType.rancho,
-        surfaceArea: 8.5,
-        capacity: 50,
-        waterSource: 'Tanque elevado + perforación',
-        terrainType: 'Compactado - acceso vehicular',
-        status: LocationStatus.disponible,
-        attributes: [
-          DynamicAttribute.number(
-            key: 'agua',
-            label: 'Agua disponible',
-            value: 92,
-            unit: '%',
-          ),
-          DynamicAttribute.number(
-            key: 'sombra',
-            label: 'Sombra',
-            value: 60,
-            unit: '%',
-          ),
-          DynamicAttribute.integer(
-            key: 'animales',
-            label: 'Animales',
-            value: 32,
-          ),
-          DynamicAttribute.number(
-            key: 'capacidad',
-            label: 'Capacidad',
-            value: 50,
-          ),
-          DynamicAttribute.number(
-            key: 'inventario_alimento',
-            label: 'Inventario alimento',
-            value: 18,
-            unit: 'bultos',
-          ),
-        ],
-        visits: [
-          VisitRecord(
-            date: now.subtract(const Duration(days: 0)),
-            animals: 32,
-            notes: 'Animales en descanso y trabajo',
-          ),
-          VisitRecord(
-            date: now.subtract(const Duration(days: 6)),
-            animals: 28,
-            notes: 'Manejo sanitario',
-          ),
-        ],
-        waters: [
-          WaterRecord(
-            date: now.subtract(const Duration(days: 0)),
-            level: 92,
-            type: WaterType.pila,
-            notes: 'Tanque lleno - suficiente para operaciones',
-          ),
-        ],
-        salts: [
-          SaltRecord(
-            date: now.subtract(const Duration(days: 4)),
-            quantityKg: 40,
-            notes: 'Bloques en corral, consumo moderado',
-          ),
-        ],
-        shades: [
-          ShadeRecord(
-            date: now.subtract(const Duration(days: 1)),
-            shadePercent: 60,
-            condition: 'Techos y árboles, buena cobertura',
-          ),
-        ],
-        pastures: [
-          PastureRecord(
-            date: now.subtract(const Duration(days: 8)),
-            grassType: 'Pasto de corta para henificado',
-            condition: 'Mantenido para suplemento',
-            carryingCapacity: 1.2,
-          ),
-        ],
-        costs: [
-          CostRecord(
-            date: now.subtract(const Duration(days: 7)),
-            maintenance: 180,
-            fences: 60,
-            repairs: 120,
-            labor: 250,
-            total: 610,
-          ),
-        ],
-      ),
+      propCasa,
+      milpaProp,
+      ejidoDerecho,
+      monteEjidal,
+      casaHouse,
+      casaBodega,
+      casaCorral1,
+      casaCorral2,
+      casaBebedero,
+      milpaBodega,
+      milpaCorralA,
+      milpaCorralB,
+      milpaCorralBecerros,
+      milpaCampo,
+      milpaAguada1,
+      milpaAguada2,
+      ejidoCorralPriv,
+      ejidoBebedero1,
+      montePresa1,
+      montePresa2,
+      montePresa3,
+      montePresa4,
+      montePresa5,
+      monteRepreso1,
+      monteCorralComunal,
+      monteBebederoComunal,
+      monteManantial1,
+      monteManantial2,
+      monteManantial3,
     ];
 
     await isar.writeTxn(() async {
       await isar.isarLocations.putAll(seeds.map((e) => e.toIsar()).toList());
     });
 
-    LoggerService.i('Seeded ubicaciones demo data', tag: 'IsarLocation');
+    LoggerService.i(
+      'Seeded ubicaciones: ${seeds.length} locations',
+      tag: 'IsarLocation',
+    );
+  }
+
+  /// Fixes legacy seed data where 'ejido-derecho' was stored as a top-level
+  /// root before the parent relationship to 'monte-ejidal' was introduced.
+  /// Safe to call on every startup — no-ops when the data is already correct.
+  Future<void> _migrateEjidoParentIfNeeded(Isar isar) async {
+    final ejido = await isar.isarLocations
+        .where()
+        .uuidEqualTo('ejido-derecho')
+        .findFirst();
+    if (ejido == null || ejido.parentUuid != null) return;
+
+    final monte = await isar.isarLocations
+        .where()
+        .uuidEqualTo('monte-ejidal')
+        .findFirst();
+    if (monte == null) return;
+
+    ejido.parentUuid = 'monte-ejidal';
+    await isar.writeTxn(() async {
+      await isar.isarLocations.put(ejido);
+    });
+    LoggerService.i(
+      'Migración: ejido-derecho reasignado como hijo de monte-ejidal',
+      tag: 'IsarLocation',
+    );
   }
 }

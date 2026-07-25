@@ -1,4 +1,4 @@
-/// features › agenda › data › agenda_reminder_sync_service — syncs agenda with auto-generated reminders.
+﻿/// features › agenda › data › agenda_reminder_sync_service — syncs agenda with auto-generated reminders.
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
@@ -37,9 +37,38 @@ class AgendaReminderSyncService {
         .where((e) => !_isAutoEntry(e.id))
         .toList(growable: true);
 
+    final existingAuto = <String, AgendaEntry>{
+      for (final entry in existing.where((e) => _isAutoEntry(e.id)))
+        entry.id: entry,
+    };
+
     final desiredAuto = await _buildAutoEntries();
 
-    final merged = <AgendaEntry>[...manual, ...desiredAuto];
+    final mergedAuto = desiredAuto.map((desired) {
+      final previous = existingAuto[desired.id];
+      if (previous == null) return desired;
+
+      // Refresh source-derived fields without erasing execution history.
+      return desired.copyWith(
+        estado: previous.estado,
+        completedAnimalIds: previous.completedAnimalIds,
+        notas: previous.notas,
+        fechaCompletado: previous.fechaCompletado,
+        prioridad: previous.prioridad,
+        assigneeId: previous.assigneeId,
+        collaboratorIds: previous.collaboratorIds,
+        workTeamId: previous.workTeamId,
+        createdById: previous.createdById,
+        createdAt: previous.createdAt,
+        updatedAt: previous.updatedAt,
+        blockedReason: previous.blockedReason,
+        checklist: previous.checklist,
+        activities: previous.activities,
+        evidence: previous.evidence,
+      );
+    }).toList(growable: false);
+
+    final merged = <AgendaEntry>[...manual, ...mergedAuto];
 
     await _agendaRepository.replaceAll(merged);
     return desiredAuto.length;
@@ -71,7 +100,7 @@ class AgendaReminderSyncService {
           tipo: typeLabel,
           animalIds: [animal.uuid],
           loteIds: const [],
-          ubicacion: animal.currentPaddockId ?? 'Sin ubicación',
+          ubicacion: animal.currentLocationId ?? 'Sin ubicación',
           estado: AgendaEstado.pendiente,
           completedAnimalIds: const [],
           notas: '',
@@ -104,7 +133,7 @@ class AgendaReminderSyncService {
             tipo: 'Revisión veterinaria',
             animalIds: [animal.uuid],
             loteIds: const [],
-            ubicacion: animal.currentPaddockId ?? 'Sin ubicación',
+            ubicacion: animal.currentLocationId ?? 'Sin ubicación',
             estado: AgendaEstado.pendiente,
             completedAnimalIds: const [],
             notas: '',
@@ -125,7 +154,7 @@ class AgendaReminderSyncService {
             tipo: 'Parto',
             animalIds: [animal.uuid],
             loteIds: const [],
-            ubicacion: animal.currentPaddockId ?? 'Sin ubicación',
+            ubicacion: animal.currentLocationId ?? 'Sin ubicación',
             estado: AgendaEstado.pendiente,
             completedAnimalIds: const [],
             notas: '',
@@ -144,7 +173,7 @@ class AgendaReminderSyncService {
             tipo: 'Parto',
             animalIds: [animal.uuid],
             loteIds: const [],
-            ubicacion: animal.currentPaddockId ?? 'Sin ubicación',
+            ubicacion: animal.currentLocationId ?? 'Sin ubicación',
             estado: AgendaEstado.pendiente,
             completedAnimalIds: const [],
             notas: '',
@@ -160,7 +189,7 @@ class AgendaReminderSyncService {
             tipo: 'Parto',
             animalIds: [animal.uuid],
             loteIds: const [],
-            ubicacion: animal.currentPaddockId ?? 'Sin ubicación',
+            ubicacion: animal.currentLocationId ?? 'Sin ubicación',
             estado: AgendaEstado.pendiente,
             completedAnimalIds: const [],
             notas: '',

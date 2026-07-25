@@ -54,6 +54,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Animal',
                       subtitle: 'Nuevo animal',
                       color: AppColors.primary,
+                      large: true,
                       onTap: (context) =>
                           context.goNamed(AppRoutes.nameAnimalNuevo),
                     ),
@@ -62,6 +63,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Lote',
                       subtitle: 'Nuevo lote',
                       color: AppColors.secondary,
+                      large: true,
                       onTap: (context) =>
                           context.goNamed(AppRoutes.nameLoteNuevo),
                     ),
@@ -70,6 +72,8 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Paricion',
                       subtitle: 'Registro de paricion',
                       color: Colors.pink,
+                      featured: true,
+                      large: true,
                       onTap: (context) => context.pushNamed(
                         AppRoutes.nameRegistroReproduccion,
                         queryParameters: {'preset': 'paricion'},
@@ -127,6 +131,15 @@ class _RegistroPageState extends State<RegistroPage> {
                       color: Colors.blue,
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroProduccion),
+                    ),
+                    _RegistroCardItem(
+                      icon: Icons.water_drop,
+                      label: 'Ordeña',
+                      subtitle: 'Leche por vaca o lote',
+                      color: Colors.lightBlue.shade700,
+                      featured: true,
+                      onTap: (context) =>
+                          context.pushNamed(AppRoutes.nameRegistroOrdena),
                     ),
                     _RegistroCardItem(
                       icon: Icons.favorite,
@@ -484,9 +497,9 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-        fontWeight: FontWeight.w600,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -500,7 +513,7 @@ class _RegistroTabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(4),
       children: [
         for (final section in sections) ...[
           _SectionLabel(label: section.label),
@@ -520,29 +533,34 @@ class _RegistroCardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final crossAxisCount = width >= 980
-            ? 4
-            : width >= 660
-            ? 3
-            : 2;
-
-        return GridView.builder(
-          itemCount: items.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.32,
+    final rows = <Widget>[];
+    int i = 0;
+    while (i < items.length) {
+      final item = items[i];
+      if (item.featured) {
+        rows.add(_RegistroCard(item: item));
+        i++;
+      } else {
+        final next = (i + 1 < items.length && !items[i + 1].featured)
+            ? items[i + 1]
+            : null;
+        rows.add(
+          Row(
+            children: [
+              Expanded(child: _RegistroCard(item: item)),
+              const SizedBox(width: 10),
+              if (next != null)
+                Expanded(child: _RegistroCard(item: next))
+              else
+                const Expanded(child: SizedBox()),
+            ],
           ),
-          itemBuilder: (context, index) => _RegistroCard(item: items[index]),
         );
-      },
-    );
+        i += next != null ? 2 : 1;
+      }
+      if (i < items.length) rows.add(const SizedBox(height: 10));
+    }
+    return Column(children: rows);
   }
 }
 
@@ -554,40 +572,74 @@ class _RegistroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bgColor = item.featured
+        ? item.color.withValues(alpha: 0.08)
+        : theme.colorScheme.surfaceContainerLow;
+    final iconSize = item.large ? 52.0 : 38.0;
+    final iconInnerSize = item.large ? 26.0 : 20.0;
+    final chevronSize = item.large ? 24.0 : 20.0;
+    final chevronIcon = item.large ? 14.0 : 12.0;
+    final hPad = item.large ? 10.0 : 8.0;
+    final vPad = item.large ? 18.0 : 12.0;
+    final iconGap = item.large ? 14.0 : 8.0;
+    final titleStyle = item.large
+        ? theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)
+        : theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700);
     return Material(
-      color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(14),
+      color: bgColor,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: () => item.onTap(context),
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+          child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
+                  shape: BoxShape.circle,
+                  color: item.color.withValues(alpha: 0.15),
                 ),
-                child: Icon(item.icon, color: item.color, size: 21),
+                child: Icon(item.icon, color: item.color, size: iconInnerSize),
               ),
-              const Spacer(),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
+              SizedBox(width: iconGap),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleStyle,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                item.subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              const SizedBox(width: 8),
+              Container(
+                width: chevronSize,
+                height: chevronSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: item.color.withValues(alpha: 0.15),
+                ),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: item.color,
+                  size: chevronIcon,
                 ),
               ),
             ],
@@ -612,6 +664,8 @@ class _RegistroCardItem {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.featured = false,
+    this.large = false,
   });
 
   final IconData icon;
@@ -619,6 +673,8 @@ class _RegistroCardItem {
   final String subtitle;
   final Color color;
   final void Function(BuildContext context) onTap;
+  final bool featured;
+  final bool large;
 
   @override
   bool operator ==(Object other) {

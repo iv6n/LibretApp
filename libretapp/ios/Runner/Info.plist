@@ -24,6 +24,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>LibretApp usa la cámara para adjuntar evidencia fotográfica a registros y tareas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>LibretApp accede a tus fotos para adjuntar evidencia a registros y tareas.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>LibretApp puede guardar las evidencias y reportes que elijas en tu fototeca.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>LibretApp usa tu ubicación para mostrar el clima real de tu rancho.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

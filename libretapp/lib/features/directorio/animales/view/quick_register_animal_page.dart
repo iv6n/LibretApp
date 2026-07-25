@@ -42,6 +42,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     Species.sheep,
     Species.goat,
     Species.pig,
+    Species.poultry,
+    Species.canine,
   ];
 
   @override
@@ -61,21 +63,19 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   }
 
   Category _defaultCategory() {
-    if (_ageMonths < 8) return Category.calf;
-    if (_sex == Sex.female) {
-      return _ageMonths < 24 ? Category.heifer : Category.cow;
-    }
-    return _ageMonths < 24 ? Category.youngBull : Category.bull;
+    return AnimalTaxonomy.defaultCategory(
+      species: _species,
+      sex: _sex,
+      ageMonths: _ageMonths,
+    );
   }
 
   Future<void> _save() async {
     if (_saving) return;
     final earTag = _earTagCtrl.text.trim();
     if (earTag.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresá el número de caravana')),
-      );
-      return;
+      final shouldContinue = await _confirmMissingEarTag(context);
+      if (!mounted || !shouldContinue) return;
     }
 
     setState(() => _saving = true);
@@ -93,6 +93,14 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         species: _species,
         sex: _sex,
       );
+      final category = _defaultCategory();
+      final lifeStage = AnimalTaxonomy.resolveLifeStage(
+        species: _species,
+        sex: _sex,
+        ageMonths: lifecycle.ageMonths,
+        category: category,
+        fallback: lifecycle.lifeStage,
+      );
 
       final uuid = 'ani-${generateId()}';
       final animal = AnimalEntity(
@@ -105,8 +113,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         rfidTag: null,
         batchUuid: null,
         species: _species,
-        category: _defaultCategory(),
-        lifeStage: lifecycle.lifeStage,
+        category: category,
+        lifeStage: lifeStage,
         sex: _sex,
         breed: '',
         crossBreed: null,
@@ -152,7 +160,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         feedSupplements: null,
         feedNotes: null,
         earTagColor: null,
-        currentPaddockId: null,
+        currentLocationId: null,
         initialLocationId: null,
         lastMovementDate: now,
         underObservation: false,
@@ -178,7 +186,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✓ $earTag registrado'),
+          content: Text('${primaryAnimalLabel(animal)} registrado'),
           behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
             label: 'Completar perfil',
@@ -198,6 +206,30 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
       );
       setState(() => _saving = false);
     }
+  }
+
+  Future<bool> _confirmMissingEarTag(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Arete recomendado'),
+        content: const Text(
+          'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continuar sin arete'),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
   }
 
   @override

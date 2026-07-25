@@ -6,7 +6,7 @@ import 'package:libretapp/app/widgets/shell_chrome.dart';
 
 class ShellInsets {
   static const double defaultBarHeight = 67;
-  static const double defaultBarBottomGap = 10;
+  static const double defaultBarBottomGap = 6;
 
   /// Computes bottom padding needed to keep content above the nav bar or keyboard.
   static double bottomSafePadding(

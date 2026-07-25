@@ -45,6 +45,37 @@ void main() {
       expect(find.text('ubicacion:ubicacion-1'), findsOneWidget);
     });
 
+    testWidgets(
+      'legacy ubicacion path redirects to directorio ubicacion route',
+      (tester) async {
+        final router = GoRouter(
+          initialLocation: '/ubicaciones/legacy-1',
+          routes: [
+            GoRoute(
+              path: '/ubicaciones/:uuid',
+              redirect: (context, state) {
+                final uuid = state.pathParameters['uuid'] ?? '';
+                return AppRoutes.ubicacionDetallePath(uuid);
+              },
+            ),
+            GoRoute(
+              path: '/directorio/ubicaciones/:uuid',
+              name: AppRoutes.nameUbicacionDetalle,
+              builder: (context, state) {
+                final uuid = state.pathParameters['uuid'] ?? '';
+                return _TargetPage(text: 'ubicacion:$uuid');
+              },
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
+
+        expect(find.text('ubicacion:legacy-1'), findsOneWidget);
+      },
+    );
+
     testWidgets('does not crash when target route is missing', (tester) async {
       final router = _buildRouterWithoutAnimalRoute();
 

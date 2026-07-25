@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 
@@ -13,38 +14,66 @@ class LocationEmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.map_outlined, size: 64, color: Colors.grey),
-            const SizedBox(height: 12),
-            const Text(
-              'No hay ubicaciones registradas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Agrega tu primera ubicación para empezar a gestionarla.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add_location_alt_outlined),
-              label: const Text('Crear ubicación'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Recargar'),
-            ),
-          ],
-        ),
+    return AppEmptyState(
+      icon: Icons.map_outlined,
+      title: 'No hay ubicaciones registradas',
+      message: 'Agrega tu primera ubicación para empezar a gestionarla.',
+      action: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add_location_alt_outlined),
+            label: const Text('Crear ubicación'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () =>
+                context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Recargar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class UbicacionesFilteredEmptyView extends StatelessWidget {
+  const UbicacionesFilteredEmptyView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      icon: Icons.search_off_outlined,
+      title: 'Sin coincidencias',
+      message: 'Prueba con otros filtros o limpia la búsqueda.',
+      action: OutlinedButton.icon(
+        onPressed: () =>
+            context.read<UbicacionesBloc>().add(const ClearAllFilters()),
+        icon: const Icon(Icons.filter_alt_off_outlined),
+        label: const Text('Limpiar filtros'),
+      ),
+    );
+  }
+}
+
+class UbicacionesErrorView extends StatelessWidget {
+  const UbicacionesErrorView({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppEmptyState(
+      icon: Icons.error_outline,
+      title: 'No se pudieron cargar las ubicaciones',
+      message: message,
+      action: FilledButton.icon(
+        onPressed: () =>
+            context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
+        icon: const Icon(Icons.refresh),
+        label: const Text('Reintentar'),
       ),
     );
   }

@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class AgendaLegendItem {
   const AgendaLegendItem({
@@ -29,42 +30,42 @@ const agendaTipos = <String>[
 
 const agendaLegendItems = <AgendaLegendItem>[
   AgendaLegendItem(
-    color: Colors.teal,
+    color: AppColors.primary,
     label: 'Vacunación',
     icon: Icons.vaccines_outlined,
   ),
   AgendaLegendItem(
-    color: Color(0xFF8BC34A),
+    color: AppColors.success,
     label: 'Desparasitación',
     icon: Icons.bug_report_outlined,
   ),
   AgendaLegendItem(
-    color: Colors.blueAccent,
+    color: AppColors.secondary,
     label: 'Pesaje',
     icon: Icons.monitor_weight_outlined,
   ),
   AgendaLegendItem(
-    color: Colors.cyan,
+    color: Color(0xFF3A7F78),
     label: 'Revisión veterinaria',
     icon: Icons.medical_services_outlined,
   ),
   AgendaLegendItem(
-    color: Color(0xFFE91E8C),
+    color: AppColors.earth,
     label: 'Inseminación',
     icon: Icons.favorite_border,
   ),
   AgendaLegendItem(
-    color: Color(0xFF9C27B0),
+    color: Color(0xFF8B623A),
     label: 'Parto',
     icon: Icons.child_care,
   ),
   AgendaLegendItem(
-    color: Colors.orange,
+    color: AppColors.earth,
     label: 'Movimiento de lote',
     icon: Icons.swap_horiz,
   ),
   AgendaLegendItem(
-    color: Colors.amber,
+    color: AppColors.amber,
     label: 'Mantenimiento',
     icon: Icons.home_repair_service_outlined,
   ),
@@ -74,7 +75,7 @@ const agendaLegendItems = <AgendaLegendItem>[
     icon: Icons.warning_amber_outlined,
   ),
   AgendaLegendItem(
-    color: Colors.indigo,
+    color: AppColors.secondary,
     label: 'Recordatorio',
     icon: Icons.alarm,
   ),

@@ -27,6 +27,9 @@ class HealthRecord extends TimestampedRecord {
     super.notes,
     this.nextDueDate,
     this.cause,
+    this.medicineBatch,
+    this.withdrawalDays,
+    this.withdrawalEndDate,
     super.id,
   });
   final HealthRecordType type;
@@ -35,6 +38,12 @@ class HealthRecord extends TimestampedRecord {
   final String? appliedBy;
   final DateTime? nextDueDate;
   final String? cause;
+  final String? medicineBatch;
+  final int? withdrawalDays;
+  final DateTime? withdrawalEndDate;
+
+  bool get isInWithdrawalPeriod =>
+      withdrawalEndDate != null && withdrawalEndDate!.isAfter(DateTime.now());
 
   HealthRecord copyWith({
     DateTime? date,
@@ -45,6 +54,9 @@ class HealthRecord extends TimestampedRecord {
     String? notes,
     DateTime? nextDueDate,
     String? cause,
+    String? medicineBatch,
+    int? withdrawalDays,
+    DateTime? withdrawalEndDate,
     String? id,
   }) {
     return HealthRecord(
@@ -56,6 +68,9 @@ class HealthRecord extends TimestampedRecord {
       notes: notes ?? this.notes,
       nextDueDate: nextDueDate ?? this.nextDueDate,
       cause: cause ?? this.cause,
+      medicineBatch: medicineBatch ?? this.medicineBatch,
+      withdrawalDays: withdrawalDays ?? this.withdrawalDays,
+      withdrawalEndDate: withdrawalEndDate ?? this.withdrawalEndDate,
       id: id ?? this.id,
     );
   }
@@ -69,5 +84,8 @@ class HealthRecord extends TimestampedRecord {
     appliedBy,
     nextDueDate,
     cause,
+    medicineBatch,
+    withdrawalDays,
+    withdrawalEndDate,
   ];
 }

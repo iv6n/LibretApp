@@ -1,4 +1,4 @@
-/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
+﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
 library;
 
 import 'package:isar/isar.dart';
@@ -14,6 +14,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/productio
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/health_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
@@ -91,12 +92,24 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .where()
         .watch(fireImmediately: true)
         .map(
-          (records) => records.map((e) => e.toEntity()).toList(growable: false),
+          (records) => records
+              .map((e) => e.toEntity())
+              .where((animal) => animal.status != AnimalStatus.archived)
+              .toList(growable: false),
         );
   }
 
   @override
   Future<List<AnimalEntity>> getAll() async {
+    final isar = await _isar;
+    final records = await isar.isarAnimals.where().findAll();
+    return records
+        .map((e) => e.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .toList(growable: false);
+  }
+
+  Future<List<AnimalEntity>> getAllIncludingArchived() async {
     final isar = await _isar;
     final records = await isar.isarAnimals.where().findAll();
     return records.map((e) => e.toEntity()).toList(growable: false);
@@ -119,7 +132,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .filter()
         .speciesEqualTo(speciesName)
         .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
+    return records
+        .map((e) => e.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .toList(growable: false);
   }
 
   @override
@@ -127,9 +143,12 @@ class AnimalRepositoryIsar implements AnimalRepository {
     final isar = await _isar;
     final records = await isar.isarAnimals
         .filter()
-        .currentPaddockIdEqualTo(paddockId)
+        .currentLocationIdEqualTo(paddockId)
         .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
+    return records
+        .map((e) => e.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .toList(growable: false);
   }
 
   @override
@@ -156,7 +175,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .or()
         .healthStatusEqualTo(HealthStatus.critical.name)
         .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
+    return records
+        .map((e) => e.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .toList(growable: false);
   }
 
   @override
@@ -166,7 +188,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .filter()
         .syncedEqualTo(false)
         .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
+    return records
+        .map((e) => e.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .toList(growable: false);
   }
 
   @override
@@ -249,9 +274,19 @@ class AnimalRepositoryIsar implements AnimalRepository {
   Future<void> delete(String uuid) async {
     final isar = await _isar;
     await isar.writeTxn(() async {
-      await isar.isarAnimals.filter().uuidEqualTo(uuid).deleteAll();
+      final record = await isar.isarAnimals
+          .filter()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (record != null) {
+        record
+          ..status = AnimalStatus.archived.name
+          ..synced = false
+          ..lastUpdateDate = DateTime.now();
+        await isar.isarAnimals.put(record);
+      }
     });
-    LoggerService.w('Animal eliminado $uuid', tag: _logTag);
+    LoggerService.w('Animal archivado $uuid', tag: _logTag);
   }
 
   @override
@@ -297,12 +332,13 @@ class AnimalRepositoryIsar implements AnimalRepository {
     required int limit,
   }) async {
     final isar = await _isar;
-    final records = await isar.isarAnimals
-        .where()
-        .offset(offset)
-        .limit(limit)
-        .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
+    final records = await isar.isarAnimals.where().findAll();
+    return records
+        .map((record) => record.toEntity())
+        .where((animal) => animal.status != AnimalStatus.archived)
+        .skip(offset)
+        .take(limit)
+        .toList(growable: false);
   }
 
   // ignore: unused_element
@@ -408,7 +444,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.cow,
         productionPurpose: ProductionPurpose.dairy,
         reproductiveStatus: ReproductiveStatus.lactating,
-        paddockId: 'potrero-a',
+        locationId: 'milpa-corral-a',
         riskLevel: RiskLevel.low,
         bodyConditionScore: 6,
         lastMovementDate: referenceDate.subtract(const Duration(days: 3)),
@@ -429,7 +465,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.heifer,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.virgin,
-        paddockId: 'potrero-b',
+        locationId: 'milpa-corral-b',
         hasChronicIssues: true,
         chronicNotes: 'Cojea levemente en pata derecha',
         underObservation: true,
@@ -453,7 +489,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.bull,
         productionPurpose: ProductionPurpose.breeding,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-c',
+        locationId: 'ejido-corral-priv',
         riskLevel: RiskLevel.low,
         dailyGainEstimate: 0.9,
         lastMovementDate: referenceDate.subtract(const Duration(days: 6)),
@@ -471,7 +507,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.dairy,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 120)),
-        paddockId: 'potrero-a',
+        locationId: 'milpa-corral-a',
         riskLevel: RiskLevel.medium,
         underObservation: true,
         bodyConditionScore: 5,
@@ -488,7 +524,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.calf,
         productionPurpose: ProductionPurpose.dual,
         reproductiveStatus: ReproductiveStatus.virgin,
-        paddockId: 'corral-crias',
+        locationId: 'milpa-corral-becerros',
         dailyGainEstimate: 0.5,
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
@@ -503,7 +539,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         birthDate: DateTime(referenceDate.year, referenceDate.month - 4, 18),
         category: Category.calf,
         productionPurpose: ProductionPurpose.meat,
-        paddockId: 'corral-crias',
+        locationId: 'milpa-corral-becerros',
         dailyGainEstimate: 0.55,
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
@@ -523,7 +559,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.cow,
         productionPurpose: ProductionPurpose.dairy,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-d',
+        locationId: 'casa-corral-2',
         riskLevel: RiskLevel.high,
         underObservation: true,
         requiresAttention: true,
@@ -549,7 +585,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.steer,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.neutered,
-        paddockId: 'feedlot-1',
+        locationId: 'casa-corral-1',
         riskLevel: RiskLevel.medium,
         dailyGainEstimate: 1.1,
         feedType: 'Ración feedlot',
@@ -572,7 +608,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 170)),
-        paddockId: 'potrero-b',
+        locationId: 'milpa-corral-b',
         vaccinated: false,
         underObservation: true,
         requiresAttention: true,
@@ -592,7 +628,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.bull,
         productionPurpose: ProductionPurpose.breeding,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-c',
+        locationId: 'ejido-corral-priv',
         riskLevel: RiskLevel.low,
         dailyGainEstimate: 1.0,
         lastMovementDate: referenceDate.subtract(const Duration(days: 8)),
@@ -609,7 +645,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.cow,
         productionPurpose: ProductionPurpose.dairy,
         reproductiveStatus: ReproductiveStatus.lactating,
-        paddockId: 'potrero-a',
+        locationId: 'milpa-corral-a',
         healthStatus: HealthStatus.excellent,
         riskLevel: RiskLevel.low,
         feedType: 'Pasto y concentrado',
@@ -633,7 +669,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.breeding,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 190)),
-        paddockId: 'potrero-d',
+        locationId: 'casa-corral-2',
         riskLevel: RiskLevel.medium,
         underObservation: true,
         bodyConditionScore: 6,
@@ -650,7 +686,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.calf,
         productionPurpose: ProductionPurpose.dual,
         reproductiveStatus: ReproductiveStatus.virgin,
-        paddockId: 'corral-crias',
+        locationId: 'milpa-corral-becerros',
         underObservation: true,
         riskLevel: RiskLevel.medium,
         dailyGainEstimate: 0.48,
@@ -667,7 +703,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.oxen,
         productionPurpose: ProductionPurpose.work,
         reproductiveStatus: ReproductiveStatus.retired,
-        paddockId: 'rancho-trabajo',
+        locationId: 'prop-casa',
         riskLevel: RiskLevel.low,
         bodyConditionScore: 5,
         lastMovementDate: referenceDate.subtract(const Duration(days: 30)),
@@ -684,7 +720,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.other,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-c',
+        locationId: 'ejido-corral-priv',
         riskLevel: RiskLevel.low,
         dailyGainEstimate: 0.4,
         referenceDate: referenceDate,
@@ -705,7 +741,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.dual,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 110)),
-        paddockId: 'potrero-c',
+        locationId: 'ejido-corral-priv',
         riskLevel: RiskLevel.medium,
         bodyConditionScore: 6,
         referenceDate: referenceDate,
@@ -722,7 +758,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.dual,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 100)),
-        paddockId: 'potrero-b',
+        locationId: 'milpa-corral-b',
         vaccinated: false,
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
@@ -742,7 +778,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.other,
         productionPurpose: ProductionPurpose.breeding,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-b',
+        locationId: 'milpa-corral-b',
         riskLevel: RiskLevel.medium,
         referenceDate: referenceDate,
       ),
@@ -762,7 +798,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.pregnant,
         expectedCalvingDate: referenceDate.add(const Duration(days: 90)),
-        paddockId: 'feedlot-1',
+        locationId: 'casa-corral-1',
         feedType: 'Ración gestación',
         riskLevel: RiskLevel.medium,
         referenceDate: referenceDate,
@@ -778,7 +814,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.weaned,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.virgin,
-        paddockId: 'corral-crias',
+        locationId: 'milpa-corral-becerros',
         dailyGainEstimate: 0.6,
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
@@ -794,7 +830,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.other,
         productionPurpose: ProductionPurpose.work,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'rancho-trabajo',
+        locationId: 'prop-casa',
         riskLevel: RiskLevel.low,
         bodyConditionScore: 6,
         referenceDate: referenceDate,
@@ -814,7 +850,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.other,
         productionPurpose: ProductionPurpose.other,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'gallinero-central',
+        locationId: 'casa-house',
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
       ),
@@ -829,7 +865,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.other,
         productionPurpose: ProductionPurpose.other,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'gallinero-central',
+        locationId: 'casa-house',
         riskLevel: RiskLevel.low,
         referenceDate: referenceDate,
       ),
@@ -848,7 +884,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.bull,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.active,
-        paddockId: 'potrero-d',
+        locationId: 'casa-corral-2',
         riskLevel: RiskLevel.medium,
         bodyConditionScore: 6,
         referenceDate: referenceDate,
@@ -868,7 +904,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         category: Category.steer,
         productionPurpose: ProductionPurpose.meat,
         reproductiveStatus: ReproductiveStatus.neutered,
-        paddockId: 'feedlot-1',
+        locationId: 'casa-corral-1',
         riskLevel: RiskLevel.medium,
         dailyGainEstimate: 1.2,
         feedType: 'Ración terminación',
@@ -1493,8 +1529,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-rosario',
         MovementRecord(
           id: null,
-          fromLocation: 'corral-crias',
-          toLocation: 'potrero-b',
+          fromLocation: 'milpa-corral-becerros',
+          toLocation: 'milpa-corral-b',
           date: referenceDate.subtract(const Duration(days: 15)),
           reason: MovementReason.paddockRotation,
           notes: 'Salió de recría a potrero',
@@ -1504,8 +1540,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-bessie',
         MovementRecord(
           id: null,
-          fromLocation: 'potrero-b',
-          toLocation: 'potrero-a',
+          fromLocation: 'milpa-corral-b',
+          toLocation: 'milpa-corral-a',
           date: referenceDate.subtract(const Duration(days: 8)),
           reason: MovementReason.paddockRotation,
         ),
@@ -1514,8 +1550,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-tango',
         MovementRecord(
           id: null,
-          fromLocation: 'potrero-b',
-          toLocation: 'feedlot-1',
+          fromLocation: 'milpa-corral-b',
+          toLocation: 'casa-corral-1',
           date: referenceDate.subtract(const Duration(days: 20)),
           reason: MovementReason.feeding,
           notes: 'Ingreso a terminación',
@@ -1525,8 +1561,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-mateo',
         MovementRecord(
           id: null,
-          fromLocation: 'potrero-a',
-          toLocation: 'potrero-c',
+          fromLocation: 'milpa-corral-a',
+          toLocation: 'ejido-corral-priv',
           date: referenceDate.subtract(const Duration(days: 12)),
           reason: MovementReason.breeding,
           notes: 'Servicio natural',
@@ -1536,8 +1572,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-potro',
         MovementRecord(
           id: null,
-          fromLocation: 'potrero-d',
-          toLocation: 'rancho-trabajo',
+          fromLocation: 'casa-corral-2',
+          toLocation: 'prop-casa',
           date: referenceDate.subtract(const Duration(days: 6)),
           reason: MovementReason.other,
           notes: 'Trabajo de soga',
@@ -1547,8 +1583,8 @@ class AnimalRepositoryIsar implements AnimalRepository {
         'uuid-campero',
         MovementRecord(
           id: null,
-          fromLocation: 'potrero-c',
-          toLocation: 'potrero-d',
+          fromLocation: 'ejido-corral-priv',
+          toLocation: 'casa-corral-2',
           date: referenceDate.subtract(const Duration(days: 5)),
           reason: MovementReason.paddockRotation,
           notes: 'Rotación caprinos',
@@ -1658,7 +1694,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
     String? chronicNotes,
     bool underObservation = false,
     bool requiresAttention = false,
-    String? paddockId,
+    String? locationId,
     double? dailyGainEstimate,
     int bodyConditionScore = 5,
     String feedType = 'Pasto y concentrado',
@@ -1707,7 +1743,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
       productionSystem: productionSystem,
       feedType: feedType,
       dailyGainEstimate: dailyGainEstimate,
-      currentPaddockId: paddockId,
+      currentLocationId: locationId,
       lastMovementDate:
           lastMovementDate ?? now.subtract(const Duration(days: 10)),
       underObservation: underObservation,

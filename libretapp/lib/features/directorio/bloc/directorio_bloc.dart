@@ -1,16 +1,17 @@
-﻿/// features \u203a directorio \u203a bloc \u203a directorio_bloc \u2014 top-level BLoC for the directorio feature.
+/// features \u203a directorio \u203a bloc \u203a directorio_bloc \u2014 top-level BLoC for the directorio feature.
 library;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_state.dart';
+import 'package:libretapp/features/directorio/data/directorio_config_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
@@ -22,9 +23,14 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     required this.animalesTabBloc,
     required this.lotesTabBloc,
     required this.ubicacionesTabBloc,
-  }) : super(const DirectorioInitial()) {
+    DirectorioConfigRepository? configRepository,
+  }) : _configRepository = configRepository,
+       super(const DirectorioInitial()) {
     on<LoadDirectorioData>(_onLoadDirectorioData);
     on<ChangeDirectorioTab>(_onChangeTab);
+    on<ChangeDirectorioSection>(_onChangeSection);
+    on<SetDirectorioVisibleSections>(_onSetVisibleSections);
+    on<SetDirectorioSectionConfig>(_onSetSectionConfig);
     on<StartSearch>(_onStartSearch);
     on<PerformCombinedSearch>(_onPerformCombinedSearch);
     on<ClearSearch>(_onClearSearch);
@@ -32,6 +38,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   final AnimalesTabBloc animalesTabBloc;
   final LotesTabBloc lotesTabBloc;
   final UbicacionesTabBloc ubicacionesTabBloc;
+  final DirectorioConfigRepository? _configRepository;
 
   Future<void> _onLoadDirectorioData(
     LoadDirectorioData event,
@@ -44,11 +51,17 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       lotesTabBloc.add(const LoadLotesTab());
       ubicacionesTabBloc.add(const LoadUbicacionesTab());
 
+      final config =
+          await _configRepository?.load() ?? defaultDirectorioSectionConfig;
+      final activeSection = _firstVisibleSection(config);
+
       emit(
-        const DirectorioLoaded(
-          activeTabIndex: 0,
+        DirectorioLoaded(
+          activeSection: activeSection,
+          orderedSections: config.orderedSections,
+          visibleSections: config.visibleSections,
           isSearching: false,
-          searchResults: [],
+          searchResults: const [],
           searchQuery: '',
         ),
       );
@@ -61,9 +74,95 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final currentState = state;
     if (currentState is! DirectorioLoaded) return;
 
+    final activeSections = currentState.activeSections;
+    if (activeSections.isEmpty) return;
+    final sectionIndex = event.tabIndex.clamp(0, activeSections.length - 1);
+    _emitSectionChange(activeSections[sectionIndex], emit);
+  }
+
+  void _onChangeSection(
+    ChangeDirectorioSection event,
+    Emitter<DirectorioState> emit,
+  ) {
+    _emitSectionChange(event.section, emit);
+  }
+
+  void _emitSectionChange(
+    DirectorioSection section,
+    Emitter<DirectorioState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! DirectorioLoaded) return;
+    if (!currentState.visibleSections.contains(section)) return;
+
     emit(
       currentState.copyWith(
-        activeTabIndex: event.tabIndex,
+        activeSection: section,
+        isSearching: false,
+        searchResults: [],
+        searchQuery: '',
+      ),
+    );
+  }
+
+  Future<void> _onSetVisibleSections(
+    SetDirectorioVisibleSections event,
+    Emitter<DirectorioState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DirectorioLoaded || event.visibleSections.isEmpty) {
+      return;
+    }
+
+    await _setSectionConfig(
+      orderedSections: currentState.orderedSections,
+      visibleSections: event.visibleSections,
+      preferredActiveSection: event.activeSection,
+      currentState: currentState,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onSetSectionConfig(
+    SetDirectorioSectionConfig event,
+    Emitter<DirectorioState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DirectorioLoaded || event.visibleSections.isEmpty) {
+      return;
+    }
+
+    await _setSectionConfig(
+      orderedSections: event.orderedSections,
+      visibleSections: event.visibleSections,
+      preferredActiveSection: event.activeSection,
+      currentState: currentState,
+      emit: emit,
+    );
+  }
+
+  Future<void> _setSectionConfig({
+    required List<DirectorioSection> orderedSections,
+    required Set<DirectorioSection> visibleSections,
+    required DirectorioSection preferredActiveSection,
+    required DirectorioLoaded currentState,
+    required Emitter<DirectorioState> emit,
+  }) async {
+    final config = DirectorioSectionConfig(
+      orderedSections: orderedSections,
+      visibleSections: visibleSections,
+    ).normalized();
+    final active = config.visibleSections.contains(preferredActiveSection)
+        ? preferredActiveSection
+        : _firstVisibleSection(config);
+
+    await _configRepository?.save(config);
+
+    emit(
+      currentState.copyWith(
+        activeSection: active,
+        orderedSections: config.orderedSections,
+        visibleSections: config.visibleSections,
         isSearching: false,
         searchResults: [],
         searchQuery: '',
@@ -101,7 +200,11 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     }
 
     // Ordenamos según el tab activo
-    final orders = _getSearchOrder(currentState.activeTabIndex);
+    final orders = _getSearchOrder(
+      currentState.activeSection,
+      currentState.orderedSections,
+      currentState.visibleSections,
+    );
 
     for (final order in orders) {
       if (order == CombinedSearchType.animal) {
@@ -175,33 +278,33 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   }
 
   /// Devuelve el orden de búsqueda según el tab activo
-  List<CombinedSearchType> _getSearchOrder(int tabIndex) {
-    switch (tabIndex) {
-      case 0: // Animales
-        return [
-          CombinedSearchType.animal,
-          CombinedSearchType.lote,
-          CombinedSearchType.ubicacion,
-        ];
-      case 1: // Lotes
-        return [
-          CombinedSearchType.lote,
-          CombinedSearchType.animal,
-          CombinedSearchType.ubicacion,
-        ];
-      case 2: // Ubicaciones
-        return [
-          CombinedSearchType.ubicacion,
-          CombinedSearchType.animal,
-          CombinedSearchType.lote,
-        ];
-      default:
-        return [
-          CombinedSearchType.animal,
-          CombinedSearchType.lote,
-          CombinedSearchType.ubicacion,
-        ];
-    }
+  List<CombinedSearchType> _getSearchOrder(
+    DirectorioSection activeSection,
+    List<DirectorioSection> orderedSections,
+    Set<DirectorioSection> visibleSections,
+  ) {
+    final config = DirectorioSectionConfig(
+      orderedSections: orderedSections,
+      visibleSections: visibleSections,
+    ).normalized();
+    final searchSections = <DirectorioSection>[
+      if (config.visibleSections.contains(activeSection)) activeSection,
+      ...config.orderedSections.where(
+        (section) =>
+            config.visibleSections.contains(section) && section != activeSection,
+      ),
+    ];
+    return searchSections
+        .map((section) => section.searchType)
+        .toList(growable: false);
+  }
+
+  DirectorioSection _firstVisibleSection(DirectorioSectionConfig config) {
+    final normalized = config.normalized();
+    return normalized.orderedSections.firstWhere(
+      normalized.visibleSections.contains,
+      orElse: () => DirectorioSection.animales,
+    );
   }
 
   /// Checks if an ear tag matches the search query.
@@ -222,8 +325,9 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final stripped = earTag.replaceFirst(RegExp(r'^0+'), '');
     final strippedLower = stripped.toLowerCase();
     if (strippedLower.contains(normalized)) return true;
-    if (normalized.length <= 4 && strippedLower.endsWith(normalized))
+    if (normalized.length <= 4 && strippedLower.endsWith(normalized)) {
       return true;
+    }
 
     return false;
   }
@@ -241,7 +345,13 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     }
 
     final nameLower = name.toLowerCase();
-    return nameLower.contains(normalized);
+    if (nameLower.contains(normalized)) return true;
+    if (item is AnimalEntity) {
+      return animalSearchPresentationText(item).toLowerCase().contains(
+        normalized,
+      );
+    }
+    return false;
   }
 
   void _addResultIfNew(
@@ -266,16 +376,14 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
 
   String _getAnimalName(Object animal) {
     if (animal is AnimalEntity) {
-      return animal.customName?.trim().isNotEmpty == true
-          ? animal.customName!.trim()
-          : animal.earTagNumber;
+      return primaryAnimalLabel(animal);
     }
     return '';
   }
 
   String _getLoteName(Object lote) {
     if (lote is LoteEntity) {
-      return lote.nombre;
+      return lote.name;
     }
     return '';
   }

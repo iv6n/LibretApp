@@ -1,4 +1,4 @@
-﻿/// features > directorio > animales > domain > animal_domain — barrel for animal domain layer.
+/// features > directorio > animales > domain > animal_domain — barrel for animal domain layer.
 library;
 
 export 'entities/animal_entity.dart';
@@ -19,3 +19,5 @@ export 'enums/reproductive_status.dart';
 export 'enums/risk_level.dart';
 export 'enums/sex.dart';
 export 'enums/species.dart';
+export 'services/animal_taxonomy.dart';
+export 'services/animal_presentation.dart';

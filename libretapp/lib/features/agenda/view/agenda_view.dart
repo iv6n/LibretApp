@@ -93,6 +93,12 @@ class _AgendaViewState extends State<AgendaView> {
             actions: [
               if (!_isSearchFieldActive)
                 IconButton(
+                  icon: const Icon(Icons.groups_outlined),
+                  onPressed: () => showWorkforceManager(context),
+                  tooltip: 'Personal y cuadrillas',
+                ),
+              if (!_isSearchFieldActive)
+                IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () => setState(() {
                     _isSearchFieldActive = true;
@@ -233,7 +239,10 @@ class _AgendaViewState extends State<AgendaView> {
         .where(
           (e) =>
               e.fecha.isAfter(selectedKey) &&
-              e.fecha.isBefore(limite.add(const Duration(days: 1))),
+              e.fecha.isBefore(limite.add(const Duration(days: 1))) &&
+              e.estado != AgendaEstado.completado &&
+              e.estado != AgendaEstado.verificado &&
+              e.estado != AgendaEstado.cancelado,
         )
         .toList()
       ..sort((a, b) => a.fecha.compareTo(b.fecha));

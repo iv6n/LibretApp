@@ -2,5 +2,6 @@
 library;
 
 export 'animal_lifecycle_calculator.dart';
+export 'animal_taxonomy.dart';
 export 'care_scheduler.dart';
 export 'reproduction_scheduler.dart';

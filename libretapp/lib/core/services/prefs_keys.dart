@@ -9,6 +9,7 @@ class PrefsKeys {
   static const animalsLastSync = 'animals.lastSync';
   static const eventsStorage = 'events.storage';
   static const eventsInitialPurgeV1Done = 'events.initialPurge.v1.done';
+  static const agendaIsarMigrationV1Done = 'agenda.isar.migration.v1.done';
   static const appLanguage = 'app.language';
   static const appTheme = 'app.theme';
   static const animalWizardDraft = 'animal.wizard.draft';

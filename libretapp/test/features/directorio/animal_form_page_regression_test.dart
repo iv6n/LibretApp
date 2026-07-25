@@ -7,13 +7,11 @@ import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_edit_page.dart';
 import 'package:libretapp/features/directorio/animales/view/register_animal_page.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -89,7 +87,7 @@ void main() {
         uuid: 'edit-1',
         sex: Sex.female,
         updatedAt: now,
-        currentPaddockId: 'missing-location',
+        currentLocationId: 'missing-location',
         batchUuid: 'missing-batch',
       );
 
@@ -145,7 +143,7 @@ void main() {
       final categoryField = tester.widget<DropdownButtonFormField<Category>>(
         find.byType(DropdownButtonFormField<Category>),
       );
-      expect(categoryField.initialValue, Category.other);
+      expect(categoryField.initialValue, Category.juvenile);
       expect(tester.takeException(), isNull);
     });
 
@@ -167,11 +165,47 @@ void main() {
       await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
       await tester.pumpAndSettle();
 
+      await tester.enterText(_breedFieldFinder(), 'Criolla');
+      await tester.pump();
       await _tapFilledButtonByLabel(tester, 'Siguiente');
+      expect(find.text('Arete recomendado'), findsOneWidget);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
 
       expect(find.text('Siguiente'), findsOneWidget);
       expect(find.text('Anterior'), findsNothing);
       expect(find.text('Registrar nuevo animal'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('advances to step 2 when ear tag is empty and confirmed', (
+      tester,
+    ) async {
+      final now = DateTime(2025, 1, 1);
+      final animalRepo = _FakeAnimalRepository(
+        allAnimals: [_animal(uuid: 'a-1', sex: Sex.female, updatedAt: now)],
+      );
+      final lotesRepo = _FakeLotesRepository(activeLotes: const []);
+      final locationRepo = _FakeLocationRepository(allLocations: const []);
+
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(lotesRepo)
+        ..registerSingleton<LocationRepository>(locationRepo);
+
+      await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(_breedFieldFinder(), 'Criolla');
+      await tester.pump();
+      await _tapFilledButtonByLabel(tester, 'Siguiente');
+      expect(find.text('Arete recomendado'), findsOneWidget);
+
+      await tester.tap(find.text('Continuar sin arete'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Anterior'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -438,6 +472,41 @@ void main() {
       expect(animalRepo.saveCallCount, 0);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('edits an existing animal from the direct edit form', (
+      tester,
+    ) async {
+      final now = DateTime(2025, 1, 1);
+      final editingAnimal = _animal(
+        uuid: 'edit-direct',
+        sex: Sex.female,
+        updatedAt: now,
+      );
+      final animalRepo = _FakeAnimalRepository(
+        allAnimals: [editingAnimal],
+        byUuid: {'edit-direct': editingAnimal},
+      );
+
+      locator.registerSingleton<AnimalRepository>(animalRepo);
+
+      await tester.pumpWidget(
+        _testApp(const AnimalEditPage(animalUuid: 'edit-direct')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(_editFieldByLabel('Arete / Identificacion'), '900');
+      await tester.enterText(_editFieldByLabel('Nombre o alias'), 'Paloma');
+      await tester.enterText(_editFieldByLabel('Raza'), 'Simmental');
+      await tester.pump();
+
+      await _tapFilledButtonByLabel(tester, 'Guardar cambios');
+
+      expect(animalRepo.updateCallCount, 1);
+      expect(animalRepo.updatedAnimals.single.earTagNumber, '900');
+      expect(animalRepo.updatedAnimals.single.customName, 'Paloma');
+      expect(animalRepo.updatedAnimals.single.breed, 'Simmental');
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 
@@ -496,6 +565,18 @@ Finder _breedFieldFinder() {
   );
 }
 
+Finder _editFieldByLabel(String labelText) {
+  final label = find.text(labelText);
+  final textFormField = find.ancestor(
+    of: label,
+    matching: find.byType(TextFormField),
+  );
+  return find.descendant(
+    of: textFormField,
+    matching: find.byType(EditableText),
+  );
+}
+
 class _TestEditAnimalForm extends StatelessWidget {
   const _TestEditAnimalForm();
 
@@ -518,12 +599,12 @@ LocationEntity _location({required String uuid, required String name}) {
   return LocationEntity(
     uuid: uuid,
     name: name,
-    type: LocationType.potrero,
+    type: LocationType.pasture,
     surfaceArea: 1,
     capacity: 10,
     waterSource: 'pozo',
     terrainType: 'plano',
-    status: LocationStatus.disponible,
+    status: LocationStatus.available,
   );
 }
 
@@ -534,8 +615,8 @@ LoteEntity _lote({
 }) {
   return LoteEntity(
     uuid: uuid,
-    nombre: nombre,
-    fechaCreacion: now,
+    name: nombre,
+    createdAt: now,
     lastUpdateDate: now,
   );
 }
@@ -544,7 +625,7 @@ AnimalEntity _animal({
   required String uuid,
   required Sex sex,
   required DateTime updatedAt,
-  String? currentPaddockId,
+  String? currentLocationId,
   String? batchUuid,
 }) {
   return AnimalEntity(
@@ -569,8 +650,8 @@ AnimalEntity _animal({
     productionPurpose: ProductionPurpose.undefined,
     productionStage: ProductionStage.unknown,
     productionSystem: ProductionSystem.unknown,
-    currentPaddockId: currentPaddockId,
-    initialLocationId: currentPaddockId,
+    currentLocationId: currentLocationId,
+    initialLocationId: currentLocationId,
     underObservation: false,
     requiresAttention: false,
     riskLevel: RiskLevel.low,

@@ -55,7 +55,7 @@ class AnimalDto {
     required this.productionSystem,
     this.feedType,
     this.dailyGainEstimate,
-    this.currentPaddockId,
+    this.currentLocationId,
     this.lastMovementDate,
     required this.underObservation,
     required this.requiresAttention,
@@ -112,7 +112,7 @@ class AnimalDto {
       productionSystem: entity.productionSystem.name,
       feedType: entity.feedType,
       dailyGainEstimate: entity.dailyGainEstimate,
-      currentPaddockId: entity.currentPaddockId,
+      currentLocationId: entity.currentLocationId,
       lastMovementDate: entity.lastMovementDate?.toIso8601String(),
       underObservation: entity.underObservation,
       requiresAttention: entity.requiresAttention,
@@ -163,7 +163,8 @@ class AnimalDto {
       productionSystem: json['productionSystem'] as String? ?? 'unknown',
       feedType: json['feedType'] as String?,
       dailyGainEstimate: (json['dailyGainEstimate'] as num?)?.toDouble(),
-      currentPaddockId: json['currentPaddockId'] as String?,
+      currentLocationId:
+          (json['currentPaddockId'] ?? json['currentLocationId']) as String?,
       lastMovementDate: json['lastMovementDate'] as String?,
       underObservation: json['underObservation'] as bool,
       requiresAttention: json['requiresAttention'] as bool,
@@ -227,7 +228,7 @@ class AnimalDto {
   final double? dailyGainEstimate;
 
   // ─── LOCATION ──────────────────────────────────────────────────────
-  final String? currentPaddockId;
+  final String? currentLocationId;
   final String? lastMovementDate;
 
   // ─── MONITORING ────────────────────────────────────────────────────
@@ -298,7 +299,7 @@ class AnimalDto {
       productionSystem: _enumByName(ProductionSystem.values, productionSystem),
       feedType: feedType,
       dailyGainEstimate: dailyGainEstimate,
-      currentPaddockId: currentPaddockId,
+      currentLocationId: currentLocationId,
       lastMovementDate: _parseDate(lastMovementDate),
       underObservation: underObservation,
       requiresAttention: requiresAttention,
@@ -349,7 +350,7 @@ class AnimalDto {
       'productionSystem': productionSystem,
       'feedType': feedType,
       'dailyGainEstimate': dailyGainEstimate,
-      'currentPaddockId': currentPaddockId,
+      'currentPaddockId': currentLocationId, // keep old JSON key for compat
       'lastMovementDate': lastMovementDate,
       'underObservation': underObservation,
       'requiresAttention': requiresAttention,

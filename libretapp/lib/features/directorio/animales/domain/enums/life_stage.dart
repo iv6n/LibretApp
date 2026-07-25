@@ -14,7 +14,27 @@ enum LifeStage {
   mare,
   donkey,
   donkeyFemale,
-  mule;
+  mule,
+  kid,
+  youngGoat,
+  goat,
+  breedingBuck,
+  lamb,
+  youngSheep,
+  ewe,
+  ram,
+  piglet,
+  youngPig,
+  sow,
+  boar,
+  chick,
+  pullet,
+  hen,
+  rooster,
+  puppy,
+  youngDog,
+  workingDog,
+  guardDog;
 
   String get displayName {
     switch (this) {
@@ -48,6 +68,46 @@ enum LifeStage {
         return 'Burra';
       case LifeStage.mule:
         return 'Mula';
+      case LifeStage.kid:
+        return 'Cabrito';
+      case LifeStage.youngGoat:
+        return 'Chivo joven';
+      case LifeStage.goat:
+        return 'Cabra';
+      case LifeStage.breedingBuck:
+        return 'Macho reproductor';
+      case LifeStage.lamb:
+        return 'Cordero';
+      case LifeStage.youngSheep:
+        return 'Borrego';
+      case LifeStage.ewe:
+        return 'Oveja';
+      case LifeStage.ram:
+        return 'Carnero';
+      case LifeStage.piglet:
+        return 'Lechón';
+      case LifeStage.youngPig:
+        return 'Cerdo joven';
+      case LifeStage.sow:
+        return 'Cerda';
+      case LifeStage.boar:
+        return 'Verraco';
+      case LifeStage.chick:
+        return 'Pollito';
+      case LifeStage.pullet:
+        return 'Ave joven';
+      case LifeStage.hen:
+        return 'Gallina';
+      case LifeStage.rooster:
+        return 'Gallo';
+      case LifeStage.puppy:
+        return 'Cachorro';
+      case LifeStage.youngDog:
+        return 'Joven';
+      case LifeStage.workingDog:
+        return 'Adulto trabajo';
+      case LifeStage.guardDog:
+        return 'Adulto guardia';
     }
   }
 
@@ -61,13 +121,33 @@ enum LifeStage {
       case LifeStage.donkey:
       case LifeStage.donkeyFemale:
       case LifeStage.mule:
+      case LifeStage.kid:
+      case LifeStage.lamb:
+      case LifeStage.piglet:
+      case LifeStage.chick:
+      case LifeStage.puppy:
         return 0;
       case LifeStage.heifer:
       case LifeStage.youngBull:
       case LifeStage.steer:
+      case LifeStage.youngGoat:
+      case LifeStage.youngSheep:
+      case LifeStage.youngPig:
+      case LifeStage.pullet:
+      case LifeStage.youngDog:
         return 12;
       case LifeStage.cow:
       case LifeStage.bull:
+      case LifeStage.goat:
+      case LifeStage.breedingBuck:
+      case LifeStage.ewe:
+      case LifeStage.ram:
+      case LifeStage.sow:
+      case LifeStage.boar:
+      case LifeStage.hen:
+      case LifeStage.rooster:
+      case LifeStage.workingDog:
+      case LifeStage.guardDog:
         return 24;
       case LifeStage.horse:
       case LifeStage.mare:
@@ -80,10 +160,20 @@ enum LifeStage {
       case LifeStage.calf:
       case LifeStage.calfMale:
       case LifeStage.calfFemale:
+      case LifeStage.kid:
+      case LifeStage.lamb:
+      case LifeStage.piglet:
+      case LifeStage.chick:
+      case LifeStage.puppy:
         return 12;
       case LifeStage.heifer:
       case LifeStage.youngBull:
       case LifeStage.steer:
+      case LifeStage.youngGoat:
+      case LifeStage.youngSheep:
+      case LifeStage.youngPig:
+      case LifeStage.pullet:
+      case LifeStage.youngDog:
         return 24;
       case LifeStage.colt:
       case LifeStage.filly:
@@ -95,6 +185,16 @@ enum LifeStage {
       case LifeStage.donkey:
       case LifeStage.donkeyFemale:
       case LifeStage.mule:
+      case LifeStage.goat:
+      case LifeStage.breedingBuck:
+      case LifeStage.ewe:
+      case LifeStage.ram:
+      case LifeStage.sow:
+      case LifeStage.boar:
+      case LifeStage.hen:
+      case LifeStage.rooster:
+      case LifeStage.workingDog:
+      case LifeStage.guardDog:
         return null;
     }
   }

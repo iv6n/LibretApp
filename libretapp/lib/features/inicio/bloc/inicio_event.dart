@@ -1,7 +1,9 @@
-﻿/// features \u203a inicio \u203a bloc \u203a inicio_event \u2014 events for InicioBloc.
+﻿/// features › inicio › bloc › inicio_event — events for InicioBloc.
 library;
 
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
+import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 
 abstract class InicioEvent extends Equatable {
   const InicioEvent();
@@ -16,4 +18,17 @@ class LoadInicio extends InicioEvent {
 
 class RefreshInicio extends InicioEvent {
   const RefreshInicio();
+}
+
+class UpdateDashboardConfig extends InicioEvent {
+  const UpdateDashboardConfig({
+    required this.widgets,
+    required this.actions,
+  });
+
+  final List<DashboardWidgetConfig> widgets;
+  final List<DashboardQuickAction> actions;
+
+  @override
+  List<Object?> get props => [widgets, actions];
 }

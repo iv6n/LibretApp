@@ -7,6 +7,7 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 
 class HealthRecordRepositoryIsar implements HealthRecordRepository {
   HealthRecordRepositoryIsar(this._database);
@@ -37,6 +38,21 @@ class HealthRecordRepositoryIsar implements HealthRecordRepository {
     await isar.writeTxn(() async {
       final id = await isar.isarHealthRecords.put(model);
       model.id = id;
+      final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+      if (animal != null) {
+        if (record.type == HealthRecordType.vaccine) animal.vaccinated = true;
+        if (record.type == HealthRecordType.deworming) animal.dewormed = true;
+        if (record.type == HealthRecordType.vitamins) animal.hasVitamins = true;
+        if (record.type == HealthRecordType.disease) {
+          animal
+            ..underObservation = true
+            ..requiresAttention = true;
+        }
+        animal
+          ..lastUpdateDate = DateTime.now()
+          ..synced = false;
+        await isar.isarAnimals.put(animal);
+      }
     });
     final saved = model.toEntity();
     LoggerService.i(
@@ -58,6 +74,23 @@ class HealthRecordRepositoryIsar implements HealthRecordRepository {
         .toList(growable: false);
     await isar.writeTxn(() async {
       await isar.isarHealthRecords.putAll(models);
+      final now = DateTime.now();
+      for (final animalUuid in animalUuids) {
+        final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+        if (animal == null) continue;
+        if (record.type == HealthRecordType.vaccine) animal.vaccinated = true;
+        if (record.type == HealthRecordType.deworming) animal.dewormed = true;
+        if (record.type == HealthRecordType.vitamins) animal.hasVitamins = true;
+        if (record.type == HealthRecordType.disease) {
+          animal
+            ..underObservation = true
+            ..requiresAttention = true;
+        }
+        animal
+          ..lastUpdateDate = now
+          ..synced = false;
+        await isar.isarAnimals.put(animal);
+      }
     });
     LoggerService.i(
       'Registro sanitario masivo guardado para ${animalUuids.length} animales',

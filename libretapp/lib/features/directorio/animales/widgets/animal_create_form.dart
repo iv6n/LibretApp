@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_create_form \u2014 form for creating a new animal.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a animal_create_form \u2014 form for creating a new animal.
 library;
 
 import 'package:flutter/material.dart';
@@ -13,6 +13,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 /// Shows a bottom sheet form to create a new animal.
 Future<void> showCreateAnimalSheet(
@@ -34,7 +35,7 @@ Future<void> showCreateAnimalSheet(
   final weightCtrl = TextEditingController();
 
   var species = Species.cattle;
-  var category = Category.values.first;
+  var category = Category.calf;
   var sex = Sex.values.first;
   var status = AnimalStatus.values.first;
   var birthDate = DateTime.now();
@@ -63,6 +64,26 @@ Future<void> showCreateAnimalSheet(
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setModalState) {
+          final categoryOptions = AnimalTaxonomy.categoriesFor(
+            species: species,
+            sex: sex,
+            ageMonths: AnimalLifecycleCalculator.calculate(
+              birthDate: birthDate,
+              species: species,
+              sex: sex,
+            ).ageMonths,
+          );
+          if (!categoryOptions.contains(category)) {
+            category = AnimalTaxonomy.defaultCategory(
+              species: species,
+              sex: sex,
+              ageMonths: AnimalLifecycleCalculator.calculate(
+                birthDate: birthDate,
+                species: species,
+                sex: sex,
+              ).ageMonths,
+            );
+          }
           return Padding(
             padding: EdgeInsets.only(
               left: 16,
@@ -76,7 +97,7 @@ Future<void> showCreateAnimalSheet(
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.pets, color: Colors.green),
+                      Icon(Icons.pets, color: AppColors.accent),
                       SizedBox(width: 8),
                       Text(
                         'Agregar animal',
@@ -121,7 +142,7 @@ Future<void> showCreateAnimalSheet(
                             labelText: 'Especie',
                             border: OutlineInputBorder(),
                           ),
-                          items: Species.values
+                          items: AnimalTaxonomy.ranchSpecies
                               .map(
                                 (s) => DropdownMenuItem(
                                   value: s,
@@ -131,7 +152,20 @@ Future<void> showCreateAnimalSheet(
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              setModalState(() => species = value);
+                              setModalState(() {
+                                species = value;
+                                final ageMonths =
+                                    AnimalLifecycleCalculator.calculate(
+                                      birthDate: birthDate,
+                                      species: species,
+                                      sex: sex,
+                                    ).ageMonths;
+                                category = AnimalTaxonomy.defaultCategory(
+                                  species: species,
+                                  sex: sex,
+                                  ageMonths: ageMonths,
+                                );
+                              });
                             }
                           },
                         ),
@@ -144,7 +178,7 @@ Future<void> showCreateAnimalSheet(
                             labelText: 'Categoría',
                             border: OutlineInputBorder(),
                           ),
-                          items: Category.values
+                          items: categoryOptions
                               .map(
                                 (c) => DropdownMenuItem(
                                   value: c,
@@ -181,7 +215,20 @@ Future<void> showCreateAnimalSheet(
                               .toList(),
                           onChanged: (value) {
                             if (value != null) {
-                              setModalState(() => sex = value);
+                              setModalState(() {
+                                sex = value;
+                                final ageMonths =
+                                    AnimalLifecycleCalculator.calculate(
+                                      birthDate: birthDate,
+                                      species: species,
+                                      sex: sex,
+                                    ).ageMonths;
+                                category = AnimalTaxonomy.defaultCategory(
+                                  species: species,
+                                  sex: sex,
+                                  ageMonths: ageMonths,
+                                );
+                              });
                             }
                           },
                         ),
@@ -228,7 +275,20 @@ Future<void> showCreateAnimalSheet(
                               lastDate: DateTime.now(),
                             );
                             if (picked != null) {
-                              setModalState(() => birthDate = picked);
+                              setModalState(() {
+                                birthDate = picked;
+                                final ageMonths =
+                                    AnimalLifecycleCalculator.calculate(
+                                      birthDate: birthDate,
+                                      species: species,
+                                      sex: sex,
+                                    ).ageMonths;
+                                category = AnimalTaxonomy.defaultCategory(
+                                  species: species,
+                                  sex: sex,
+                                  ageMonths: ageMonths,
+                                );
+                              });
                             }
                           },
                         ),
@@ -308,7 +368,7 @@ Future<void> showCreateAnimalSheet(
                       ...availableLotes.map(
                         (lote) => DropdownMenuItem(
                           value: lote.uuid,
-                          child: Text(lote.nombre),
+                          child: Text(lote.name),
                         ),
                       ),
                     ],
@@ -321,24 +381,36 @@ Future<void> showCreateAnimalSheet(
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save),
                       label: const Text('Guardar animal'),
-                      onPressed: () {
+                      onPressed: () async {
                         final earTag = earTagCtrl.text.trim();
                         final breed = breedCtrl.text.trim();
-                        if (earTag.isEmpty || breed.isEmpty) {
+                        if (breed.isEmpty) {
                           messenger.showSnackBar(
                             const SnackBar(
                               content: Text(
-                                'Completa arete e información básica',
+                                'Completa la informacion basica',
                               ),
                             ),
                           );
                           return;
+                        }
+                        if (earTag.isEmpty) {
+                          final shouldContinue =
+                              await _confirmMissingEarTag(context);
+                          if (!context.mounted || !shouldContinue) return;
                         }
 
                         final lifecycle = AnimalLifecycleCalculator.calculate(
                           birthDate: birthDate,
                           species: species,
                           sex: sex,
+                        );
+                        final lifeStage = AnimalTaxonomy.resolveLifeStage(
+                          species: species,
+                          sex: sex,
+                          ageMonths: lifecycle.ageMonths,
+                          category: category,
+                          fallback: lifecycle.lifeStage,
                         );
 
                         final now = DateTime.now();
@@ -356,7 +428,7 @@ Future<void> showCreateAnimalSheet(
                           rfidTag: null,
                           species: species,
                           category: category,
-                          lifeStage: lifecycle.lifeStage,
+                          lifeStage: lifeStage,
                           sex: sex,
                           breed: breed,
                           birthDate: birthDate,
@@ -381,7 +453,7 @@ Future<void> showCreateAnimalSheet(
                           productionSystem: ProductionSystem.unknown,
                           feedType: null,
                           dailyGainEstimate: null,
-                          currentPaddockId: selectedLocationId,
+                          currentLocationId: selectedLocationId,
                           initialLocationId: selectedLocationId,
                           lastMovementDate: now,
                           underObservation: false,
@@ -408,7 +480,11 @@ Future<void> showCreateAnimalSheet(
                         context.read<AnimalesBloc>().add(AddAnimal(animal));
                         Navigator.of(context).pop();
                         messenger.showSnackBar(
-                          const SnackBar(content: Text('Animal creado')),
+                          SnackBar(
+                            content: Text(
+                              '${primaryAnimalLabel(animal)} creado',
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -428,4 +504,28 @@ Future<void> showCreateAnimalSheet(
   ownerCtrl.dispose();
   purchaseCtrl.dispose();
   weightCtrl.dispose();
+}
+
+Future<bool> _confirmMissingEarTag(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Arete recomendado'),
+      content: const Text(
+        'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Continuar sin arete'),
+        ),
+      ],
+    ),
+  );
+
+  return result ?? false;
 }

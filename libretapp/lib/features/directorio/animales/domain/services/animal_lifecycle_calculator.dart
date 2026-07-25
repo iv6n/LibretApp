@@ -1,9 +1,10 @@
-﻿/// features \u203a directorio \u203a animales \u203a domain \u203a services \u203a animal_lifecycle_calculator \u2014 calculates age and lifecycle stage for animals.
+/// features \u203a directorio \u203a animales \u203a domain \u203a services \u203a animal_lifecycle_calculator \u2014 calculates age and lifecycle stage for animals.
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_taxonomy.dart';
 
 /// Calcula la edad en meses y la etapa de vida de un animal a partir de su
 /// fecha de nacimiento, especie y sexo.
@@ -50,29 +51,12 @@ class AnimalLifecycleCalculator {
     required int ageMonths,
     LifeStage? fallback,
   }) {
-    switch (species) {
-      case Species.cattle:
-        if (ageMonths < 12) {
-          return sex == Sex.female ? LifeStage.calfFemale : LifeStage.calfMale;
-        }
-        if (ageMonths < 24) {
-          return sex == Sex.female ? LifeStage.heifer : LifeStage.youngBull;
-        }
-        return sex == Sex.female ? LifeStage.cow : LifeStage.bull;
-      case Species.equine:
-        if (ageMonths < 36) {
-          return sex == Sex.female ? LifeStage.filly : LifeStage.colt;
-        }
-        return sex == Sex.female ? LifeStage.mare : LifeStage.horse;
-      default:
-        if (ageMonths < 12) {
-          return sex == Sex.female ? LifeStage.calfFemale : LifeStage.calfMale;
-        }
-        if (ageMonths < 24) {
-          return sex == Sex.female ? LifeStage.heifer : LifeStage.youngBull;
-        }
-        return fallback ?? (sex == Sex.female ? LifeStage.cow : LifeStage.bull);
-    }
+    return AnimalTaxonomy.resolveLifeStage(
+      species: species,
+      sex: sex,
+      ageMonths: ageMonths,
+      fallback: fallback,
+    );
   }
 }
 

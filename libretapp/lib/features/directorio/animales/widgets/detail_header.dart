@@ -11,7 +11,7 @@ import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.da
 import 'package:libretapp/l10n/app_localizations.dart';
 
 // ── Constants ───────────────────────────────────────────────────────────
-const double _kExpandedHeight = 175.0;
+const double _kExpandedHeight = 200.0;
 const double _kPhotoExpanded = 76.0;
 const double _kPhotoCollapsed = 32.0;
 const double _kRadiusExpanded = 20.0;
@@ -79,15 +79,10 @@ class CollapsibleAnimalHeader extends StatelessWidget {
         final badgeOpacity = (1.0 - tFastFade).clamp(0.0, 1.0);
         final subtitleOpacity = (1.0 - tSubtitleFade).clamp(0.0, 1.0);
         final chipOpacity = (1.0 - tChipFade).clamp(0.0, 1.0);
+        final breedLabel = breedSummary(animal, abbreviated: true);
         final subtitleText =
-            '${l10n.labelEarTag}: ${animal.earTagNumber} · ${animal.lifeStage.displayName}';
-        final displayName = (() {
-          final customName = animal.customName?.trim();
-          if (customName != null && customName.isNotEmpty) return customName;
-          final visualId = animal.visualId?.trim();
-          if (visualId != null && visualId.isNotEmpty) return visualId;
-          return animal.earTagNumber;
-        })();
+            '${l10n.labelEarTag}: ${earTagDisplay(animal)} · ${animal.lifeStage.displayName}';
+        final displayName = primaryAnimalLabel(animal);
         final borderRadius = _kRadiusExpanded * (1.0 - t);
 
         // Start under toolbar in expanded mode, end next to back arrow.
@@ -194,6 +189,18 @@ class CollapsibleAnimalHeader extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
+                        BadgeChip(
+                          label: breedLabel,
+                          color: Colors.white.withValues(alpha: 0.18),
+                          textColor: Colors.white,
+                          borderColor: Colors.white.withValues(alpha: 0.55),
+                        ),
+                        BadgeChip(
+                          label: animal.lifeStage.displayName,
+                          color: Colors.white.withValues(alpha: 0.14),
+                          textColor: Colors.white,
+                          borderColor: Colors.white.withValues(alpha: 0.45),
+                        ),
                         BadgeChip(
                           label:
                               '${l10n.animalHealth}: ${animal.healthStatus.displayName}',

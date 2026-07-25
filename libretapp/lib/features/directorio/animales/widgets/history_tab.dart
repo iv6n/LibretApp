@@ -8,6 +8,7 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class HistoryTab extends StatelessWidget {
   const HistoryTab({super.key, required this.animal, required this.data});
@@ -77,7 +78,7 @@ class HistoryTab extends StatelessWidget {
       _TimelineEvent(
         date: animal.creationDate,
         icon: Icons.badge,
-        color: Colors.blueGrey,
+        color: const Color(0xFF6B5A4A),
         title: l10n.detailCreated,
         subtitle: formatDate(animal.creationDate, withTime: true),
       ),
@@ -89,7 +90,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.monitor_weight,
-          color: Colors.green,
+          color: AppColors.success,
           title:
               '${l10n.detailRecordsWeights}: ${r.weight.toStringAsFixed(1)} kg',
           subtitle:
@@ -107,7 +108,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.medical_services,
-          color: Colors.teal,
+          color: AppColors.primary,
           title: '${l10n.detailRecordsHealth}: ${r.type.displayName}',
           subtitle: r.product,
         ),
@@ -120,7 +121,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.serviceDate,
           icon: Icons.favorite,
-          color: Colors.pink,
+          color: AppColors.earth,
           title:
               '${l10n.detailRecordsReproduction}: ${r.serviceType.displayName}',
           subtitle: r.maleSireIdentifier ?? r.notes,
@@ -134,9 +135,22 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.analytics,
-          color: Colors.blue,
+          color: AppColors.secondary,
           title: '${l10n.detailRecordsProduction}: ${r.type.displayName}',
           subtitle: r.value != null ? '${r.value} ${r.unit ?? ''}' : r.notes,
+        ),
+      );
+    }
+
+    // Milking records
+    for (final record in data.milkingRecords) {
+      events.add(
+        _TimelineEvent(
+          date: record.session.occurredAt,
+          icon: Icons.water_drop,
+          color: Colors.lightBlue,
+          title: 'Ordeña: ${record.entry.liters.toStringAsFixed(2)} L',
+          subtitle: record.session.shift.label,
         ),
       );
     }
@@ -147,7 +161,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.route,
-          color: Colors.indigo,
+          color: AppColors.secondary,
           title: '${l10n.detailRecordsMovements}: ${r.reason.displayName}',
           subtitle: '→ ${r.toLocation}',
         ),
@@ -160,7 +174,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.store,
-          color: Colors.purple,
+          color: const Color(0xFF8B623A),
           title: '${l10n.detailRecordsCommercial}: ${r.type.displayName}',
           subtitle: r.amount != null
               ? '${r.amount} ${r.currency ?? ''}'
@@ -175,7 +189,7 @@ class HistoryTab extends StatelessWidget {
         _TimelineEvent(
           date: r.date,
           icon: Icons.payments,
-          color: Colors.brown,
+          color: AppColors.accent,
           title: '${l10n.detailRecordsCosts}: ${r.type.displayName}',
           subtitle: '${r.amount} ${r.currency ?? ''}',
         ),

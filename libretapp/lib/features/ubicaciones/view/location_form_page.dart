@@ -6,14 +6,14 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
-import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_form_sheet.dart';
 
 class LocationFormPage extends StatefulWidget {
-  const LocationFormPage({this.locationUuid, super.key});
+  const LocationFormPage({this.locationUuid, this.presetParentUuid, super.key});
 
   final String? locationUuid;
+  final String? presetParentUuid;
 
   bool get isEdit => locationUuid != null;
 
@@ -24,24 +24,24 @@ class LocationFormPage extends StatefulWidget {
 class _LocationFormPageState extends State<LocationFormPage> {
   late final LocationRepository _repository;
   Future<LocationEntity?>? _loadFuture;
-  List<LocationEntity> _ranchos = [];
+  List<LocationEntity> _allLocations = [];
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _repository = locator<LocationRepository>();
-    _loadRanchos();
+    _loadAllLocations();
     if (widget.isEdit) {
       _loadFuture = _repository.getByUuid(widget.locationUuid!);
     }
   }
 
-  Future<void> _loadRanchos() async {
+  Future<void> _loadAllLocations() async {
     final all = await _repository.getAll();
     if (!mounted) return;
     setState(() {
-      _ranchos = all.where((l) => l.type == LocationType.rancho).toList();
+      _allLocations = all;
     });
   }
 
@@ -75,16 +75,17 @@ class _LocationFormPageState extends State<LocationFormPage> {
 
                   return _FormBody(
                     initial: initial,
-                    ranchos: _ranchos,
+                    allLocations: _allLocations,
                     saving: _saving,
                     onSubmit: _onSubmit,
                   );
                 },
               )
             : _FormBody(
-                ranchos: _ranchos,
+                allLocations: _allLocations,
                 saving: _saving,
                 onSubmit: _onSubmit,
+                presetParentUuid: widget.presetParentUuid,
               ),
       ),
     );
@@ -113,14 +114,16 @@ class _FormBody extends StatelessWidget {
   const _FormBody({
     required this.onSubmit,
     required this.saving,
-    required this.ranchos,
+    required this.allLocations,
     this.initial,
+    this.presetParentUuid,
   });
 
   final LocationEntity? initial;
   final Future<void> Function(LocationEntity) onSubmit;
   final bool saving;
-  final List<LocationEntity> ranchos;
+  final List<LocationEntity> allLocations;
+  final String? presetParentUuid;
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +133,8 @@ class _FormBody extends StatelessWidget {
           ignoring: saving,
           child: LocationFormSheet(
             initial: initial,
-            ranchos: ranchos,
+            allLocations: allLocations,
+            presetParentUuid: presetParentUuid,
             onSubmit: (value) {
               onSubmit(value);
             },

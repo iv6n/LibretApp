@@ -48,7 +48,8 @@ class _AnimalSelectorState extends State<AnimalSelector> {
     final q = query.toLowerCase();
     setState(() {
       _filtered = _animals.where((a) {
-        return a.earTagNumber.toLowerCase().contains(q) ||
+        return animalSearchPresentationText(a).toLowerCase().contains(q) ||
+            a.earTagNumber.toLowerCase().contains(q) ||
             (a.visualId?.toLowerCase().contains(q) ?? false) ||
             (a.customName?.toLowerCase().contains(q) ?? false);
       }).toList();
@@ -56,11 +57,22 @@ class _AnimalSelectorState extends State<AnimalSelector> {
   }
 
   String _displayLabel(AnimalEntity animal) {
-    final parts = <String>[animal.earTagNumber];
-    if (animal.customName != null && animal.customName!.isNotEmpty) {
+    final primary = primaryAnimalLabel(animal);
+    final parts = <String>[primary];
+    final earTag = animal.earTagNumber.trim();
+    if (earTag.isEmpty) {
+      parts.add(earTagDisplay(animal));
+    } else if (earTag != primary) {
+      parts.add(earTag);
+    }
+    if (animal.customName != null &&
+        animal.customName!.isNotEmpty &&
+        animal.customName != primary) {
       parts.add(animal.customName!);
     }
-    if (animal.visualId != null && animal.visualId!.isNotEmpty) {
+    if (animal.visualId != null &&
+        animal.visualId!.isNotEmpty &&
+        animal.visualId != primary) {
       parts.add('(${animal.visualId!})');
     }
     return parts.join(' · ');

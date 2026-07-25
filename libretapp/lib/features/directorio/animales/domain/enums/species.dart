@@ -6,6 +6,7 @@ enum Species {
   pig,
   equine,
   poultry,
+  canine,
   other;
 
   String get displayName {
@@ -22,6 +23,8 @@ enum Species {
         return 'Équido';
       case Species.poultry:
         return 'Ave';
+      case Species.canine:
+        return 'Canino';
       case Species.other:
         return 'Otro';
     }

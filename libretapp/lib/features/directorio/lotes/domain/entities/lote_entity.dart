@@ -3,20 +3,21 @@ library;
 
 import 'package:equatable/equatable.dart';
 
-/// Entidad que representa un lote de animales agrupados.
-/// Un lote es una agrupación lógica de animales con propósitos organizacionales,
-/// como seguimiento de vacunaciones, registros de producción, o campañas sanitarias.
+/// A batch/group of animals managed together.
+///
+/// A lote is a logical grouping of animals for organisational purposes such as
+/// vaccination tracking, production records, or health campaigns.
 class LoteEntity extends Equatable {
   const LoteEntity({
     this.id,
     required this.uuid,
-    required this.nombre,
-    this.descripcion,
+    required this.name,
+    this.description,
     this.animalUuids = const [],
-    required this.fechaCreacion,
-    this.fechaCierre,
-    this.activo = true,
-    this.notas,
+    required this.createdAt,
+    this.closedAt,
+    this.active = true,
+    this.notes,
     this.currentLocationId,
     required this.lastUpdateDate,
     this.synced = false,
@@ -25,32 +26,31 @@ class LoteEntity extends Equatable {
   });
   final int? id;
   final String uuid;
-  final String nombre;
-  final String? descripcion;
-  final List<String> animalUuids; // UUIDs de animales en el lote
-  final DateTime fechaCreacion;
-  final DateTime? fechaCierre;
-  final bool activo;
-  final String? notas;
+  final String name;
+  final String? description;
+  final List<String> animalUuids;
+  final DateTime createdAt;
+  final DateTime? closedAt;
+  final bool active;
+  final String? notes;
 
-  /// UUID de la LocationEntity donde se encuentra actualmente el lote.
+  /// UUID of the LocationEntity where this batch is currently located.
   final String? currentLocationId;
   final DateTime lastUpdateDate;
   final bool synced;
   final String? remoteId;
   final DateTime? syncDate;
 
-  /// Crea una copia con cambios especificados
   LoteEntity copyWith({
     int? id,
     String? uuid,
-    String? nombre,
-    String? descripcion,
+    String? name,
+    String? description,
     List<String>? animalUuids,
-    DateTime? fechaCreacion,
-    DateTime? fechaCierre,
-    bool? activo,
-    String? notas,
+    DateTime? createdAt,
+    DateTime? closedAt,
+    bool? active,
+    String? notes,
     Object? currentLocationId = _sentinel,
     DateTime? lastUpdateDate,
     bool? synced,
@@ -60,13 +60,13 @@ class LoteEntity extends Equatable {
     return LoteEntity(
       id: id ?? this.id,
       uuid: uuid ?? this.uuid,
-      nombre: nombre ?? this.nombre,
-      descripcion: descripcion ?? this.descripcion,
+      name: name ?? this.name,
+      description: description ?? this.description,
       animalUuids: animalUuids ?? this.animalUuids,
-      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
-      fechaCierre: fechaCierre ?? this.fechaCierre,
-      activo: activo ?? this.activo,
-      notas: notas ?? this.notas,
+      createdAt: createdAt ?? this.createdAt,
+      closedAt: closedAt ?? this.closedAt,
+      active: active ?? this.active,
+      notes: notes ?? this.notes,
       currentLocationId: currentLocationId == _sentinel
           ? this.currentLocationId
           : currentLocationId as String?,
@@ -81,13 +81,13 @@ class LoteEntity extends Equatable {
   List<Object?> get props => [
     id,
     uuid,
-    nombre,
-    descripcion,
+    name,
+    description,
     animalUuids,
-    fechaCreacion,
-    fechaCierre,
-    activo,
-    notas,
+    createdAt,
+    closedAt,
+    active,
+    notes,
     currentLocationId,
     lastUpdateDate,
     synced,

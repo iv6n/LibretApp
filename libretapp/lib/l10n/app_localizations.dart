@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// **'Ubicaciones'**
   String get navLocations;
 
+  /// No description provided for @navReports.
+  ///
+  /// In es, this message translates to:
+  /// **'Reportes'**
+  String get navReports;
+
   /// No description provided for @navProfile.
   ///
   /// In es, this message translates to:
@@ -301,6 +307,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Continuar'**
   String get animalsBulkMaintenanceConfirmAction;
+
+  /// No description provided for @stageFilterAll.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos'**
+  String get stageFilterAll;
 
   /// No description provided for @stageFilterCalf.
   ///

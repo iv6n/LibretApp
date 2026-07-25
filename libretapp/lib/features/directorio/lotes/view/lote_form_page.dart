@@ -96,9 +96,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
       }
 
       final updated = current.copyWith(
-        nombre: nombre,
-        descripcion: _descripcionController.text.trim(),
-        notas: _notasController.text.trim(),
+        name: nombre,
+        description: _descripcionController.text.trim(),
+        notes: _notasController.text.trim(),
         lastUpdateDate: DateTime.now(),
         synced: false,
       );
@@ -106,9 +106,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
     } else {
       ok = await _dispatchAndAwait(
         CreateLote(
-          nombre: nombre,
-          descripcion: _descripcionController.text.trim(),
-          notas: _notasController.text.trim(),
+          name: nombre,
+          description: _descripcionController.text.trim(),
+          notes: _notasController.text.trim(),
         ),
       );
     }
@@ -218,13 +218,13 @@ class _LoteFormPageState extends State<LoteFormPage> {
 
   void _syncControllers(LoteEntity lote) {
     if (_nombreController.text.isEmpty) {
-      _nombreController.text = lote.nombre;
+      _nombreController.text = lote.name;
     }
     if (_descripcionController.text.isEmpty) {
-      _descripcionController.text = lote.descripcion ?? '';
+      _descripcionController.text = lote.description ?? '';
     }
     if (_notasController.text.isEmpty) {
-      _notasController.text = lote.notas ?? '';
+      _notasController.text = lote.notes ?? '';
     }
   }
 }

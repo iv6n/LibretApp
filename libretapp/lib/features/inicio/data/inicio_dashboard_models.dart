@@ -135,11 +135,49 @@ class CalvingItem extends Equatable {
   List<Object?> get props => [animalUuid, expectedDate];
 }
 
+class ActiveLocationSummary extends Equatable {
+  const ActiveLocationSummary({
+    required this.uuid,
+    required this.name,
+    required this.typeLabel,
+    required this.animalCount,
+    required this.capacity,
+    required this.surfaceArea,
+    required this.waterEvents,
+    required this.pastureEvents,
+    required this.imageCount,
+  });
+
+  final String uuid;
+  final String name;
+  final String typeLabel;
+  final int animalCount;
+  final int capacity;
+  final double surfaceArea;
+  final int waterEvents;
+  final int pastureEvents;
+  final int imageCount;
+
+  @override
+  List<Object?> get props => [
+    uuid,
+    name,
+    typeLabel,
+    animalCount,
+    capacity,
+    surfaceArea,
+    waterEvents,
+    pastureEvents,
+    imageCount,
+  ];
+}
+
 class InicioDashboardData extends Equatable {
   const InicioDashboardData({
     required this.profileName,
     required this.farmName,
     required this.totalAnimals,
+    required this.totalAnimalCapacity,
     required this.attentionAnimals,
     required this.unsyncedAnimals,
     required this.activeLotes,
@@ -153,11 +191,13 @@ class InicioDashboardData extends Equatable {
     required this.upcomingCalvings,
     this.weather,
     this.recentActivity = const [],
+    this.activeLocations = const [],
   });
 
   final String profileName;
   final String farmName;
   final int totalAnimals;
+  final int totalAnimalCapacity;
   final int attentionAnimals;
   final int unsyncedAnimals;
   final int activeLotes;
@@ -171,12 +211,14 @@ class InicioDashboardData extends Equatable {
   final List<CalvingItem> upcomingCalvings;
   final WeatherData? weather;
   final List<RecentActivityItem> recentActivity;
+  final List<ActiveLocationSummary> activeLocations;
 
   @override
   List<Object?> get props => [
     profileName,
     farmName,
     totalAnimals,
+    totalAnimalCapacity,
     attentionAnimals,
     unsyncedAnimals,
     activeLotes,
@@ -190,5 +232,6 @@ class InicioDashboardData extends Equatable {
     upcomingCalvings,
     weather,
     recentActivity,
+    activeLocations,
   ];
 }

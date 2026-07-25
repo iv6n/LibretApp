@@ -27,7 +27,9 @@ import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/agenda/agenda.dart';
 import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
+import 'package:libretapp/features/milking/milking.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
+import 'package:libretapp/features/reportes/reportes.dart';
 import 'package:libretapp/features/registro/registro.dart';
 import 'package:libretapp/features/exportar/exportar.dart';
 import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
@@ -69,6 +71,9 @@ final router = GoRouter(
                       animalesTabBloc: context.read<AnimalesTabBloc>(),
                       lotesTabBloc: context.read<LotesTabBloc>(),
                       ubicacionesTabBloc: context.read<UbicacionesTabBloc>(),
+                      configRepository: DirectorioConfigRepository(
+                        locator<SharedPrefsService>(),
+                      ),
                     ),
                   ),
                 ],
@@ -131,7 +136,7 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: RegisterAnimalPage(animalUuid: uuid),
+                      child: AnimalEditPage(animalUuid: uuid),
                     );
                   },
                 ),
@@ -234,73 +239,21 @@ final router = GoRouter(
                     );
                   },
                 ),
-              ],
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.agenda,
-              name: AppRoutes.nameAgenda,
-              builder: (context, state) => BlocProvider(
-                create: (_) =>
-                    AgendaBloc(locator<AgendaRepository>())
-                      ..add(const LoadAgenda()),
-                child: const AgendaPage(),
-              ),
-              routes: [
                 GoRoute(
-                  path: 'nuevo',
-                  name: AppRoutes.nameAgendaNuevo,
+                  path: 'ubicaciones/nueva',
+                  name: AppRoutes.nameUbicacionNueva,
                   pageBuilder: (context, state) {
-                    final dateParam = state.uri.queryParameters['date'];
-                    final initialDate =
-                        DateTime.tryParse(dateParam ?? '') ?? DateTime.now();
+                    final presetParentUuid = state.extra as String?;
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: BlocProvider(
-                        create: (_) => AgendaBloc(locator<AgendaRepository>()),
-                        child: AgendaEntryFormPage(initialDate: initialDate),
+                      child: LocationFormPage(
+                        presetParentUuid: presetParentUuid,
                       ),
                     );
                   },
                 ),
-              ],
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.inicio,
-              name: AppRoutes.nameInicio,
-              builder: (context, state) => BlocProvider(
-                create: (_) =>
-                    InicioBloc(locator<InicioDashboardService>())
-                      ..add(const LoadInicio()),
-                child: const InicioPage(),
-              ),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.ubicaciones,
-              name: AppRoutes.nameUbicaciones,
-              builder: (context, state) => UbicacionesPage(),
-              routes: [
                 GoRoute(
-                  path: 'nueva',
-                  name: AppRoutes.nameUbicacionNueva,
-                  pageBuilder: (context, state) => _buildOverlayDetailPage(
-                    state: state,
-                    child: const LocationFormPage(),
-                  ),
-                ),
-                GoRoute(
-                  path: ':uuid',
+                  path: 'ubicaciones/:uuid',
                   name: AppRoutes.nameUbicacionDetalle,
                   pageBuilder: (context, state) {
                     final uuid = state.pathParameters['uuid'] ?? '';
@@ -308,7 +261,10 @@ final router = GoRouter(
                       state: state,
                       child: BlocProvider(
                         create: (_) =>
-                            AgendaBloc(locator<AgendaRepository>())
+                            AgendaBloc(
+                              locator<AgendaRepository>(),
+                              lotesRepository: locator<LotesRepository>(),
+                            )
                               ..add(const LoadAgenda()),
                         child: LocationDetailPage(locationUuid: uuid),
                       ),
@@ -316,7 +272,7 @@ final router = GoRouter(
                   },
                 ),
                 GoRoute(
-                  path: ':uuid/editar',
+                  path: 'ubicaciones/:uuid/editar',
                   name: AppRoutes.nameUbicacionEditar,
                   pageBuilder: (context, state) {
                     final uuid = state.pathParameters['uuid'] ?? '';
@@ -333,6 +289,70 @@ final router = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
+              path: AppRoutes.agenda,
+              name: AppRoutes.nameAgenda,
+              builder: (context, state) => BlocProvider(
+                create: (_) =>
+                    AgendaBloc(
+                      locator<AgendaRepository>(),
+                      lotesRepository: locator<LotesRepository>(),
+                    )
+                      ..add(const LoadAgenda()),
+                child: const AgendaPage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'nuevo',
+                  name: AppRoutes.nameAgendaNuevo,
+                  pageBuilder: (context, state) {
+                    final dateParam = state.uri.queryParameters['date'];
+                    final initialDate =
+                        DateTime.tryParse(dateParam ?? '') ?? DateTime.now();
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: BlocProvider(
+                        create: (_) => AgendaBloc(
+                          locator<AgendaRepository>(),
+                          lotesRepository: locator<LotesRepository>(),
+                        ),
+                        child: AgendaEntryFormPage(initialDate: initialDate),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.inicio,
+              name: AppRoutes.nameInicio,
+              builder: (context, state) => BlocProvider(
+                create: (_) => InicioBloc(
+                  dashboardService: locator<InicioDashboardService>(),
+                  configRepository: locator<DashboardConfigRepository>(),
+                  financeService: locator<FinanceSummaryService>(),
+                  libraryRepository: locator<LibraryRepository>(),
+                )..add(const LoadInicio()),
+                child: const InicioPage(),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.reportes,
+              name: AppRoutes.nameReportes,
+              builder: (context, state) => const ReportesPage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
               path: AppRoutes.perfil,
               name: AppRoutes.namePerfil,
               builder: (context, state) => const PerfilPage(),
@@ -340,6 +360,28 @@ final router = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: AppRoutes.ubicacionesLegacy,
+      redirect: (context, state) => AppRoutes.directorioUbicacionesPath(),
+    ),
+    GoRoute(
+      path: '${AppRoutes.ubicacionesLegacy}/nueva',
+      redirect: (context, state) => AppRoutes.ubicacionNuevaPath(),
+    ),
+    GoRoute(
+      path: '${AppRoutes.ubicacionesLegacy}/:uuid/editar',
+      redirect: (context, state) {
+        final uuid = state.pathParameters['uuid'] ?? '';
+        return AppRoutes.ubicacionEditarPath(uuid);
+      },
+    ),
+    GoRoute(
+      path: '${AppRoutes.ubicacionesLegacy}/:uuid',
+      redirect: (context, state) {
+        final uuid = state.pathParameters['uuid'] ?? '';
+        return AppRoutes.ubicacionDetallePath(uuid);
+      },
     ),
     GoRoute(
       path: AppRoutes.registro,
@@ -369,6 +411,16 @@ final router = GoRouter(
           pageBuilder: (context, state) => _buildOverlayDetailPage(
             state: state,
             child: const RegistroProduccionPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'ordena',
+          name: AppRoutes.nameRegistroOrdena,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: RegistroOrdenaPage(
+              initialAnimalUuid: state.uri.queryParameters['animalUuid'],
+            ),
           ),
         ),
         GoRoute(

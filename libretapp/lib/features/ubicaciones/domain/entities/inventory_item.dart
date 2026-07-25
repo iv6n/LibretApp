@@ -1,4 +1,7 @@
-/// features › ubicaciones › domain › entities › inventory_item — stored goods / supply item.
+/// features \u203a ubicaciones \u203a domain \u203a entities \u203a inventory_item \u2014 stored goods / supply item.
+///
+/// InventoryCategory values are now English identifiers.
+/// Migration note: old Spanish Isar values were migrated by LocationEnumMigrationService.
 library;
 
 import 'dart:math';
@@ -9,38 +12,49 @@ import 'package:flutter/material.dart';
 String _generateInventoryId() =>
     'inv-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
 
-enum InventoryCategory { pienso, medicina, herramienta, equipo, otro }
+enum InventoryCategory { feed, medicine, tool, equipment, other }
 
 extension InventoryCategoryX on InventoryCategory {
+  /// Fallback English label. Production UI should use ARB keys.
   String get label {
     switch (this) {
-      case InventoryCategory.pienso:
-        return 'Pienso / Alimento';
-      case InventoryCategory.medicina:
-        return 'Medicina / Veterinario';
-      case InventoryCategory.herramienta:
-        return 'Herramienta';
-      case InventoryCategory.equipo:
-        return 'Equipo';
-      case InventoryCategory.otro:
-        return 'Otro';
+      case InventoryCategory.feed:
+        return 'Feed / Fodder';
+      case InventoryCategory.medicine:
+        return 'Medicine / Veterinary';
+      case InventoryCategory.tool:
+        return 'Tool';
+      case InventoryCategory.equipment:
+        return 'Equipment';
+      case InventoryCategory.other:
+        return 'Other';
     }
   }
 
   IconData get icon {
     switch (this) {
-      case InventoryCategory.pienso:
+      case InventoryCategory.feed:
         return Icons.grass_outlined;
-      case InventoryCategory.medicina:
+      case InventoryCategory.medicine:
         return Icons.medication_outlined;
-      case InventoryCategory.herramienta:
+      case InventoryCategory.tool:
         return Icons.handyman_outlined;
-      case InventoryCategory.equipo:
+      case InventoryCategory.equipment:
         return Icons.precision_manufacturing_outlined;
-      case InventoryCategory.otro:
+      case InventoryCategory.other:
         return Icons.inventory_2_outlined;
     }
   }
+
+  /// Mapping from old Spanish Isar-stored enum names to new English names.
+  /// Used exclusively by LocationEnumMigrationService.
+  static const Map<String, String> legacyNameMap = {
+    'pienso': 'feed',
+    'medicina': 'medicine',
+    'herramienta': 'tool',
+    'equipo': 'equipment',
+    'otro': 'other',
+  };
 }
 
 class InventoryItem extends Equatable {
@@ -52,8 +66,12 @@ class InventoryItem extends Equatable {
     this.reorderThreshold,
     this.expiryDate,
     DateTime? lastUpdated,
-    this.category = InventoryCategory.otro,
+    this.category = InventoryCategory.other,
     this.notes,
+    this.activeIngredient,
+    this.batchNumber,
+    this.withdrawalDays,
+    this.unitCost,
   }) : uuid = uuid ?? _generateInventoryId(),
        lastUpdated = lastUpdated ?? DateTime.now();
 
@@ -66,6 +84,10 @@ class InventoryItem extends Equatable {
   final DateTime lastUpdated;
   final InventoryCategory category;
   final String? notes;
+  final String? activeIngredient;
+  final String? batchNumber;
+  final int? withdrawalDays;
+  final double? unitCost;
 
   bool get isLowStock =>
       reorderThreshold != null && quantity <= reorderThreshold!;
@@ -90,6 +112,10 @@ class InventoryItem extends Equatable {
     DateTime? lastUpdated,
     InventoryCategory? category,
     Object? notes = _sentinel,
+    Object? activeIngredient = _sentinel,
+    Object? batchNumber = _sentinel,
+    Object? withdrawalDays = _sentinel,
+    Object? unitCost = _sentinel,
   }) {
     return InventoryItem(
       uuid: uuid ?? this.uuid,
@@ -105,6 +131,16 @@ class InventoryItem extends Equatable {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       category: category ?? this.category,
       notes: notes == _sentinel ? this.notes : notes as String?,
+      activeIngredient: activeIngredient == _sentinel
+          ? this.activeIngredient
+          : activeIngredient as String?,
+      batchNumber: batchNumber == _sentinel
+          ? this.batchNumber
+          : batchNumber as String?,
+      withdrawalDays: withdrawalDays == _sentinel
+          ? this.withdrawalDays
+          : withdrawalDays as int?,
+      unitCost: unitCost == _sentinel ? this.unitCost : unitCost as double?,
     );
   }
 
@@ -119,6 +155,10 @@ class InventoryItem extends Equatable {
     lastUpdated,
     category,
     notes,
+    activeIngredient,
+    batchNumber,
+    withdrawalDays,
+    unitCost,
   ];
 }
 

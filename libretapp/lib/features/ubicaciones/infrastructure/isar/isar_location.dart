@@ -10,6 +10,7 @@ import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
@@ -27,7 +28,6 @@ class IsarLocation {
   late String name;
   late String kind;
   String? parentUuid;
-  List<String> childUuids = [];
   String? templateUuid;
   late String type;
   late double surfaceArea;
@@ -35,6 +35,25 @@ class IsarLocation {
   late String waterSource;
   late String terrainType;
   late String status;
+
+  /// Explicit category override; null means derived from [type].
+  String? category;
+
+  /// GeoJSON geometry string (Point, Polygon, etc.).
+  String? geometry;
+
+  /// Shared among multiple herds/operations.
+  bool isShared = false;
+
+  /// Communal/ejido land.
+  bool isCommunal = false;
+
+  /// Local file paths or URIs for images attached to this location.
+  ///
+  /// NOTE: This field requires running `dart run build_runner build` to
+  /// regenerate [isar_location.g.dart] before it persists to the database.
+  /// Until then, Isar ignores it and images are ephemeral within a session.
+  List<String> imagePaths = [];
 
   List<IsarDynamicAttribute> attributes = [];
 
@@ -429,7 +448,6 @@ extension IsarLocationMapper on IsarLocation {
       name: name,
       kind: _enumByName(LocationKind.values, kind),
       parentUuid: parentUuid,
-      childUuids: List<String>.unmodifiable(childUuids),
       templateUuid: templateUuid,
       type: _enumByName(LocationType.values, type),
       surfaceArea: surfaceArea,
@@ -439,8 +457,15 @@ extension IsarLocationMapper on IsarLocation {
       status: _enumByName(
         LocationStatus.values,
         status,
-        orElse: LocationStatus.disponible,
+        orElse: LocationStatus.available,
       ),
+      category: category == null
+          ? null
+          : _enumByName(LocationCategory.values, category!),
+      geometry: geometry,
+      isShared: isShared,
+      isCommunal: isCommunal,
+      imagePaths: List<String>.from(imagePaths),
       attributes: attributes.map((e) => e.toEntity()).toList(growable: false),
       inventory: inventory.map((e) => e.toEntity()).toList(growable: false),
       visits: visits.map((e) => e.toEntity()).toList(growable: false),
@@ -464,7 +489,6 @@ extension LocationEntityToIsar on LocationEntity {
       ..name = name
       ..kind = kind.name
       ..parentUuid = parentUuid
-      ..childUuids = List.of(childUuids)
       ..templateUuid = templateUuid
       ..type = type.name
       ..surfaceArea = surfaceArea
@@ -472,6 +496,11 @@ extension LocationEntityToIsar on LocationEntity {
       ..waterSource = waterSource
       ..terrainType = terrainType
       ..status = status.name
+      ..category = category?.name
+      ..geometry = geometry
+      ..isShared = isShared
+      ..isCommunal = isCommunal
+      ..imagePaths = List<String>.from(imagePaths)
       ..attributes = attributes.map(IsarDynamicAttribute.fromEntity).toList()
       ..inventory = inventory.map(IsarInventoryItem.fromEntity).toList()
       ..visits = visits.map(IsarVisitRecord.fromEntity).toList()
@@ -505,6 +534,10 @@ class IsarInventoryItem {
   late DateTime lastUpdated;
   late String category;
   String? notes;
+  String? activeIngredient;
+  String? batchNumber;
+  int? withdrawalDays;
+  double? unitCost;
 
   InventoryItem toEntity() => InventoryItem(
     uuid: uuid,
@@ -517,9 +550,13 @@ class IsarInventoryItem {
     category: _enumByName(
       InventoryCategory.values,
       category,
-      orElse: InventoryCategory.otro,
+      orElse: InventoryCategory.other,
     ),
     notes: notes,
+    activeIngredient: activeIngredient,
+    batchNumber: batchNumber,
+    withdrawalDays: withdrawalDays,
+    unitCost: unitCost,
   );
 
   static IsarInventoryItem fromEntity(InventoryItem item) => IsarInventoryItem()
@@ -531,7 +568,11 @@ class IsarInventoryItem {
     ..expiryDate = item.expiryDate
     ..lastUpdated = item.lastUpdated
     ..category = item.category.name
-    ..notes = item.notes;
+    ..notes = item.notes
+    ..activeIngredient = item.activeIngredient
+    ..batchNumber = item.batchNumber
+    ..withdrawalDays = item.withdrawalDays
+    ..unitCost = item.unitCost;
 }
 
 T _enumByName<T extends Enum>(List<T> values, String name, {T? orElse}) =>
