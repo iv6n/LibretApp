@@ -9,5 +9,4 @@ export 'bloc/animales_bloc.dart';
 export 'bloc/animales_event.dart' hide AddAnimal, UpdateAnimal;
 export 'bloc/animales_state.dart';
 export 'view/view.dart';
-export 'widgets/widgets.dart'
-    hide showCreateAnimalSheet, showAnimalFiltersSheet;
+export 'widgets/widgets.dart';

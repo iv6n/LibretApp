@@ -17,7 +17,6 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
     on<AddAgendaEntry>(_onAdd);
     on<UpdateAgendaEntry>(_onUpdate);
     on<DeleteAgendaEntry>(_onDelete);
-    on<SearchAgenda>(_onSearch);
     on<MarkAnimalCompleted>(_onMarkAnimalCompleted);
     on<ChangeAgendaStatus>(_onChangeStatus);
     on<ToggleAgendaChecklistItem>(_onToggleChecklistItem);
@@ -67,24 +66,6 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
       await repository.deleteEntry(event.id);
       final entries = await repository.fetchEntries();
       emit(AgendaLoaded(entries));
-    } catch (e) {
-      emit(AgendaError(e.toString()));
-    }
-  }
-
-  Future<void> _onSearch(SearchAgenda event, Emitter<AgendaState> emit) async {
-    try {
-      final entries = await repository.fetchEntries();
-      final q = event.query.toLowerCase();
-      final filtered = entries
-          .where(
-            (e) =>
-                e.titulo.toLowerCase().contains(q) ||
-                e.tipo.toLowerCase().contains(q) ||
-                e.ubicacion.toLowerCase().contains(q),
-          )
-          .toList();
-      emit(AgendaLoaded(filtered));
     } catch (e) {
       emit(AgendaError(e.toString()));
     }

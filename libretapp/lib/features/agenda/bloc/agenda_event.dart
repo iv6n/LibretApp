@@ -39,14 +39,6 @@ class DeleteAgendaEntry extends AgendaEvent {
   List<Object> get props => [id];
 }
 
-class SearchAgenda extends AgendaEvent {
-  const SearchAgenda(this.query);
-  final String query;
-
-  @override
-  List<Object> get props => [query];
-}
-
 /// Marks a single animal as completed within a task and auto-updates estado.
 class MarkAnimalCompleted extends AgendaEvent {
   const MarkAnimalCompleted({required this.entryId, required this.animalId});

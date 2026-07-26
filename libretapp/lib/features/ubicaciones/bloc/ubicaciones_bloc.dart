@@ -30,11 +30,6 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
       transformer: _debounce(UiConstants.searchDebounceDuration),
     );
     on<ClearSearch>(_onClearSearch);
-    // Compatibility with older calls using SearchUbicaciones.
-    on<SearchUbicaciones>(
-      _onSearchUbicaciones,
-      transformer: _debounce(UiConstants.searchDebounceDuration),
-    );
     on<AddVisitRecordEvent>(_onAddVisit);
     on<AddWaterRecordEvent>(_onAddWater);
     on<AddSaltRecordEvent>(_onAddSalt);
@@ -177,15 +172,6 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     } catch (e) {
       emit(UbicacionesError(e.toString()));
     }
-  }
-
-  Future<void> _onSearchUbicaciones(
-    SearchUbicaciones event,
-    Emitter<UbicacionesState> emit,
-  ) async {
-    _searchQuery = event.query.trim();
-    _isSearching = _searchQuery.isNotEmpty;
-    _emitLoaded(emit);
   }
 
   void _onToggleSearch(ToggleSearch event, Emitter<UbicacionesState> emit) {

@@ -55,17 +55,8 @@ class IsarLocationRepository implements LocationRepository {
           .where()
           .uuidEqualTo(location.uuid)
           .findFirst();
-      final previousParent = existing?.parentUuid;
       final model = location.toIsar(existing?.id);
       await isar.isarLocations.put(model);
-
-      if (previousParent != location.parentUuid && previousParent != null) {
-        // No childUuids maintenance needed — parentUuid is the source of truth.
-      }
-
-      if (location.parentUuid != null) {
-        // Parent relationship maintained via parentUuid only.
-      }
     });
   }
 
@@ -73,14 +64,6 @@ class IsarLocationRepository implements LocationRepository {
   Future<void> deleteByUuid(String uuid) async {
     final isar = await _database.initialize();
     await isar.writeTxn(() async {
-      final location = await isar.isarLocations
-          .where()
-          .uuidEqualTo(uuid)
-          .findFirst();
-      if (location?.parentUuid != null) {
-        // Parent relationship maintained via parentUuid only.
-      }
-
       final deleted = await isar.isarLocations.deleteByUuid(uuid);
       LoggerService.i(
         'Ubicacion borrada: $uuid -> $deleted',

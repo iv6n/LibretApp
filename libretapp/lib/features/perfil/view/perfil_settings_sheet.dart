@@ -17,42 +17,6 @@ import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/theme/app_theme.dart';
 import 'package:share_plus/share_plus.dart';
 
-void showPerfilSettingsSheet(BuildContext context, Perfil perfil) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    builder: (_) => MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: context.read<PerfilBloc>()),
-        BlocProvider.value(value: context.read<ThemeBloc>()),
-      ],
-      child: PerfilSettingsSheet(perfil: perfil),
-    ),
-  );
-}
-
-class PerfilSettingsSheet extends StatefulWidget {
-  const PerfilSettingsSheet({required this.perfil, super.key});
-
-  final Perfil perfil;
-
-  @override
-  State<PerfilSettingsSheet> createState() => _PerfilSettingsSheetState();
-}
-
-class _PerfilSettingsSheetState extends State<PerfilSettingsSheet> {
-  @override
-  Widget build(BuildContext context) {
-    return PerfilSettingsContent(
-      perfil: widget.perfil,
-      showCloseButton: true,
-      closeBeforeEdit: true,
-      shrinkWrap: true,
-    );
-  }
-}
-
 class PerfilSettingsContent extends StatefulWidget {
   const PerfilSettingsContent({
     required this.perfil,

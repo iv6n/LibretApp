@@ -35,14 +35,6 @@ class DeleteUbicacion extends UbicacionesEvent {
   List<Object> get props => [uuid];
 }
 
-class SearchUbicaciones extends UbicacionesEvent {
-  const SearchUbicaciones(this.query);
-  final String query;
-
-  @override
-  List<Object> get props => [query];
-}
-
 class ToggleSearch extends UbicacionesEvent {
   const ToggleSearch({required this.enabled});
   final bool enabled;
