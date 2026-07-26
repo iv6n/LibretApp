@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Native Isar library copied locally to run desktop/CI tests (see .github/workflows)
+/libisar.so

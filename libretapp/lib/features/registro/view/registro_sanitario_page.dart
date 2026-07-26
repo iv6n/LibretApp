@@ -262,7 +262,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                           firstDate: DateTime(_date.year),
                           lastDate: DateTime(_date.year + 5),
                         );
-                        setState(() => _nextDate = picked);
+                        if (picked != null) setState(() => _nextDate = picked);
                       },
                     ),
                   ),

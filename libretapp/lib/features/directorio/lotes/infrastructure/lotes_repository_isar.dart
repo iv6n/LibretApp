@@ -17,7 +17,6 @@ class LotesRepositoryIsar implements LotesRepository {
   @override
   Stream<List<LoteEntity>> watchAll() async* {
     final isar = await _isar;
-    await _seedIfEmpty(isar);
     yield* isar.isarLotes
         .where()
         .watch(fireImmediately: true)
@@ -27,7 +26,6 @@ class LotesRepositoryIsar implements LotesRepository {
   @override
   Future<List<LoteEntity>> getAll() async {
     final isar = await _isar;
-    await _seedIfEmpty(isar);
     final lotes = await isar.isarLotes.where().findAll();
     return lotes.map((l) => l.toEntity()).toList();
   }
@@ -248,62 +246,5 @@ class LotesRepositoryIsar implements LotesRepository {
       }
     }
     return null;
-  }
-
-  Future<void> _seedIfEmpty(Isar isar) async {
-    final existing = await isar.isarLotes.where().findAll();
-    if (existing.isNotEmpty) return;
-
-    final now = DateTime.now();
-    final loteSeeds = [
-      LoteEntity(
-        uuid: 'lote-ordeño-a',
-        name: 'Lote A - Ordeño',
-        description: 'Lote de vacas en ordeño',
-        animalUuids: const ['uuid-bessie', 'uuid-lola', 'uuid-estrella'],
-        createdAt: now.subtract(const Duration(days: 180)),
-        closedAt: null,
-        active: true,
-        notes: 'Lote productivo de vacas lecheras',
-        lastUpdateDate: now,
-        synced: false,
-        remoteId: null,
-        syncDate: null,
-      ),
-      LoteEntity(
-        uuid: 'lote-engorde-b',
-        name: 'Lote B - Engorde',
-        description: 'Lote de engorde y cría',
-        animalUuids: const ['uuid-pampa', 'uuid-aurora', 'uuid-brisa'],
-        createdAt: now.subtract(const Duration(days: 150)),
-        closedAt: null,
-        active: true,
-        notes: 'Lote de hembras jóvenes en crecimiento',
-        lastUpdateDate: now,
-        synced: false,
-        remoteId: null,
-        syncDate: null,
-      ),
-      LoteEntity(
-        uuid: 'lote-cria-c',
-        name: 'Lote C - Cría',
-        description: 'Lote de reproducción',
-        animalUuids: const ['uuid-gaia', 'uuid-rosario'],
-        createdAt: now.subtract(const Duration(days: 200)),
-        closedAt: null,
-        active: true,
-        notes: 'Lote de hembras en reproducción',
-        lastUpdateDate: now,
-        synced: false,
-        remoteId: null,
-        syncDate: null,
-      ),
-    ];
-
-    await isar.writeTxn(() async {
-      await isar.isarLotes.putAll(
-        loteSeeds.map((l) => l.toIsarLote()).toList(),
-      );
-    });
   }
 }

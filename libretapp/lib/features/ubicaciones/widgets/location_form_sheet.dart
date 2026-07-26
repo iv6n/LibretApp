@@ -586,16 +586,19 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   Widget _buildAdaptiveField(_AdaptiveFieldSpec field) {
     switch (field.kind) {
       case _AdaptiveFieldKind.boolean:
-        return SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          dense: true,
-          title: Text(locationPropertyLabel(context, field.key)),
-          value: _adaptiveBoolValues[field.key] ?? false,
-          onChanged: (value) {
-            setState(() {
-              _adaptiveBoolValues[field.key] = value;
-            });
-          },
+        return Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: Text(locationPropertyLabel(context, field.key)),
+            value: _adaptiveBoolValues[field.key] ?? false,
+            onChanged: (value) {
+              setState(() {
+                _adaptiveBoolValues[field.key] = value;
+              });
+            },
+          ),
         );
       case _AdaptiveFieldKind.text:
       case _AdaptiveFieldKind.number:
@@ -835,6 +838,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
       irrigations: widget.initial?.irrigations ?? const [],
       rains: widget.initial?.rains ?? const [],
       costs: widget.initial?.costs ?? const [],
+      crops: widget.initial?.crops ?? const [],
     );
 
     if (widget.onSubmit != null) {

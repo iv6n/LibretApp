@@ -1,0 +1,35 @@
+name: Flutter test
+
+on:
+  push:
+    branches: [main, main-5enhm8]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libretapp
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Provide native Isar library for desktop tests
+        run: |
+          lib=$(find "$HOME/.pub-cache" -name libisar.so -path '*isar_flutter_libs*linux*' | head -n1)
+          cp "$lib" libisar.so
+
+      # Pre-existing lint debt (109 info-level issues) isn't part of this
+      # gate yet, so analyze reports but never blocks the build.
+      - run: flutter analyze
+        continue-on-error: true
+
+      - run: flutter test

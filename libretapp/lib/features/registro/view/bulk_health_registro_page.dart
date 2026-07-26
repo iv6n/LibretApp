@@ -437,7 +437,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
                           firstDate: _date,
                           lastDate: DateTime(_date.year + 5),
                         );
-                        setState(() => _nextDate = picked);
+                        if (picked != null) setState(() => _nextDate = picked);
                       },
                     ),
                   ),

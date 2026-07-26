@@ -22,6 +22,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/registro/view/bulk_health_registro_page.dart';
 import 'package:libretapp/features/registro/view/registro_comercial_page.dart';
 import 'package:libretapp/features/registro/view/registro_costo_page.dart';
 import 'package:libretapp/features/registro/view/registro_movimiento_page.dart';
@@ -168,7 +169,82 @@ void main() {
 
       expect(find.text('Selecciona un animal primero'), findsOneWidget);
     });
+
+    testWidgets(
+      'registro sanitario: cancelling the "next date" picker preserves the already-picked date',
+      (tester) async {
+        await tester.pumpWidget(_testApp(const RegistroSanitarioPage()));
+        await tester.pumpAndSettle();
+
+        await _pickThenCancelNextDate(tester, placeholder: 'Próximo (opcional)');
+      },
+    );
+
+    testWidgets(
+      'bulk health registro: cancelling the "next date" picker preserves the already-picked date',
+      (tester) async {
+        await tester.pumpWidget(_testApp(const BulkHealthRegistroPage()));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.textContaining('TAG-REG-1'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continuar (1)'));
+        await tester.pumpAndSettle();
+
+        await _pickThenCancelNextDate(tester, placeholder: 'Próximo (opcional)');
+      },
+    );
   });
+}
+
+/// Opens the optional "next date" picker (marked by the Icons.event_available
+/// button, distinct from the required date's Icons.today button), picks a
+/// date, then reopens it and cancels — the previously picked date must
+/// remain visible instead of being silently wiped back to [placeholder].
+Future<void> _pickThenCancelNextDate(
+  WidgetTester tester, {
+  required String placeholder,
+}) async {
+  final nextDateButtonFinder = find.ancestor(
+    of: find.byIcon(Icons.event_available),
+    matching: find.byType(OutlinedButton),
+  );
+  expect(nextDateButtonFinder, findsOneWidget);
+
+  final labelFinder = find.descendant(
+    of: nextDateButtonFinder,
+    matching: find.byType(Text),
+  );
+  expect(tester.widget<Text>(labelFinder).data, placeholder);
+
+  await tester.ensureVisible(nextDateButtonFinder);
+  await tester.tap(nextDateButtonFinder);
+  await tester.pumpAndSettle();
+
+  final materialLocalizations = MaterialLocalizations.of(
+    tester.element(nextDateButtonFinder),
+  );
+  await tester.tap(find.text(materialLocalizations.okButtonLabel));
+  await tester.pumpAndSettle();
+
+  final pickedDateLabel = tester.widget<Text>(labelFinder).data;
+  expect(
+    pickedDateLabel,
+    isNot(placeholder),
+    reason: 'the date should have been picked and the placeholder replaced',
+  );
+
+  await tester.tap(nextDateButtonFinder);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(materialLocalizations.cancelButtonLabel));
+  await tester.pumpAndSettle();
+
+  expect(
+    tester.widget<Text>(labelFinder).data,
+    pickedDateLabel,
+    reason:
+        'cancelling the picker must not wipe out a date the user already chose',
+  );
 }
 
 Future<void> _tapSave(WidgetTester tester) async {
