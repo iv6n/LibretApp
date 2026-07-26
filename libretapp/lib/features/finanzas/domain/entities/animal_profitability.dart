@@ -20,14 +20,17 @@ class AnimalProfitability extends Equatable {
   /// Nombre o identificador visible del animal.
   final String animalName;
 
-  /// Precio de compra registrado en el animal (purchasePrice) o en su
-  /// primer CommercialRecord de tipo purchase.
+  /// Precio de compra del animal (purchasePrice) si la compra cayó dentro
+  /// del periodo consultado, o la suma de sus CommercialRecord de tipo
+  /// purchase fechados dentro del periodo. Cero si la compra fue en otro
+  /// periodo.
   final double purchaseCost;
 
-  /// Suma acumulada de todos los CostRecord del animal.
+  /// Suma de los CostRecord del animal fechados dentro del periodo consultado.
   final double totalCosts;
 
-  /// Suma acumulada de CommercialRecord de tipo sale.
+  /// Suma de los CommercialRecord de tipo sale fechados dentro del periodo
+  /// consultado.
   final double saleRevenue;
 
   /// Resultado neto = ingresos − costo de compra − costos operativos.

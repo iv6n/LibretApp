@@ -144,6 +144,26 @@ void main() {
       expect(subtree['child'], 5);
     });
 
+    test(
+      'computeSubtreeAnimalCounts does not stack-overflow on a cyclic parent chain',
+      () {
+        // Corrupted data: a <-> b point at each other as parents.
+        final locations = [
+          _location(uuid: 'a', name: 'A', parentUuid: 'b'),
+          _location(uuid: 'b', name: 'B', parentUuid: 'a'),
+        ];
+        final counts = {'a': 1, 'b': 1};
+
+        final subtree = UbicacionesTreeBuilder.computeSubtreeAnimalCounts(
+          locations: locations,
+          directCounts: counts,
+        );
+
+        expect(subtree['a'], isNotNull);
+        expect(subtree['b'], isNotNull);
+      },
+    );
+
     test('flattenVisibleGrouped emits grouped panel for any expanded parent', () {
       final locations = [
         _location(

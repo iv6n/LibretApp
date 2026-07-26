@@ -37,7 +37,7 @@ class LocationDetailState extends Equatable {
   }
 
   LocationDetailState copyWith({
-    LocationEntity? location,
+    Object? location = _sentinel,
     List<LocationEntity>? allLocations,
     List<AnimalEntity>? allAnimals,
     bool? isLoading,
@@ -45,7 +45,9 @@ class LocationDetailState extends Equatable {
     Object? errorMessage = _sentinel,
   }) {
     return LocationDetailState(
-      location: location ?? this.location,
+      location: location == _sentinel
+          ? this.location
+          : location as LocationEntity?,
       allLocations: allLocations ?? this.allLocations,
       allAnimals: allAnimals ?? this.allAnimals,
       isLoading: isLoading ?? this.isLoading,

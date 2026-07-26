@@ -73,7 +73,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
   /// Crea un nuevo lote
   Future<void> _onCreateLote(CreateLote event, Emitter<LotesState> emit) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     _emitIfActive(
       emit,
@@ -109,7 +118,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
   /// Actualiza un lote existente
   Future<void> _onUpdateLote(UpdateLote event, Emitter<LotesState> emit) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     _emitIfActive(
       emit,
@@ -148,7 +166,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
   /// Elimina un lote
   Future<void> _onDeleteLote(DeleteLote event, Emitter<LotesState> emit) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     _emitIfActive(
       emit,
@@ -190,7 +217,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     Emitter<LotesState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     try {
       final lote = currentState.lotes.firstWhere(
@@ -223,7 +259,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     Emitter<LotesState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     _emitIfActive(
       emit,
@@ -273,7 +318,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     Emitter<LotesState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     try {
       final lote = currentState.lotes.firstWhere(
@@ -307,7 +361,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
     Emitter<LotesState> emit,
   ) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     _emitIfActive(
       emit,
@@ -357,7 +420,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
   /// Cierra un lote (lo marca como inactivo)
   Future<void> _onCloseLote(CloseLote event, Emitter<LotesState> emit) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     try {
       final lote = currentState.lotes.firstWhere((l) => l.uuid == event.uuid);
@@ -383,7 +455,16 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
   /// Reabre un lote (lo marca como activo nuevamente)
   Future<void> _onReopenLote(ReopenLote event, Emitter<LotesState> emit) async {
     final currentState = state;
-    if (currentState is! LotesLoaded) return;
+    if (currentState is! LotesLoaded) {
+      _emitIfActive(
+        emit,
+        const LotesError(
+          'No se pudo completar la operación: los lotes todavía no '
+          'terminaron de cargar.',
+        ),
+      );
+      return;
+    }
 
     try {
       final lote = currentState.lotes.firstWhere((l) => l.uuid == event.uuid);

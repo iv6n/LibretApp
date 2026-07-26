@@ -307,21 +307,31 @@ class UbicacionesTreeBuilder {
   }
 
   /// Sums [directCounts] for each location including all descendants.
+  ///
+  /// Guards against cyclic parent chains (e.g. a corrupted `parentUuid`
+  /// pointing back into its own subtree): a node already being computed on
+  /// the current path contributes 0 instead of recursing forever.
   static Map<String, int> computeSubtreeAnimalCounts({
     required List<LocationEntity> locations,
     required Map<String, int> directCounts,
   }) {
     final byParent = childrenByParent(locations);
     final memo = <String, int>{};
+    final inProgress = <String>{};
 
     int totalFor(String uuid) {
-      return memo.putIfAbsent(uuid, () {
-        var total = directCounts[uuid] ?? 0;
-        for (final child in byParent[uuid] ?? const <LocationEntity>[]) {
-          total += totalFor(child.uuid);
-        }
-        return total;
-      });
+      final cached = memo[uuid];
+      if (cached != null) return cached;
+      if (!inProgress.add(uuid)) return 0;
+
+      var total = directCounts[uuid] ?? 0;
+      for (final child in byParent[uuid] ?? const <LocationEntity>[]) {
+        total += totalFor(child.uuid);
+      }
+
+      inProgress.remove(uuid);
+      memo[uuid] = total;
+      return total;
     }
 
     return {

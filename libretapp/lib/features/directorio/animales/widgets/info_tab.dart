@@ -89,11 +89,15 @@ class _InfoTabState extends State<InfoTab> {
       allAnimals: [widget.animal],
       lotesRepository: _lotesRepository,
       dispatchAndAwait: (event) async {
-        final completer = Future.microtask(() async {
-          bloc.add(event);
-          return true;
-        });
-        return completer;
+        final future = bloc.stream
+            .skip(1)
+            .firstWhere((state) => !state.isLoading, orElse: () => bloc.state);
+
+        bloc.add(event);
+        final nextState = await future;
+
+        if (!mounted) return false;
+        return !nextState.isError;
       },
       onReload: () {
         // The BLoC stream keeps the page reactive — no extra reload needed.

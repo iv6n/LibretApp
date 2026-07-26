@@ -142,6 +142,30 @@ void main() {
       expect(bloc.state, isA<AnimalesError>());
     });
 
+    test('RenameBatch emits a loaded state instead of hanging', () async {
+      final repository = _FakeAnimalRepository(
+        initialAnimals: [_buildAnimal(uuid: 'ani-batch', earTag: 'TAG-BATCH')],
+      );
+      final bloc = AnimalesBloc(repository);
+      addTearDown(bloc.close);
+
+      bloc.add(const LoadAnimales());
+      await _flushEvents();
+
+      bloc.add(
+        const RenameBatch(oldBatchId: 'old-batch', newBatchId: 'new-batch'),
+      );
+      await _flushEvents();
+
+      expect(
+        bloc.state,
+        isA<AnimalesLoaded>(),
+        reason:
+            'RenameBatch must not leave the bloc stuck on AnimalesLoading '
+            'forever',
+      );
+    });
+
     test('emits error state when repository delete fails', () async {
       final repository = _FakeAnimalRepository(
         initialAnimals: [_buildAnimal(uuid: 'ani-err-del', earTag: 'TAG-DEL')],

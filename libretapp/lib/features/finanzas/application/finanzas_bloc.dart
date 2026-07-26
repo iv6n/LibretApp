@@ -118,12 +118,21 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
         totalAnimalCosts += costsInPeriod;
         totalAnimalSales += salesInPeriod;
 
+        // Period-scoped like costsInPeriod/salesInPeriod above: a purchase is
+        // a one-time expense that should only hit the period it happened in,
+        // not every period the animal is viewed under.
         final purchaseCostNullable = animal.purchasePrice as double?;
-        final purchaseCost =
-            purchaseCostNullable ??
-            commercials
-                .where((c) => c.type == CommercialRecordType.purchase)
-                .fold<double>(0.0, (sum, c) => sum + (c.amount ?? 0.0));
+        final purchaseCost = purchaseCostNullable != null
+            ? (period.contains(animal.creationDate as DateTime)
+                  ? purchaseCostNullable
+                  : 0.0)
+            : commercials
+                  .where(
+                    (c) =>
+                        c.type == CommercialRecordType.purchase &&
+                        period.contains(c.date),
+                  )
+                  .fold<double>(0.0, (sum, c) => sum + (c.amount ?? 0.0));
 
         profitabilities.add(
           AnimalProfitability(

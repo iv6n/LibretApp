@@ -161,8 +161,9 @@ AnimalEntity _makeAnimal({
   required String uuid,
   String? customName,
   double? purchasePrice,
+  DateTime? creationDate,
 }) {
-  final now = DateTime.now();
+  final now = creationDate ?? DateTime.now();
   return AnimalEntity(
     uuid: uuid,
     earTagNumber: 'TAG-$uuid',
@@ -461,6 +462,100 @@ void main() {
       expect(p.saleRevenue, 400.0, reason: 'only in-period sale');
       await cubit.close();
     });
+
+    test(
+      'AnimalProfitability.purchaseCost only hits the period the purchase happened in',
+      () async {
+        final animal = _makeAnimal(
+          uuid: 'a1',
+          purchasePrice: 500,
+          creationDate: DateTime(2025, 1, 10), // purchased in "this month"
+        );
+
+        final cubit = FinanzasBloc(
+          finanzasRepository: finanzasRepo,
+          animalRepository: _FakeAnimalRepository(animals: [animal]),
+          costRepo: costRepo,
+          commercialRepo: commercialRepo,
+        );
+
+        // "Este mes": the purchase falls inside the period — deducted once.
+        await cubit.loadPeriod(period);
+        expect(cubit.state.animalProfitabilities.single.purchaseCost, 500.0);
+
+        // "Mes anterior": same animal, different period — must NOT deduct
+        // the same purchase price again.
+        final previousMonth = DateRange(
+          start: DateTime(2024, 12, 1),
+          end: DateTime(2024, 12, 31),
+        );
+        await cubit.loadPeriod(previousMonth);
+        expect(
+          cubit.state.animalProfitabilities.single.purchaseCost,
+          0.0,
+          reason:
+              'a one-time purchase must not be deducted from every period '
+              'the animal is viewed under',
+        );
+        await cubit.close();
+      },
+    );
+
+    test(
+      'AnimalProfitability.purchaseCost falls back to period-scoped purchase records',
+      () async {
+        final inPeriod = DateTime(2025, 1, 12);
+        final outOfPeriod = DateTime(2025, 3, 1);
+        final animal = _makeAnimal(uuid: 'a1'); // no purchasePrice set
+
+        final cubit = FinanzasBloc(
+          finanzasRepository: finanzasRepo,
+          animalRepository: _FakeAnimalRepository(animals: [animal]),
+          costRepo: costRepo,
+          commercialRepo: _FakeCommercialRecordRepository(
+            commercials: {
+              'a1': [
+                CommercialRecord(
+                  date: outOfPeriod,
+                  type: CommercialRecordType.purchase,
+                  amount: 999,
+                ),
+              ],
+            },
+          ),
+        );
+        await cubit.loadPeriod(period);
+
+        expect(
+          cubit.state.animalProfitabilities.single.purchaseCost,
+          0.0,
+          reason: 'an out-of-period purchase record must not count either',
+        );
+
+        final commercialRepoInPeriod = _FakeCommercialRecordRepository(
+          commercials: {
+            'a1': [
+              CommercialRecord(
+                date: inPeriod,
+                type: CommercialRecordType.purchase,
+                amount: 350,
+              ),
+            ],
+          },
+        );
+        final cubit2 = FinanzasBloc(
+          finanzasRepository: finanzasRepo,
+          animalRepository: _FakeAnimalRepository(animals: [animal]),
+          costRepo: costRepo,
+          commercialRepo: commercialRepoInPeriod,
+        );
+        await cubit2.loadPeriod(period);
+        expect(cubit2.state.animalProfitabilities.single.purchaseCost, 350.0);
+
+        await cubit.close();
+        await cubit2.close();
+      },
+    );
 
     test('AnimalProfitability uses customName when available', () async {
       final animal = _makeAnimal(uuid: 'a2', customName: 'Conchita');

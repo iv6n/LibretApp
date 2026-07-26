@@ -276,10 +276,10 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   ) async {
     try {
       emit(const AnimalesLoading());
-      await repository.getAll(); // Fetch all animals to ensure consistency
       // Note: RenameBatch is a legacy handler. Batch renaming should be done
       // through the LotesBloc by updating LoteEntity.nombre instead.
       // This handler is kept for backward compatibility but doesn't update animals.
+      await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
     }

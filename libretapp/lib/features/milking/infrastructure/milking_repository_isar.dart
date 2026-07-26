@@ -21,10 +21,21 @@ class MilkingRepositoryIsar implements MilkingRepository {
         .filter()
         .statusEqualTo(MilkingStatus.draft.name)
         .sortByUpdatedAtDesc()
-        .limit(1)
         .findAll();
-    return records.firstOrNull?.toEntity();
+
+    // A draft is only resumed if it's for today — an abandoned draft from a
+    // previous day (app closed mid-capture) must not silently absorb new
+    // readings under an old date.
+    final today = DateTime.now();
+    for (final record in records) {
+      final entity = record.toEntity();
+      if (_isSameDay(entity.occurredAt, today)) return entity;
+    }
+    return null;
   }
+
+  static bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   Future<MilkingSession?> getSession(String uuid) async {
