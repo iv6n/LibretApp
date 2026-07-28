@@ -113,6 +113,12 @@
   "tabRecords": "Registros",
   "actionSelect": "Seleccionar",
   "actionSave": "Guardar",
+  "actionCancel": "Cancelar",
+  "actionConfirm": "Confirmar",
+  "actionRetry": "Reintentar",
+  "actionRemove": "Quitar",
+  "actionDelete": "Eliminar",
+  "errorGenericSave": "Ocurrió un error al guardar",
   "fieldNotes": "Notas",
   "fieldNotesOptional": "Notas (opcional)",
   "detailActionWeight": "Peso",
@@ -167,6 +173,9 @@
   "detailFormHealthProductRequired": "Producto requerido",
   "detailFormHealthNextAfterDate": "La próxima fecha no puede ser anterior a la fecha del registro",
   "detailFormHealthSaved": "Registro sanitario guardado",
+  "detailFormHealthMedicineBatch": "Lote del medicamento",
+  "detailFormHealthWithdrawalDays": "Retiro (días)",
+  "detailFormHealthWithdrawalHelper": "Carne/leche",
   "detailFormCommercialTitle": "Registro comercial",
   "detailFormCommercialType": "Tipo",
   "detailFormCommercialAmount": "Monto",
@@ -189,6 +198,7 @@
   "detailFormCostAmountRequired": "Monto requerido",
   "detailFormCostSaved": "Costo guardado",
   "detailFormReproductionTitle": "Registrar evento reproductivo",
+  "detailFormReproductionParicionTitle": "Registro de parición",
   "detailFormReproductionServiceType": "Tipo de servicio",
   "detailFormReproductionServiceNatural": "Monta natural",
   "detailFormReproductionServiceAi": "Inseminación AI",
@@ -198,6 +208,57 @@
   "detailFormReproductionNotes": "Notas (opcional)",
   "detailFormReproductionExpectedAfterDate": "La fecha probable de parto no puede ser anterior a la fecha de servicio",
   "detailFormReproductionSaved": "Evento reproductivo guardado",
+  "detailFormMilkingTitle": "Registro de ordeña",
+  "detailFormMilkingIndividualMode": "Una por una",
+  "detailFormMilkingGroupMode": "Por lote",
+  "detailFormMilkingShift": "Turno",
+  "detailFormMilkingRegisterCow": "Registrar vaca",
+  "detailFormMilkingSelectAnimal": "Seleccionar vaca",
+  "detailFormMilkingLitersLabel": "Litros de leche",
+  "detailFormMilkingLitersShort": "Litros",
+  "detailFormMilkingAddContinue": "Agregar y continuar",
+  "detailFormMilkingGroupLabel": "Grupo o lote de vacas",
+  "detailFormMilkingExcludedAnimals": "{count} animales del lote no se muestran porque no son vacas activas.",
+  "@detailFormMilkingExcludedAnimals": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "detailFormMilkingSelectLotePrompt": "Selecciona un lote para cargar sus vacas.",
+  "detailFormMilkingEmptyLote": "Este lote no contiene vacas activas.",
+  "detailFormMilkingAddOutsideLote": "Agregar una vaca fuera del lote",
+  "detailFormMilkingRegisteredCows": "Vacas registradas",
+  "detailFormMilkingRemoveEntryTitle": "Quitar registro",
+  "detailFormMilkingRemoveEntryMessage": "¿Quitar esta vaca de la ordeña?",
+  "detailFormMilkingSaving": "Guardando...",
+  "detailFormMilkingFinalize": "Finalizar ordeña",
+  "detailFormMilkingSaved": "Ordeña registrada correctamente",
+  "detailFormMilkingReviewAgain": "Revisar",
+  "detailFormMilkingUnusualAmountTitle": "Cantidad inusual",
+  "detailFormMilkingUnusualAmountMessage": "Se registrarán {liters} L para una vaca. ¿La cantidad es correcta?",
+  "@detailFormMilkingUnusualAmountMessage": {
+    "placeholders": {
+      "liters": {}
+    }
+  },
+  "detailFormMilkingInvalidVolume": "Ingresa una cantidad válida de litros",
+  "detailFormMilkingSelectAnimalFirst": "Selecciona una vaca primero",
+  "detailFormMilkingCheckAnimalVolume": "Revisa los litros de {animal}",
+  "@detailFormMilkingCheckAnimalVolume": {
+    "placeholders": {
+      "animal": {}
+    }
+  },
+  "detailFormMilkingReviewBeforeContinue": "Revisa la cantidad antes de continuar",
+  "detailFormMilkingFutureDateTime": "La fecha y hora no pueden ser futuras",
+  "detailFormMilkingSearchHint": "Buscar por arete, nombre o ID",
+  "detailFormMilkingNoResults": "No se encontraron vacas",
+  "detailFormMilkingCowCount": "{count} vacas registradas",
+  "@detailFormMilkingCowCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "registroReproSubtitleFemale": "Hembra: formulario reproductivo completo.",
   "registroReproSubtitleMale": "Macho: ajustes reproductivos básicos.",
   "registroReproAgeWarning": "Aviso: este animal tiene {ageMonths} meses. Se recomienda esperar al menos {minMonths} meses para servicio, pero este formulario no bloquea el registro.",

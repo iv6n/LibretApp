@@ -113,6 +113,12 @@
   "tabRecords": "Records",
   "actionSelect": "Select",
   "actionSave": "Save",
+  "actionCancel": "Cancel",
+  "actionConfirm": "Confirm",
+  "actionRetry": "Retry",
+  "actionRemove": "Remove",
+  "actionDelete": "Delete",
+  "errorGenericSave": "An error occurred while saving",
   "fieldNotes": "Notes",
   "fieldNotesOptional": "Notes (optional)",
   "detailActionWeight": "Weight",
@@ -167,6 +173,9 @@
   "detailFormHealthProductRequired": "Product is required",
   "detailFormHealthNextAfterDate": "The next date cannot be before the record date",
   "detailFormHealthSaved": "Health record saved",
+  "detailFormHealthMedicineBatch": "Medicine batch",
+  "detailFormHealthWithdrawalDays": "Withdrawal (days)",
+  "detailFormHealthWithdrawalHelper": "Meat/milk",
   "detailFormCommercialTitle": "Commercial record",
   "detailFormCommercialType": "Type",
   "detailFormCommercialAmount": "Amount",
@@ -189,6 +198,7 @@
   "detailFormCostAmountRequired": "Amount is required",
   "detailFormCostSaved": "Cost saved",
   "detailFormReproductionTitle": "Record reproduction event",
+  "detailFormReproductionParicionTitle": "Record calving",
   "detailFormReproductionServiceType": "Service type",
   "detailFormReproductionServiceNatural": "Natural service",
   "detailFormReproductionServiceAi": "AI insemination",
@@ -198,6 +208,57 @@
   "detailFormReproductionNotes": "Notes (optional)",
   "detailFormReproductionExpectedAfterDate": "Expected calving date cannot be before service date",
   "detailFormReproductionSaved": "Reproduction event saved",
+  "detailFormMilkingTitle": "Milking record",
+  "detailFormMilkingIndividualMode": "One by one",
+  "detailFormMilkingGroupMode": "By lot",
+  "detailFormMilkingShift": "Shift",
+  "detailFormMilkingRegisterCow": "Register cow",
+  "detailFormMilkingSelectAnimal": "Select cow",
+  "detailFormMilkingLitersLabel": "Liters of milk",
+  "detailFormMilkingLitersShort": "Liters",
+  "detailFormMilkingAddContinue": "Add and continue",
+  "detailFormMilkingGroupLabel": "Group or lot of cows",
+  "detailFormMilkingExcludedAnimals": "{count} animals in the lot aren't shown because they aren't active cows.",
+  "@detailFormMilkingExcludedAnimals": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "detailFormMilkingSelectLotePrompt": "Select a lot to load its cows.",
+  "detailFormMilkingEmptyLote": "This lot has no active cows.",
+  "detailFormMilkingAddOutsideLote": "Add a cow outside the lot",
+  "detailFormMilkingRegisteredCows": "Registered cows",
+  "detailFormMilkingRemoveEntryTitle": "Remove entry",
+  "detailFormMilkingRemoveEntryMessage": "Remove this cow from the milking?",
+  "detailFormMilkingSaving": "Saving...",
+  "detailFormMilkingFinalize": "Finish milking",
+  "detailFormMilkingSaved": "Milking recorded successfully",
+  "detailFormMilkingReviewAgain": "Review",
+  "detailFormMilkingUnusualAmountTitle": "Unusual amount",
+  "detailFormMilkingUnusualAmountMessage": "{liters} L will be recorded for one cow. Is the amount correct?",
+  "@detailFormMilkingUnusualAmountMessage": {
+    "placeholders": {
+      "liters": {}
+    }
+  },
+  "detailFormMilkingInvalidVolume": "Enter a valid amount of liters",
+  "detailFormMilkingSelectAnimalFirst": "Select a cow first",
+  "detailFormMilkingCheckAnimalVolume": "Check the liters for {animal}",
+  "@detailFormMilkingCheckAnimalVolume": {
+    "placeholders": {
+      "animal": {}
+    }
+  },
+  "detailFormMilkingReviewBeforeContinue": "Review the amount before continuing",
+  "detailFormMilkingFutureDateTime": "The date and time cannot be in the future",
+  "detailFormMilkingSearchHint": "Search by tag, name, or ID",
+  "detailFormMilkingNoResults": "No cows found",
+  "detailFormMilkingCowCount": "{count} cows registered",
+  "@detailFormMilkingCowCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "registroReproSubtitleFemale": "Female: full reproductive form.",
   "registroReproSubtitleMale": "Male: basic reproductive fields.",
   "registroReproAgeWarning": "Notice: this animal is {ageMonths} months old. Minimum recommended age is {minMonths} months, but this form does not block registration.",

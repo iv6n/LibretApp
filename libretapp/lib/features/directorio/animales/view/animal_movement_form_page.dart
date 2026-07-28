@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -98,7 +99,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Ocurrió un error')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
       setState(() => _saving = false);
     }
   }
@@ -156,7 +157,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.today),
-          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          label: Text(DateFormat('dd/MM/yyyy').format(_date)),
           onPressed: () async {
             final picked = await showDatePicker(
               context: context,

@@ -4,7 +4,28 @@ library;
 import 'package:libretapp/core/models/timestamped_record.dart';
 
 /// Tipos de costo por animal.
-enum CostType { medication, feeding, labor, transport, investment }
+enum CostType {
+  medication,
+  feeding,
+  labor,
+  transport,
+  investment;
+
+  String get displayName {
+    switch (this) {
+      case CostType.medication:
+        return 'Medicamento';
+      case CostType.feeding:
+        return 'Alimentación';
+      case CostType.labor:
+        return 'Mano de obra';
+      case CostType.transport:
+        return 'Transporte';
+      case CostType.investment:
+        return 'Inversión';
+    }
+  }
+}
 
 /// Registro de costo asociado al animal.
 class CostRecord extends TimestampedRecord {

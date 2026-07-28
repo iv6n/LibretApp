@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -78,7 +79,7 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Ocurrió un error')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
       setState(() => _saving = false);
     }
   }
@@ -100,7 +101,7 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: CostType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
               .toList(),
           onChanged: (value) {
             if (value == null) return;
@@ -137,7 +138,7 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           icon: const Icon(Icons.today),
-          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          label: Text(DateFormat('dd/MM/yyyy').format(_date)),
           onPressed: () async {
             final picked = await showDatePicker(
               context: context,

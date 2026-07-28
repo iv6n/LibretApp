@@ -477,6 +477,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionSave => 'Guardar';
 
   @override
+  String get actionCancel => 'Cancelar';
+
+  @override
+  String get actionConfirm => 'Confirmar';
+
+  @override
+  String get actionRetry => 'Reintentar';
+
+  @override
+  String get actionRemove => 'Quitar';
+
+  @override
+  String get actionDelete => 'Eliminar';
+
+  @override
+  String get errorGenericSave => 'Ocurrió un error al guardar';
+
+  @override
   String get fieldNotes => 'Notas';
 
   @override
@@ -644,6 +662,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormHealthSaved => 'Registro sanitario guardado';
 
   @override
+  String get detailFormHealthMedicineBatch => 'Lote del medicamento';
+
+  @override
+  String get detailFormHealthWithdrawalDays => 'Retiro (días)';
+
+  @override
+  String get detailFormHealthWithdrawalHelper => 'Carne/leche';
+
+  @override
   String get detailFormCommercialTitle => 'Registro comercial';
 
   @override
@@ -712,6 +739,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get detailFormReproductionTitle => 'Registrar evento reproductivo';
 
   @override
+  String get detailFormReproductionParicionTitle => 'Registro de parición';
+
+  @override
   String get detailFormReproductionServiceType => 'Tipo de servicio';
 
   @override
@@ -738,6 +768,115 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get detailFormReproductionSaved => 'Evento reproductivo guardado';
+
+  @override
+  String get detailFormMilkingTitle => 'Registro de ordeña';
+
+  @override
+  String get detailFormMilkingIndividualMode => 'Una por una';
+
+  @override
+  String get detailFormMilkingGroupMode => 'Por lote';
+
+  @override
+  String get detailFormMilkingShift => 'Turno';
+
+  @override
+  String get detailFormMilkingRegisterCow => 'Registrar vaca';
+
+  @override
+  String get detailFormMilkingSelectAnimal => 'Seleccionar vaca';
+
+  @override
+  String get detailFormMilkingLitersLabel => 'Litros de leche';
+
+  @override
+  String get detailFormMilkingLitersShort => 'Litros';
+
+  @override
+  String get detailFormMilkingAddContinue => 'Agregar y continuar';
+
+  @override
+  String get detailFormMilkingGroupLabel => 'Grupo o lote de vacas';
+
+  @override
+  String detailFormMilkingExcludedAnimals(int count) {
+    return '$count animales del lote no se muestran porque no son vacas activas.';
+  }
+
+  @override
+  String get detailFormMilkingSelectLotePrompt =>
+      'Selecciona un lote para cargar sus vacas.';
+
+  @override
+  String get detailFormMilkingEmptyLote =>
+      'Este lote no contiene vacas activas.';
+
+  @override
+  String get detailFormMilkingAddOutsideLote =>
+      'Agregar una vaca fuera del lote';
+
+  @override
+  String get detailFormMilkingRegisteredCows => 'Vacas registradas';
+
+  @override
+  String get detailFormMilkingRemoveEntryTitle => 'Quitar registro';
+
+  @override
+  String get detailFormMilkingRemoveEntryMessage =>
+      '¿Quitar esta vaca de la ordeña?';
+
+  @override
+  String get detailFormMilkingSaving => 'Guardando...';
+
+  @override
+  String get detailFormMilkingFinalize => 'Finalizar ordeña';
+
+  @override
+  String get detailFormMilkingSaved => 'Ordeña registrada correctamente';
+
+  @override
+  String get detailFormMilkingReviewAgain => 'Revisar';
+
+  @override
+  String get detailFormMilkingUnusualAmountTitle => 'Cantidad inusual';
+
+  @override
+  String detailFormMilkingUnusualAmountMessage(Object liters) {
+    return 'Se registrarán $liters L para una vaca. ¿La cantidad es correcta?';
+  }
+
+  @override
+  String get detailFormMilkingInvalidVolume =>
+      'Ingresa una cantidad válida de litros';
+
+  @override
+  String get detailFormMilkingSelectAnimalFirst =>
+      'Selecciona una vaca primero';
+
+  @override
+  String detailFormMilkingCheckAnimalVolume(Object animal) {
+    return 'Revisa los litros de $animal';
+  }
+
+  @override
+  String get detailFormMilkingReviewBeforeContinue =>
+      'Revisa la cantidad antes de continuar';
+
+  @override
+  String get detailFormMilkingFutureDateTime =>
+      'La fecha y hora no pueden ser futuras';
+
+  @override
+  String get detailFormMilkingSearchHint => 'Buscar por arete, nombre o ID';
+
+  @override
+  String get detailFormMilkingNoResults => 'No se encontraron vacas';
+
+  @override
+  String detailFormMilkingCowCount(int count) {
+    return '$count vacas registradas';
+  }
 
   @override
   String get registroReproSubtitleFemale =>

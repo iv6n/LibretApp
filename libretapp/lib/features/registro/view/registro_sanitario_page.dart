@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
@@ -140,7 +141,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? 'Error al guardar')),
+            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
@@ -164,7 +165,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                   border: const OutlineInputBorder(),
                 ),
                 items: HealthRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);
@@ -208,9 +209,9 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                   Expanded(
                     child: TextField(
                       controller: _medicineBatchCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Lote del medicamento',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.detailFormHealthMedicineBatch,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -219,10 +220,10 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                     child: TextField(
                       controller: _withdrawalDaysCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Retiro (días)',
-                        helperText: 'Carne/leche',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.detailFormHealthWithdrawalDays,
+                        helperText: l10n.detailFormHealthWithdrawalHelper,
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                   ),
@@ -234,7 +235,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.today),
-                      label: Text('${_date.year}-${_date.month}-${_date.day}'),
+                      label: Text(DateFormat('dd/MM/yyyy').format(_date)),
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -253,7 +254,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                       label: Text(
                         _nextDate == null
                             ? l10n.detailFormHealthNext
-                            : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
+                            : DateFormat('dd/MM/yyyy').format(_nextDate!),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(

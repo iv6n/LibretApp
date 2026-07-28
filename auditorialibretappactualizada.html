@@ -797,6 +797,26 @@ a:focus-visible, .chip:focus-visible, summary:focus-visible { outline: 2px solid
       </div>
     </section>
 
+    <section class="block" id="ui-registro">
+      <h2>UI de las pantallas de registro — pasada de consistencia (post-Fase 7)</h2>
+      <p class="desc">Pedido del usuario: "arreglar el UI de registros", señalando <code>registro_ordena_page.dart</code> (ordeña) como ejemplo. Alcance acordado: bugs objetivos primero (formato de fecha, enums sin traducir, strings sueltos, un bug real de <code>MilkingCubit</code>), dejando decisiones estructurales grandes para después. 17 pantallas de registro/animales/ordeña revisadas.</p>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>Qué</th><th>Alcance</th><th style="width:120px">Estado</th></tr></thead>
+          <tbody>
+            <tr><td class="path">Botón de guardar de ordeña</td><td>Estaba fijo en un <code>bottomNavigationBar</code>, distinto a las otras 16 pantallas (botón dentro del scroll). Movido al final del contenido; verificado que el modal de selección de animal sigue renderizando correctamente arriba de todo.</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path"><code>MilkingCubit.upsertAnimalVolume</code></td><td>Único método del cubit que lanzaba una excepción en vez de emitir <code>failure</code> — la vista tenía un try/catch especial con un camino sin cubrir. Ahora emite <code>failure</code> como el resto. Test nuevo agregado.</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path">Formato de fecha (16 pantallas)</td><td>3 convenios distintos convivían (año-mes-día sin ceros, día/mes/año sin ceros, y el <code>DateFormat</code> correcto que solo tenía ordeña). Unificado a <code>DateFormat('dd/MM/yyyy')</code> en todas.</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path">Enums sin traducir en dropdowns (10 sitios)</td><td><code>HealthRecordType</code>/<code>CommercialRecordType</code>/<code>CostType</code>/<code>ProductionRecordType</code> mostraban sus identificadores en inglés mientras otros campos del mismo formulario sí estaban traducidos. Se agregó <code>displayName</code> a los 4 enums (mismo patrón que <code>MovementReason</code>).</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path">Strings sueltos sin l10n (14 archivos)</td><td>Campos hardcodeados en <code>registro_sanitario_page.dart</code>, título con typo en <code>registro_reproduccion_page.dart</code> ("paricion" → "parición"), y el fallback de error duplicado en 14 archivos centralizado en <code>l10n.errorGenericSave</code>.</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path"><code>registro_ordena_page.dart</code> (ordeña)</td><td>No tenía ni una sola llamada a <code>AppLocalizations</code> — ~30 strings hardcodeados. Se agregaron ~35 claves nuevas y se enrutó todo el archivo. De paso se unificaron 3 variantes distintas de la palabra "lactando" a una sola.</td><td><span class="status-pill fijo">Fijo</span></td></tr>
+            <tr><td class="path">2 páginas de "bulk health" duplicadas</td><td><code>registro/bulk_health_registro_page.dart</code> y <code>directorio/animales/bulk_health_form_page.dart</code> — investigado: <b>no son verdaderos duplicados</b>, son 2 puntos de entrada distintos (buscar animales desde cero vs. ya vienen seleccionados de una lista) que comparten el mismo repositorio pero reimplementan el formulario de salud por separado. Recomendación: que la primera reuse el formulario de la segunda como paso final. No ejecutado — pendiente de decisión.</td><td><span class="status-pill pendiente">Investigado</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lede" style="font-size:13px;color:var(--muted)">Suite completa: 519/519 pasando (518 + 1 test nuevo de <code>MilkingCubit</code>) tras cada ítem. Detalle completo en <code>auditoriaestado.json</code>, clave <code>ui_registro_fixes</code>.</p>
+    </section>
+
     <div class="confirm-note" id="confirmacion">
       <h3>Actualizado — Fase 4 y el plan de tests de alto ROI ya se ejecutaron</h3>
       <p>Fases 0, 1, 2, 3, 4 y 5 ejecutadas y pusheadas a <code>main-5enhm8</code> (<a href="https://github.com/iv6n/LibretApp/pull/1">PR #1</a>): CI, los 3 bugs de pérdida de datos, el bug copy-paste (parcial — ver <span class="status-pill parcial">Parcial</span> arriba), los 5 bugs de estado/crash, los 2 cálculos incorrectos, seguridad (guard de release en clave maestra y auth stub, en vez de integración nativa completa — ver hallazgos críticos), y el código muerto confirmado (con dos correcciones al propio audit detectadas en el camino — ver <code>CORRECCIONES.md</code>).</p>

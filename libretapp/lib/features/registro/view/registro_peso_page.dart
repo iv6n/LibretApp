@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -114,7 +115,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? 'Error al guardar')),
+            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
@@ -168,7 +169,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.today),
-                      label: Text('${_date.year}-${_date.month}-${_date.day}'),
+                      label: Text(DateFormat('dd/MM/yyyy').format(_date)),
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,

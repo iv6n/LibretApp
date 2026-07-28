@@ -13,6 +13,7 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 import 'package:libretapp/features/milking/application/milking_cubit.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 
 class RegistroOrdenaPage extends StatelessWidget {
   const RegistroOrdenaPage({this.initialAnimalUuid, super.key});
@@ -85,22 +86,24 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
 
   Future<bool> _confirmUnusualAmount(int milliliters) async {
     if (milliliters <= 100000) return true;
+    final l10n = AppLocalizations.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Cantidad inusual'),
+            title: Text(l10n.detailFormMilkingUnusualAmountTitle),
             content: Text(
-              'Se registrarán ${_formatLiters(milliliters)} L para una vaca. '
-              '¿La cantidad es correcta?',
+              l10n.detailFormMilkingUnusualAmountMessage(
+                _formatLiters(milliliters),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Revisar'),
+                child: Text(l10n.detailFormMilkingReviewAgain),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Confirmar'),
+                child: Text(l10n.actionConfirm),
               ),
             ],
           ),
@@ -112,23 +115,33 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final milliliters = _parseMilliliters(raw);
     if (milliliters == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa una cantidad válida de litros')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).detailFormMilkingInvalidVolume),
+        ),
       );
       return false;
     }
     if (!await _confirmUnusualAmount(milliliters) || !mounted) return false;
-    await context.read<MilkingCubit>().upsertAnimalVolume(
+    final cubit = context.read<MilkingCubit>();
+    await cubit.upsertAnimalVolume(
       animalUuid: animalUuid,
       volumeMilliliters: milliliters,
     );
-    return true;
+    // A failure here is already surfaced by the BlocConsumer's listener
+    // (which shows state.errorMessage in a SnackBar), so just report
+    // success/failure back to the caller without duplicating that.
+    return cubit.state.status != MilkingLoadStatus.failure;
   }
 
   Future<bool> _addIndividual() async {
     final animalUuid = _selectedAnimalUuid;
     if (animalUuid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona una vaca primero')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).detailFormMilkingSelectAnimalFirst,
+          ),
+        ),
       );
       return false;
     }
@@ -142,7 +155,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     return saved;
   }
 
-  Future<void> _commitGroup(MilkingState state) async {
+  Future<bool> _commitGroup(MilkingState state) async {
     final animals = state.animalsForLote(state.session?.sourceLoteUuid);
     for (final animal in animals) {
       final controller = _groupControllers[animal.uuid];
@@ -157,41 +170,60 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       }
       final parsed = _parseMilliliters(raw);
       if (parsed == null) {
-        throw FormatException('Revisa los litros de ${_animalLabel(animal)}');
+        if (!mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(
+                context,
+              ).detailFormMilkingCheckAnimalVolume(_animalLabel(animal)),
+            ),
+          ),
+        );
+        return false;
       }
       if (existing?.volumeMilliliters != parsed) {
-        if (!await _confirmUnusualAmount(parsed) || !mounted) {
-          throw const FormatException('Revisa la cantidad antes de continuar');
+        final confirmed = await _confirmUnusualAmount(parsed);
+        if (!mounted) return false;
+        if (!confirmed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                AppLocalizations.of(
+                  context,
+                ).detailFormMilkingReviewBeforeContinue,
+              ),
+            ),
+          );
+          return false;
         }
-        await context.read<MilkingCubit>().upsertAnimalVolume(
+        final cubit = context.read<MilkingCubit>();
+        await cubit.upsertAnimalVolume(
           animalUuid: animal.uuid,
           volumeMilliliters: parsed,
         );
+        // A failure here is already surfaced by the BlocConsumer's listener.
+        if (cubit.state.status == MilkingLoadStatus.failure) return false;
       }
     }
+    return true;
   }
 
   Future<void> _finalize(MilkingState state) async {
     FocusScope.of(context).unfocus();
-    try {
-      if (state.captureMode == MilkingCaptureMode.group) {
-        await _commitGroup(state);
-      } else if (_selectedAnimalUuid != null &&
-          _individualAmountCtrl.text.trim().isNotEmpty) {
-        if (!await _addIndividual()) return;
-      }
-      if (!mounted) return;
-      await context.read<MilkingCubit>().finalize();
-    } on FormatException catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+    if (state.captureMode == MilkingCaptureMode.group) {
+      if (!await _commitGroup(state) || !mounted) return;
+    } else if (_selectedAnimalUuid != null &&
+        _individualAmountCtrl.text.trim().isNotEmpty) {
+      if (!await _addIndividual()) return;
     }
+    if (!mounted) return;
+    await context.read<MilkingCubit>().finalize();
   }
 
   Future<AnimalEntity?> _showAnimalPicker(MilkingState state) async {
     var query = '';
+    final l10n = AppLocalizations.of(context);
     return showModalBottomSheet<AnimalEntity>(
       context: context,
       isScrollControlled: true,
@@ -215,17 +247,17 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                     child: TextField(
                       autofocus: true,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Buscar por arete, nombre o ID',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: l10n.detailFormMilkingSearchHint,
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) => setSheetState(() => query = value),
                     ),
                   ),
                   Expanded(
                     child: filtered.isEmpty
-                        ? const Center(child: Text('No se encontraron vacas'))
+                        ? Center(child: Text(l10n.detailFormMilkingNoResults))
                         : ListView.builder(
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
@@ -242,7 +274,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                                 trailing:
                                     animal.productionStage ==
                                         ProductionStage.lactating
-                                    ? const Chip(label: Text('Lactancia'))
+                                    ? Chip(
+                                        label: Text(
+                                          animal.productionStage.displayName,
+                                        ),
+                                      )
                                     : null,
                                 onTap: () => Navigator.pop(context, animal),
                               );
@@ -276,7 +312,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     if (combined.isAfter(DateTime.now())) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La fecha y hora no pueden ser futuras')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).detailFormMilkingFutureDateTime,
+          ),
+        ),
       );
       return;
     }
@@ -298,7 +338,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     );
     if (combined.isAfter(DateTime.now())) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La fecha y hora no pueden ser futuras')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).detailFormMilkingFutureDateTime,
+          ),
+        ),
       );
       return;
     }
@@ -325,9 +369,10 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         }
         if (state.status == MilkingLoadStatus.completed) {
           final messenger = ScaffoldMessenger.of(context);
+          final l10n = AppLocalizations.of(context);
           Navigator.of(context).pop(true);
           messenger.showSnackBar(
-            const SnackBar(content: Text('Ordeña registrada correctamente')),
+            SnackBar(content: Text(l10n.detailFormMilkingSaved)),
           );
         } else if (state.status == MilkingLoadStatus.failure &&
             state.errorMessage != null) {
@@ -350,7 +395,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
             body: Center(
               child: FilledButton(
                 onPressed: () => context.read<MilkingCubit>().load(),
-                child: const Text('Reintentar'),
+                child: Text(AppLocalizations.of(context).actionRetry),
               ),
             ),
           );
@@ -358,7 +403,6 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         return Scaffold(
           appBar: const _MilkingAppBar(),
           body: _buildBody(state),
-          bottomNavigationBar: _buildBottomBar(state),
         );
       },
     );
@@ -366,22 +410,23 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
 
   Widget _buildBody(MilkingState state) {
     final session = state.session!;
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         _buildScheduleCard(session),
         const SizedBox(height: 16),
         SegmentedButton<MilkingCaptureMode>(
-          segments: const [
+          segments: [
             ButtonSegment(
               value: MilkingCaptureMode.individual,
-              icon: Icon(Icons.pets),
-              label: Text('Una por una'),
+              icon: const Icon(Icons.pets),
+              label: Text(l10n.detailFormMilkingIndividualMode),
             ),
             ButtonSegment(
               value: MilkingCaptureMode.group,
-              icon: Icon(Icons.groups),
-              label: Text('Por lote'),
+              icon: const Icon(Icons.groups),
+              label: Text(l10n.detailFormMilkingGroupMode),
             ),
           ],
           selected: {state.captureMode},
@@ -398,12 +443,14 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         if (state.entries.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
-            'Vacas registradas',
+            l10n.detailFormMilkingRegisteredCows,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           ...state.entries.map((entry) => _buildSavedEntry(state, entry)),
         ],
+        const SizedBox(height: 20),
+        _buildSaveButton(state),
       ],
     );
   }
@@ -438,9 +485,9 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
             const SizedBox(height: 10),
             DropdownButtonFormField<MilkingShift>(
               initialValue: session.shift,
-              decoration: const InputDecoration(
-                labelText: 'Turno',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).detailFormMilkingShift,
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               items: MilkingShift.values
@@ -467,6 +514,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final selected = _selectedAnimalUuid == null
         ? null
         : _animalByUuid(state, _selectedAnimalUuid!);
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -474,7 +522,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Registrar vaca',
+              l10n.detailFormMilkingRegisterCow,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -492,7 +540,9 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               },
               icon: const Icon(Icons.search),
               label: Text(
-                selected == null ? 'Seleccionar vaca' : _animalLabel(selected),
+                selected == null
+                    ? l10n.detailFormMilkingSelectAnimal
+                    : _animalLabel(selected),
               ),
             ),
             const SizedBox(height: 12),
@@ -504,10 +554,10 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Litros de leche',
+              decoration: InputDecoration(
+                labelText: l10n.detailFormMilkingLitersLabel,
                 suffixText: 'L',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
               ),
               onSubmitted: (_) => _addIndividual(),
             ),
@@ -515,7 +565,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
             FilledButton.icon(
               onPressed: _addIndividual,
               icon: const Icon(Icons.add),
-              label: const Text('Agregar y continuar'),
+              label: Text(l10n.detailFormMilkingAddContinue),
             ),
           ],
         ),
@@ -544,13 +594,14 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final excluded = selectedLote == null
         ? 0
         : selectedLote.animalUuids.length - animals.length;
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
         DropdownButtonFormField<String>(
           initialValue: session.sourceLoteUuid,
-          decoration: const InputDecoration(
-            labelText: 'Grupo o lote de vacas',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.detailFormMilkingGroupLabel,
+            border: const OutlineInputBorder(),
           ),
           items: state.lotes
               .map(
@@ -566,23 +617,23 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              '$excluded animales del lote no se muestran porque no son vacas activas.',
+              l10n.detailFormMilkingExcludedAnimals(excluded),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
         const SizedBox(height: 12),
         if (session.sourceLoteUuid == null)
-          const Card(
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Selecciona un lote para cargar sus vacas.'),
+              padding: const EdgeInsets.all(20),
+              child: Text(l10n.detailFormMilkingSelectLotePrompt),
             ),
           )
         else if (animals.isEmpty)
-          const Card(
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Este lote no contiene vacas activas.'),
+              padding: const EdgeInsets.all(20),
+              child: Text(l10n.detailFormMilkingEmptyLote),
             ),
           )
         else
@@ -593,7 +644,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               MilkingCaptureMode.individual,
             ),
             icon: const Icon(Icons.add),
-            label: const Text('Agregar una vaca fuera del lote'),
+            label: Text(l10n.detailFormMilkingAddOutsideLote),
           ),
       ],
     );
@@ -613,9 +664,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 children: [
                   Text(_animalLabel(animal)),
                   Text(
-                    animal.productionStage == ProductionStage.lactating
-                        ? 'En lactancia'
-                        : animal.productionStage.displayName,
+                    animal.productionStage.displayName,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -633,11 +682,13 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                 ],
-                decoration: const InputDecoration(
-                  labelText: 'Litros',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).detailFormMilkingLitersShort,
                   suffixText: 'L',
                   isDense: true,
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (raw) async {
                   if (raw.trim().isEmpty) {
@@ -673,7 +724,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                     '${_formatLiters(state.totalMilliliters)} L',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  Text('${state.entries.length} vacas registradas'),
+                  Text(
+                    AppLocalizations.of(
+                      context,
+                    ).detailFormMilkingCowCount(state.entries.length),
+                  ),
                 ],
               ),
             ),
@@ -685,28 +740,29 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
 
   Widget _buildSavedEntry(MilkingState state, MilkingEntry entry) {
     final animal = _animalByUuid(state, entry.animalUuid);
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: ListTile(
         leading: const Icon(Icons.pets),
         title: Text(animal == null ? entry.animalUuid : _animalLabel(animal)),
         subtitle: Text('${_formatLiters(entry.volumeMilliliters)} L'),
         trailing: IconButton(
-          tooltip: 'Eliminar',
+          tooltip: l10n.actionDelete,
           icon: const Icon(Icons.delete_outline),
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
-                title: const Text('Quitar registro'),
-                content: const Text('¿Quitar esta vaca de la ordeña?'),
+                title: Text(l10n.detailFormMilkingRemoveEntryTitle),
+                content: Text(l10n.detailFormMilkingRemoveEntryMessage),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancelar'),
+                    child: Text(l10n.actionCancel),
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Quitar'),
+                    child: Text(l10n.actionRemove),
                   ),
                 ],
               ),
@@ -721,10 +777,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     );
   }
 
-  Widget _buildBottomBar(MilkingState state) {
+  Widget _buildSaveButton(MilkingState state) {
     final saving = state.status == MilkingLoadStatus.saving;
-    return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+    final l10n = AppLocalizations.of(context);
+    return SizedBox(
+      width: double.infinity,
       child: FilledButton.icon(
         onPressed: saving ? null : () => _finalize(state),
         icon: saving
@@ -734,7 +791,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.check),
-        label: Text(saving ? 'Guardando...' : 'Finalizar ordeña'),
+        label: Text(
+          saving
+              ? l10n.detailFormMilkingSaving
+              : l10n.detailFormMilkingFinalize,
+        ),
       ),
     );
   }
@@ -748,6 +809,8 @@ class _MilkingAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(title: const Text('Registro de ordeña'));
+    return AppBar(
+      title: Text(AppLocalizations.of(context).detailFormMilkingTitle),
+    );
   }
 }

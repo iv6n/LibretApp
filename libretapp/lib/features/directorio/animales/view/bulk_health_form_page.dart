@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -93,7 +94,7 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: HealthRecordType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
               .toList(),
           onChanged: (value) {
             if (value == null) return;
@@ -144,7 +145,7 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
             Expanded(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
+                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -164,7 +165,7 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
                 label: Text(
                   _nextDate == null
                       ? l10n.detailFormHealthNext
-                      : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
+                      : DateFormat('dd/MM/yyyy').format(_nextDate!),
                 ),
                 onPressed: () async {
                   final picked = await showDatePicker(

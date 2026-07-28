@@ -235,7 +235,13 @@ class MilkingCubit extends Cubit<MilkingState> {
     final session = state.session;
     if (session == null) return;
     if (volumeMilliliters <= 0) {
-      throw const FormatException('Los litros deben ser mayores que cero');
+      emit(
+        state.copyWith(
+          status: MilkingLoadStatus.failure,
+          errorMessage: 'Los litros deben ser mayores que cero',
+        ),
+      );
+      return;
     }
     final existing = state.entryForAnimal(animalUuid);
     final now = DateTime.now();

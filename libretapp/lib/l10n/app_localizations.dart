@@ -776,6 +776,42 @@ abstract class AppLocalizations {
   /// **'Guardar'**
   String get actionSave;
 
+  /// No description provided for @actionCancel.
+  ///
+  /// In es, this message translates to:
+  /// **'Cancelar'**
+  String get actionCancel;
+
+  /// No description provided for @actionConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Confirmar'**
+  String get actionConfirm;
+
+  /// No description provided for @actionRetry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get actionRetry;
+
+  /// No description provided for @actionRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar'**
+  String get actionRemove;
+
+  /// No description provided for @actionDelete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get actionDelete;
+
+  /// No description provided for @errorGenericSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Ocurrió un error al guardar'**
+  String get errorGenericSave;
+
   /// No description provided for @fieldNotes.
   ///
   /// In es, this message translates to:
@@ -1100,6 +1136,24 @@ abstract class AppLocalizations {
   /// **'Registro sanitario guardado'**
   String get detailFormHealthSaved;
 
+  /// No description provided for @detailFormHealthMedicineBatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Lote del medicamento'**
+  String get detailFormHealthMedicineBatch;
+
+  /// No description provided for @detailFormHealthWithdrawalDays.
+  ///
+  /// In es, this message translates to:
+  /// **'Retiro (días)'**
+  String get detailFormHealthWithdrawalDays;
+
+  /// No description provided for @detailFormHealthWithdrawalHelper.
+  ///
+  /// In es, this message translates to:
+  /// **'Carne/leche'**
+  String get detailFormHealthWithdrawalHelper;
+
   /// No description provided for @detailFormCommercialTitle.
   ///
   /// In es, this message translates to:
@@ -1232,6 +1286,12 @@ abstract class AppLocalizations {
   /// **'Registrar evento reproductivo'**
   String get detailFormReproductionTitle;
 
+  /// No description provided for @detailFormReproductionParicionTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro de parición'**
+  String get detailFormReproductionParicionTitle;
+
   /// No description provided for @detailFormReproductionServiceType.
   ///
   /// In es, this message translates to:
@@ -1285,6 +1345,192 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Evento reproductivo guardado'**
   String get detailFormReproductionSaved;
+
+  /// No description provided for @detailFormMilkingTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro de ordeña'**
+  String get detailFormMilkingTitle;
+
+  /// No description provided for @detailFormMilkingIndividualMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Una por una'**
+  String get detailFormMilkingIndividualMode;
+
+  /// No description provided for @detailFormMilkingGroupMode.
+  ///
+  /// In es, this message translates to:
+  /// **'Por lote'**
+  String get detailFormMilkingGroupMode;
+
+  /// No description provided for @detailFormMilkingShift.
+  ///
+  /// In es, this message translates to:
+  /// **'Turno'**
+  String get detailFormMilkingShift;
+
+  /// No description provided for @detailFormMilkingRegisterCow.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar vaca'**
+  String get detailFormMilkingRegisterCow;
+
+  /// No description provided for @detailFormMilkingSelectAnimal.
+  ///
+  /// In es, this message translates to:
+  /// **'Seleccionar vaca'**
+  String get detailFormMilkingSelectAnimal;
+
+  /// No description provided for @detailFormMilkingLitersLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Litros de leche'**
+  String get detailFormMilkingLitersLabel;
+
+  /// No description provided for @detailFormMilkingLitersShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Litros'**
+  String get detailFormMilkingLitersShort;
+
+  /// No description provided for @detailFormMilkingAddContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar y continuar'**
+  String get detailFormMilkingAddContinue;
+
+  /// No description provided for @detailFormMilkingGroupLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Grupo o lote de vacas'**
+  String get detailFormMilkingGroupLabel;
+
+  /// No description provided for @detailFormMilkingExcludedAnimals.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} animales del lote no se muestran porque no son vacas activas.'**
+  String detailFormMilkingExcludedAnimals(int count);
+
+  /// No description provided for @detailFormMilkingSelectLotePrompt.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona un lote para cargar sus vacas.'**
+  String get detailFormMilkingSelectLotePrompt;
+
+  /// No description provided for @detailFormMilkingEmptyLote.
+  ///
+  /// In es, this message translates to:
+  /// **'Este lote no contiene vacas activas.'**
+  String get detailFormMilkingEmptyLote;
+
+  /// No description provided for @detailFormMilkingAddOutsideLote.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar una vaca fuera del lote'**
+  String get detailFormMilkingAddOutsideLote;
+
+  /// No description provided for @detailFormMilkingRegisteredCows.
+  ///
+  /// In es, this message translates to:
+  /// **'Vacas registradas'**
+  String get detailFormMilkingRegisteredCows;
+
+  /// No description provided for @detailFormMilkingRemoveEntryTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar registro'**
+  String get detailFormMilkingRemoveEntryTitle;
+
+  /// No description provided for @detailFormMilkingRemoveEntryMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Quitar esta vaca de la ordeña?'**
+  String get detailFormMilkingRemoveEntryMessage;
+
+  /// No description provided for @detailFormMilkingSaving.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardando...'**
+  String get detailFormMilkingSaving;
+
+  /// No description provided for @detailFormMilkingFinalize.
+  ///
+  /// In es, this message translates to:
+  /// **'Finalizar ordeña'**
+  String get detailFormMilkingFinalize;
+
+  /// No description provided for @detailFormMilkingSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Ordeña registrada correctamente'**
+  String get detailFormMilkingSaved;
+
+  /// No description provided for @detailFormMilkingReviewAgain.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisar'**
+  String get detailFormMilkingReviewAgain;
+
+  /// No description provided for @detailFormMilkingUnusualAmountTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Cantidad inusual'**
+  String get detailFormMilkingUnusualAmountTitle;
+
+  /// No description provided for @detailFormMilkingUnusualAmountMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Se registrarán {liters} L para una vaca. ¿La cantidad es correcta?'**
+  String detailFormMilkingUnusualAmountMessage(Object liters);
+
+  /// No description provided for @detailFormMilkingInvalidVolume.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa una cantidad válida de litros'**
+  String get detailFormMilkingInvalidVolume;
+
+  /// No description provided for @detailFormMilkingSelectAnimalFirst.
+  ///
+  /// In es, this message translates to:
+  /// **'Selecciona una vaca primero'**
+  String get detailFormMilkingSelectAnimalFirst;
+
+  /// No description provided for @detailFormMilkingCheckAnimalVolume.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa los litros de {animal}'**
+  String detailFormMilkingCheckAnimalVolume(Object animal);
+
+  /// No description provided for @detailFormMilkingReviewBeforeContinue.
+  ///
+  /// In es, this message translates to:
+  /// **'Revisa la cantidad antes de continuar'**
+  String get detailFormMilkingReviewBeforeContinue;
+
+  /// No description provided for @detailFormMilkingFutureDateTime.
+  ///
+  /// In es, this message translates to:
+  /// **'La fecha y hora no pueden ser futuras'**
+  String get detailFormMilkingFutureDateTime;
+
+  /// No description provided for @detailFormMilkingSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar por arete, nombre o ID'**
+  String get detailFormMilkingSearchHint;
+
+  /// No description provided for @detailFormMilkingNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontraron vacas'**
+  String get detailFormMilkingNoResults;
+
+  /// No description provided for @detailFormMilkingCowCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} vacas registradas'**
+  String detailFormMilkingCowCount(int count);
 
   /// No description provided for @registroReproSubtitleFemale.
   ///

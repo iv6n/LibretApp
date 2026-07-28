@@ -10,7 +10,24 @@ enum CommercialRecordType {
   ownershipChange,
   priceUpdate,
   writeOffSale,
-  writeOffDeath,
+  writeOffDeath;
+
+  String get displayName {
+    switch (this) {
+      case CommercialRecordType.purchase:
+        return 'Compra';
+      case CommercialRecordType.sale:
+        return 'Venta';
+      case CommercialRecordType.ownershipChange:
+        return 'Cambio de propietario';
+      case CommercialRecordType.priceUpdate:
+        return 'Actualización de precio';
+      case CommercialRecordType.writeOffSale:
+        return 'Baja por venta';
+      case CommercialRecordType.writeOffDeath:
+        return 'Baja por muerte';
+    }
+  }
 }
 
 /// Registro comercial del animal.

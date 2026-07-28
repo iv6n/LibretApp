@@ -7,6 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -156,9 +157,10 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.animalFormRecordSaveError(e.toString()))),
+      );
     }
   }
 
@@ -354,7 +356,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
                   border: const OutlineInputBorder(),
                 ),
                 items: HealthRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _recordType = v);
@@ -409,7 +411,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.today, size: 18),
-                      label: Text('${_date.day}/${_date.month}/${_date.year}'),
+                      label: Text(DateFormat('dd/MM/yyyy').format(_date)),
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,
@@ -428,7 +430,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
                       label: Text(
                         _nextDate == null
                             ? l10n.detailFormHealthNext
-                            : '${_nextDate!.day}/${_nextDate!.month}/${_nextDate!.year}',
+                            : DateFormat('dd/MM/yyyy').format(_nextDate!),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(

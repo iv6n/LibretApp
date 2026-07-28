@@ -10,7 +10,24 @@ enum ProductionRecordType {
   production,
   bodyConditionScore,
   fatteningStart,
-  fatteningEnd,
+  fatteningEnd;
+
+  String get displayName {
+    switch (this) {
+      case ProductionRecordType.weighing:
+        return 'Pesaje';
+      case ProductionRecordType.weightGain:
+        return 'Ganancia de peso';
+      case ProductionRecordType.production:
+        return 'Producción';
+      case ProductionRecordType.bodyConditionScore:
+        return 'Condición corporal';
+      case ProductionRecordType.fatteningStart:
+        return 'Inicio de engorde';
+      case ProductionRecordType.fatteningEnd:
+        return 'Fin de engorde';
+    }
+  }
 }
 
 /// Registro productivo para un animal.

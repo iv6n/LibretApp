@@ -13,7 +13,30 @@ enum HealthRecordType {
   disease,
   death,
   checkup,
-  other,
+  other;
+
+  String get displayName {
+    switch (this) {
+      case HealthRecordType.vaccine:
+        return 'Vacuna';
+      case HealthRecordType.deworming:
+        return 'Desparasitación';
+      case HealthRecordType.tickBath:
+        return 'Baño garrapaticida';
+      case HealthRecordType.vitamins:
+        return 'Vitaminas';
+      case HealthRecordType.treatment:
+        return 'Tratamiento';
+      case HealthRecordType.disease:
+        return 'Enfermedad';
+      case HealthRecordType.death:
+        return 'Muerte';
+      case HealthRecordType.checkup:
+        return 'Chequeo';
+      case HealthRecordType.other:
+        return 'Otro';
+    }
+  }
 }
 
 /// Registro de evento de salud del animal.

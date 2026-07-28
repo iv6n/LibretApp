@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -86,7 +87,7 @@ class _AnimalReproductionFormPageState
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Ocurrió un error')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
       setState(() => _saving = false);
     }
   }
@@ -133,7 +134,7 @@ class _AnimalReproductionFormPageState
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.event),
                 label: Text(
-                  '${_serviceDate.year}-${_serviceDate.month}-${_serviceDate.day}',
+                  DateFormat('dd/MM/yyyy').format(_serviceDate),
                 ),
                 onPressed: () async {
                   final picked = await showDatePicker(
@@ -154,7 +155,7 @@ class _AnimalReproductionFormPageState
                 label: Text(
                   _expectedCalvingDate == null
                       ? l10n.detailFormReproductionExpectedCalving
-                      : '${_expectedCalvingDate!.year}-${_expectedCalvingDate!.month}-${_expectedCalvingDate!.day}',
+                      : DateFormat('dd/MM/yyyy').format(_expectedCalvingDate!),
                 ),
                 onPressed: () async {
                   final picked = await showDatePicker(

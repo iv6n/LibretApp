@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/milking/milking.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 
 void main() {
   tearDown(() async {
@@ -61,6 +62,23 @@ void main() {
       await cubit.close();
     });
 
+    test('emits a failure state instead of throwing for a non-positive volume', () async {
+      final cow = _animal(uuid: 'cow-1');
+      final cubit = MilkingCubit(
+        repository: _FakeMilkingRepository(),
+        animalRepository: _FakeAnimalRepository([cow]),
+        lotesRepository: _FakeLotesRepository(const []),
+      );
+      await cubit.load();
+
+      await cubit.upsertAnimalVolume(animalUuid: cow.uuid, volumeMilliliters: 0);
+
+      expect(cubit.state.status, MilkingLoadStatus.failure);
+      expect(cubit.state.errorMessage, contains('mayores que cero'));
+      expect(cubit.state.entries, isEmpty);
+      await cubit.close();
+    });
+
     test('does not finalize an empty session', () async {
       final cubit = MilkingCubit(
         repository: _FakeMilkingRepository(),
@@ -101,7 +119,14 @@ void main() {
       ..registerSingleton<LotesRepository>(_FakeLotesRepository([lote]))
       ..registerSingleton<MilkingRepository>(_FakeMilkingRepository());
 
-    await tester.pumpWidget(const MaterialApp(home: RegistroOrdenaPage()));
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('es'),
+        home: const RegistroOrdenaPage(),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Una por una'), findsOneWidget);

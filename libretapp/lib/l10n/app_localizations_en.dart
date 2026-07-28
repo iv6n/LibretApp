@@ -477,6 +477,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionSave => 'Save';
 
   @override
+  String get actionCancel => 'Cancel';
+
+  @override
+  String get actionConfirm => 'Confirm';
+
+  @override
+  String get actionRetry => 'Retry';
+
+  @override
+  String get actionRemove => 'Remove';
+
+  @override
+  String get actionDelete => 'Delete';
+
+  @override
+  String get errorGenericSave => 'An error occurred while saving';
+
+  @override
   String get fieldNotes => 'Notes';
 
   @override
@@ -644,6 +662,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormHealthSaved => 'Health record saved';
 
   @override
+  String get detailFormHealthMedicineBatch => 'Medicine batch';
+
+  @override
+  String get detailFormHealthWithdrawalDays => 'Withdrawal (days)';
+
+  @override
+  String get detailFormHealthWithdrawalHelper => 'Meat/milk';
+
+  @override
   String get detailFormCommercialTitle => 'Commercial record';
 
   @override
@@ -712,6 +739,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailFormReproductionTitle => 'Record reproduction event';
 
   @override
+  String get detailFormReproductionParicionTitle => 'Record calving';
+
+  @override
   String get detailFormReproductionServiceType => 'Service type';
 
   @override
@@ -738,6 +768,111 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get detailFormReproductionSaved => 'Reproduction event saved';
+
+  @override
+  String get detailFormMilkingTitle => 'Milking record';
+
+  @override
+  String get detailFormMilkingIndividualMode => 'One by one';
+
+  @override
+  String get detailFormMilkingGroupMode => 'By lot';
+
+  @override
+  String get detailFormMilkingShift => 'Shift';
+
+  @override
+  String get detailFormMilkingRegisterCow => 'Register cow';
+
+  @override
+  String get detailFormMilkingSelectAnimal => 'Select cow';
+
+  @override
+  String get detailFormMilkingLitersLabel => 'Liters of milk';
+
+  @override
+  String get detailFormMilkingLitersShort => 'Liters';
+
+  @override
+  String get detailFormMilkingAddContinue => 'Add and continue';
+
+  @override
+  String get detailFormMilkingGroupLabel => 'Group or lot of cows';
+
+  @override
+  String detailFormMilkingExcludedAnimals(int count) {
+    return '$count animals in the lot aren\'t shown because they aren\'t active cows.';
+  }
+
+  @override
+  String get detailFormMilkingSelectLotePrompt =>
+      'Select a lot to load its cows.';
+
+  @override
+  String get detailFormMilkingEmptyLote => 'This lot has no active cows.';
+
+  @override
+  String get detailFormMilkingAddOutsideLote => 'Add a cow outside the lot';
+
+  @override
+  String get detailFormMilkingRegisteredCows => 'Registered cows';
+
+  @override
+  String get detailFormMilkingRemoveEntryTitle => 'Remove entry';
+
+  @override
+  String get detailFormMilkingRemoveEntryMessage =>
+      'Remove this cow from the milking?';
+
+  @override
+  String get detailFormMilkingSaving => 'Saving...';
+
+  @override
+  String get detailFormMilkingFinalize => 'Finish milking';
+
+  @override
+  String get detailFormMilkingSaved => 'Milking recorded successfully';
+
+  @override
+  String get detailFormMilkingReviewAgain => 'Review';
+
+  @override
+  String get detailFormMilkingUnusualAmountTitle => 'Unusual amount';
+
+  @override
+  String detailFormMilkingUnusualAmountMessage(Object liters) {
+    return '$liters L will be recorded for one cow. Is the amount correct?';
+  }
+
+  @override
+  String get detailFormMilkingInvalidVolume => 'Enter a valid amount of liters';
+
+  @override
+  String get detailFormMilkingSelectAnimalFirst => 'Select a cow first';
+
+  @override
+  String detailFormMilkingCheckAnimalVolume(Object animal) {
+    return 'Check the liters for $animal';
+  }
+
+  @override
+  String get detailFormMilkingReviewBeforeContinue =>
+      'Review the amount before continuing';
+
+  @override
+  String get detailFormMilkingFutureDateTime =>
+      'The date and time cannot be in the future';
+
+  @override
+  String get detailFormMilkingSearchHint => 'Search by tag, name, or ID';
+
+  @override
+  String get detailFormMilkingNoResults => 'No cows found';
+
+  @override
+  String detailFormMilkingCowCount(int count) {
+    return '$count cows registered';
+  }
 
   @override
   String get registroReproSubtitleFemale => 'Female: full reproductive form.';

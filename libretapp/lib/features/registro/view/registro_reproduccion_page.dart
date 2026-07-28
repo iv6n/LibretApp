@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
@@ -125,7 +126,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? 'Error al guardar')),
+            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
@@ -134,7 +135,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
         appBar: AppBar(
           title: Text(
             widget.preset?.toLowerCase() == 'paricion'
-                ? 'Registro de paricion'
+                ? l10n.detailFormReproductionParicionTitle
                 : l10n.detailFormReproductionTitle,
           ),
         ),
@@ -179,7 +180,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.event),
                       label: Text(
-                        '${_serviceDate.year}-${_serviceDate.month}-${_serviceDate.day}',
+                        DateFormat('dd/MM/yyyy').format(_serviceDate),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(
@@ -201,7 +202,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                       label: Text(
                         _expectedCalvingDate == null
                             ? l10n.detailFormReproductionExpectedCalving
-                            : '${_expectedCalvingDate!.year}-${_expectedCalvingDate!.month}-${_expectedCalvingDate!.day}',
+                            : DateFormat('dd/MM/yyyy').format(_expectedCalvingDate!),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -127,7 +128,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('Ocurrió un error')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
       setState(() => _saving = false);
     }
   }
@@ -162,7 +163,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: HealthRecordType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
               .toList(),
           onChanged: (value) {
             if (value == null) return;
@@ -207,7 +208,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
             Expanded(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
+                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
@@ -227,7 +228,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
                 label: Text(
                   _nextDate == null
                       ? l10n.detailFormHealthNext
-                      : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
+                      : DateFormat('dd/MM/yyyy').format(_nextDate!),
                 ),
                 onPressed: () async {
                   final picked = await showDatePicker(
