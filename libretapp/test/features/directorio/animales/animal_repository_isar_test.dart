@@ -50,6 +50,18 @@ void main() {
     }
   });
 
+  setUp(() async {
+    // Every test in this file shares the same on-disk Isar directory (set
+    // once in setUpAll), so without an explicit clear, data written by one
+    // test leaks into the next — e.g. "seeded animals and movement records
+    // reference existing seeded locations" was seeing animals left over
+    // from earlier tests and flagging their placeholder location strings
+    // as invalid. Start every test from a clean slate instead.
+    final db = IsarDatabase();
+    await db.initialize();
+    await db.clearAllCollections();
+  });
+
   tearDown(() async {
     await IsarDatabase().close();
   });
@@ -137,7 +149,11 @@ void main() {
         );
       }
 
-      final stream = repository.watchAll();
+      // watchAll() returns a single-subscription stream (it's backed by an
+      // async* generator) — this test needs to await several firstWhere()
+      // calls against the same stream over time, which requires a stream
+      // that supports being listened to more than once.
+      final stream = repository.watchAll().asBroadcastStream();
       final initial = await stream
           .firstWhere((items) => items.length >= 6)
           .timeout(const Duration(seconds: 3));

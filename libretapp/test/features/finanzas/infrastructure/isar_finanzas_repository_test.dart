@@ -33,6 +33,16 @@ void main() {
     }
   });
 
+  setUp(() async {
+    // Every test in this file shares the same on-disk Isar directory (set
+    // once in setUpAll), so without an explicit clear, records written by
+    // one test leak into the next test's date-range/count assertions.
+    // Start every test from a clean slate instead.
+    final db = IsarDatabase();
+    await db.initialize();
+    await db.clearAllCollections();
+  });
+
   tearDown(() async {
     await IsarDatabase().close();
   });
