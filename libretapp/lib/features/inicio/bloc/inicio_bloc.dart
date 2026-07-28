@@ -6,8 +6,8 @@ import 'package:libretapp/features/inicio/bloc/inicio_event.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_state.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
-import 'package:libretapp/features/perfil/data/library_repository.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
+import 'package:libretapp/features/biblioteca/data/library_repository.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 
 class InicioBloc extends Bloc<InicioEvent, InicioState> {
   InicioBloc({

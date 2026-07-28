@@ -64,12 +64,16 @@ android {
 
     buildTypes {
         release {
-            // Never publish with the debug key. Add android/key.properties for
-            // signed store builds; unsigned local release builds still work.
+            // Add android/key.properties for real signed store builds. Without
+            // it, fall back to the debug key so local release builds are still
+            // installable on a device — signingConfig = null produces a
+            // genuinely unsigned APK, which Android refuses to install
+            // (INSTALL_PARSE_FAILED_NO_CERTIFICATES). Never publish a build
+            // signed with the debug key to a store.
             signingConfig = if (hasReleaseSigning) {
                 signingConfigs.getByName("release")
             } else {
-                null
+                signingConfigs.getByName("debug")
             }
         }
     }

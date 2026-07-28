@@ -10,8 +10,8 @@ import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_widget_card.dart';
 import 'package:libretapp/features/inicio/widgets/quick_summary_section.dart';
-import 'package:libretapp/features/perfil/data/library_item.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
+import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class DashboardWidgetHost extends StatelessWidget {

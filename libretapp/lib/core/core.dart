@@ -1,9 +1,8 @@
 /// Barrel — core module
 ///
-/// Master export for all cross-cutting infrastructure: advisor, constants,
+/// Master export for all cross-cutting infrastructure: constants,
 /// database, DI, extensions, models, performance, router, security,
 /// services, and shared widgets.
-export 'advisor/advisor.dart';
 export 'constants/constants.dart';
 export 'database/database.dart';
 export 'di/di.dart';

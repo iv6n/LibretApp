@@ -1,9 +1,10 @@
-/// features \u203a registro \u203a view \u203a registro_gasto_general_page \u2014 page for recording a general expense.
+/// features > finanzas > view > registro_gasto_general_page \u2014 page for recording a general expense.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
@@ -25,12 +26,6 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   var _date = DateTime.now();
   bool _saving = false;
 
-  double? _parseDouble(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (normalized.isEmpty) return null;
-    return double.tryParse(normalized);
-  }
-
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -43,7 +38,7 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
-    final amount = _parseDouble(_amountCtrl.text);
+    final amount = parseFormDouble(_amountCtrl.text);
     if (amount == null) {
       messenger.showSnackBar(
         const SnackBar(content: Text('Ingresa un monto válido.')),

@@ -5,6 +5,23 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 
+/// Icons offered by [defaultQuickActions] / the dashboard customize sheet,
+/// keyed by codepoint so [DashboardQuickAction.fromJson] can resolve a
+/// persisted icon back to a `const IconData` instead of constructing one
+/// from arbitrary JSON — a non-const `IconData(...)` call defeats Flutter's
+/// icon font tree-shaking and breaks release builds.
+final Map<int, IconData> _iconByCodePoint = {
+  Icons.add_circle_outline.codePoint: Icons.add_circle_outline,
+  Icons.add_location_alt_outlined.codePoint: Icons.add_location_alt_outlined,
+  Icons.paid_outlined.codePoint: Icons.paid_outlined,
+  Icons.attach_money.codePoint: Icons.attach_money,
+  Icons.event_available.codePoint: Icons.event_available,
+  Icons.swap_horiz.codePoint: Icons.swap_horiz,
+  Icons.note_add_outlined.codePoint: Icons.note_add_outlined,
+  Icons.calendar_month_outlined.codePoint: Icons.calendar_month_outlined,
+  Icons.touch_app.codePoint: Icons.touch_app,
+};
+
 class DashboardQuickAction extends Equatable {
   const DashboardQuickAction({
     required this.id,
@@ -60,11 +77,7 @@ class DashboardQuickAction extends Equatable {
     return DashboardQuickAction(
       id: json['id'] as String? ?? '',
       label: json['label'] as String? ?? '',
-      icon: IconData(
-        json['iconCodePoint'] as int? ?? Icons.touch_app.codePoint,
-        fontFamily: json['iconFontFamily'] as String?,
-        fontPackage: json['iconFontPackage'] as String?,
-      ),
+      icon: _iconByCodePoint[json['iconCodePoint'] as int?] ?? Icons.touch_app,
       routeName: json['routeName'] as String? ?? AppRoutes.nameInicio,
       enabled: json['enabled'] as bool? ?? true,
       order: json['order'] as int? ?? 0,

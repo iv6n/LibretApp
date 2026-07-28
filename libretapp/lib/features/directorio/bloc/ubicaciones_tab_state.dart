@@ -4,6 +4,8 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
+const Object _copyWithUnset = Object();
+
 abstract class UbicacionesTabState extends Equatable {
   const UbicacionesTabState();
 
@@ -37,11 +39,13 @@ class UbicacionesTabLoaded extends UbicacionesTabState {
 
   UbicacionesTabLoaded copyWith({
     List<LocationEntity>? ubicaciones,
-    List<LocationEntity>? filteredUbicaciones,
+    Object? filteredUbicaciones = _copyWithUnset,
   }) {
     return UbicacionesTabLoaded(
       ubicaciones: ubicaciones ?? this.ubicaciones,
-      filteredUbicaciones: filteredUbicaciones ?? this.filteredUbicaciones,
+      filteredUbicaciones: identical(filteredUbicaciones, _copyWithUnset)
+          ? this.filteredUbicaciones
+          : filteredUbicaciones as List<LocationEntity>?,
     );
   }
 

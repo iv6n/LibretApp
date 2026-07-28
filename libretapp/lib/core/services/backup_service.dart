@@ -9,9 +9,9 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
 import 'package:libretapp/features/agenda/data/workforce_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_dto.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lote_dto.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
@@ -41,6 +41,28 @@ class BackupImportSummary {
   final int milkingEntriesImported;
 }
 
+/// Result of parsing and cross-validating a raw backup payload, before any
+/// repository write happens.
+class _DecodedBackup {
+  const _DecodedBackup({
+    required this.animalDtos,
+    required this.loteDtos,
+    required this.agendaEntries,
+    required this.workers,
+    required this.teams,
+    required this.milkingSessions,
+    required this.milkingEntries,
+  });
+
+  final List<AnimalDto> animalDtos;
+  final List<LoteDto> loteDtos;
+  final List<AgendaEntry> agendaEntries;
+  final List<WorkerProfile> workers;
+  final List<WorkTeam> teams;
+  final List<MilkingSession> milkingSessions;
+  final List<MilkingEntry> milkingEntries;
+}
+
 class BackupService {
   BackupService({
     required AnimalRepository animalRepository,
@@ -48,11 +70,13 @@ class BackupService {
     required AgendaRepository agendaRepository,
     required WorkforceRepository workforceRepository,
     required MilkingRepository milkingRepository,
+    Future<List<AnimalEntity>> Function()? fetchAllAnimalsIncludingArchived,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _agendaRepository = agendaRepository,
        _workforceRepository = workforceRepository,
-       _milkingRepository = milkingRepository;
+       _milkingRepository = milkingRepository,
+       _fetchAllAnimalsIncludingArchived = fetchAllAnimalsIncludingArchived;
 
   static const _schemaVersion = 3;
 
@@ -62,11 +86,19 @@ class BackupService {
   final WorkforceRepository _workforceRepository;
   final MilkingRepository _milkingRepository;
 
+  /// Backup exports must include archived animals even though the default
+  /// [AnimalRepository.getAll] filters them out. Which concrete repository
+  /// can actually answer that is a composition-root concern (see
+  /// `injection.dart`), not something this service should downcast to
+  /// figure out — so it's handed in as a hook, defaulting to plain [getAll]
+  /// when the caller doesn't provide one.
+  final Future<List<AnimalEntity>> Function()? _fetchAllAnimalsIncludingArchived;
+
   Future<String> exportToJsonString() async {
-    final animalRepository = _animalRepository;
-    final animals = animalRepository is AnimalRepositoryIsar
-        ? await animalRepository.getAllIncludingArchived()
-        : await animalRepository.getAll();
+    final fetchArchived = _fetchAllAnimalsIncludingArchived;
+    final animals = fetchArchived != null
+        ? await fetchArchived()
+        : await _animalRepository.getAll();
     final lotes = await _lotesRepository.getAll();
     final agendaEntries = await _agendaRepository.fetchEntries();
     final workers = await _workforceRepository.fetchWorkers(
@@ -154,6 +186,14 @@ class BackupService {
     String raw, {
     required BackupImportMode mode,
   }) async {
+    final decoded = _decodeAndValidate(raw);
+    return _applyImport(decoded, mode);
+  }
+
+  /// Parses and validates the raw backup JSON into typed, cross-checked
+  /// lists. Pure (no repository I/O), so schema/validation bugs can be
+  /// tested without a fake repository per entity type.
+  _DecodedBackup _decodeAndValidate(String raw) {
     final decoded = jsonDecode(raw);
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
@@ -247,18 +287,38 @@ class BackupService {
       }
     }
 
+    return _DecodedBackup(
+      animalDtos: animalDtos,
+      loteDtos: loteDtos,
+      agendaEntries: agendaEntries,
+      workers: workers,
+      teams: teams,
+      milkingSessions: milkingSessions,
+      milkingEntries: milkingEntries,
+    );
+  }
+
+  /// Writes an already-decoded backup to the repositories and reports what
+  /// was imported.
+  Future<BackupImportSummary> _applyImport(
+    _DecodedBackup decoded,
+    BackupImportMode mode,
+  ) async {
     if (mode == BackupImportMode.replaceAll) {
       await _animalRepository.clearAll();
       await _lotesRepository.clearAll();
-      await _agendaRepository.replaceAll(agendaEntries);
-      await _workforceRepository.replaceAll(workers: workers, teams: teams);
+      await _agendaRepository.replaceAll(decoded.agendaEntries);
+      await _workforceRepository.replaceAll(
+        workers: decoded.workers,
+        teams: decoded.teams,
+      );
       await _milkingRepository.replaceAll(
-        sessions: milkingSessions,
-        entries: milkingEntries,
+        sessions: decoded.milkingSessions,
+        entries: decoded.milkingEntries,
       );
     }
 
-    for (final dto in animalDtos) {
+    for (final dto in decoded.animalDtos) {
       final entity = dto.toEntity().copyWith(id: null);
       final existing = mode == BackupImportMode.merge
           ? await _animalRepository.getByUuid(entity.uuid)
@@ -271,38 +331,38 @@ class BackupService {
       }
     }
 
-    for (final dto in loteDtos) {
+    for (final dto in decoded.loteDtos) {
       final entity = dto.toEntity().copyWith(id: null);
       await _lotesRepository.upsert(entity);
     }
 
     if (mode == BackupImportMode.merge) {
-      for (final entry in agendaEntries) {
+      for (final entry in decoded.agendaEntries) {
         await _agendaRepository.saveEntry(entry);
       }
-      for (final worker in workers) {
+      for (final worker in decoded.workers) {
         await _workforceRepository.saveWorker(worker);
       }
-      for (final team in teams) {
+      for (final team in decoded.teams) {
         await _workforceRepository.saveTeam(team);
       }
-      for (final session in milkingSessions) {
+      for (final session in decoded.milkingSessions) {
         await _milkingRepository.upsertSession(session);
       }
-      for (final entry in milkingEntries) {
+      for (final entry in decoded.milkingEntries) {
         await _milkingRepository.upsertEntry(entry);
       }
     }
 
     return BackupImportSummary(
       mode: mode,
-      animalsImported: animalDtos.length,
-      lotesImported: loteDtos.length,
-      agendaEntriesImported: agendaEntries.length,
-      workersImported: workers.length,
-      teamsImported: teams.length,
-      milkingSessionsImported: milkingSessions.length,
-      milkingEntriesImported: milkingEntries.length,
+      animalsImported: decoded.animalDtos.length,
+      lotesImported: decoded.loteDtos.length,
+      agendaEntriesImported: decoded.agendaEntries.length,
+      workersImported: decoded.workers.length,
+      teamsImported: decoded.teams.length,
+      milkingSessionsImported: decoded.milkingSessions.length,
+      milkingEntriesImported: decoded.milkingEntries.length,
     );
   }
 

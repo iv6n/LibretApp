@@ -2,67 +2,60 @@
 library;
 
 import 'package:isar/isar.dart';
-import 'package:libretapp/core/database/isar_database.dart';
-import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 
-class ReproductionRecordRepositoryIsar implements ReproductionRecordRepository {
-  ReproductionRecordRepositoryIsar(this._database);
-
-  static const _logTag = 'ReproductionRecordRepositoryIsar';
-  final IsarDatabase _database;
-
-  Future<Isar> get _isar async => _database.initialize();
+class ReproductionRecordRepositoryIsar
+    extends IsarRecordRepositoryBase<ReproductionRecord, IsarReproductionRecord>
+    implements ReproductionRecordRepository {
+  ReproductionRecordRepositoryIsar(super.database);
 
   @override
-  Future<List<ReproductionRecord>> getReproductionRecords(
+  String get logTag => 'ReproductionRecordRepositoryIsar';
+
+  @override
+  IsarCollection<IsarReproductionRecord> collection(Isar isar) => isar.isarReproductionRecords;
+
+  @override
+  Future<List<IsarReproductionRecord>> queryByAnimal(
+    IsarCollection<IsarReproductionRecord> collection,
     String animalUuid,
-  ) async {
-    final isar = await _isar;
-    final records = await isar.isarReproductionRecords
-        .filter()
-        .animalUuidEqualTo(animalUuid)
-        .sortByServiceDateDesc()
-        .findAll();
-    return records.map((e) => e.toEntity()).toList(growable: false);
-  }
+  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByServiceDateDesc().findAll();
+
+  @override
+  IsarReproductionRecord toIsarModel(ReproductionRecord record, String animalUuid) =>
+      record.toIsar(animalUuid);
+
+  @override
+  ReproductionRecord toEntity(IsarReproductionRecord model) => model.toEntity();
+
+  @override
+  void assignId(IsarReproductionRecord model, int id) => model.id = id;
+
+  @override
+  String describeSaved(String animalUuid, ReproductionRecord saved) =>
+      'Evento reproductivo guardado para $animalUuid (${saved.id})';
+
+  @override
+  Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid) =>
+      getRecordsFor(animalUuid);
 
   @override
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,
     ReproductionRecord record,
-  ) async {
-    final isar = await _isar;
-    final model = record.toIsar(animalUuid);
-    await isar.writeTxn(() async {
-      final id = await isar.isarReproductionRecords.put(model);
-      model.id = id;
-    });
-    final saved = model.toEntity();
-    LoggerService.i(
-      'Evento reproductivo guardado para $animalUuid (${saved.id})',
-      tag: _logTag,
-    );
-    return saved;
-  }
+  ) => addRecordFor(animalUuid, record);
 
   @override
-  Future<void> deleteReproductionRecord(String recordId) async {
-    final isar = await _isar;
-    final id = int.tryParse(recordId);
-    if (id == null) return;
-    await isar.writeTxn(() async {
-      await isar.isarReproductionRecords.delete(id);
-    });
-  }
+  Future<void> deleteReproductionRecord(String recordId) => deleteRecordById(recordId);
 
   @override
   Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
       getUpcomingCalvings(DateTime from, DateTime to) async {
-    final isar = await _isar;
-    final records = await isar.isarReproductionRecords
+    final db = await isar;
+    final records = await db.isarReproductionRecords
         .filter()
         .expectedCalvingDateBetween(from, to)
         .actualCalvingDateIsNull()

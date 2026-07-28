@@ -4,6 +4,8 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 
+const Object _copyWithUnset = Object();
+
 abstract class AnimalesTabState extends Equatable {
   const AnimalesTabState();
 
@@ -33,11 +35,13 @@ class AnimalesTabLoaded extends AnimalesTabState {
 
   AnimalesTabLoaded copyWith({
     List<AnimalEntity>? animales,
-    List<AnimalEntity>? filteredAnimales,
+    Object? filteredAnimales = _copyWithUnset,
   }) {
     return AnimalesTabLoaded(
       animales: animales ?? this.animales,
-      filteredAnimales: filteredAnimales ?? this.filteredAnimales,
+      filteredAnimales: identical(filteredAnimales, _copyWithUnset)
+          ? this.filteredAnimales
+          : filteredAnimales as List<AnimalEntity>?,
     );
   }
 

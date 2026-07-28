@@ -1,57 +1,52 @@
-﻿/// features \u203a directorio \u203a bloc \u203a lotes_tab_bloc \u2014 BLoC managing the lotes tab state within the directorio shell.
+/// features › directorio › bloc › lotes_tab_bloc — BLoC managing the lotes tab state within the directorio shell.
 library;
 
-import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
-import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_state.dart';
+import 'package:libretapp/features/directorio/bloc/watch_list_tab_bloc.dart';
+import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 
-class LotesTabBloc extends Bloc<LotesTabEvent, LotesTabState> {
+class LotesTabBloc
+    extends WatchListTabBloc<LoteEntity, LotesTabEvent, LotesTabState> {
   LotesTabBloc(this.repository) : super(const LotesTabInitial()) {
-    on<LoadLotesTab>(_onLoadLotes);
+    on<LoadLotesTab>((event, emit) => handleLoad(emit));
     on<SearchLotesTab>(_onSearchLotes);
     on<LotesTabStreamUpdated>(_onStreamUpdated);
     on<LotesTabStreamFailed>(_onStreamFailed);
   }
   final LotesRepository repository;
-  StreamSubscription<List<LoteEntity>>? _subscription;
 
-  Future<void> _onLoadLotes(
-    LoadLotesTab event,
-    Emitter<LotesTabState> emit,
-  ) async {
-    _emitIfActive(emit, const LotesTabLoading());
-    try {
-      await _subscription?.cancel();
-      // Usamos watchAll() para obtener un stream de los lotes
-      _subscription = repository.watchAll().listen(
-        (lotes) => add(LotesTabStreamUpdated(lotes)),
-        onError: (error, _) {
-          if (!isClosed) {
-            add(LotesTabStreamFailed(error.toString()));
-          }
-        },
-      );
-    } catch (e) {
-      _emitIfActive(emit, LotesTabError('Error al cargar lotes: $e'));
-    }
-  }
+  @override
+  Stream<List<LoteEntity>> watchItems() => repository.watchAll();
+
+  @override
+  LotesTabState buildLoading() => const LotesTabLoading();
+
+  @override
+  LotesTabState buildError(String rawError) =>
+      LotesTabError('Error al cargar lotes: $rawError');
+
+  @override
+  void onStreamUpdated(List<LoteEntity> items) =>
+      add(LotesTabStreamUpdated(items));
+
+  @override
+  void onStreamFailed(String error) => add(LotesTabStreamFailed(error));
 
   void _onStreamUpdated(
     LotesTabStreamUpdated event,
     Emitter<LotesTabState> emit,
   ) {
-    _emitIfActive(emit, LotesTabLoaded(lotes: event.lotes));
+    emitIfActive(emit, LotesTabLoaded(lotes: event.lotes));
   }
 
   void _onStreamFailed(
     LotesTabStreamFailed event,
     Emitter<LotesTabState> emit,
   ) {
-    _emitIfActive(emit, LotesTabError(event.error));
+    emitIfActive(emit, LotesTabError(event.error));
   }
 
   void _onSearchLotes(SearchLotesTab event, Emitter<LotesTabState> emit) {
@@ -59,7 +54,7 @@ class LotesTabBloc extends Bloc<LotesTabEvent, LotesTabState> {
     if (currentState is! LotesTabLoaded) return;
 
     if (event.query.isEmpty) {
-      _emitIfActive(emit, currentState.copyWith(filteredLotes: null));
+      emitIfActive(emit, currentState.copyWith(filteredLotes: null));
       return;
     }
 
@@ -68,17 +63,6 @@ class LotesTabBloc extends Bloc<LotesTabEvent, LotesTabState> {
       return nombre.contains(event.query.toLowerCase());
     }).toList();
 
-    _emitIfActive(emit, currentState.copyWith(filteredLotes: filtered));
-  }
-
-  void _emitIfActive(Emitter<LotesTabState> emit, LotesTabState state) {
-    if (emit.isDone || isClosed) return;
-    emit(state);
-  }
-
-  @override
-  Future<void> close() {
-    _subscription?.cancel();
-    return super.close();
+    emitIfActive(emit, currentState.copyWith(filteredLotes: filtered));
   }
 }

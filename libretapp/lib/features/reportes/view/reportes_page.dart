@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
-import 'package:libretapp/features/perfil/cubit/perfil_tabs_cubit.dart';
-import 'package:libretapp/features/perfil/data/library_repository.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
-import 'package:libretapp/features/perfil/domain/report_summary_service.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
+import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
+import 'package:libretapp/features/reportes/domain/report_summary_service.dart';
 import 'package:libretapp/features/reportes/view/tabs/reportes_finanzas_tab.dart';
 import 'package:libretapp/features/reportes/view/tabs/reportes_summary_tab.dart';
 
@@ -18,10 +17,9 @@ class ReportesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => PerfilTabsCubit(
+      create: (_) => ReportesCubit(
         reportService: locator<ReportSummaryService>(),
         financeService: locator<FinanceSummaryService>(),
-        libraryRepository: locator<LibraryRepository>(),
       ),
       child: const _ReportesView(),
     );

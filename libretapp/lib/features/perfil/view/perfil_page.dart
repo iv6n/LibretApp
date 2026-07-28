@@ -4,13 +4,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/features/biblioteca/cubit/biblioteca_cubit.dart';
+import 'package:libretapp/features/biblioteca/data/library_repository.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
-import 'package:libretapp/features/perfil/cubit/perfil_tabs_cubit.dart';
-import 'package:libretapp/features/perfil/data/library_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
-import 'package:libretapp/features/perfil/domain/report_summary_service.dart';
 import 'package:libretapp/features/perfil/view/perfil_view.dart';
 
 class PerfilPage extends StatelessWidget {
@@ -25,9 +23,7 @@ class PerfilPage extends StatelessWidget {
               PerfilBloc(locator<PerfilRepository>())..add(const LoadPerfil()),
         ),
         BlocProvider(
-          create: (_) => PerfilTabsCubit(
-            reportService: locator<ReportSummaryService>(),
-            financeService: locator<FinanceSummaryService>(),
+          create: (_) => BibliotecaCubit(
             libraryRepository: locator<LibraryRepository>(),
           ),
         ),

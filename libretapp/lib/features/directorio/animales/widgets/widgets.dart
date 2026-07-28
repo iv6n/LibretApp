@@ -10,5 +10,6 @@ export 'history_tab.dart';
 export 'info_tab.dart';
 export 'location_batch_sheet.dart';
 export 'quick_actions_fab.dart';
+export 'record_form_scaffold.dart';
 export 'records_tab.dart';
 export 'animal_search_overlay.dart';

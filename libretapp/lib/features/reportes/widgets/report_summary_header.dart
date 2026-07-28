@@ -3,7 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:libretapp/features/perfil/data/report_summary.dart';
+import 'package:libretapp/features/reportes/data/report_summary.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class ReportSummaryHeader extends StatelessWidget {

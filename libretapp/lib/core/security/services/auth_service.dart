@@ -3,6 +3,7 @@ library;
 
 import 'package:libretapp/core/security/models/models.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
+import 'package:libretapp/core/security/services/security_build_mode.dart';
 
 class AuthService implements AuthPort {
   AuthService({
@@ -14,8 +15,26 @@ class AuthService implements AuthPort {
   final TokenPort _tokenPort;
   final SensitiveLoggerPort _logger;
 
+  // AuthService.signIn() is a placeholder stub that accepts any non-empty
+  // credentials — it must never authenticate a real user. Off by default so
+  // release builds fail loudly if a login flow is ever wired to this stub
+  // before a real auth backend is integrated.
+  static const _allowInsecureAuthInRelease = bool.fromEnvironment(
+    'LIBRET_ALLOW_INSECURE_AUTH_IN_RELEASE',
+    defaultValue: false,
+  );
+
   @override
   Future<AuthResult> signIn(AuthCredentials credentials) async {
+    if (isSecurityReleaseMode && !_allowInsecureAuthInRelease) {
+      throw SecurityException(
+        'AuthService is a placeholder stub and cannot authenticate users in '
+        'a release build; integrate a real auth backend before calling '
+        'signIn().',
+        code: 'INSECURE_AUTH_STUB_IN_RELEASE',
+      );
+    }
+
     if (credentials.username.trim().isEmpty || credentials.secret.isEmpty) {
       return const AuthResult(
         isSuccess: false,

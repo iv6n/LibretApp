@@ -11,9 +11,6 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/services/batch_migration_service.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
 
 part 'app_event.dart';
@@ -35,27 +32,6 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
     await _syncAutomaticReminders();
-
-    // Ejecutar migración de lotes si es necesaria
-    try {
-      if (!locator.isRegistered<BatchMigrationService>() &&
-          (!locator.isRegistered<AnimalRepository>() ||
-              !locator.isRegistered<LotesRepository>())) {
-        return _finishStartup(emit);
-      }
-      final migrationService = BatchMigrationService(
-        animalRepository: locator(),
-        lotesRepository: locator(),
-      );
-      await migrationService.migrate();
-    } catch (e, st) {
-      // La migracion no bloquea el arranque, pero debe dejar traza para diagnostico.
-      LoggerService.e(
-        'Error durante migracion inicial de lotes: $e',
-        tag: 'AppBloc',
-        stackTrace: st,
-      );
-    }
 
     // Ejecutar migración de enums de ubicaciones (Spanish → English strings)
     try {

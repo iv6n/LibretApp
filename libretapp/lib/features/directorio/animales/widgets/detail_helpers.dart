@@ -75,17 +75,6 @@ Color detailColorFromHex(String hex) {
   return Color(int.parse(buffer.toString(), radix: 16));
 }
 
-List<String> uniqueBatches(List<AnimalEntity> animals) {
-  final batches = animals
-      .map((a) => a.batchId?.trim())
-      .whereType<String>()
-      .where((id) => id.isNotEmpty)
-      .toSet()
-      .toList();
-  batches.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-  return batches;
-}
-
 // ── Display name extensions for record-type enums ───────────────────
 
 extension ProductionRecordTypeDisplay on ProductionRecordType {

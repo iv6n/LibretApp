@@ -186,57 +186,38 @@ LocationEntity _location({
 
 void main() {
   group('UbicacionesBloc upsert flow', () {
-    test('guarda en repositorio y actualiza lista por stream', () async {
-      final repository = _BlocFakeLocationRepository([
-        _location(uuid: 'u1', name: 'Base'),
-      ]);
-      final bloc = UbicacionesBloc(repository);
-      final emitted = <UbicacionesState>[];
-      final subscription = bloc.stream.listen(emitted.add);
+    test(
+      'refleja en el stream un guardado hecho directo al repositorio '
+      '(el formulario real guarda vía LocationRepository.upsert, no vía bloc)',
+      () async {
+        final repository = _BlocFakeLocationRepository([
+          _location(uuid: 'u1', name: 'Base'),
+        ]);
+        final bloc = UbicacionesBloc(repository);
+        final emitted = <UbicacionesState>[];
+        final subscription = bloc.stream.listen(emitted.add);
 
-      bloc.add(const LoadUbicaciones());
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        bloc.add(const LoadUbicaciones());
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      bloc.add(UpsertUbicacion(_location(uuid: 'u2', name: 'Nueva')));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+        await repository.upsert(_location(uuid: 'u2', name: 'Nueva'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
 
-      final lastLoaded = emitted.whereType<UbicacionesLoaded>().last;
-      expect(
-        lastLoaded.allUbicaciones.any((item) => item.uuid == 'u2'),
-        isTrue,
-      );
-      expect(
-        lastLoaded.visibleUbicaciones.any((item) => item.uuid == 'u2'),
-        isTrue,
-      );
+        final lastLoaded = emitted.whereType<UbicacionesLoaded>().last;
+        expect(
+          lastLoaded.allUbicaciones.any((item) => item.uuid == 'u2'),
+          isTrue,
+        );
+        expect(
+          lastLoaded.visibleUbicaciones.any((item) => item.uuid == 'u2'),
+          isTrue,
+        );
 
-      await subscription.cancel();
-      await bloc.close();
-      await repository.dispose();
-    });
-
-    test('si falla el guardado emite UbicacionesError', () async {
-      final repository = _BlocFakeLocationRepository([
-        _location(uuid: 'u1', name: 'Base'),
-      ]);
-      repository.failOnUpsert = true;
-
-      final bloc = UbicacionesBloc(repository);
-      final emitted = <UbicacionesState>[];
-      final subscription = bloc.stream.listen(emitted.add);
-
-      bloc.add(const LoadUbicaciones());
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      bloc.add(UpsertUbicacion(_location(uuid: 'u2', name: 'Nueva')));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(emitted.any((state) => state is UbicacionesError), isTrue);
-
-      await subscription.cancel();
-      await bloc.close();
-      await repository.dispose();
-    });
+        await subscription.cancel();
+        await bloc.close();
+        await repository.dispose();
+      },
+    );
 
     test('carga por bootstrap cuando watchAll no emite al inicio', () async {
       final repository = _BlocFakeLocationRepository([
@@ -312,40 +293,5 @@ void main() {
       await repository.dispose();
     });
 
-    test('permite ejido como sub-ubicacion bajo monte comunal', () async {
-      final repository = _BlocFakeLocationRepository([
-        _location(
-          uuid: 'monte',
-          name: 'Monte Ejidal Comunal',
-          type: LocationType.monte,
-        ).copyWith(isCommunal: true),
-      ]);
-      final bloc = UbicacionesBloc(repository);
-
-      bloc.add(const LoadUbicaciones());
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      bloc.add(
-        UpsertUbicacion(
-          _location(
-            uuid: 'derecho',
-            name: 'Derecho Ejidal',
-            parentUuid: 'monte',
-            type: LocationType.ejido,
-          ),
-        ),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
-      expect(bloc.state, isA<UbicacionesLoaded>());
-      final loaded = bloc.state as UbicacionesLoaded;
-      expect(
-        loaded.allUbicaciones.any((l) => l.uuid == 'derecho'),
-        isTrue,
-      );
-
-      await bloc.close();
-      await repository.dispose();
-    });
   });
 }

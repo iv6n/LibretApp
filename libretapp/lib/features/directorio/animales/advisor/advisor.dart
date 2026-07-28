@@ -1,4 +1,4 @@
-/// core › advisor — barrel export for the livestock advisor subsystem.
+/// features > directorio > animales > advisor — barrel export for the livestock advisor subsystem.
 library;
 
 export 'livestock_advisor.dart';

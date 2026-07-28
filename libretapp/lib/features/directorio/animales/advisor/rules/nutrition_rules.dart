@@ -1,7 +1,7 @@
-/// core › advisor › rules › nutrition_rules — rules that generate nutrition-related advisor tips.
+/// features > directorio > animales > advisor > rules > nutrition_rules — rules that generate nutrition-related advisor tips.
 library;
 
-import 'package:libretapp/core/advisor/livestock_tip.dart';
+import 'package:libretapp/features/directorio/animales/advisor/livestock_tip.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';

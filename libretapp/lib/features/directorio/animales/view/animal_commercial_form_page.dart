@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalCommercialFormPage extends StatefulWidget {
@@ -89,104 +90,84 @@ class _AnimalCommercialFormPageState extends State<AnimalCommercialFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.detailFormCommercialTitle)),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<CommercialRecordType>(
-                initialValue: _type,
+    return RecordFormScaffold(
+      title: l10n.detailFormCommercialTitle,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      fields: [
+        DropdownButtonFormField<CommercialRecordType>(
+          initialValue: _type,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormCommercialType,
+            border: const OutlineInputBorder(),
+          ),
+          items: CommercialRecordType.values
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _type = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: l10n.detailFormCommercialType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: CommercialRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _type = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCommercialAmount,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _currencyController,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCommercialCurrency,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _counterpartyController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormCommercialCounterparty,
+                  labelText: l10n.detailFormCommercialAmount,
                   border: const OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _currencyController,
                 decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
+                  labelText: l10n.detailFormCommercialCurrency,
                   border: const OutlineInputBorder(),
                 ),
-                maxLines: 2,
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.actionSave),
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.today),
+          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _date,
+              firstDate: DateTime(_date.year - 5),
+              lastDate: DateTime(_date.year + 1),
+            );
+            if (picked == null) return;
+            setState(() => _date = picked);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _counterpartyController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormCommercialCounterparty,
+            border: const OutlineInputBorder(),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: l10n.fieldNotes,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class BulkHealthFormPage extends StatefulWidget {
@@ -78,152 +79,124 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.animalsBulkMaintenanceAction(widget.selectedCount)),
-      ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<HealthRecordType>(
-                  initialValue: _type,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthType,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: HealthRecordType.values
-                      .map(
-                        (t) => DropdownMenuItem(value: t, child: Text(t.name)),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() => _type = value);
-                  },
+    return RecordFormScaffold(
+      title: l10n.animalsBulkMaintenanceAction(widget.selectedCount),
+      saving: _saving,
+      onSave: _submit,
+      saveLabel: l10n.actionSave,
+      formKey: _formKey,
+      fields: [
+        DropdownButtonFormField<HealthRecordType>(
+          initialValue: _type,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormHealthType,
+            border: const OutlineInputBorder(),
+          ),
+          items: HealthRecordType.values
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _type = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _productController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormHealthProduct,
+            border: const OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return l10n.detailFormHealthProductRequired;
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _doseController,
+                decoration: InputDecoration(
+                  labelText: l10n.detailFormHealthDose,
+                  border: const OutlineInputBorder(),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _productController,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthProduct,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.detailFormHealthProductRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _doseController,
-                        decoration: InputDecoration(
-                          labelText: l10n.detailFormHealthDose,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _appliedByController,
-                        decoration: InputDecoration(
-                          labelText: l10n.detailFormHealthAppliedBy,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.today),
-                        label: Text(
-                          '${_date.year}-${_date.month}-${_date.day}',
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _date,
-                            firstDate: DateTime(_date.year - 5),
-                            lastDate: DateTime(_date.year + 1),
-                          );
-                          if (picked == null) return;
-                          setState(() => _date = picked);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.event_available),
-                        label: Text(
-                          _nextDate == null
-                              ? l10n.detailFormHealthNext
-                              : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _nextDate ?? _date,
-                            firstDate: DateTime(_date.year),
-                            lastDate: DateTime(_date.year + 5),
-                          );
-                          setState(() => _nextDate = picked);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _causeController,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormHealthCause,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _notesController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.fieldNotes,
-                    border: const OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _saving ? null : _submit,
-                    child: _saving
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.actionSave),
-                  ),
-                ),
-              ],
+              ),
             ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _appliedByController,
+                decoration: InputDecoration(
+                  labelText: l10n.detailFormHealthAppliedBy,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.today),
+                label: Text('${_date.year}-${_date.month}-${_date.day}'),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _date,
+                    firstDate: DateTime(_date.year - 5),
+                    lastDate: DateTime(_date.year + 1),
+                  );
+                  if (picked == null) return;
+                  setState(() => _date = picked);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.event_available),
+                label: Text(
+                  _nextDate == null
+                      ? l10n.detailFormHealthNext
+                      : '${_nextDate!.year}-${_nextDate!.month}-${_nextDate!.day}',
+                ),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _nextDate ?? _date,
+                    firstDate: DateTime(_date.year),
+                    lastDate: DateTime(_date.year + 5),
+                  );
+                  setState(() => _nextDate = picked);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _causeController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormHealthCause,
+            border: const OutlineInputBorder(),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _notesController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: l10n.fieldNotes,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ],
     );
   }
 }

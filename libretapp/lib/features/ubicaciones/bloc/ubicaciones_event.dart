@@ -19,14 +19,6 @@ class LoadUbicaciones extends UbicacionesEvent {
   const LoadUbicaciones();
 }
 
-class UpsertUbicacion extends UbicacionesEvent {
-  const UpsertUbicacion(this.ubicacion);
-  final LocationEntity ubicacion;
-
-  @override
-  List<Object> get props => [ubicacion];
-}
-
 class DeleteUbicacion extends UbicacionesEvent {
   const DeleteUbicacion(this.uuid);
   final String uuid;

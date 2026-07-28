@@ -1,0 +1,832 @@
+<!doctype html><html><head><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auditoría LibretApp — Julio 2026 (actualizada)</title></head><body><style>
+@font-face {
+  font-family: 'Source Serif Fallback';
+  src: local('Source Serif 4'), local('Source Serif Pro'), local('Georgia');
+}
+
+:root {
+  --bg: #eef1ec;
+  --surface: #ffffff;
+  --surface-2: #e4e9e2;
+  --ink: #1b2420;
+  --ink-soft: #45524b;
+  --muted: #6b7a72;
+  --border: #d3dbcf;
+  --accent: #2f6350;
+  --accent-soft: #e1ede6;
+  --accent-2: #8a5a2b;
+  --crit: #ad3d28;
+  --crit-soft: #f6ded7;
+  --warn: #9c6a1a;
+  --warn-soft: #f2e4c9;
+  --ok: #2c7350;
+  --ok-soft: #dff0e6;
+  --info: #375f8a;
+  --info-soft: #dfe8f2;
+  --shadow: 0 1px 2px rgba(20,30,25,.06), 0 6px 20px -8px rgba(20,30,25,.18);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10140f;
+    --surface: #171d17;
+    --surface-2: #1d2520;
+    --ink: #e6ece5;
+    --ink-soft: #b6c3ba;
+    --muted: #8a9990;
+    --border: #2a352c;
+    --accent: #74b696;
+    --accent-soft: #1b2b23;
+    --accent-2: #cf9c60;
+    --crit: #e2816a;
+    --crit-soft: #3a2019;
+    --warn: #d9a851;
+    --warn-soft: #382c15;
+    --ok: #74bf98;
+    --ok-soft: #182c21;
+    --info: #86abda;
+    --info-soft: #1b2836;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -10px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10140f; --surface: #171d17; --surface-2: #1d2520; --ink: #e6ece5; --ink-soft: #b6c3ba;
+  --muted: #8a9990; --border: #2a352c; --accent: #74b696; --accent-soft: #1b2b23; --accent-2: #cf9c60;
+  --crit: #e2816a; --crit-soft: #3a2019; --warn: #d9a851; --warn-soft: #382c15; --ok: #74bf98;
+  --ok-soft: #182c21; --info: #86abda; --info-soft: #1b2836;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #eef1ec; --surface: #ffffff; --surface-2: #e4e9e2; --ink: #1b2420; --ink-soft: #45524b;
+  --muted: #6b7a72; --border: #d3dbcf; --accent: #2f6350; --accent-soft: #e1ede6; --accent-2: #8a5a2b;
+  --crit: #ad3d28; --crit-soft: #f6ded7; --warn: #9c6a1a; --warn-soft: #f2e4c9; --ok: #2c7350;
+  --ok-soft: #dff0e6; --info: #375f8a; --info-soft: #dfe8f2;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, system-ui, sans-serif;
+  font-size: 15.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: Georgia, 'Source Serif Fallback', 'Iowan Old Style', serif; text-wrap: balance; color: var(--ink); margin: 0; font-weight: 600; }
+code, .mono, .tabular { font-family: ui-monospace, "SFMono-Regular", Consolas, "Cascadia Mono", monospace; font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+p { margin: 0 0 .7em; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+/* ---- layout shell ---- */
+.shell { display: grid; grid-template-columns: 250px minmax(0,1fr); gap: 0; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 920px) { .shell { grid-template-columns: 1fr; } }
+
+.rail {
+  position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+  padding: 22px 16px 40px; border-right: 1px solid var(--border);
+}
+@media (max-width: 920px) {
+  .rail { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); padding: 16px; }
+  .rail-nav { display: flex; flex-wrap: wrap; gap: 6px; }
+}
+.rail-brand { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.rail-brand .mark { color: var(--accent); font-size: 20px; }
+.rail-brand h1 { font-size: 17px; }
+.rail-sub { color: var(--muted); font-size: 12.5px; margin: 2px 0 20px; }
+.rail-nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.rail-nav a {
+  text-decoration: none; color: var(--ink-soft); font-size: 13.5px; padding: 6px 9px; border-radius: 7px;
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.rail-nav a:hover { background: var(--surface-2); color: var(--ink); }
+.rail-nav a .count { color: var(--muted); font-size: 11.5px; }
+.rail-nav .section-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 14px 0 4px 9px; }
+
+.main { padding: 30px 34px 80px; min-width: 0; }
+@media (max-width: 640px) { .main { padding: 22px 16px 60px; } }
+
+/* ---- hero / summary ---- */
+.hero { margin-bottom: 28px; }
+.hero .eyebrow { display: block; margin-bottom: 8px; }
+.hero h1 { font-size: clamp(26px, 3.4vw, 34px); margin-bottom: 10px; }
+.hero p.lede { color: var(--ink-soft); font-size: 15.5px; max-width: 66ch; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 22px 0 30px; }
+.stat {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.stat .n { font-family: Georgia, serif; font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.stat.crit .n { color: var(--crit); }
+.stat.warn .n { color: var(--warn); }
+.stat.ok .n { color: var(--accent); }
+
+/* feature health cards */
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 10px; margin: 10px 0 34px; }
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  border-left: 4px solid var(--muted); box-shadow: var(--shadow);
+}
+.feat-card.sev-crit { border-left-color: var(--crit); }
+.feat-card.sev-warn { border-left-color: var(--warn); }
+.feat-card.sev-ok { border-left-color: var(--ok); }
+.feat-card h4 { font-size: 14px; margin-bottom: 4px; }
+.feat-card .note { font-size: 12.5px; color: var(--muted); }
+
+/* ---- section chrome ---- */
+section.block { margin: 46px 0; scroll-margin-top: 18px; }
+section.block > h2 { font-size: 22px; margin-bottom: 6px; }
+section.block > .desc { color: var(--muted); font-size: 13.5px; margin-bottom: 16px; max-width: 72ch; }
+
+/* critical findings list */
+.crit-list { display: flex; flex-direction: column; gap: 10px; }
+.crit-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+  box-shadow: var(--shadow); display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start;
+}
+@media (max-width: 640px) { .crit-item { grid-template-columns: 1fr; } }
+.sev-pill {
+  font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; font-weight: 700; padding: 3px 8px;
+  border-radius: 999px; white-space: nowrap; height: fit-content;
+}
+.sev-pill.crit { background: var(--crit-soft); color: var(--crit); }
+.sev-pill.warn { background: var(--warn-soft); color: var(--warn); }
+.sev-pill.info { background: var(--info-soft); color: var(--info); }
+.sev-pill.ok { background: var(--ok-soft); color: var(--ok); }
+.crit-item .body h4 { font-size: 14.5px; margin-bottom: 3px; }
+.crit-item .body .file { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.crit-item .body p { font-size: 13.5px; color: var(--ink-soft); margin: 0; }
+.effort-tag {
+  font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; padding-top: 2px;
+}
+.effort-tag b { color: var(--ink-soft); font-weight: 600; }
+
+/* feature accordions */
+details.feature {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+details.feature > summary {
+  list-style: none; cursor: pointer; padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+  justify-content: space-between;
+}
+details.feature > summary::-webkit-details-marker { display: none; }
+details.feature > summary .chev { transition: transform .15s ease; color: var(--muted); font-size: 13px; }
+details.feature[open] > summary .chev { transform: rotate(90deg); }
+details.feature > summary .ttl { font-family: Georgia, serif; font-size: 16.5px; font-weight: 600; }
+details.feature > summary .tag { font-size: 11.5px; color: var(--muted); }
+.feature-body { padding: 4px 18px 18px; border-top: 1px solid var(--border); }
+.feature-body .summary-line { font-size: 13.5px; color: var(--ink-soft); margin: 12px 0 16px; }
+
+details.file { margin: 8px 0; border-left: 2px solid var(--border); padding-left: 12px; }
+details.file > summary { cursor: pointer; font-size: 13.5px; padding: 4px 0; display: flex; gap: 8px; align-items: baseline; }
+details.file > summary::-webkit-details-marker { display: none; }
+details.file > summary .path { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--ink); }
+details.file > summary::before { content: '▸'; color: var(--muted); font-size: 10px; }
+details.file[open] > summary::before { content: '▾'; }
+.finding { display: flex; gap: 8px; padding: 5px 0 5px 16px; font-size: 13px; align-items: baseline; }
+.finding .tag { flex-shrink: 0; font-size: 10px; text-transform: uppercase; letter-spacing: .03em; font-weight: 700; padding: 1px 6px; border-radius: 5px; }
+.finding .tag.ok { background: var(--ok-soft); color: var(--ok); }
+.finding .tag.warn { background: var(--warn-soft); color: var(--warn); }
+.finding .tag.crit { background: var(--crit-soft); color: var(--crit); }
+.finding .txt { color: var(--ink-soft); }
+.finding .txt b { color: var(--ink); font-weight: 600; }
+
+/* tables */
+.twrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; background: var(--surface); }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: var(--surface-2); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+td.path, td code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+.confidence { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.confidence.seguro { background: var(--ok-soft); color: var(--ok); }
+.confidence.verificar { background: var(--warn-soft); color: var(--warn); }
+.status-pill { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; white-space: nowrap; letter-spacing: .03em; }
+.status-pill.fijo { background: var(--ok-soft); color: var(--ok); }
+.status-pill.eliminado { background: var(--ok-soft); color: var(--ok); }
+.status-pill.pendiente { background: var(--crit-soft); color: var(--crit); }
+.status-pill.parcial { background: var(--warn-soft); color: var(--warn); }
+.status-pill.mantenido { background: var(--info-soft); color: var(--info); }
+.status-pill.correccion { background: var(--accent-soft); color: var(--accent); }
+.update-banner { margin: 0 0 22px; padding: 16px 18px; border-radius: 12px; background: var(--info-soft); border: 1px solid var(--info); box-shadow: var(--shadow); }
+.update-banner h3 { font-size: 14.5px; margin-bottom: 6px; color: var(--info); }
+.update-banner p { font-size: 13px; color: var(--ink-soft); margin: 0 0 6px; }
+.update-banner p:last-child { margin-bottom: 0; }
+
+.effort { font-size: 10.5px; font-weight: 700; text-transform: uppercase; color: var(--muted); }
+.priority { font-size: 10.5px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; }
+.priority.critico { background: var(--crit-soft); color: var(--crit); }
+.priority.alto { background: var(--warn-soft); color: var(--warn); }
+.priority.medio { background: var(--info-soft); color: var(--info); }
+
+/* filter chips */
+.chipbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.chip {
+  font-size: 12.5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink-soft); cursor: pointer; user-select: none;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.active { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+
+/* footer note */
+.confirm-note {
+  margin-top: 50px; padding: 20px 22px; border-radius: 12px; background: var(--accent-soft);
+  border: 1px solid var(--accent); box-shadow: var(--shadow);
+}
+.confirm-note h3 { font-size: 16px; margin-bottom: 8px; color: var(--accent); }
+.confirm-note p { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 0; }
+
+::selection { background: var(--accent); color: var(--surface); }
+a:focus-visible, .chip:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="shell">
+  <nav class="rail">
+    <div class="rail-brand"><span class="mark">◈</span><h1>Auditoría LibretApp</h1></div>
+    <div class="rail-sub">6 pasadas de revisión · 463 archivos Dart · 25 jul 2026</div>
+    <div class="rail-nav">
+      <a href="#resumen">Resumen ejecutivo <span class="count"></span></a>
+      <a href="#criticos">Hallazgos críticos <span class="count">16</span></a>
+      <div class="section-label">Revisión por feature</div>
+      <a href="#f-core">Core / Seguridad</a>
+      <a href="#f-directorio">Directorio / Animales</a>
+      <a href="#f-ubicaciones">Ubicaciones</a>
+      <a href="#f-agenda">Agenda / Finanzas / Milking</a>
+      <a href="#f-resto">Inicio / Perfil / Reportes / Registro / Exportar</a>
+      <div class="section-label">Planes</div>
+      <a href="#tests">Plan de tests</a>
+      <a href="#refactor">Plan de refactor</a>
+      <a href="#eliminar">Archivos a eliminar</a>
+      <a href="#modificar">Archivos a modificar</a>
+      <a href="#confirmacion">Próximos pasos</a>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <section class="hero" id="resumen">
+      <span class="eyebrow">Reporte de auditoría de código · Read-only</span>
+      <h1>LibretApp — estado real del código, feature por feature</h1>
+      <p class="lede">Seis agentes de revisión leyeron cada archivo no generado de <code>libretapp/lib/</code> y <code>libretapp/test/</code> en paralelo. Esto es lo que encontraron: bugs activos, código muerto, huecos de test y una lista accionable de qué borrar, qué arreglar y qué escribir — nada se tocó todavía.</p>
+      <div class="update-banner">
+        <h3>Actualizado 26 jul 2026 (noche) — Fases 4 y 6 y el plan de tests de alto ROI ejecutados</h3>
+        <p>Desde este audit se ejecutaron las Fases 0, 1, 2, 3, 4, 5 y 6 del plan (CI, pérdida de datos, bugs de estado/crash, cálculos incorrectos, seguridad, código muerto confirmado, y los 3 hallazgos críticos que quedaban sin decisión de arquitectura) sobre la rama <code>main-5enhm8</code> (<a href="https://github.com/iv6n/LibretApp/pull/1">PR #1</a>), más la mayor parte de los tests de alto ROI de la tabla de abajo. Ya no queda ningún hallazgo crítico en estado <span class="status-pill pendiente">Pendiente</span> — quedan 15 <span class="status-pill fijo">Fijo</span> y 1 <span class="status-pill parcial">Parcial</span> (ver nota de <code>crit-12</code>). Cada hallazgo tiene una etiqueta de estado: <span class="status-pill fijo">Fijo</span> <span class="status-pill pendiente">Pendiente</span> <span class="status-pill parcial">Parcial</span> <span class="status-pill mantenido">Mantenido</span> <span class="status-pill correccion">Corrección al audit</span>.</p>
+        <p><b>Fase 4 se resolvió con guardas de release, no con integración nativa real</b> (decisión explícita del usuario): <code>AuthService</code> no tiene ningún consumidor en la app hoy (no existe pantalla de login), así que en vez de construir un backend de auth y un keystore nativo sin caso de uso todavía, ambos servicios ahora fallan de forma ruidosa en builds de release (<code>kReleaseMode</code>) en vez de usar silenciosamente la clave por defecto o el stub de auth. <code>prefs_secure_store_service.dart</code> se renombró a <code>prefs_key_value_store_service.dart</code> (nombre honesto: no cifra por sí mismo, el cifrado ya ocurre antes en <code>TokenStoreService</code>). Suite de tests: <b>227 → 370</b>, con 122 tests nuevos para las reglas del asesor ganadero y 21 para <code>AgendaBloc</code>. Detalle completo en <code>CORRECCIONES.md</code> y <code>auditoriaestado.json</code>, en esta misma carpeta.</p>
+      </div>
+
+
+      <div class="stat-grid">
+        <div class="stat ok"><div class="n">16</div><div class="l">Hallazgos críticos (15 fijos, 1 parcial, 0 pendientes)</div></div>
+        <div class="stat warn"><div class="n">~45</div><div class="l">Archivos candidatos a eliminar</div></div>
+        <div class="stat ok"><div class="n">446</div><div class="l">Tests pasando en CI (antes: 35, sin CI)</div></div>
+        <div class="stat"><div class="n">28</div><div class="l">Archivos de test propuestos (6 hechos)</div></div>
+      </div>
+
+      <div class="feat-grid">
+        <div class="feat-card sev-warn"><h4>Core / Seguridad</h4><div class="note">Guard de release agregado (Fase 4) — sin backend nativo real, sin UI que lo use aún</div></div>
+        <div class="feat-card sev-crit"><h4>Directorio / Animales</h4><div class="note">Pérdida de datos en backup + hangs de UI</div></div>
+        <div class="feat-card sev-crit"><h4>Ubicaciones</h4><div class="note">Pérdida de cultivos + riesgo de crash</div></div>
+        <div class="feat-card sev-ok"><h4>Agenda</h4><div class="note">Recurrencia real desde Fase 6; rollback ante fallo de guardado</div></div>
+        <div class="feat-card sev-warn"><h4>Finanzas</h4><div class="note">Rentabilidad mal calculada entre periodos</div></div>
+        <div class="feat-card sev-warn"><h4>Milking</h4><div class="note">Sesiones borrador obsoletas se retoman solas</div></div>
+        <div class="feat-card sev-warn"><h4>Inicio</h4><div class="note">3 widgets muertos confirmados</div></div>
+        <div class="feat-card sev-ok"><h4>Perfil</h4><div class="note">Ajustes/reportes/biblioteca separados en 3 features propios</div></div>
+        <div class="feat-card sev-crit"><h4>Reportes</h4><div class="note">Sin capa propia, 0% cobertura de test</div></div>
+        <div class="feat-card sev-warn"><h4>Registro</h4><div class="note">Bug copy-paste en 3 formularios</div></div>
+        <div class="feat-card sev-ok"><h4>Exportar</h4><div class="note">Correcto, solo un detalle cosmético</div></div>
+        <div class="feat-card sev-ok"><h4>Infraestructura de tests</h4><div class="note">CI activo desde Fase 0 · 446 tests pasando</div></div>
+      </div>
+
+      <p class="lede" style="font-size:13px;color:var(--muted)">Nota metodológica: cada agente marcó cada función como <b style="color:var(--ok)">correcto</b>, <b style="color:var(--warn)">mejorable</b> o <b style="color:var(--crit)">sospechoso</b>. Este reporte condensa esas notas — el detalle exhaustivo archivo por archivo vive en los 6 informes fuente si necesitas profundizar en alguno.</p>
+    </section>
+
+    <section class="block" id="criticos">
+      <h2>Hallazgos críticos</h2>
+      <p class="desc">Ordenados por impacto: pérdida de datos y seguridad primero, luego bugs de UI que bloquean al usuario, luego cálculos incorrectos. Todos verificados con grep/lectura completa del archivo, no son suposiciones.</p>
+
+      <div class="crit-list">
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Seguridad</span>
+          <div class="body">
+            <h4>La clave maestra de cifrado de tokens es un placeholder público por defecto</h4>
+            <div class="file"><code>core/security/services/default_key_provider_service.dart</code></div>
+            <p><code>String.fromEnvironment('LIBRET_TOKEN_MASTER_KEY', defaultValue: 'dev-token-master-key-change-me')</code> sigue existiendo (necesario para debug/test), pero ahora <code>getTokenMasterKey()</code> lanza <code>SecurityException</code> si <code>kReleaseMode</code> es verdadero y la clave sigue siendo el default público — mismo patrón que el guard de versión de crypto en <code>injection.dart</code>. Se evaluó sourcing real desde el keystore/keychain del SO pero se descartó por ahora: no hay ninguna UI ni backend de auth que consuma esto todavía.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 4 · guard de release</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Seguridad</span>
+          <div class="body">
+            <h4><code>AuthService.signIn()</code> autentica a cualquiera</h4>
+            <div class="file"><code>core/security/services/auth_service.dart</code></div>
+            <p>Sigue siendo un stub — cualquier usuario y secreto no vacíos siguen teniendo éxito en debug/test — pero ahora lanza <code>SecurityException</code> si se llama en un build de release. Como <code>AuthPort</code> nunca se resuelve desde ninguna pantalla real (grep confirmó cero call sites de <code>signIn()</code> fuera de DI/tests), el riesgo real era que alguien conectara una UI de login a este stub sin darse cuenta en producción; el guard lo hace imposible sin decisión explícita.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 4 · guard de release</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill crit">Pérdida de datos</span>
+          <div class="body">
+            <h4>Editar una ubicación borra silenciosamente todos sus registros de cultivos</h4>
+            <div class="file"><code>features/ubicaciones/widgets/location_form_sheet.dart</code> → <code>_submit()</code></div>
+            <p>Construye un <code>LocationEntity</code> nuevo copiando <code>visits/waters/salts/shades/pastures/seedings/irrigations/rains/costs</code> desde el original, pero <b>omite <code>crops</code></b>. Como el default es lista vacía, cada edición de una ubicación con cultivos los elimina.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 1.1</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill crit">Pérdida de datos</span>
+          <div class="body">
+            <h4>Backup/restore borra 26 campos de cada animal, incluyendo el estado</h4>
+            <div class="file"><code>features/directorio/animales/infrastructure/animal_dto.dart</code></div>
+            <p><code>AnimalDto</code> quedó desincronizado de <code>AnimalEntity</code>: no serializa <code>status, notes, owner, purchasePrice, customName</code> y ~22 campos más. El peor caso: <code>status</code> nunca se pasa al reconstruir, así que <b>cualquier animal vendido o muerto vuelve a "activo" tras un backup + restauración.</b></p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio-alto</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 1.3 · 73/73 campos verificados</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Crash potencial</span>
+          <div class="body">
+            <h4>Conteo de animales por ubicación puede desbordar la pila con un ciclo padre-hijo</h4>
+            <div class="file"><code>features/ubicaciones/view/ubicaciones_tree_builder.dart</code> → <code>computeSubtreeAnimalCounts</code></div>
+            <p>Es la única función del árbol sin protección contra ciclos (todas las demás sí la tienen). Ya existe una migración específica (<code>_migrateEjidoParentIfNeeded</code>) porque una cadena de padres cíclica ocurrió una vez en datos reales — nada impide que vuelva a pasar.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 2</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Bug de estado</span>
+          <div class="body">
+            <h4>La pantalla de detalle de ubicación nunca detecta que la ubicación fue eliminada</h4>
+            <div class="file"><code>features/ubicaciones/cubit/location_detail_state.dart</code> → <code>copyWith</code></div>
+            <p>Usa <code>location ?? this.location</code> en vez del patrón sentinel (que sí usa para <code>errorMessage</code> en la misma clase). Cuando la ubicación se elimina mientras la pantalla está abierta, <code>state.location</code> nunca vuelve a ser <code>null</code> — la vista de "no encontrada" jamás aparece.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 2</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">UI colgada</span>
+          <div class="body">
+            <h4>Renombrar lote en lote deja la lista de animales cargando para siempre</h4>
+            <div class="file"><code>features/directorio/animales/bloc/animales_bloc.dart</code> → <code>_onRenameBatch</code></div>
+            <p>Emite <code>AnimalesLoading()</code>, descarta el resultado de <code>getAll()</code> y nunca vuelve a emitir un estado cargado. El evento sí se dispara desde <code>animal_batch_manager.dart</code> (aunque ese widget está muerto — ver tabla de eliminación).</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 2</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Errores ocultos</span>
+          <div class="body">
+            <h4>Cambiar de ubicación/lote muestra éxito aunque el guardado falle</h4>
+            <div class="file"><code>features/directorio/animales/view/animal_detail_page.dart</code> → <code>InfoTab._changeLocation</code></div>
+            <p>Su <code>dispatchAndAwait</code> resuelve <code>true</code> tras un microtask sin esperar de verdad el resultado del bloc — a diferencia del patrón correcto (basado en stream) usado en <code>lote_form_page.dart</code>/<code>lote_detail_page.dart</code>. Un error real de guardado queda invisible para el usuario.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 2</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Datos falsos en producción</span>
+          <div class="body">
+            <h4>Cada instalación nueva se siembra con 3 lotes ficticios que referencian animales inexistentes</h4>
+            <div class="file"><code>features/directorio/lotes/infrastructure/lotes_repository_isar.dart</code> → <code>_seedIfEmpty</code></div>
+            <p>A diferencia del sembrado equivalente en <code>animal_repository_isar.dart</code> (confirmado muerto), este sí se ejecuta siempre que la colección está vacía — es decir, en cada instalación real.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 1.2</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Cálculo incorrecto</span>
+          <div class="body">
+            <h4>La rentabilidad por animal deduce el precio de compra completo en cada periodo</h4>
+            <div class="file"><code>features/finanzas/application/finanzas_bloc.dart</code> → <code>_onLoadPeriod</code></div>
+            <p><code>purchaseCost</code> no está acotado al periodo mientras <code>totalCosts</code>/<code>saleRevenue</code> sí lo están — cambiar el filtro de "Este mes" a "Mes anterior" resta el mismo precio de compra completo cada vez, deprimiendo <code>netResult</code> fuera del mes de compra.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 3</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Datos silenciosamente erróneos</span>
+          <div class="body">
+            <h4>Ordeño: una sesión borrador de hace días se retoma sin avisar</h4>
+            <div class="file"><code>features/milking/infrastructure/milking_repository_isar.dart</code> → <code>getOpenDraft</code></div>
+            <p>Toma el borrador más recientemente actualizado sin importar su antigüedad. Un borrador abandonado (app cerrada a mitad de captura) se reanuda silenciosamente días después, absorbiendo lecturas de "hoy" bajo la fecha de la sesión vieja.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 3</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill warn">Bug copy-paste ×3</span>
+          <div class="body">
+            <h4>Cancelar el selector de "próxima fecha" borra una fecha ya elegida</h4>
+            <div class="file"><code>registro_sanitario_page.dart</code>, <code>registro_reproduccion_page.dart</code>, <code>bulk_health_registro_page.dart</code></div>
+            <p>El picker de fecha opcional hace <code>setState(() => _nextDate = picked)</code> sin comprobar <code>picked != null</code> — a diferencia del picker de fecha obligatoria justo al lado, que sí lo comprueba. Cancelar el diálogo borra la fecha ya guardada.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill parcial">Parcial</span><br><span style='font-size:10px'>Fase 1.4 · reproduccion no tenía el bug, ver CORRECCIONES.md</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill ok">Promesa incumplida</span>
+          <div class="body">
+            <h4>La agenda ofrece tareas "recurrentes" que nunca se repiten</h4>
+            <div class="file"><code>features/agenda/widgets/agenda_form_sheet.dart</code>, <code>data/agenda_model.dart</code></div>
+            <p><code>recurrenceRule</code> ("Cada semana"/"Cada mes") se captura y persiste, pero ningún código en todo el repo expandía eso en tareas futuras. El usuario elegía "cada semana" y obtenía exactamente una tarea. Decisión de usuario: implementar la expansión real. Nuevo <code>agenda_recurrence.dart</code> con <code>nextRecurrenceDate()</code> (semanal +7 días; mensual mismo día del mes siguiente, con clamp al último día y rollover de diciembre) y <code>buildNextOccurrence()</code> (copia la plantilla de la tarea, resetea estado/checklist/actividad). <code>AgendaBloc</code> genera la siguiente ocurrencia al detectar la transición a <code>completado</code> en <code>ChangeAgendaStatus</code> y <code>MarkAnimalCompleted</code>, con guardia para no duplicar si el estado ya era completado.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio/alto</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 6</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill ok">Sin red de seguridad</span>
+          <div class="body">
+            <h4>Completar una tarea de agenda puede divergir entre lo que ves y lo que se guardó</h4>
+            <div class="file"><code>view/agenda_task_detail_page.dart</code> vs <code>bloc/agenda_bloc.dart</code></div>
+            <p>La pantalla aplicaba una actualización optimista local (<code>_entry</code>) en paralelo al bloc, sin rollback si el guardado real fallaba. Ahora la página envuelve su <code>Scaffold</code> en un <code>BlocListener&lt;AgendaBloc, AgendaState&gt;</code>: en <code>AgendaLoaded</code> sincroniza <code>_entry</code> con la versión real del bloc; en <code>AgendaError</code> revierte al último estado confirmado y muestra un SnackBar con el motivo del fallo.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Alto</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 6</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill ok">Validación huérfana</span>
+          <div class="body">
+            <h4>La validación de jerarquía de ubicaciones no protege a nadie</h4>
+            <div class="file"><code>bloc/ubicaciones_bloc.dart</code> → <code>UpsertUbicacion</code> / <code>_onUpsertUbicacion</code></div>
+            <p>Contenía lógica real (rechaza auto-padre, padre inexistente, tipos incompatibles) pero nunca se disparaba en producción — el formulario real llama al repositorio directamente, y <code>LocationFormPage</code> es una ruta separada de go_router sin acceso al <code>UbicacionesBloc</code> de <code>UbicacionesPage</code>. Decisión: eliminar el evento y mover la validación a una función pura (<code>validateLocationParent()</code> en <code>widgets/location_hierarchy_validation.dart</code>), llamada desde <code>LocationFormPage._onSubmit()</code> antes de guardar.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Medio</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 6</span></div>
+        </div>
+
+        <div class="crit-item">
+          <span class="sev-pill crit">Estructural</span>
+          <div class="body">
+            <h4>No existe integración continua — nada bloquea un regreso al fusionar a <code>main</code></h4>
+            <div class="file">Repo raíz — sin <code>.github/workflows/</code>, sin config de codecov</div>
+            <p>Los 35 tests existentes (buenos en varios casos) no protegen nada hoy porque <code>flutter test</code> nunca corre automáticamente. Además, gran parte de los tests de Isar se saltan silenciosamente sin <code>isar.dll</code> presente en la máquina.</p>
+          </div>
+          <div class="effort-tag">Esfuerzo<br><b>Bajo</b><br><br><span class="status-pill fijo">Fijo</span><br><span style='font-size:10px'>Fase 0</span></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ FEATURE: CORE ============ -->
+    <section class="block" id="f-core">
+      <h2>Revisión por feature</h2>
+      <p class="desc">Cada sección se puede expandir. Dentro, los archivos también son expandibles — solo se detallan los que tienen algo mejorable o sospechoso; el resto se resume en la línea de cierre de cada feature.</p>
+
+      <details class="feature" open>
+        <summary><span class="ttl">① Core, DI y Seguridad</span><span class="tag">di · database · security · advisor · app shell · theme</span><span class="chev">▸</span></summary>
+        <div class="feature-body">
+          <p class="summary-line">Capa limpia y bien documentada en general — buena gestión de memoria FFI, diseño cuidadoso del envelope de tokens cifrados. Los hallazgos serios se concentran en <code>core/security/</code> (ver críticos arriba) y en dos problemas de arquitectura: el motor de reglas del asesor ganadero depende de una feature específica (dependencia invertida), y hay un módulo de localización huérfano.</p>
+
+          <details class="file"><summary><span class="path">core/di/injection.dart</span></summary>
+            <div class="finding"><span class="tag ok">corregido</span><span class="txt"><code>setupLocator()</code> registraba ~30 singletons en una función de 190 líneas — dividido en 9 <code>_registerX()</code> por dominio, mismas 36 registraciones verificadas.</span></div>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt"><code>_isProductionReadyCoreVersion</code> usa un check de string frágil (<code>startsWith('libret-core/0.')</code>) en vez de semver real. Investigado, no corregido: la librería nativa que produce ese string vive fuera de este repo (FFI a un binario compilado aparte).</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">core/services/backup_service.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>exportToJsonString()</code> hace downcast a <code>AnimalRepositoryIsar</code> para saber si incluir archivados — violación de capas.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>importFromJsonString()</code> mezcla decode+validate+apply en un método de ~150 líneas de alta complejidad.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">core/services/export_service.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Acoplado a 4 repositorios de features distintas (no 3 como documenta <code>Contextop.md</code>) — cada feature exportable obliga a <code>core</code> a importar su repositorio concreto.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">core/advisor/** (Biblia Ganadera, 9 archivos, ~1400 líneas)</span></summary>
+            <div class="finding"><span class="tag ok">correcto</span><span class="txt">Las 5 funciones de reglas (salud/movimiento/nutrición/producción/reproducción) son puras, deterministas y de baja complejidad.</span></div>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">Vive en <code>core/</code> pero depende de <code>features/directorio/animales/domain</code> — dependencia invertida (core → feature). Debería ser su propia feature.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">app/app_bloc.dart</span></summary>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt"><code>_supportedLanguageCodes = {'es'}</code> fuerza español aunque la app ya empaqueta localización inglesa completa (ARB + generado) — revierte silenciosamente cualquier locale no-español.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">app/app_shell.dart</span></summary>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt"><code>_isOverlayRoute</code> decide si ocultar la barra/FAB con <code>path.contains(...)</code> por substring — frágil, cualquier ruta nueva bajo <code>directorio</code> puede matchear por accidente. <b>Investigado, no arreglado</b>: el mapeo 1:1 a <code>AppRoutes.nameX</code> ya está derivado, pero migrar a <code>GoRouterState.of(context).name</code> requiere confirmar que refleja bien la ruta con pushes anidados dentro de un <code>StatefulShellRoute</code> branch — no verificable con los tests headless de este entorno. Se dejó sin tocar para no arriesgar una regresión silenciosa de visibilidad de chrome.</span></div>
+          </details>
+
+          <div class="finding" style="padding-left:0"><span class="tag crit">confirmado muerto</span><span class="txt"><code>core/domain/organization.dart</code> y <code>core/l10n/generated/app_localizations.dart</code> — cero referencias en todo <code>lib/</code>.</span></div>
+        </div>
+      </details>
+
+      <!-- ============ FEATURE: DIRECTORIO ============ -->
+      <details class="feature" id="f-directorio">
+        <summary><span class="ttl">② Directorio / Animales</span><span class="tag">la feature más grande — 7 tipos de registro, 3 blocs, 12 páginas</span><span class="chev">▸</span></summary>
+        <div class="feature-body">
+          <p class="summary-line">Sólida en los flujos felices de CRUD/lista/búsqueda, con buena higiene de <code>mounted</code>/cancelación de suscripciones. Pero acumula ~12 archivos/funciones muertas confirmadas, varios bugs activos serios (ver críticos), y triplicación pesada en tres ejes: los 7 repositorios Isar de registros, las 7+1 páginas de formulario, y los 3 blocs de pestaña casi idénticos.</p>
+
+          <details class="file"><summary><span class="path">animales/infrastructure/animal_repository_isar.dart (1799 líneas)</span></summary>
+            <div class="finding"><span class="tag crit">muerto confirmado</span><span class="txt">~1100 líneas (~80% del archivo) son <code>_seedIfEmpty</code> + 14 helpers, marcados por el propio autor con <code>// ignore: unused_element</code> — nunca se llaman.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>getPage({offset, limit})</code> carga la colección Isar entera y recién después hace <code>.skip().take()</code> en Dart — no pagina de verdad.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">Los 7 repositorios *_record_repository_isar.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">CRUD casi idéntico en los 7 — candidato fuerte a un base genérico/mixin (~250 líneas duplicadas).</span></div>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">El repo de <b>movimiento</b>: si <code>toLocation</code> no matchea ninguna ubicación conocida, <code>currentLocationId</code> del animal se pone en <code>null</code> en vez de conservar el valor — riesgo real si <code>toLocation</code> alguna vez es texto libre.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">animales/bloc/animales_bloc.dart (lista de animales)</span></summary>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">La búsqueda filtra solo sobre <code>_latest</code> (la página ya cargada en memoria) — en un hato grande, la búsqueda no encuentra animales fuera de lo ya scrolleado.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Cada error (carga, guardar, cargar-más) emite <code>AnimalesError</code> sin datos — borra toda la lista visible en vez de solo mostrar un reintento.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">animales/application/bloc/animal_bloc.dart (detalle de un animal)</span></summary>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">La mayoría de sus eventos (<code>LoadAnimals</code>, <code>SelectAnimal</code>, 6 de los 7 <code>Add*Record</code>, etc.) nunca se disparan en producción — <code>AnimalDetailPage</code> usa <code>FutureBuilder</code> directo en su lugar. El bloc es en la práctica un despachador de 3 eventos.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">lotes/bloc/lotes_bloc.dart</span></summary>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">Todo handler mutante retorna sin emitir si el estado actual no es <code>LotesLoaded</code> — como la UI espera el siguiente estado del stream, esto puede colgar el spinner de guardado indefinidamente.</span></div>
+          </details>
+
+          <div class="finding" style="padding-left:0"><span class="tag crit">confirmado muerto</span><span class="txt">2 stubs de <code>AnimalCard</code>/sheets duplicados, subsistema <code>Care*</code> completo sin consumidores, <code>UbicacionesTab</code> y <code>LotesTab</code> (prototipos superados), <code>isar_lote.g.dart</code> huérfano y desactualizado dentro de <code>animales/infrastructure/isar/</code>.</span></div>
+        </div>
+      </details>
+
+      <!-- ============ FEATURE: UBICACIONES ============ -->
+      <details class="feature" id="f-ubicaciones">
+        <summary><span class="ttl">③ Ubicaciones</span><span class="tag">la más refactorizada recientemente — jerarquía, cultivos, inventario, ocupación</span><span class="chev">▸</span></summary>
+        <div class="feature-body">
+          <p class="summary-line">Arquitectura sólida (capas limpias, enums exhaustivos, buena seguridad ante ciclos en casi todo el árbol) que muestra cicatrices reales del refactor reciente. El split de <code>view/detail/</code> en 11 archivos quedó limpio — sin huérfanos. Los problemas serios son funcionales: pérdida de datos de cultivos, un <code>copyWith</code> roto, y un hueco de protección contra ciclos (los tres ya están en la lista de críticos).</p>
+
+          <details class="file"><summary><span class="path">infrastructure/repositories/isar_location_repository.dart (963 líneas)</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">~500 líneas (55% del archivo) son datos de siembra/demo hardcodeados dentro del repositorio de producción — extraer a un archivo/servicio separado.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>upsert()</code>/<code>deleteByUuid()</code> contienen bloques <code>if</code> vacíos con comentarios de "ya no se necesita" — scaffolding muerto del diseño anterior.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Dos mecanismos de migración distintos coexisten (<code>_migrateEjidoParentIfNeeded</code> ad-hoc vs. <code>LocationEnumMigrationService</code> con flag) — filosofías divergentes.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">widgets/location_search_bar.dart</span></summary>
+            <div class="finding"><span class="tag crit">muerto confirmado</span><span class="txt"><code>LocationSearchBar</code> sin referencias en todo <code>lib/</code> — superado por <code>UbicacionesSearchAppBar</code>.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">domain/entities/land_tenure.dart + enums/tenure_type.dart</span></summary>
+            <div class="finding"><span class="tag warn">verificar</span><span class="txt">Sin persistencia, sin UI, sin consumidor — parece una feature planeada pero nunca conectada. Confirmar con roadmap antes de borrar.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">view/detail/location_header.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>_GalleryStrip</code>/<code>_MiniMapPlaceholder</code> son UI 100% estática/falsa ("Foto 1..4", "GPS pendiente") que compite en la misma pantalla con la galería real que sí funciona más arriba.</span></div>
+          </details>
+
+          <div class="finding" style="padding-left:0"><span class="tag ok">correcto</span><span class="txt">El split de <code>view/detail/</code> en 11 archivos (activities, animals, crops, inventory_condition, location_header, occupancy, properties, records_actions, records, sublocations, warehouse) no dejó huérfanos ni duplicados — el <code>shared_widgets.dart</code> extraído está bien factorizado.</span></div>
+        </div>
+      </details>
+
+      <!-- ============ FEATURE: AGENDA/FINANZAS/MILKING ============ -->
+      <details class="feature" id="f-agenda">
+        <summary><span class="ttl">④ Agenda · Finanzas · Milking</span><span class="tag">calendario+cuadrillas · dinero · ordeño (la más nueva)</span><span class="chev">▸</span></summary>
+        <div class="feature-body">
+          <p class="summary-line">Finanzas es la más madura y mejor testeada de las tres (bloc con eventos <code>sealed</code>, buena cobertura). Agenda tiene buena disciplina de migración pero código muerto real y una recurrencia de UI que no hace nada. Milking, como feature más nueva, tiene el modelado de dominio más sólido (enteros en mililitros evitan el problema de precisión de Finanzas) pero la menor cobertura de test. <b>No se encontró</b> la sospechada superposición entre el sync de recordatorios de agenda y finanzas/milking — están limpiamente separados.</p>
+
+          <details class="file"><summary><span class="path">agenda/widgets/agenda_list.dart, agenda_search_bar.dart, agenda_month_header.dart</span></summary>
+            <div class="finding"><span class="tag crit">muerto confirmado</span><span class="txt">Los 3 sin referencias fuera de su propio archivo — <code>AgendaView</code> reimplementa lo mismo inline en cada caso.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">agenda/data/agenda_reminder_sync_service.dart</span></summary>
+            <div class="finding"><span class="tag ok">correcto</span><span class="txt">Buen diseño: preserva estado operativo (checklist/evidencia) al regenerar recordatorios automáticos por nombre determinista. Es el archivo más denso lógicamente de la feature y tiene 0 tests.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">finanzas/domain/entities/financial_period_summary.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Todos los montos son <code>double</code> — funciona hoy a esta escala, pero un <code>Decimal</code> o enteros en centavos eliminaría la clase de bug de raíz.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">milking/domain/milking_models.dart</span></summary>
+            <div class="finding"><span class="tag ok">correcto</span><span class="txt">Volumen en mililitros (<code>int</code>), no litros (<code>double</code>) — patrón que Finanzas debería imitar para sus montos. UTC manejado correctamente en JSON.</span></div>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt"><code>upsertAnimalVolume</code> es el único método del cubit que lanza una excepción sin capturar en vez de emitir un estado de fallo — inconsistente con el resto.</span></div>
+          </details>
+        </div>
+      </details>
+
+      <!-- ============ FEATURE: RESTO ============ -->
+      <details class="feature" id="f-resto">
+        <summary><span class="ttl">⑤ Inicio · Perfil · Reportes · Registro · Exportar</span><span class="tag">las de menor cobertura de test del proyecto</span><span class="chev">▸</span></summary>
+        <div class="feature-body">
+          <p class="summary-line">Funcionalmente sólidas pero con la arquitectura más desordenada del proyecto. <code>perfil</code> mezcla 3 responsabilidades sin relación (ajustes de cuenta, biblioteca educativa, resúmenes de reportes) — tan literalmente que <code>reportes</code> tiene que importar el cubit y dos widgets de <code>perfil</code> porque nunca tuvo su propia capa de dominio.</p>
+
+          <details class="file"><summary><span class="path">inicio/widgets/dashboard_card.dart, quick_action_button.dart, quick_actions.dart</span></summary>
+            <div class="finding"><span class="tag crit">muerto confirmado</span><span class="txt">Los 3 sin instanciación en todo <code>lib/</code> — superados por <code>dashboard/dashboard_widget_card.dart</code> y <code>dashboard/quick_action_grid.dart</code>.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">perfil/domain/report_summary_service.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Itera animales con <code>await</code> secuencial (N+1) en vez de <code>Future.wait</code>, a diferencia de su hermana <code>finance_summary_service.dart</code>.</span></div>
+            <div class="finding"><span class="tag crit">sospechoso</span><span class="txt">Un servicio de <b>dominio</b> importa extensiones de display desde una carpeta <code>widgets/</code> de otra feature (<code>directorio/animales/widgets/detail_helpers.dart</code>) — violación de capas.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">reportes/** (feature completa)</span></summary>
+            <div class="finding"><span class="tag ok">corregido</span><span class="txt">Ya no instancia el <code>PerfilTabsCubit</code> de <code>perfil</code> ni toma prestados widgets — tiene su propio <code>ReportesCubit</code>, y <code>report_summary_service.dart</code>/<code>report_summary.dart</code>/<code>report_card.dart</code>/<code>summary_metric_card.dart</code> se movieron a <code>reportes/domain</code>, <code>reportes/data</code> y <code>reportes/widgets</code>. Ya se puede testear de forma independiente (9 tests nuevos en <code>reportes_cubit_test.dart</code>).</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">registro/widgets/animal_selector.dart</span></summary>
+            <div class="finding"><span class="tag warn">mejorable</span><span class="txt">Sin manejo de error en <code>_loadAnimals</code> — si el repositorio falla, el selector queda con spinner perpetuo, sin reintento.</span></div>
+          </details>
+
+          <details class="file"><summary><span class="path">exportar/view/exportar_page.dart</span></summary>
+            <div class="finding"><span class="tag ok">corregido</span><span class="txt"><code>tristate: true</code> en el checkbox "Seleccionar todo" pero <code>_allSelected</code> nunca podía ser <code>null</code> — el estado indeterminado nunca se dibujaba. Se agregó <code>_allSelectedState</code> (true/false/null real según la mezcla de las 3 secciones). Único hallazgo de esta feature; el resto está correcto.</span></div>
+          </details>
+
+          <div class="finding" style="padding-left:0"><span class="tag crit">muerto confirmado</span><span class="txt"><code>perfil/widgets/profile_field.dart</code> y la función <code>showPerfilSettingsSheet</code> (nunca invocada — <code>perfil_view.dart</code> embebe el contenido directamente).</span></div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ============ TEST PLAN ============ -->
+    <section class="block" id="tests">
+      <h2>Plan de tests</h2>
+      <p class="desc">CI ya corre en cada push/PR desde Fase 0 (primera fila de la tabla), así que todo lo que se agregue aquí sí queda protegido de inmediato. El resto está priorizado por riesgo: integridad de datos y seguridad primero.</p>
+
+      <div class="chipbar" data-filter-group="test">
+        <span class="chip active" data-filter="all">Todos</span>
+        <span class="chip" data-filter="CRITICO">Crítico</span>
+        <span class="chip" data-filter="ALTO">Alto</span>
+        <span class="chip" data-filter="MEDIO">Medio</span>
+      </div>
+
+      <div class="twrap">
+        <table id="test-table">
+          <thead><tr><th style="width:100px">Prioridad</th><th>Archivo de test propuesto</th><th>Qué debe cubrir</th><th style="width:150px">Estado</th></tr></thead>
+          <tbody>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">— (infraestructura)</td><td>Agregar <code>.github/workflows/flutter_test.yml</code> corriendo <code>flutter test</code> en cada push/PR a <code>main</code>. Sin esto, nada de lo demás en esta tabla protege realmente el código.</td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 0</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">core/services/backup_service_test.dart</td><td>Rechazo de <code>schemaVersion</code> futura/inválida, UUIDs duplicados por colección, entrada de ordeño huérfana, ronda completa export→import en modo <code>replaceAll</code> reproduce los mismos conteos.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">core/services/export_service_test.dart</td><td>Cada flag (animals/ubicaciones/eventos) genera solo su hoja; nombres de responsables resueltos en vez de ids crudos; checklist como "completado/total".</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">core/security/services/auth_service_test.dart</td><td>Usuario/secreto vacío → falla sin llamar <code>storeTokenBundle</code>; credenciales válidas → éxito + token; <code>isSessionValid()</code> en ambas ramas; rama <code>kReleaseMode</code> lanzando <code>SecurityException</code> (agregada en Fase 4).</td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 7 · nuevo security_build_mode.dart destrabó el guard</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">crypto_stub_service_test.dart / native_crypto_service_test.dart</td><td>Rechazo de clave vacía, parámetros KDF inválidos, <code>constantTimeEquals</code> en igual/desigual/distinta longitud.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">secure_logger_service_test.dart</td><td>Redacción de UUID/email/teléfono se dispara realmente en <code>info/warn/error</code>; un mensaje sin PII pasa intacto.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">default_key_provider_service_test.dart</td><td>Clave maestra determinista y no vacía entre llamadas; rama <code>kReleaseMode</code> del guard agregado en Fase 4.</td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 7</span></td></tr>
+            <tr data-p="CRITICO"><td><span class="priority critico">Crítico</span></td><td class="path">prefs_key_value_store_service_test.dart <span style="color:var(--muted);font-size:11px">(antes prefs_secure_store_service_test.dart)</span></td><td>Round-trip write/read/delete.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">core/advisor/rules/{health,movement,nutrition,production,reproduction}_rules_test.dart (5 archivos)</td><td>~1400 líneas de funciones puras 100% sin testear — un test por condición de disparo + casos negativos por regla. El mejor ROI de todo el proyecto: entrada determinista, salida determinista.</td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">122 tests, 42 funciones</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">core/advisor/livestock_advisor_test.dart</td><td>Orden por severidad descendente al combinar tips de distintas categorías.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/perfil/domain/{finance_summary_service,report_summary_service}_test.dart</td><td>Agregación de categorías/especies, ventana de partos próximos — usado por 2 features (perfil y reportes), doble radio de impacto si falla.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/inicio/data/inicio_dashboard_service_test.dart</td><td>Umbrales de alertas/tareas, desglose por categoría, matemática de ventana de partos.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/registro/bloc/registro_bloc_test.dart</td><td>Las 7 transiciones submit→éxito/fallo a nivel bloc (hoy solo se testea a nivel página).</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">Widget test: fecha opcional se preserva al cancelar</td><td>Documenta y previene la regresión del bug de los 3 formularios de registro listado en críticos.</td><td><span class="status-pill correccion">Corrección al audit</span><br><span style="font-size:10px;color:var(--muted)">ya existía en registro_pages_validation_test.dart</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/exportar/cubit/export_cubit_test.dart</td><td>Guardia de "nada seleccionado", emisión loading→éxito/error.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/reportes/** (toda la feature, 0% cobertura)</td><td>Una vez tenga su propia capa de estado (ver refactor), tests de carga/error/vacío para ambas pestañas.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/perfil/cubit/perfil_tabs_cubit_test.dart</td><td>Usado por perfil y reportes — sin test directo hoy.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/agenda/bloc/agenda_bloc_test.dart</td><td>El archivo con más lógica de negocio de la feature (expansión de lotes, checklist) no tiene ningún test.</td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">21 tests, 7 handlers</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">features/agenda/data/agenda_reminder_sync_service_test.dart</td><td>Lógica de mezcla que preserva estado, generación determinista de IDs, aritmética de fechas.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="ALTO"><td><span class="priority alto">Alto</span></td><td class="path">Regresión de <code>purchaseCost</code> por periodo en finanzas</td><td>Cargar el mismo animal bajo dos <code>LoadPeriod</code> distintos y comparar — exactamente el hueco que dejó pasar el bug de rentabilidad.</td><td><span class="status-pill correccion">Corrección al audit</span><br><span style="font-size:10px;color:var(--muted)">ya existía en finanzas_cubit_test.dart</span></td></tr>
+            <tr data-p="MEDIO"><td><span class="priority medio">Medio</span></td><td class="path">directorio/animales/domain/services/{animal_lifecycle_calculator,care_scheduler,reproduction_scheduler}_test.dart</td><td>Lógica pura de edad/etapa/fechas de vencimiento — barata de testear, sin cobertura hoy.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="MEDIO"><td><span class="priority medio">Medio</span></td><td class="path">directorio/animales/infrastructure/services/batch_migration_service_test.dart</td><td>Idempotencia — correrla dos veces no debe corromper datos ya migrados.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="MEDIO"><td><span class="priority medio">Medio</span></td><td class="path">milking_cubit_test.dart (extender existente)</td><td>Camino feliz de <code>finalize()</code> — hoy solo se testea el rechazo de sesión vacía.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="MEDIO"><td><span class="priority medio">Medio</span></td><td class="path">MilkingRepositoryIsar_test.dart</td><td><code>upsertEntry</code>'s lookup dual por uuid/animal, <code>getOpenDraft</code>, <code>finalizeSession</code> — la lógica más sutil de la feature, sin ningún test hoy.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr data-p="MEDIO"><td><span class="priority medio">Medio</span></td><td class="path">MilkingShift.fromTime boundary test</td><td>Límites de hora 12:00/18:00 en la asignación de turno.</td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ REFACTOR PLAN ============ -->
+    <section class="block" id="refactor">
+      <h2>Plan de refactor</h2>
+      <p class="desc">Priorizado por impacto arquitectónico. Los de esfuerzo bajo son en su mayoría correcciones puntuales; los de esfuerzo alto son decisiones de diseño que conviene tomar deliberadamente, no ejecutar de pasada.</p>
+      <div class="twrap">
+        <table>
+          <thead><tr><th style="width:230px">Dónde</th><th>Qué cambiar</th><th style="width:90px">Esfuerzo</th></tr></thead>
+          <tbody>
+            <tr><td class="path">core/security/default_key_provider_service.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Guard hecho</span>Queda pendiente, si algún día hay backend de auth real: derivar la clave maestra desde almacenamiento seguro del SO (Keystore/Keychain) vía el puente nativo.</td><td><span class="effort">Alto</span></td></tr>
+            <tr><td class="path">core/security/auth_service.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Guard hecho</span>Queda pendiente, si se conecta una pantalla de login real: reemplazar el stub por integración de auth nativa de verdad.</td><td><span class="effort">Alto</span></td></tr>
+            <tr><td class="path">core/advisor/**</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Movido a <code>features/directorio/animales/advisor/**</code> — solo dependía de entidades de <code>directorio/animales</code> y solo lo usaban los 3 formularios de esa feature; la dependencia invertida quedó corregida.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">core/services/export_service.dart</td><td>Patrón plugin/registro ("exportable sheet") para que no crezca acoplado a cada feature nueva.</td><td><span class="effort">Alto</span></td></tr>
+            <tr><td class="path">Los 7 repositorios de registro (directorio/animales)</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Consolidados sobre <code>IsarRecordRepositoryBase&lt;TEntity, TIsarModel&gt;</code> (get/add/delete compartidos); cada repo solo aporta su query/mapeo y, health/movement/weight, un hook <code>onSaved</code> para el efecto secundario sobre el animal. 12 tests nuevos contra Isar real — antes 0% cobertura directa.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">Los 7+1 formularios de registro (directorio/animales/view)</td><td><span class="status-pill parcial">Parcial</span> Nuevo <code>RecordFormScaffold</code> extrae el chrome compartido (AppBar/scroll/Column/botón guardar con spinner, con <code>Form</code> opcional) aplicado a los 8; deliberadamente <b>no</b> se generalizaron campos/validación por tipo — cada uno tiene widgets genuinamente distintos (advisor panel, chips, etc.) y forzar un <code>TRecord</code> genérico ahí volvía negativo el tradeoff complejidad/duplicación.</td><td><span class="effort">Medio-alto</span></td></tr>
+            <tr><td class="path">animal_dto.dart</td><td>Agregar los ~26 campos faltantes (prioridad: <code>status</code>, <code>notes</code>, <code>owner</code>, <code>purchasePrice</code>).</td><td><span class="effort">Medio-alto</span></td></tr>
+            <tr><td class="path">Las 3 tab-blocs de directorio (Animales/Lotes/Ubicaciones)</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Consolidados sobre <code>WatchListTabBloc&lt;TItem, TEvent, TState&gt;</code> (ciclo de vida compartido), sin tocar los Event/State de cada feature — cero cambios en los widgets consumidores. De paso se encontró y corrigió un bug real copiado en los 3: limpiar el buscador no restauraba la lista completa (<code>copyWith(filteredX: null)</code> no limpiaba nada por el patrón <code>?? this.filteredX</code>).</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">location_form_sheet.dart _submit()</td><td>Agregar <code>crops: widget.initial?.crops ?? const []</code> al construir la entidad.</td><td><span class="effort">Bajo</span></td></tr>
+            <tr><td class="path">location_detail_state.dart copyWith</td><td>Usar el patrón sentinel para <code>location</code> (ya usado para <code>errorMessage</code> en la misma clase).</td><td><span class="effort">Bajo</span></td></tr>
+            <tr><td class="path">ubicaciones_tree_builder.dart computeSubtreeAnimalCounts</td><td>Agregar guardia de ciclo (ya presente en el resto de funciones del archivo).</td><td><span class="effort">Bajo</span></td></tr>
+            <tr><td class="path">isar_location_repository.dart</td><td>Extraer las ~500 líneas de datos de siembra a un archivo separado; unificar los 2 mecanismos de migración bajo un solo coordinador.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">bloc/ubicaciones_bloc.dart + location_form_page.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Se eliminó <code>UpsertUbicacion</code>; validación movida a <code>location_hierarchy_validation.dart</code>, llamada desde <code>LocationFormPage._onSubmit()</code>.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">finanzas_bloc.dart _onLoadPeriod</td><td>Acotar <code>purchaseCost</code> al periodo igual que <code>costsInPeriod</code>/<code>salesInPeriod</code>, o separar explícitamente "ROI de por vida" de "P&amp;L del periodo".</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">milking getOpenDraft + MilkingCubit.load()</td><td>Acotar la reanudación de borrador al mismo día calendario, o mostrar un aviso explícito de "continuando sesión del &lt;fecha&gt;".</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">agenda_task_detail_page.dart + agenda_bloc.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span><code>BlocListener&lt;AgendaBloc, AgendaState&gt;</code> agregado con rollback visible (SnackBar) en <code>AgendaError</code>.</td><td><span class="effort">Alto</span></td></tr>
+            <tr><td class="path">perfil/** → dividir en 3 features</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Los 3 quedaron separados: "resúmenes" → <code>reportes/**</code>, "biblioteca" → <code>features/biblioteca/**</code> nuevo (decisión del usuario: la navegación se queda como tab dentro de Perfil, pero el código se separa igual — mismo criterio que reportes/finanzas, ya independientes aunque Perfil los vaya a enlazar como "hub" a futuro), y "ajustes" se queda en <code>perfil/</code>, que es lo correcto. <code>PerfilBibliotecaTab</code> renombrado a <code>BibliotecaTab</code>.</td><td><span class="effort">Alto</span></td></tr>
+            <tr><td class="path">reportes/** — darle capa de dominio propia</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Nuevo <code>ReportesCubit</code> propio (solo <code>ReportSummaryService</code>+<code>FinanceSummaryService</code>, sin <code>LibraryRepository</code>). <code>report_summary_service.dart</code>/<code>report_summary.dart</code>/<code>report_card.dart</code>/<code>summary_metric_card.dart</code> movidos a <code>reportes/</code>; <code>finance_summary_service.dart</code> reubicado a <code>finanzas/domain/</code> (lo usa también <code>inicio/</code>, y sus imports ya eran 100% finanzas+animales). <code>reportes/**</code> ya no importa nada de <code>perfil/</code>.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">registro_ingreso_page.dart, registro_gasto_general_page.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Movidas a <code>features/finanzas/view/</code> — ya dependían casi por completo de tipos de <code>finanzas</code>, nunca de <code>RegistroBloc</code>, así que "mover" era la opción correcta. <code>app_router.dart</code> no necesitó cambios (ya importaba ambos barrels).</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">_parseDouble/_parseInt duplicados en 6 páginas de registro</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Extraído a <code>core/utils/number_parsing.dart</code> (<code>parseFormDouble</code>/<code>parseFormInt</code>); las 6 páginas ahora importan las funciones compartidas.</td><td><span class="effort">Bajo</span></td></tr>
+            <tr><td class="path">perfil_settings_sheet.dart (bloque de exportación Excel)</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Extraídos <code>ExportSelectionPanel</code>/<code>ExportResultListener</code> a <code>exportar/widgets/</code>, usados por ambos lugares — ya no hay dos implementaciones del mismo flujo.</td><td><span class="effort">Bajo-medio</span></td></tr>
+            <tr><td class="path">core/di/injection.dart</td><td><span class="status-pill parcial" style="margin-right:6px">Parcial</span><code>setupLocator()</code> dividido en 9 funciones <code>_registerX()</code> por dominio (36 registraciones verificadas, mismo comportamiento). El check de versión frágil (<code>_isProductionReadyCoreVersion</code>) no se tocó — depende de un binario nativo compilado fuera de este repo, no se puede verificar con seguridad qué formatos de versión puede devolver.</td><td><span class="effort">Bajo-medio</span></td></tr>
+            <tr><td class="path">core/services/backup_service.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Hecho</span>Downcast eliminado — el hook de "animales incluidos archivados" ahora lo inyecta <code>injection.dart</code> (el composition root), no un <code>is AnimalRepositoryIsar</code> dentro de core. <code>importFromJsonString</code> dividido en <code>_decodeAndValidate()</code> (puro) + <code>_applyImport()</code> (I/O). 12 tests nuevos — antes 0% de cobertura.</td><td><span class="effort">Medio</span></td></tr>
+            <tr><td class="path">app/app_bloc.dart</td><td><span class="status-pill fijo" style="margin-right:6px">Decidido</span><code>_supportedLanguageCodes = {'es'}</code> bloquea el locale inglés ya empaquetado. Decisión explícita del usuario: dejarlo como está, español único idioma por ahora. No se tocó el código.</td><td><span class="effort">Bajo</span></td></tr>
+            <tr><td class="path">app/app_shell.dart</td><td>Investigado, no ejecutado: <code>_isOverlayRoute</code> usa <code>path.contains()</code> por substring — el mapeo a <code>AppRoutes.nameX</code> está derivado, pero migrar a <code>GoRouterState.of(context).name</code> no es verificable sin correr la app y navegar cada ruta afectada en un dispositivo.</td><td><span class="effort">Bajo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ ARCHIVOS A ELIMINAR ============ -->
+    <section class="block" id="eliminar">
+      <h2>Archivos recomendados para eliminar</h2>
+      <p class="desc"><b>Seguro</b> = confirmado por grep en todo el repo, cero referencias fuera de su propia definición. <b>Verificar</b> = probable pero conviene confirmar intención (roadmap, feature en progreso) antes de borrar.</p>
+      <div class="twrap">
+        <table>
+          <thead><tr><th style="width:100px">Feature</th><th>Ruta</th><th>Razón</th><th style="width:90px">Confianza</th><th style="width:110px">Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Core</td><td class="path">core/l10n/generated/app_localizations.dart</td><td>Stub de 20 líneas con API incompatible vs. la real (<code>lib/l10n/</code>). Cero imports.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Core</td><td class="path">core/domain/organization.dart</td><td><code>Organization</code>/<code>OrganizationType</code> sin consumidores, sin DI, sin repo.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/view/animal_card.dart</td><td>Stub <code>dynamic</code> de 22 líneas duplicando el widget real en <code>widgets/</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/view/show_animal_filters_sheet.dart, show_create_animal_sheet.dart</td><td>Stubs muertos; ni ellos ni sus "versiones reales" en <code>widgets/</code> tienen llamadas.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/widgets/animal_filters_sheet.dart, animal_create_form.dart</td><td>"Versión real" de los sheets anteriores — también sin llamadas en todo el repo.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/widgets/animal_assignment_sheet.dart, animal_batch_manager.dart</td><td>Modelo legacy de <code>batchId</code> de texto libre, superado por <code>location_batch_sheet.dart</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/widgets/detail_helpers.dart → uniqueBatches()</td><td>Sin llamadas + rota: itera <code>animal.batchId</code>, un campo <code>@Deprecated</code> hardcodeado a <code>null</code> — nunca pudo devolver nada útil. <code>fmtDate()</code> se mantuvo: <b>corrección al audit</b>, tiene 9 call sites activos en <code>records_tab.dart</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill parcial">Parcial</span></td></tr>
+            <tr><td>Directorio</td><td class="path">domain/domain.dart</td><td>Barrel completo pero sin importadores — el usado (<code>animal_domain.dart</code>) está incompleto.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill mantenido">Mantenido</span></td></tr>
+            <tr><td>Directorio</td><td class="path">domain/entities/animal_location_history.dart</td><td>Sin uso; su enum local <code>MovementReason</code> choca de nombre (valores distintos) con el real.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">domain/entities/{care_record,care_rule,scheduled_care}.dart + services/care_scheduler.dart</td><td>Subsistema Care* completo sin consumidores fuera de sí mismo.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill mantenido">Mantenido</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animal_repository_isar.dart líneas ~344-1799</td><td><code>_seedIfEmpty</code> + 14 helpers, marcados <code>// ignore: unused_element</code> por el propio autor.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">animales/infrastructure/isar/isar_lote.g.dart</td><td>Generado huérfano y desactualizado (falta <code>currentLocationId</code>); el real vive en <code>lotes/infrastructure/isar/</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">infrastructure/services/batch_migration_service.dart</td><td>Su condición nunca puede ser verdadera (<code>batchId</code> hardcodeado a <code>null</code>) — corre un fetch del hato completo en cada arranque para nada. Se decidió borrar (no arreglar): el dato fuente que la migración necesitaría ya no existe en el modelo. Se quitó también el call site en <code>app_bloc.dart</code> y el barrel que solo la exportaba.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Directorio</td><td class="path">directorio/ubicaciones/ubicaciones_tab.dart, lotes/lotes_tab.dart</td><td>Prototipos <code>ListView</code> nunca instanciados — <code>DirectorioView</code> renderiza las versiones reales.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Ubicaciones</td><td class="path">widgets/location_search_bar.dart</td><td>Sin referencias; superado por <code>UbicacionesSearchAppBar</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Ubicaciones</td><td class="path">bloc: evento SearchUbicaciones + handler</td><td>Nunca disparado; el propio comentario del bloc dice "compatibilidad con llamadas antiguas".</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Ubicaciones</td><td class="path">domain/entities/land_tenure.dart + enums/tenure_type.dart</td><td>Sin persistencia ni UI en ningún lado de la feature.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill mantenido">Mantenido</span></td></tr>
+            <tr><td>Ubicaciones</td><td class="path">isar_location_repository.dart — bloques if vacíos en upsert()/deleteByUuid()</td><td>Scaffolding muerto de un diseño anterior con mantenimiento bidireccional de child-uuids.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Agenda</td><td class="path">widgets/agenda_list.dart, agenda_search_bar.dart, agenda_month_header.dart</td><td>Los 3 sin referencias fuera de su archivo — reimplementados inline en <code>AgendaView</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Agenda</td><td class="path">bloc: evento SearchAgenda + handler</td><td>Sin sitio de disparo — el filtrado real es del lado cliente en <code>AgendaView</code>.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Milking</td><td class="path">MilkingSession/MilkingEntry toJson/fromJson</td><td>Sin llamadas fuera de su propia clase — el repo mapea Entity↔Isar directo, no vía JSON.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill mantenido">Mantenido</span></td></tr>
+            <tr><td>Inicio</td><td class="path">widgets/dashboard_card.dart, quick_action_button.dart, quick_actions.dart</td><td>Los 3 sin instanciación — superados por <code>dashboard/dashboard_widget_card.dart</code> y <code>quick_action_grid.dart</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Perfil</td><td class="path">widgets/profile_field.dart</td><td>Sin instanciación en todo <code>lib/</code>.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Perfil</td><td class="path">perfil_settings_sheet.dart → función showPerfilSettingsSheet</td><td>Nunca llamada; <code>perfil_view.dart</code> embebe el contenido directamente como pestaña.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Repo raíz</td><td class="path">debug-1d5c35.log, build_log.txt, l10n_untranslated.txt, _extract2.txt</td><td>Artefactos de depuración/scratch commiteados por accidente en el commit "backup".</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Repo raíz</td><td class="path">find_broken_part_of.ps1, find_missing_class.ps1, scan_undocumented.ps1</td><td>Scripts de diagnóstico de un solo uso; sus archivos de salida ya no existen (ya consumidos) — verificado antes de borrar.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+            <tr><td>Repo raíz</td><td class="path">.agents/, libretapp/tool/</td><td>Directorios completamente vacíos, sin archivos.</td><td><span class="confidence seguro">Seguro</span></td><td><span class="status-pill mantenido">N/A</span></td></tr>
+            <tr><td>Documentación</td><td class="path">REFACTORING_SUMMARY.md vs REFACTORING_COMPLETE.md</td><td>Ambos describen el mismo refactor de barrel-files de Feb 26 desde ángulos distintos — solapamiento fuerte. Se borró COMPLETE.md (el más "marketing"); se mantuvo SUMMARY.md porque <code>docs/ARQUITECTURA.md</code> ya lo enlazaba como fuente canónica.</td><td><span class="confidence verificar">Verificar</span></td><td><span class="status-pill eliminado">Eliminado</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ ARCHIVOS A MODIFICAR ============ -->
+    <section class="block" id="modificar">
+      <h2>Archivos que requieren modificación (no eliminación)</h2>
+      <p class="desc">Estos no se borran — tienen lógica viva que necesita una corrección puntual. Es la vista de "arreglar ya" de los hallazgos críticos de arriba, en formato tabla para ejecutar de a uno.</p>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>Archivo</th><th>Cambio puntual</th><th style="width:80px">Esfuerzo</th><th style="width:120px">Estado</th></tr></thead>
+          <tbody>
+            <tr><td class="path">ubicaciones/widgets/location_form_sheet.dart</td><td>Agregar <code>crops:</code> al construir la entidad en <code>_submit()</code>.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 1.1</span></td></tr>
+            <tr><td class="path">ubicaciones/cubit/location_detail_state.dart</td><td>Patrón sentinel para <code>location</code> en <code>copyWith</code>.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 2</span></td></tr>
+            <tr><td class="path">ubicaciones/view/ubicaciones_tree_builder.dart</td><td>Guardia de ciclo en <code>computeSubtreeAnimalCounts</code>.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 2</span></td></tr>
+            <tr><td class="path">directorio/animales/bloc/animales_bloc.dart</td><td><code>_onRenameBatch</code> debe emitir un estado cargado (o eliminar el evento).</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 2</span></td></tr>
+            <tr><td class="path">directorio/animales/view/animal_detail_page.dart (InfoTab)</td><td><code>dispatchAndAwait</code> debe esperar de verdad el resultado del bloc (mismo patrón que <code>lote_form_page.dart</code>).</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 2</span></td></tr>
+            <tr><td class="path">directorio/lotes/infrastructure/lotes_repository_isar.dart</td><td>Quitar o gatear tras flag de debug el sembrado de 3 lotes ficticios.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 1.2</span></td></tr>
+            <tr><td class="path">directorio/lotes/bloc/lotes_bloc.dart</td><td>Handlers mutantes deben emitir error/no-op visible en vez de retornar en silencio si no está <code>LotesLoaded</code>.</td><td><span class="effort">Bajo-medio</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 2</span></td></tr>
+            <tr><td class="path">directorio/animales/infrastructure/animal_dto.dart</td><td>Agregar los ~26 campos faltantes, prioridad <code>status</code>/<code>notes</code>/<code>owner</code>/<code>purchasePrice</code>.</td><td><span class="effort">Medio-alto</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 1.3</span></td></tr>
+            <tr><td class="path">core/security/services/default_key_provider_service.dart</td><td>Guardia de release que falla si se usa la key default (no se implementó sourcing desde almacenamiento seguro del SO — decisión de usuario, sin backend de auth real que lo justifique aún).</td><td><span class="effort">Medio</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 4</span></td></tr>
+            <tr><td class="path">core/security/services/auth_service.dart</td><td>Bloquear el stub en release (no se integró un backend real — decisión de usuario, sin UI de login que lo consuma aún).</td><td><span class="effort">Medio</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 4</span></td></tr>
+            <tr><td class="path">core/security/services/prefs_key_value_store_service.dart <span style="color:var(--muted);font-size:11px">(antes prefs_secure_store_service.dart)</span></td><td>Renombrado — no está cifrado, el nombre engañaba. El cifrado real ya ocurre antes, en <code>TokenStoreService</code>.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 4</span></td></tr>
+            <tr><td class="path">finanzas/application/finanzas_bloc.dart</td><td>Acotar <code>purchaseCost</code> al periodo o separarlo explícitamente de la vista de periodo.</td><td><span class="effort">Medio</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 3</span></td></tr>
+            <tr><td class="path">milking/infrastructure/milking_repository_isar.dart</td><td><code>getOpenDraft</code> acotado al mismo día o aviso explícito de sesión retomada.</td><td><span class="effort">Medio</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 3</span></td></tr>
+            <tr><td class="path">registro_sanitario_page.dart, registro_reproduccion_page.dart, bulk_health_registro_page.dart</td><td>Guardia <code>if (picked != null)</code> en el date picker opcional (3 archivos, mismo fix).</td><td><span class="effort">Bajo</span></td><td><span class="status-pill parcial">Parcial</span><br><span style="font-size:10px;color:var(--muted)">reproduccion no lo necesitaba</span></td></tr>
+            <tr><td class="path">agenda/widgets/agenda_form_sheet.dart</td><td>Ocultar el dropdown de recurrencia hasta implementarla, o implementarla de verdad.</td><td><span class="effort">Medio / Alto</span></td><td><span class="status-pill pendiente">Pendiente</span></td></tr>
+            <tr><td class="path">exportar/view/exportar_page.dart</td><td>Quitar <code>tristate: true</code> o calcular el tercer estado real.</td><td><span class="effort">Bajo</span></td><td><span class="status-pill fijo">Fijo</span><br><span style="font-size:10px;color:var(--muted)">Fase 7</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="confirm-note" id="confirmacion">
+      <h3>Actualizado — Fase 4 y el plan de tests de alto ROI ya se ejecutaron</h3>
+      <p>Fases 0, 1, 2, 3, 4 y 5 ejecutadas y pusheadas a <code>main-5enhm8</code> (<a href="https://github.com/iv6n/LibretApp/pull/1">PR #1</a>): CI, los 3 bugs de pérdida de datos, el bug copy-paste (parcial — ver <span class="status-pill parcial">Parcial</span> arriba), los 5 bugs de estado/crash, los 2 cálculos incorrectos, seguridad (guard de release en clave maestra y auth stub, en vez de integración nativa completa — ver hallazgos críticos), y el código muerto confirmado (con dos correcciones al propio audit detectadas en el camino — ver <code>CORRECCIONES.md</code>).</p>
+      <p>Del plan de tests de alto ROI: <b>hechos</b> los 122 tests de <code>core/advisor/rules/**</code> y los 21 de <code>AgendaBloc</code>; la regresión de <code>purchaseCost</code> y el widget test de fecha opcional resultaron ser <span class="status-pill correccion">Corrección al audit</span> (ya existían). También se cerraron los cabos sueltos que Fase 5 había dejado pendientes: <code>uniqueBatches()</code> eliminada (rota — usaba un campo <code>@Deprecated</code> siempre <code>null</code>), <code>batch_migration_service.dart</code> eliminado (mismo problema, sin arreglo posible), los 3 scripts <code>.ps1</code> sueltos, y <code>REFACTORING_COMPLETE.md</code> consolidado en <code>REFACTORING_SUMMARY.md</code>. Suite de tests intacta en <b>370/370</b> tras la limpieza.</p>
+      <p>Fase 6 cerró los 3 hallazgos críticos que quedaban sin decisión: <b>crit-13</b> (recurrencia de agenda) — decisión de usuario de implementarla de verdad, no solo ocultar el dropdown: nuevo <code>agenda_recurrence.dart</code> + generación automática de la siguiente ocurrencia en <code>AgendaBloc</code> al completar una tarea recurrente. <b>crit-14</b> (update optimista sin rollback) — <code>BlocListener</code> agregado en <code>AgendaTaskDetailPage</code> con reversión visible ante fallo. <b>crit-15</b> (validación huérfana de ubicaciones) — se eliminó el evento muerto del bloc y la validación se movió a una función pura llamada desde el formulario real.</p>
+      <p>De Fase 7 (plan de refactor grande, 17 ítems) van <b>13 hechos y 3 parciales</b> — solo queda 1 pendiente. <code>_parseDouble</code>/<code>_parseInt</code> duplicados en 6 páginas de registro extraídos a <code>core/utils/number_parsing.dart</code>; el checkbox "Seleccionar todo" de <code>exportar_page.dart</code> ya calcula su tercer estado real; se destrabaron los tests de seguridad que dependían de <code>kReleaseMode</code> (nuevo <code>security_build_mode.dart</code>, un seam testeable que no cambia el comportamiento real de producción); el bloque de exportación Excel de <code>perfil_settings_sheet.dart</code> ya reusa el mismo widget que <code>exportar_page.dart</code> en vez de reimplementarlo; <code>export_service.dart</code> (esfuerzo Alto) quedó desacoplado del todo con el patrón plugin <code>ExportableSheet</code> — el core ya no importa ningún repositorio de feature directamente, cada feature aporta su propio sheet-writer vía DI; <code>reportes/**</code> (esfuerzo Alto) obtuvo su capa de dominio propia — nuevo <code>ReportesCubit</code> que reemplaza al viejo <code>PerfilTabsCubit</code> compartido, con <code>report_summary_service.dart</code>/<code>finance_summary_service.dart</code> reubicados a sus dominios correctos (este último a <code>finanzas/domain/</code>, no a <code>perfil/</code>, tras revisar sus imports reales); <code>core/advisor/**</code> se movió a <code>features/directorio/animales/advisor/**</code> — grep confirmó que solo dependía de entidades de <code>directorio/animales</code> y que solo lo usaban los 3 formularios de esa feature, así que la dependencia invertida ("core" dependiendo de una feature) quedó corregida con un movimiento mecánico puro (mismos 5 test files reubicados, sin tests nuevos); los 7 repositorios de registro de <code>directorio/animales</code> (health/movement/weight/cost/commercial/production/reproduction) quedaron consolidados sobre <code>IsarRecordRepositoryBase&lt;TEntity, TIsarModel&gt;</code>, una base genérica con get/add/delete compartidos — cada repo solo aporta su query animal-scoped, su mapeo entidad↔modelo, y (solo health/movement/weight) un hook <code>onSaved</code> opcional para el efecto secundario sobre el animal, con 12 tests nuevos contra Isar real donde antes había 0% de cobertura directa; las 3 tab-blocs de directorio (Animales/Lotes/Ubicaciones) quedaron sobre <code>WatchListTabBloc&lt;TItem, TEvent, TState&gt;</code> sin tocar los Event/State de cada feature (cero cambios en widgets consumidores), con 8 tests nuevos que de paso encontraron y corrigieron un bug real copiado en los 3: limpiar el buscador no restauraba la lista completa por un <code>copyWith(filteredX: null)</code> que nunca limpiaba nada; <code>registro_ingreso_page.dart</code>/<code>registro_gasto_general_page.dart</code> se movieron a <code>features/finanzas/view/</code> — ya dependían casi por completo de tipos de finanzas y nunca de <code>RegistroBloc</code>, <code>app_router.dart</code> no necesitó cambios; y <code>core/services/backup_service.dart</code> perdió su downcast a <code>AnimalRepositoryIsar</code> (el hook para animales archivados ahora lo inyecta <code>injection.dart</code>) y su método de import de ~150 líneas quedó dividido en una parte pura de decodificación/validación y otra de escritura, con 12 tests nuevos donde antes había 0% de cobertura en un servicio que ya había tenido bugs reales de pérdida de datos en fases previas. Luego de esas 8, dos decisiones del usuario destrabaron 2 ítems más: locale inglés en <code>app_bloc.dart</code> — se decide dejarlo como está (español único idioma, sin tocar código); y <code>perfil/** → dividir en 3 features</code> — con la decisión de que biblioteca se queda navegando como tab de Perfil pero separando igual el código (mismo criterio que reportes/finanzas), se completó: nuevo <code>features/biblioteca/**</code> (cubit/data/view/widgets + barrel), <code>PerfilBibliotecaTab</code> renombrado a <code>BibliotecaTab</code>, <code>LibraryRepository</code> sigue sirviendo a <code>InicioBloc</code> sin cambios de comportamiento — solo cambió la ubicación del import. Test movido: <code>biblioteca_cubit_test.dart</code> (4 tests, sin cambios). De los 3 parciales que quedan: <code>core/di/injection.dart</code> dividido en 9 funciones por dominio (el check de versión frágil no se tocó); la extracción de seeds de <code>isar_location_repository.dart</code>; y <code>RecordFormScaffold</code> (esfuerzo Medio-alto) — se extrajo el chrome compartido de los 8 formularios de registro (AppBar/scroll/Column/botón guardar, con <code>Form</code> opcional) a un widget único, con 4 tests nuevos, pero deliberadamente sin generalizar campos/validación por tipo de registro (decisión del usuario: dejarlo así) — cada uno tiene widgets genuinamente distintos (advisor panel, chips de repetir, etc.) y forzar un <code>TRecord</code> genérico ahí volvía negativo el tradeoff complejidad/duplicación, mismo criterio que con <code>WatchListTabBloc</code>. El único pendiente que queda es <code>app_shell.dart</code> (<code>_isOverlayRoute</code> frágil) — investigado pero deliberadamente sin tocar, el mapeo de rutas está derivado pero el cambio no es verificable sin correr la app en un dispositivo. Con esto, los dos ítems originalmente etiquetados esfuerzo <b>Alto</b> (<code>export_service.dart</code> y dividir <code>perfil/**</code>) quedan ambos completamente hechos. Suite de tests: <b>370 → 446</b> desde que arrancó esta ronda de trabajo (Fase 4 en adelante) según lo verificado en CI, sumando ahora localmente los 12 de repositorios de registro, los 8 de tab-blocs, los 12 de <code>backup_service.dart</code> y los 4 de <code>RecordFormScaffold</code> (512 en total corriendo local con Isar nativo habilitado — ver hallazgo aparte más abajo sobre por qué el número de CI y el local difieren).</p>
+      <p><b>Hallazgo aparte durante este trabajo</b>: al habilitar por primera vez la librería nativa <code>isar.dll</code> en este entorno de desarrollo local (necesaria para correr tests que hablan con un Isar real, copiada desde el paquete <code>isar_flutter_libs</code> igual que hace <code>.github/workflows/flutter_test.yml</code> con <code>libisar.so</code> en Linux — no se commitea, va en <code>.gitignore</code>) se descubrió que ~36 tests dependientes de Isar real venían siendo omitidos silenciosamente en este entorno durante toda la sesión por falta de esa librería. Al correr por primera vez, 6 de ellos fallaron por bugs preexistentes y no relacionados con el trabajo de esta sesión (2 en <code>animal_repository_isar_test.dart</code>, 4 en <code>isar_finanzas_repository_test.dart</code> — ninguno de esos dos archivos fue tocado aquí). No se investigaron a fondo ni se tocaron; quedaron anotados como tarea aparte. El número de "tests pasando en CI" de más arriba refleja lo verificado en GitHub Actions, no este hallazgo local.</p>
+      <p><b>Sigue pendiente</b>: los tests de <code>auth_service</code>/<code>default_key_provider_service</code> (bloqueados porque <code>kReleaseMode</code> no es controlable desde <code>flutter test</code>), el resto de la tabla de tests, el único ítem pendiente (<code>app_shell.dart</code>) + 3 parciales restantes del plan de refactor grande, y los 6 fallos de Isar recién descubiertos (arriba). Detalle fila por fila en <code>auditoriaestado.json</code>, en esta misma carpeta.</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function() {
+  var chipbar = document.querySelector('[data-filter-group="test"]');
+  if (!chipbar) return;
+  var chips = chipbar.querySelectorAll('.chip');
+  var rows = document.querySelectorAll('#test-table tbody tr');
+  chipbar.addEventListener('click', function(e) {
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    chips.forEach(function(c) { c.classList.remove('active'); });
+    chip.classList.add('active');
+    var f = chip.getAttribute('data-filter');
+    rows.forEach(function(r) {
+      r.style.display = (f === 'all' || r.getAttribute('data-p') === f) ? '' : 'none';
+    });
+  });
+})();
+</script>
+
+</body></html>

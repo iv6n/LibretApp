@@ -25,6 +25,7 @@ import 'package:libretapp/features/directorio/animales/view/quick_register_anima
 import 'package:libretapp/features/directorio/animales/view/animal_commercial_form_page.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/agenda/agenda.dart';
+import 'package:libretapp/features/biblioteca/biblioteca.dart';
 import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/milking/milking.dart';

@@ -12,6 +12,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
+import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
@@ -36,11 +37,37 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
 
   late AgendaEntry _entry;
 
+  /// Last state the bloc actually confirmed persisted. Used to roll back
+  /// [_entry] if a mutation the UI applied optimistically turns out to have
+  /// failed to save (see [_onAgendaState]).
+  late AgendaEntry _confirmedEntry;
+
   @override
   void initState() {
     super.initState();
     _entry = widget.entry;
+    _confirmedEntry = widget.entry;
     _loadData();
+  }
+
+  void _onAgendaState(BuildContext context, AgendaState state) {
+    if (state is AgendaLoaded) {
+      final updated = state.entries
+          .where((e) => e.id == _entry.id)
+          .firstOrNull;
+      if (updated == null) return;
+      _confirmedEntry = updated;
+      setState(() => _entry = updated);
+      return;
+    }
+    if (state is AgendaError) {
+      setState(() => _entry = _confirmedEntry);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar el cambio: ${state.message}'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadData() async {
@@ -337,7 +364,9 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     final total = _totalAnimals;
     final progress = total == 0 ? 0.0 : completedCount / total;
 
-    return Scaffold(
+    return BlocListener<AgendaBloc, AgendaState>(
+      listener: _onAgendaState,
+      child: Scaffold(
       appBar: AppBar(title: const Text('Realizar tarea'), elevation: 0),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -667,6 +696,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                 ],
               ),
             ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalWeightFormPage extends StatefulWidget {
@@ -82,91 +83,69 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.detailFormWeightTitle)),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _weightController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormWeightValue,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<WeightMethod>(
-                initialValue: _method,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormWeightMethod,
-                  border: const OutlineInputBorder(),
-                ),
-                items: WeightMethod.values
-                    .map(
-                      (m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(
-                          m == WeightMethod.scale
-                              ? l10n.detailFormWeightMethodScale
-                              : l10n.detailFormWeightMethodEstimated,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _method = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotesOptional,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.actionSave),
-                ),
-              ),
-            ],
+    return RecordFormScaffold(
+      title: l10n.detailFormWeightTitle,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      fields: [
+        TextField(
+          controller: _weightController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: l10n.detailFormWeightValue,
+            border: const OutlineInputBorder(),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<WeightMethod>(
+          initialValue: _method,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormWeightMethod,
+            border: const OutlineInputBorder(),
+          ),
+          items: WeightMethod.values
+              .map(
+                (m) => DropdownMenuItem(
+                  value: m,
+                  child: Text(
+                    m == WeightMethod.scale
+                        ? l10n.detailFormWeightMethodScale
+                        : l10n.detailFormWeightMethodEstimated,
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _method = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.today),
+          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _date,
+              firstDate: DateTime(_date.year - 5),
+              lastDate: DateTime(_date.year + 1),
+            );
+            if (picked == null) return;
+            setState(() => _date = picked);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: l10n.fieldNotesOptional,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }

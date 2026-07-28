@@ -91,7 +91,7 @@ sequenceDiagram
 | 1 | `main.dart` | `WidgetsFlutterBinding`, edge-to-edge UI, error handlers |
 | 2 | `injection.dart` | `IsarDatabase.initialize()`, register all singletons |
 | 3 | `main.dart` (debug) | `seedMockAnimals()` optional demo data |
-| 4 | `AppBloc` | One-time event purge, `AgendaReminderSyncService`, `BatchMigrationService`, `LocationEnumMigrationService`, locale → `AppReady` |
+| 4 | `AppBloc` | One-time event purge, `AgendaReminderSyncService`, `LocationEnumMigrationService`, locale → `AppReady` |
 | 5 | `ThemeBloc` | Load saved `ThemeMode` from `ThemeRepository` |
 | 6 | `app.dart` | `MaterialApp.router` with `router` from `app_router.dart` |
 

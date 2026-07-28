@@ -11,7 +11,6 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_tree_builder.dart';
-import 'package:libretapp/features/ubicaciones/widgets/location_labels.dart';
 import 'package:libretapp/core/constants/ui_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
 
@@ -22,7 +21,6 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     on<LoadUbicaciones>(_onLoadUbicaciones);
     on<UbicacionesStreamUpdated>(_onStreamUpdated);
     on<UbicacionesStreamFailed>(_onStreamFailed);
-    on<UpsertUbicacion>(_onUpsertUbicacion);
     on<DeleteUbicacion>(_onDeleteUbicacion);
     on<ToggleSearch>(_onToggleSearch);
     on<SearchQueryChanged>(
@@ -118,48 +116,6 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     Emitter<UbicacionesState> emit,
   ) {
     emit(UbicacionesError(event.message));
-  }
-
-  Future<void> _onUpsertUbicacion(
-    UpsertUbicacion event,
-    Emitter<UbicacionesState> emit,
-  ) async {
-    try {
-      final location = event.ubicacion;
-      if (location.parentUuid != null) {
-        if (location.parentUuid == location.uuid) {
-          emit(
-            const UbicacionesError(
-              'Una ubicacion no puede asignarse como su propio padre',
-            ),
-          );
-          return;
-        }
-        final parentUuid = location.parentUuid!;
-        final parentExists = _latest.any((l) => l.uuid == parentUuid);
-        if (!parentExists) {
-          emit(
-            const UbicacionesError(
-              'La ubicacion padre seleccionada no existe o fue eliminada',
-            ),
-          );
-          return;
-        }
-        final parent = _latest.firstWhere((l) => l.uuid == parentUuid);
-        if (!parent.canAcceptSubLocationType(location.type)) {
-          emit(
-            UbicacionesError(
-              '${locationTypeLabelEs(location.type)} no puede estar dentro de ${locationTypeLabelEs(parent.type)}',
-            ),
-          );
-          return;
-        }
-      }
-      emit(const UbicacionesLoading());
-      await repository.upsert(location);
-    } catch (e) {
-      emit(UbicacionesError(e.toString()));
-    }
   }
 
   Future<void> _onDeleteUbicacion(

@@ -5,8 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
 import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
-import 'package:libretapp/features/perfil/data/library_item.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
+import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 
 enum InicioStatus { initial, loading, loaded, refreshing, error }
 

@@ -1,8 +1,8 @@
-/// core › advisor › widgets › advisor_tips_panel — widget displaying advisor tips for an animal.
+/// features > directorio > animales > advisor > widgets > advisor_tips_panel — widget displaying advisor tips for an animal.
 library;
 
 import 'package:flutter/material.dart';
-import 'package:libretapp/core/advisor/livestock_tip.dart';
+import 'package:libretapp/features/directorio/animales/advisor/livestock_tip.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 /// Widget que muestra los consejos de la "Biblia Ganadera".

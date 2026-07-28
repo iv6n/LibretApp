@@ -9,8 +9,8 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/features/finanzas/widgets/kpi_card.dart';
-import 'package:libretapp/features/perfil/cubit/perfil_tabs_cubit.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
+import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -29,7 +29,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
   @override
   void initState() {
     super.initState();
-    context.read<PerfilTabsCubit>().loadFinanzas();
+    context.read<ReportesCubit>().loadFinanzas();
   }
 
   @override
@@ -44,15 +44,15 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
     );
     final fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
 
-    return BlocBuilder<PerfilTabsCubit, PerfilTabsState>(
+    return BlocBuilder<ReportesCubit, ReportesState>(
       builder: (context, state) {
-        if (state.financeStatus == PerfilTabLoadStatus.loading) {
+        if (state.financeStatus == ReportesLoadStatus.loading) {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: const Center(child: CircularProgressIndicator()),
           );
         }
-        if (state.financeStatus == PerfilTabLoadStatus.error) {
+        if (state.financeStatus == ReportesLoadStatus.error) {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: AppEmptyState(
@@ -61,7 +61,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
               message: state.errorMessage,
               action: FilledButton(
                 onPressed: () =>
-                    context.read<PerfilTabsCubit>().refreshFinanzas(),
+                    context.read<ReportesCubit>().refreshFinanzas(),
                 child: const Text('Reintentar'),
               ),
             ),
@@ -75,7 +75,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
         final balance = s.netProfit;
 
         return RefreshIndicator(
-          onRefresh: () => context.read<PerfilTabsCubit>().refreshFinanzas(),
+          onRefresh: () => context.read<ReportesCubit>().refreshFinanzas(),
           child: ListView(
             padding: listPadding,
             children: [

@@ -1,0 +1,240 @@
+{
+  "meta": {
+    "titulo": "Auditoría LibretApp — Julio 2026 — estado verificado",
+    "fuente_original": "https://claude.ai/code/artifact/101b2d8d-71c2-4ecd-9e9e-110dfabc5d72",
+    "fecha_auditoria_original": "2026-07-25",
+    "fecha_verificacion": "2026-07-26",
+    "rama": "main-5enhm8",
+    "pr": "https://github.com/iv6n/LibretApp/pull/1",
+    "metodo_verificacion": "grep + lectura de archivo contra el estado real del working tree, no contra memoria del audit original",
+    "nota": "Este archivo es para uso de Claude en sesiones futuras (Fase 4, 6, 7) como fuente de verdad del estado real, no del estado reportado por el audit original.",
+    "leyenda_estado": {
+      "FIJO": "Corregido en este repo, verificado con grep/lectura tras el fix",
+      "ELIMINADO": "Archivo/símbolo borrado, verificado con grep de todo el repo",
+      "MANTENIDO": "Se decidió no tocar (feature planeada, o el audit se equivocó al marcarlo muerto)",
+      "PENDIENTE": "Sigue exactamente como lo describió el audit original, no se tocó",
+      "PARCIAL": "Se corrigió una parte pero no toda la superficie del hallazgo",
+      "CORRECCION_AUDIT": "El audit original tenía un error factual en este punto — no es un item a ejecutar, es una corrección al reporte"
+    }
+  },
+
+  "correccion_de_metadatos": {
+    "conteo_hallazgos_criticos": {
+      "audit_decia": 17,
+      "conteo_real": 16,
+      "nota": "El stat-grid del HTML original dice '17' pero solo hay 16 <div class=\"crit-item\"> en el documento — desajuste interno del propio reporte."
+    }
+  },
+
+  "hallazgos_criticos": [
+    {
+      "id": "crit-01",
+      "titulo": "Clave maestra de cifrado de tokens es un placeholder público por defecto",
+      "archivo": "core/security/services/default_key_provider_service.dart",
+      "estado": "FIJO",
+      "fase": "Fase 4",
+      "nota": "Decisión de usuario: no integrar keystore nativo (AuthService sigue sin consumidor real, no hay pantalla de login). Se aplicó guard de release igual al ya existente para CryptoPort en injection.dart: getTokenMasterKey() lanza SecurityException('INSECURE_DEFAULT_KEY_IN_RELEASE') si kReleaseMode y la key sigue siendo el default público, salvo LIBRET_ALLOW_INSECURE_TOKEN_KEY_IN_RELEASE=true. El default de dev sigue existiendo (necesario para debug/test) pero ya no puede llegar silenciosamente a un build de release."
+    },
+    {
+      "id": "crit-02",
+      "titulo": "AuthService.signIn() autentica a cualquiera (stub)",
+      "archivo": "core/security/services/auth_service.dart",
+      "estado": "FIJO",
+      "fase": "Fase 4",
+      "nota": "Decisión de usuario: mismo enfoque de guard que crit-01 en vez de backend de auth real (no hay UI que llame signIn() actualmente). signIn() ahora lanza SecurityException('INSECURE_AUTH_STUB_IN_RELEASE') si kReleaseMode, salvo LIBRET_ALLOW_INSECURE_AUTH_IN_RELEASE=true. El stub sigue funcionando en debug/test para no romper flujos de desarrollo."
+    },
+    {
+      "id": "crit-03",
+      "titulo": "Editar una ubicación borra silenciosamente todos sus registros de cultivos",
+      "archivo": "features/ubicaciones/widgets/location_form_sheet.dart → _submit()",
+      "estado": "FIJO",
+      "fase": "Fase 1.1",
+      "nota": "Verificado: `crops` ahora se copia al construir la nueva entidad."
+    },
+    {
+      "id": "crit-04",
+      "titulo": "Backup/restore borra ~26 campos de cada animal, incluyendo el estado",
+      "archivo": "features/directorio/animales/infrastructure/animal_dto.dart",
+      "estado": "FIJO",
+      "fase": "Fase 1.3",
+      "nota": "Verificado con diff de campos AnimalEntity vs AnimalDto.toJson(): 73/73 campos cubiertos. `status` se serializa. El único campo no encontrado como key literal (`currentLocationId`) resultó estar mapeado intencionalmente a la key legacy `currentPaddockId` con comentario 'keep old JSON key for compat' — no es un gap real."
+    },
+    {
+      "id": "crit-05",
+      "titulo": "Conteo de animales por ubicación puede desbordar la pila con un ciclo padre-hijo",
+      "archivo": "features/ubicaciones/view/ubicaciones_tree_builder.dart → computeSubtreeAnimalCounts",
+      "estado": "FIJO",
+      "fase": "Fase 2",
+      "nota": "Guardia de ciclo agregada, confirmado por el diff del commit 5688497."
+    },
+    {
+      "id": "crit-06",
+      "titulo": "La pantalla de detalle de ubicación nunca detecta que la ubicación fue eliminada",
+      "archivo": "features/ubicaciones/cubit/location_detail_state.dart → copyWith",
+      "estado": "FIJO",
+      "fase": "Fase 2",
+      "nota": "Patrón sentinel aplicado a `location`, igual que ya tenía `errorMessage`."
+    },
+    {
+      "id": "crit-07",
+      "titulo": "Renombrar lote en lote deja la lista de animales cargando para siempre",
+      "archivo": "features/directorio/animales/bloc/animales_bloc.dart → _onRenameBatch",
+      "estado": "FIJO",
+      "fase": "Fase 2",
+      "nota": "Verificado en el diff — ya emite el estado cargado tras el rename."
+    },
+    {
+      "id": "crit-08",
+      "titulo": "Cambiar de ubicación/lote muestra éxito aunque el guardado falle",
+      "archivo": "features/directorio/animales/view/animal_detail_page.dart → InfoTab._changeLocation",
+      "estado": "FIJO",
+      "fase": "Fase 2",
+      "nota": "info_tab.dart modificado para esperar de verdad el resultado del bloc, igual que lote_form_page.dart."
+    },
+    {
+      "id": "crit-09",
+      "titulo": "Cada instalación nueva se siembra con 3 lotes ficticios que referencian animales inexistentes",
+      "archivo": "features/directorio/lotes/infrastructure/lotes_repository_isar.dart → _seedIfEmpty",
+      "estado": "FIJO",
+      "fase": "Fase 1.2",
+      "nota": "Seed de producción eliminado (-59 líneas en el commit e582221)."
+    },
+    {
+      "id": "crit-10",
+      "titulo": "La rentabilidad por animal deduce el precio de compra completo en cada periodo",
+      "archivo": "features/finanzas/application/finanzas_bloc.dart → _onLoadPeriod",
+      "estado": "FIJO",
+      "fase": "Fase 3",
+      "nota": "purchaseCost acotado al periodo junto con animal_profitability.dart."
+    },
+    {
+      "id": "crit-11",
+      "titulo": "Ordeño: una sesión borrador de hace días se retoma sin avisar",
+      "archivo": "features/milking/infrastructure/milking_repository_isar.dart → getOpenDraft",
+      "estado": "FIJO",
+      "fase": "Fase 3",
+      "nota": "Acotado a mismo día calendario."
+    },
+    {
+      "id": "crit-12",
+      "titulo": "Cancelar el selector de \"próxima fecha\" borra una fecha ya elegida (bug copy-paste ×3 archivos)",
+      "archivos": [
+        "features/registro/view/registro_sanitario_page.dart",
+        "features/registro/view/bulk_health_registro_page.dart",
+        "features/registro/view/registro_reproduccion_page.dart"
+      ],
+      "estado": "PARCIAL",
+      "fase": "Fase 1.4",
+      "nota": "CORRECCIÓN AL AUDIT: el bug era real en registro_sanitario_page.dart y bulk_health_registro_page.dart (ambos arreglados, confirmado `if (picked != null)` presente). registro_reproduccion_page.dart NO tenía el bug — sus campos se llaman _serviceDate/_expectedCalvingDate (no _nextDate como el audit describía) y ya comprobaban `picked != null` en ambos date pickers antes de este trabajo. El audit incluyó este archivo por error en el grupo de \"mismo bug\"."
+    },
+    {
+      "id": "crit-13",
+      "titulo": "La agenda ofrece tareas \"recurrentes\" que nunca se repiten",
+      "archivo": "features/agenda/widgets/agenda_form_sheet.dart, data/agenda_model.dart",
+      "estado": "FIJO",
+      "fase": "Fase 6",
+      "nota": "Decisión de usuario: implementar la expansión real (no ocultar el dropdown). Nuevo lib/features/agenda/data/agenda_recurrence.dart con nextRecurrenceDate() (weekly = +7 días; monthly = mismo día del mes siguiente, clamped al último día si el mes destino es más corto, con rollover de diciembre a enero) y buildNextOccurrence() (copia título/tipo/animales/lotes/ubicación/asignación/recurrenceRule, resetea estado a pendiente, completedAnimalIds/activities/evidence vacíos, checklist reseteado a no-completado). AgendaBloc._scheduleNextOccurrenceIfNeeded() se llama desde _onChangeStatus y _onMarkAnimalCompleted: si la entrada transiciona a estado==completado (y no lo estaba ya) y tiene recurrenceRule, persiste la siguiente ocurrencia vía repository.saveEntry(). Gate por transición (before.estado != completado) evita generar duplicados si se re-dispara el mismo estado (ej. completado→verificado no regenera). No se agregó seriesId — no era necesario para la correctitud, cada ocurrencia es una entry independiente con su propio recurrenceRule. Tests: test/features/agenda/data/agenda_recurrence_test.dart (10 tests: fórmulas de fecha + reset de estado) y 3 tests nuevos en agenda_bloc_test.dart (genera siguiente ocurrencia desde MarkAnimalCompleted, desde ChangeAgendaStatus, y no duplica si ya estaba completado)." },
+    {
+      "id": "crit-14",
+      "titulo": "Completar una tarea de agenda puede divergir entre lo que ves y lo que se guardó (update optimista sin rollback)",
+      "archivo": "view/agenda_task_detail_page.dart vs bloc/agenda_bloc.dart",
+      "estado": "FIJO",
+      "fase": "Fase 6",
+      "nota": "AgendaTaskDetailPage ahora envuelve su Scaffold en un BlocListener<AgendaBloc, AgendaState>. Se agregó _confirmedEntry (último estado confirmado por el bloc, arranca en widget.entry). En AgendaLoaded, si la entrada sigue en la lista se sincroniza _entry/_confirmedEntry con la versión real del bloc (converge cualquier deriva del optimismo local). En AgendaError, _entry se revierte a _confirmedEntry y se muestra un SnackBar con el motivo del fallo. No se tocó la lógica optimista en sí (sigue actualizando _entry al instante para feedback rápido) — se le agregó la red de seguridad que faltaba. No se agregó widget test dedicado (requeriría montar locator/GetIt + BlocProvider + go_router; queda como deuda de test, ver tests_pendientes_alto_roi)."
+    },
+    {
+      "id": "crit-15",
+      "titulo": "La validación de jerarquía de ubicaciones no protege a nadie (evento UpsertUbicacion huérfano)",
+      "archivo": "bloc/ubicaciones_bloc.dart → UpsertUbicacion / _onUpsertUbicacion",
+      "estado": "FIJO",
+      "fase": "Fase 6",
+      "nota": "Decisión: eliminar el evento (no enrutar por el bloc), porque LocationFormPage es una ruta top-level de go_router separada de UbicacionesPage — no es descendiente del BlocProvider<UbicacionesBloc>, así que enrutar por bloc hubiera requerido reestructurar cómo se provee el bloc. Se extrajo la validación (auto-padre, padre inexistente, tipo incompatible) a una función pura validateLocationParent() en features/ubicaciones/widgets/location_hierarchy_validation.dart, y se llama desde LocationFormPage._onSubmit() antes de repository.upsert(). Se borraron UpsertUbicacion (evento) y _onUpsertUbicacion (handler) de ubicaciones_bloc.dart/ubicaciones_event.dart. Los 3 tests del bloc que usaban UpsertUbicacion se migraron: 1 reescrito para guardar directo al repositorio (matching el comportamiento real), 1 borrado (el escenario de fallo ya no es responsabilidad del bloc), 1 movido y expandido a test/features/ubicaciones/widgets/location_hierarchy_validation_test.dart (7 tests: root sin padre, auto-padre, padre inexistente, tipo incompatible, ejido bajo monte comunal permitido/rechazado, recurso de agua bajo cualquier padre)."
+    },
+    {
+      "id": "crit-16",
+      "titulo": "No existe integración continua",
+      "archivo": "Repo raíz — sin .github/workflows/",
+      "estado": "FIJO",
+      "fase": "Fase 0",
+      "nota": "`.github/workflows/flutter_test.yml` existe y corre en cada push/PR. Verificado presente en el repo raíz (no dentro de libretapp/)."
+    }
+  ],
+
+  "archivos_a_eliminar": [
+    { "ruta": "core/l10n/generated/app_localizations.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "core/domain/organization.dart", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "Grep completo de lib/+test/ confirmó cero referencias." },
+    { "ruta": "animales/view/animal_card.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "Casi se elimina por error el widgets/animal_card.dart real (con AnimalCardMenuAction) — flutter analyze lo detectó a tiempo, se restauró y se borró solo el stub de view/." },
+    { "ruta": "animales/view/show_animal_filters_sheet.dart, show_create_animal_sheet.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "animales/widgets/animal_filters_sheet.dart, animal_create_form.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "animales/widgets/animal_assignment_sheet.dart, animal_batch_manager.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "animales/widgets/detail_helpers.dart → uniqueBatches(), fmtDate()", "confianza_audit": "seguro", "estado": "PARCIAL", "fase": "cabos sueltos Fase 5", "nota": "CORRECCIÓN AL AUDIT: fmtDate() NO estaba muerta — tiene 9 call sites activos en records_tab.dart, se dejó intacta (MANTENIDO). uniqueBatches() sí estaba muerta (cero call sites) y además rota: itera animal.batchId, que es `@Deprecated final String? batchId = null;` — siempre null, la función nunca pudo devolver nada útil. Eliminada." },
+    { "ruta": "domain/domain.dart", "confianza_audit": "seguro", "estado": "MANTENIDO", "fase": null, "nota": "Es el barrel que re-exporta entities/enums/services, incluyendo Care*. Se dejó intacto junto con Care* por instrucción explícita del usuario. Riesgo de mantenerlo: cero (nadie lo importa, no genera warnings)." },
+    { "ruta": "domain/entities/animal_location_history.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "domain/entities/{care_record,care_rule,scheduled_care}.dart + services/care_scheduler.dart", "confianza_audit": "verificar", "estado": "MANTENIDO", "fase": null, "nota": "Instrucción explícita del usuario: 'es una feature planeada, no tocar'." },
+    { "ruta": "animal_repository_isar.dart líneas ~344-1799 (_seedIfEmpty + 14 helpers)", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "-1474 líneas." },
+    { "ruta": "animales/infrastructure/isar/isar_lote.g.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "-2104 líneas." },
+    { "ruta": "infrastructure/services/batch_migration_service.dart", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "cabos sueltos Fase 5", "nota": "Decisión: borrar, no arreglar. `AnimalEntity.batchId` es un campo deprecado hardcodeado a null (nunca asignable vía constructor) — el dato fuente que la migración necesitaría ya no existe en el modelo, así que 'arreglarla' no es posible, solo borrarla. Se quitó también el call site en app_bloc.dart (_onAppStarted), el barrel infrastructure/services/index.dart que solo la exportaba (y quedó vacío, se borró junto con el directorio), y las referencias en docs/CODING_GUIDE.md y docs/ARQUITECTURA.md." },
+    { "ruta": "directorio/ubicaciones/ubicaciones_tab.dart, lotes/lotes_tab.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "ubicaciones/widgets/location_search_bar.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "ubicaciones/bloc: evento SearchUbicaciones + handler", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "ubicaciones/domain/entities/land_tenure.dart + enums/tenure_type.dart", "confianza_audit": "verificar", "estado": "MANTENIDO", "fase": null, "nota": "Instrucción explícita del usuario: 'es una feature planeada, no tocar'." },
+    { "ruta": "isar_location_repository.dart — bloques if vacíos en upsert()/deleteByUuid()", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "-17 líneas confirmadas en el diff." },
+    { "ruta": "agenda/widgets/agenda_list.dart, agenda_search_bar.dart, agenda_month_header.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "agenda/bloc: evento SearchAgenda + handler", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "El usuario no respondió la pregunta de confirmación explícita; se aplicó el default recomendado (borrar) por ausencia de indicios de feature planeada, y se dejó registrado para que el usuario lo revierta si hace falta." },
+    { "ruta": "milking: MilkingSession/MilkingEntry toJson/fromJson", "confianza_audit": "verificar", "estado": "MANTENIDO", "fase": null, "nota": "CORRECCIÓN AL AUDIT: la premisa del audit era falsa. `core/services/backup_service.dart` SÍ llama `MilkingSession.fromJson`/`MilkingEntry.fromJson` (líneas ~206-213) y sus `toJson()` para el export (líneas ~91-94) — son parte activa del sistema de backup/restore. Detectado durante la verificación de Fase 5 antes de borrar, evitando romper el backup." },
+    { "ruta": "inicio/widgets/dashboard_card.dart, quick_action_button.dart, quick_actions.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "perfil/widgets/profile_field.dart", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "perfil_settings_sheet.dart → función showPerfilSettingsSheet", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "Fase 5", "nota": "El usuario no respondió la confirmación explícita; se aplicó el default recomendado (borrar función + clase wrapper PerfilSettingsSheet, dejando intacto PerfilSettingsContent que sí usa perfil_view.dart)." },
+    { "ruta": "Repo raíz: debug-1d5c35.log, build_log.txt, l10n_untranslated.txt, _extract2.txt", "confianza_audit": "seguro", "estado": "ELIMINADO", "fase": "Fase 5" },
+    { "ruta": "Repo raíz: find_broken_part_of.ps1, find_missing_class.ps1, scan_undocumented.ps1", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "cabos sueltos Fase 5", "nota": "Verificado antes de borrar: los archivos de salida que generaban (broken_part_of.txt, undocumented.txt) ya no existen en el repo — confirma que ya fueron consumidos y son scripts de un solo uso." },
+    { "ruta": ".agents/, libretapp/tool/", "confianza_audit": "seguro", "estado": "N/A", "fase": null, "nota": "No existen como directorios en el working tree actual — git no rastrea directorios vacíos, así que no hay nada que borrar." },
+    { "ruta": "REFACTORING_SUMMARY.md vs REFACTORING_COMPLETE.md", "confianza_audit": "verificar", "estado": "ELIMINADO", "fase": "cabos sueltos Fase 5", "nota": "Consolidado: se borró REFACTORING_COMPLETE.md (duplicado casi total del mismo refactor de barrel-files de Feb 26, con tono más 'marketing'). Se mantuvo REFACTORING_SUMMARY.md porque es el que docs/ARQUITECTURA.md ya enlazaba como fuente canónica. BARREL_FILE_GUIDE.md (referenciado solo por el archivo borrado) se dejó intacto — sigue siendo contenido único, no duplicado." }
+  ],
+
+  "archivos_a_modificar": [
+    { "archivo": "ubicaciones/widgets/location_form_sheet.dart", "cambio": "Agregar crops: al construir la entidad", "estado": "FIJO", "fase": "Fase 1.1" },
+    { "archivo": "ubicaciones/cubit/location_detail_state.dart", "cambio": "Patrón sentinel para location en copyWith", "estado": "FIJO", "fase": "Fase 2" },
+    { "archivo": "ubicaciones/view/ubicaciones_tree_builder.dart", "cambio": "Guardia de ciclo en computeSubtreeAnimalCounts", "estado": "FIJO", "fase": "Fase 2" },
+    { "archivo": "directorio/animales/bloc/animales_bloc.dart", "cambio": "_onRenameBatch debe emitir un estado cargado", "estado": "FIJO", "fase": "Fase 2" },
+    { "archivo": "directorio/animales/view/animal_detail_page.dart (InfoTab)", "cambio": "dispatchAndAwait debe esperar de verdad el resultado del bloc", "estado": "FIJO", "fase": "Fase 2" },
+    { "archivo": "directorio/lotes/infrastructure/lotes_repository_isar.dart", "cambio": "Quitar el sembrado de 3 lotes ficticios", "estado": "FIJO", "fase": "Fase 1.2" },
+    { "archivo": "directorio/lotes/bloc/lotes_bloc.dart", "cambio": "Handlers mutantes deben emitir en vez de retornar en silencio", "estado": "FIJO", "fase": "Fase 2" },
+    { "archivo": "directorio/animales/infrastructure/animal_dto.dart", "cambio": "Agregar los ~26 campos faltantes", "estado": "FIJO", "fase": "Fase 1.3", "nota": "73/73 campos de AnimalEntity confirmados cubiertos, incluyendo status." },
+    { "archivo": "core/security/services/default_key_provider_service.dart", "cambio": "Guardia de release (falla si se usa la key default en release)", "estado": "FIJO", "fase": "Fase 4", "nota": "No se implementó sourcing desde almacenamiento seguro del SO — decisión de usuario de mantener el alcance en el guard, dado que no hay backend de auth real todavía." },
+    { "archivo": "core/security/services/auth_service.dart", "cambio": "Bloquear el stub en release", "estado": "FIJO", "fase": "Fase 4", "nota": "No se integró un backend de auth real — decisión de usuario, no hay pantalla de login que consuma AuthPort todavía." },
+    { "archivo": "core/security/services/prefs_secure_store_service.dart", "cambio": "Renombrado a prefs_key_value_store_service.dart / PrefsKeyValueStoreService", "estado": "FIJO", "fase": "Fase 4", "nota": "Decisión de usuario: renombrar en vez de migrar a flutter_secure_storage. El cifrado real ocurre en TokenStoreService antes de escribir aquí; esta clase solo persiste el string ya cifrado en SharedPreferences, de ahí el nombre honesto sin 'Secure'." },
+    { "archivo": "finanzas/application/finanzas_bloc.dart", "cambio": "Acotar purchaseCost al periodo", "estado": "FIJO", "fase": "Fase 3" },
+    { "archivo": "milking/infrastructure/milking_repository_isar.dart", "cambio": "getOpenDraft acotado al mismo día", "estado": "FIJO", "fase": "Fase 3" },
+    { "archivo": "registro_sanitario_page.dart, registro_reproduccion_page.dart, bulk_health_registro_page.dart", "cambio": "Guardia if (picked != null) en date picker opcional", "estado": "PARCIAL", "fase": "Fase 1.4", "nota": "Solo sanitario y bulk_health necesitaban el fix; reproduccion ya estaba correcto (ver crit-12)." },
+    { "archivo": "agenda/widgets/agenda_form_sheet.dart", "cambio": "Ocultar o implementar la recurrencia", "estado": "FIJO", "fase": "Fase 6", "nota": "Implementada de verdad (no ocultada) — ver crit-13. agenda_form_sheet.dart no cambió; la lógica nueva vive en agenda_recurrence.dart y agenda_bloc.dart." },
+    { "archivo": "exportar/view/exportar_page.dart", "cambio": "Quitar tristate: true o calcular el tercer estado real", "estado": "FIJO", "fase": "Fase 7", "nota": "Se calculó el tercer estado real: nuevo getter _allSelectedState (true si las 3 secciones están seleccionadas, false si ninguna, null/indeterminado si la selección es mixta), reemplazando el bool _allSelected que se pasaba directo a un CheckboxListTile con tristate:true. 3 tests nuevos en test/features/exportar/exportar_page_test.dart (estado inicial marcado, indeterminado con selección mixta, desmarcado al deseleccionar todo)." }
+  ],
+
+  "refactor_plan_pendiente": [
+    { "donde": "core/advisor/**", "que": "Mover fuera de core/ a su propia feature (dependencia invertida)", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Confirmado con grep que core/advisor/** solo importaba tipos de features/directorio/animales/domain/** (AnimalEntity, HealthRecord, MovementRecord, ReproductionRecord y varios enums) y que sus únicos consumidores eran los 3 formularios de animales (animal_health_form_page.dart, animal_movement_form_page.dart, animal_reproduction_form_page.dart) — la dependencia estaba invertida: 'core' dependía de una feature. Movido lib/core/advisor/** → lib/features/directorio/animales/advisor/** (mismo layout interno: rules/, widgets/, barrels). Todos los imports actualizados (8 archivos en lib, 3 formularios consumidores, 5 archivos de test). lib/core/core.dart ya no exporta advisor/advisor.dart (nadie fuera de directorio/animales lo necesitaba vía ese barrel); lib/features/directorio/animales/animals.dart ahora sí lo exporta. Movimiento mecánico puro, cero cambio de comportamiento — flutter analyze limpio (0 errores nuevos), suite completa 446/446 sin cambios en el conteo (no se agregaron tests nuevos, los 5 test files existentes se movieron junto con el código)." },
+    { "donde": "core/services/export_service.dart", "que": "Patrón plugin/registro para exportables", "esfuerzo": "Alto", "estado": "FIJO", "fase": "Fase 7", "nota": "Nuevo lib/core/services/exportable_sheet.dart con la interfaz ExportableSheet (writeTo(Excel)) + helper writeExcelRow() compartido. ExportService ya no importa AnimalRepository/LocationRepository/AgendaRepository/WorkforceRepository — solo depende de 3 ExportableSheet inyectados (animalsSheet/ubicacionesSheet/eventosSheet). Cada feature dueña de su repo ahora tiene su propio sheet writer: AnimalesExportSheet (directorio/animales/infrastructure), UbicacionesExportSheet (ubicaciones/infrastructure), EventosExportSheet (agenda/data, con AgendaRepository+WorkforceRepository). API pública de ExportService.exportToExcel({animals, ubicaciones, eventos}) sin cambios — cero impacto en ExportCubit/ExportSelectionPanel/UI. injection.dart actualizado para construir los 3 sheets y pasarlos. Tests nuevos: export_service_test.dart (5, orquestación por flags con sheets espía), animales_export_sheet_test.dart (2), ubicaciones_export_sheet_test.dart (2), eventos_export_sheet_test.dart (3, incluyendo resolución de nombres de responsable/equipo y fallback a vacío) — cierra el hueco de 0% cobertura que el audit original marcaba como CRÍTICO en esta pieza." },
+    { "donde": "Los 7 repositorios de registro (directorio/animales)", "que": "Consolidar en base/mixin genérica", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Nuevo lib/features/directorio/animales/infrastructure/isar_record_repository_base.dart: clase genérica IsarRecordRepositoryBase<TEntity, TIsarModel> con getRecordsFor/addRecordFor/deleteRecordById compartidos (get isar, writeTxn, parseo de id, log). Cada uno de los 7 repos (health/movement/weight/cost/commercial/production/reproduction) ahora extiende la base y solo aporta lo que realmente varía: el accessor de colección, la query animal-scoped (el campo de sort difiere — sortByDateDesc en 5 de ellos, sortByServiceDateDesc en reproduction), el mapeo entidad<->modelo Isar, y — solo para health/movement/weight — un hook onSaved opcional que aplica el efecto secundario sobre IsarAnimal (flags de salud, ubicación/fecha de movimiento, peso) exactamente igual que antes. HealthRecordRepositoryIsar.addHealthRecordToMultiple (bulk, sin equivalente en los otros 6) y ReproductionRecordRepositoryIsar.getUpcomingCalvings (query extra fuera del CRUD estándar) se dejaron como código propio de esas dos clases, sin forzarlos a la base. Cero cambio de comportamiento: mismos mensajes de log, mismo orden de operaciones dentro de cada writeTxn, misma interfaz pública de dominio (XRecordRepository) implementada sin cambios. Verificado con test nuevo test/features/directorio/animales/infrastructure/record_repositories_isar_test.dart (12 tests contra una instancia real de Isar en directorio temporal — antes estos 7 repos no tenían ningún test directo) que cubre los 3 hooks de efecto secundario, el bulk-add, la query especial de reproduction y el CRUD simple de los 3 repos sin side effects. Al habilitar la librería nativa isar.dll localmente para poder correr estos tests (se copia desde el paquete isar_flutter_libs, igual que hace .github/workflows/flutter_test.yml con libisar.so en Linux — agregada a .gitignore, no se commitea) se descubrió que ~36 tests dependientes de Isar real venían siendo omitidos silenciosamente en este entorno de desarrollo durante toda la sesión por falta de esa librería nativa; al correr por primera vez aparecieron 6 fallos preexistentes y no relacionados con este ítem (2 en animal_repository_isar_test.dart, 4 en isar_finanzas_repository_test.dart — ninguno de esos dos archivos fue tocado en este trabajo). Quedaron documentados aparte como tarea de background, no se tocaron como parte de esta consolidación." },
+    { "donde": "Los 7+1 formularios de registro", "que": "RecordFormScaffold<TRecord> genérico", "esfuerzo": "Medio-alto", "estado": "PARCIAL", "fase": "Fase 7", "nota": "Se implementó una versión deliberadamente acotada del scaffold genérico, no la versión 'TRecord' completamente tipada que sugiere el nombre del ítem. Nuevo lib/features/directorio/animales/widgets/record_form_scaffold.dart: un StatelessWidget RecordFormScaffold (title, fields, saving, onSave, saveLabel, formKey opcional) que extrae SOLO el chrome compartido (Scaffold+AppBar+SafeArea+SingleChildScrollView+Column+botón guardar con spinner, con Form opcional para las páginas que usan TextFormField/validators). Deliberadamente NO se generalizaron los campos del formulario ni el estado (_save(), controllers, validación) porque cada uno de los 7 tipos de registro tiene campos, validaciones y widgets adicionales genuinamente distintos (ej. AdvisorTipsPanel solo en health/movement/reproduction, selector de animal solo en algunos, chip de 'repetir último registro' solo en health) — envolver eso en un TRecord genérico real habría requerido abstraer todo el árbol de campos por tipo, y el tradeoff complejidad-vs-duplicación se volvía negativo (exactamente el mismo juicio que con WatchListTabBloc: generalizar el ciclo de vida compartido, no forzar genéricos sobre las partes que legítimamente varían). Aplicado a los 8 formularios (health, movement, weight, cost, commercial, production, reproduction, bulk_health) — cada build() ahora es un RecordFormScaffold(...) con la misma lista de fields de antes, cero cambio de comportamiento. Sin tests antes; 4 tests nuevos (test/features/directorio/animales/view/record_form_scaffold_smoke_test.dart) contra AnimalWeightFormPage (chrome simple) y BulkHealthFormPage (variante con Form/formKey) verificando render + que el guard de validación bloquea el guardado antes de tocar el repositorio. flutter analyze limpio; suite completa 512/512 (menos los mismos 6 fallos preexistentes no relacionados). Queda pendiente, si se decide perseguir el ítem original: el TRecord genérico real sobre campos+validación, que sigue siendo un cambio de mayor riesgo sobre 8 páginas sin cobertura visual previa." },
+    { "donde": "Las 3 tab-blocs de directorio", "que": "Base genérica WatchListTabBloc<T>", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Nuevo lib/features/directorio/bloc/watch_list_tab_bloc.dart: WatchListTabBloc<TItem, TEvent, TState> extends Bloc<TEvent, TState> con el ciclo de vida compartido (suscripción a watchAll(), guard emit-si-activo, catch de excepción síncrona, dispose de la suscripción). Deliberadamente NO se tocaron las clases de Event/State de cada feature (AnimalesTabEvent/State, LotesTabEvent/State, UbicacionesTabEvent/State) para no forzar cambios en los widgets consumidores — cada bloc concreto sigue exponiendo exactamente la misma API pública (mismos tipos de evento, mismo BlocBuilder<X, Y>), solo cambia la implementación interna que ahora delega en la base genérica vía métodos abstractos (watchItems, buildLoading, buildError, onStreamUpdated, onStreamFailed). AnimalesTabBloc/LotesTabBloc/UbicacionesTabBloc pasaron de ~90 líneas cada uno a ser mayormente overrides de una línea. Tests nuevos: test/features/directorio/bloc/watch_list_tab_bloc_test.dart (8 tests) — antes 0% de cobertura en los 3 blocs. Al escribir el test de 'limpiar búsqueda' se encontró un bug real preexistente en los 3 (copiado igual en los tres al ser código duplicado): copyWith(filteredX: null) para limpiar el filtro no limpiaba nada, porque el copyWith usaba filteredX ?? this.filteredX — con null explícito, el operador ?? devolvía el valor viejo en vez de null. Efecto en producción: al borrar el texto de búsqueda en Animales/Lotes/Ubicaciones, la lista NO volvía a mostrar todos los ítems, se quedaba con el último filtro aplicado. Corregido en animales_tab_state.dart/lotes_tab_state.dart/ubicaciones_tab_state.dart con el mismo patrón sentinel (_copyWithUnset) que ya usa animal_entity.dart en este mismo repo. Verificado con el mismo test suite: 496/496 (menos los 6 fallos preexistentes no relacionados, ver ítem de arriba)." },
+    { "donde": "isar_location_repository.dart", "que": "Extraer ~500 líneas de seed a archivo separado; unificar 2 mecanismos de migración", "esfuerzo": "Medio", "estado": "PARCIAL", "nota": "Solo se limpiaron los bloques if vacíos (Fase 5); el seed de 500 líneas y la unificación de migraciones siguen pendientes." },
+    { "donde": "bloc/ubicaciones_bloc.dart + location_form_page.dart", "que": "Decidir: enrutar por bloc o eliminar UpsertUbicacion", "esfuerzo": "Medio", "estado": "FIJO", "nota": "Fase 6. Se eliminó UpsertUbicacion; validación movida a location_hierarchy_validation.dart, ver crit-15." },
+    { "donde": "agenda_task_detail_page.dart + agenda_bloc.dart", "que": "Reemplazar estado optimista por BlocBuilder/BlocListener con rollback", "esfuerzo": "Alto", "estado": "FIJO", "nota": "Fase 6. BlocListener agregado con rollback en AgendaError, ver crit-14." },
+    { "donde": "perfil/**", "que": "Dividir en 3 features (ajustes, biblioteca, resúmenes)", "esfuerzo": "Alto", "estado": "FIJO", "fase": "Fase 7", "nota": "Los 3 quedaron separados. 'Resúmenes' → reportes/** (separación física completa, ver fila de abajo). 'Biblioteca' → features/biblioteca/** nuevo (cubit/, data/, view/, widgets/, barrel biblioteca.dart) tras decisión explícita del usuario: la navegación se queda como tab dentro de Perfil (no se crea un destino de nav propio), pero el código se separa igual — mismo criterio que reportes/finanzas, que ya son features propios e independientes aunque Perfil los vaya a enlazar como 'hub' a futuro (mover el código no ata ninguna decisión de navegación posterior). PerfilBibliotecaTab se renombró a BibliotecaTab (ya no tiene sentido el prefijo 'Perfil' fuera de perfil/). LibraryRepository sigue siendo usado también por InicioBloc (dashboard) sin cambios — solo cambió su ubicación de import. 'Ajustes' (PerfilBloc/PerfilRepository/perfil_settings_sheet.dart/profile_*) se queda en perfil/, que es correcto: es la única de las 3 responsabilidades que realmente pertenece ahí. Test movido: test/features/biblioteca/cubit/biblioteca_cubit_test.dart (4 tests, sin cambios de comportamiento). flutter analyze limpio; suite completa sin cambios en el conteo (512, mismos 6 fallos preexistentes no relacionados)." },
+    { "donde": "reportes/**", "que": "Darle capa de dominio propia (ReportesCubit propio)", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "reportes/** ya no importa nada de perfil/. Nuevo ReportesCubit (features/reportes/cubit/reportes_cubit.dart) reemplaza el PerfilTabsCubit compartido — solo conoce ReportSummaryService+FinanceSummaryService, sin LibraryRepository. Movidos a reportes/: report_summary_service.dart (perfil/domain → reportes/domain), report_summary.dart (perfil/data → reportes/data), report_card.dart y summary_metric_card.dart (perfil/widgets → reportes/widgets, confirmado con grep que ya no eran 'compartidos con el dashboard' pese al comentario viejo — uso exclusivo de reportes). finance_summary_service.dart se reubicó a finanzas/domain/ (no a reportes/) porque también lo usa inicio/ (InicioBloc/dashboard_widgets.dart) y sus imports ya eran 100% finanzas+animales, cero acoplamiento a perfil. Tests nuevos: reportes_cubit_test.dart (9) y biblioteca_cubit_test.dart (4) — antes 0% cobertura en el cubit compartido. flutter analyze limpio; suite completa 433 → 446 pasando." },
+    { "donde": "registro_ingreso_page.dart, registro_gasto_general_page.dart", "que": "Mover a finanzas o unificar a RegistroBloc", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Movidos (git mv) de features/registro/view/ a features/finanzas/view/ — ambos ya dependían casi exclusivamente de tipos de finanzas (FinanzasBloc, IncomeRecord/GeneralExpenseRecord, FinanzasRepository) y nunca de RegistroBloc, así que 'mover' fue la opción correcta, no 'unificar' (no comparten estado con el resto de registro). registro_ingreso_page.dart conserva su import cruzado a features/registro/widgets/animal_selector.dart — no se movió ese widget porque ya es compartido (también lo usa features/agenda/), no es exclusivo de registro. app_router.dart no necesitó cambios: ya importaba ambos barrels (registro/registro.dart y finanzas/finanzas.dart) y ahora las dos páginas se exponen vía finanzas/view/view.dart en vez de registro/view/view.dart. Sin tests directos para estas 2 páginas antes ni después del movimiento (fuera de alcance de este ítem). flutter analyze limpio; suite completa sin cambios en el conteo (496, mismos 6 fallos preexistentes no relacionados — ver ítem de repositorios de registro)." },
+    { "donde": "_parseDouble/_parseInt duplicados en 6 páginas de registro", "que": "Extraer a core/utils/number_parsing.dart", "esfuerzo": "Bajo", "estado": "FIJO", "nota": "Fase 7. parseFormDouble/parseFormInt en core/utils/number_parsing.dart, comportamiento idéntico (mismo trim/replace/tryParse). Las 6 páginas (comercial, costo, gasto_general, ingreso, peso, producción) ahora importan y llaman las funciones compartidas; los métodos privados duplicados se borraron. Test nuevo test/core/utils/number_parsing_test.dart; los tests de widget existentes de registro (que ejercitan el parseo a través del formulario real) siguen pasando sin cambios." },
+    { "donde": "perfil_settings_sheet.dart (bloque de exportación Excel)", "que": "Reusar el flujo de ExportarPage", "esfuerzo": "Bajo-medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Extraídos ExportSelectionPanel y ExportResultListener a features/exportar/widgets/export_selection_panel.dart, usados tanto por exportar_page.dart como por perfil_settings_sheet.dart — antes cada uno reimplementaba su propio estado de 3 checkboxes + botón de exportar (~60 líneas duplicadas, con etiqueta 'Eventos' en perfil vs 'Agenda' en la página completa). Ahora ambos son literalmente el mismo widget; el bloque de Perfil pasó a verse igual que la página completa (con iconos/subtítulos/seleccionar-todo) en vez de una versión recortada aparte. exportar_page_test.dart (3 tests) sigue pasando sin cambios sobre el widget compartido." },
+    { "donde": "core/di/injection.dart", "que": "Dividir setupLocator() (190 líneas) en helpers por dominio; reemplazar check de versión por string frágil por semver real", "esfuerzo": "Bajo-medio", "estado": "PARCIAL", "fase": "Fase 7", "nota": "setupLocator() dividido en 9 funciones _registerX() por dominio (infraestructura, seguridad, directorio/animales, directorio/lotes, ubicaciones, agenda, milking/finanzas, backup/export, inicio/perfil/reportes) — reorganización pura, sin cambio de comportamiento (GetIt solo guarda factories en registerLazySingleton, no las ejecuta, así que el orden de registro no importa mientras termine antes de la primera resolución real; confirmado con el test widget_test.dart que arranca la app completa). Verificado: mismas 36 registraciones, ninguna duplicada ni faltante. NO se tocó _isProductionReadyCoreVersion (check 'libret-core/0.'): la librería nativa que produce ese string vive fuera de este repo (FFI a un binario compilado aparte) y no hay forma de verificar con seguridad qué formatos reales de versión puede devolver sin ese contexto — mismo motivo de cautela que app_shell.dart. Queda documentado como pendiente." },
+    { "donde": "core/services/backup_service.dart", "que": "Quitar downcast a AnimalRepositoryIsar; dividir importFromJsonString (~150 líneas)", "esfuerzo": "Medio", "estado": "FIJO", "fase": "Fase 7", "nota": "Downcast eliminado: BackupService ya no importa ni conoce AnimalRepositoryIsar. En su lugar recibe un hook opcional fetchAllAnimalsIncludingArchived (Future<List<AnimalEntity>> Function()?) inyectado desde injection.dart — el composition root es el lugar correcto para saber qué repositorio concreto puede responder 'todos los animales, incluidos los archivados'; si no se provee el hook, cae de vuelta a animalRepository.getAll() (mismo comportamiento que antes para cualquier implementación no-Isar). importFromJsonString (antes ~150 líneas) dividido en _decodeAndValidate() (puro: JSON→DTOs+validaciones, sin tocar ningún repositorio) y _applyImport() (los writes reales), con un value type interno _DecodedBackup uniendo ambos. Sin tests antes (0% cobertura en un servicio que además ya tuvo bugs reales de pérdida de datos en fases previas de este audit); test nuevo test/core/services/backup_service_test.dart (12 tests): el hook de animales archivados y su fallback, 6 casos de validación que ahora fallan limpio (JSON no-objeto, schemaVersion ausente/inválido/demasiado nuevo, bloque data faltante, uuids duplicados, entrada de ordeña sin sesión válida), merge (crea/actualiza por uuid, no toca lo existente en agenda/workforce/milking) y replaceAll (limpia antes de escribir), más un round-trip export→import completo usando AnimalDto real (no JSON armado a mano) para no enmascarar bugs de serialización. flutter analyze limpio; suite completa 508/508 (menos los mismos 6 fallos preexistentes no relacionados, ver ítem de repositorios de registro)." },
+    { "donde": "app/app_bloc.dart", "que": "_supportedLanguageCodes = {'es'} bloquea el locale inglés ya empaquetado — decidir si es intencional", "esfuerzo": "Bajo", "estado": "FIJO", "fase": "Fase 7", "nota": "Decisión explícita del usuario: dejarlo como está. Español queda como único idioma soportado por ahora; no se toca app_bloc.dart. No era un bug — era una restricción intencional pendiente de confirmar, y ya está confirmada. Si en el futuro se decide soportar inglés, alcanza con agregar 'en' a _supportedLanguageCodes." },
+    { "donde": "app/app_shell.dart", "que": "_isOverlayRoute usa path.contains() por substring — frágil", "esfuerzo": "Bajo", "estado": "PENDIENTE", "nota": "Investigado, no ejecutado. Se puede reconstruir el set exacto de rutas afectadas (mapeando cada rama del substring match a sus AppRoutes.nameX equivalentes — el mapeo 1:1 ya está derivado), pero cambiar de path.contains() a GoRouterState.of(context).name requiere confirmar que .name refleja correctamente la ruta cuando hay pushes anidados dentro de un StatefulShellRoute branch, lo cual no se puede verificar de forma segura sin correr la app en un dispositivo/emulador y navegar cada ruta afectada manualmente. Bajo esfuerzo de escritura, pero el riesgo de regresión silenciosa en visibilidad de chrome (bottom nav/FAB) no es verificable con los tests headless disponibles en este entorno — se dejó sin tocar en vez de arriesgar un cambio no verificado." }
+  ],
+
+  "tests_pendientes_alto_roi": [
+    { "prioridad": "ALTO", "archivo": "test/core/advisor/rules/{health,movement,nutrition,production,reproduction}_rules_test.dart", "estado": "FIJO", "nota": "Hecho: 122 tests nuevos (health 20, movement 31, nutrition 20, production 20, reproduction 31) cubriendo las 42 funciones de regla en los 5 archivos (evaluateHealthRules, evaluateMovementRules, evaluateNutritionRules, evaluateProductionRules, evaluateReproductionRules), cada una con caso positivo y negativo, más los guards de supresión (ej. no duplicar tip de riesgo cuando ya hay uno de salud comprometida, checkup no dispara guard de cría joven, consanguinidad directa vs toro no registrado). Fixtures compartidos en test/core/advisor/rules/rule_test_fixtures.dart (buildAnimal/buildHealthRecord/buildMovementRecord/buildReproductionRecord) con defaults neutros para poder aislar una condición por test. Reglas que dependen de DateTime.now() (gestación avanzada, chequeo de preñez, etc.) se testean con offsets relativos a DateTime.now() calculados en el propio test. flutter analyze limpio; suite completa (227 -> 370 tests, contando también los 21 de agenda_bloc_test.dart de abajo) pasando." },
+    { "prioridad": "CRITICO", "archivo": "core/security/services/auth_service_test.dart, default_key_provider_service_test.dart", "estado": "FIJO", "fase": "Fase 7", "nota": "Se destrabó el bloqueo: nuevo lib/core/security/services/security_build_mode.dart expone isSecurityReleaseMode (getter que arranca en kReleaseMode) y debugOverrideSecurityReleaseMode() (@visibleForTesting) para forzarlo en tests. auth_service.dart y default_key_provider_service.dart ahora chequean isSecurityReleaseMode en vez de kReleaseMode directamente — comportamiento de producción idéntico (sigue arrancando en el kReleaseMode real), pero ahora testeable. auth_service_test.dart: 6 tests (rechazo de credenciales vacías, éxito guarda token, guard de release lanza SecurityException con code INSECURE_AUTH_STUB_IN_RELEASE, signOut limpia tokens, isSessionValid). default_key_provider_service_test.dart: 3 tests (key de dev por defecto, key no vacía, guard de release lanza SecurityException con code INSECURE_DEFAULT_KEY_IN_RELEASE). No se testeó la rama del escape hatch (LIBRET_ALLOW_INSECURE_*_IN_RELEASE=true) porque sigue siendo un bool.fromEnvironment de compilación — fuera de alcance de este fix." },
+    { "prioridad": "ALTO", "archivo": "test/features/agenda/bloc/agenda_bloc_test.dart", "estado": "FIJO", "nota": "Hecho: 21 tests nuevos cubriendo los 7 handlers de AgendaBloc (LoadAgenda, AddAgendaEntry, UpdateAgendaEntry, DeleteAgendaEntry, MarkAnimalCompleted, ChangeAgendaStatus, ToggleAgendaChecklistItem), incluyendo casos de error por repositorio, expansión de lote a animales en MarkAnimalCompleted, no-duplicado de animalId, limpieza de blockedReason al salir de bloqueado, y reapertura de un ítem de checklist. Fakes manuales (_FakeAgendaRepository, _FakeLotesRepository) siguiendo el patrón ya usado en ubicaciones_bloc_test.dart (no hay bloc_test/mocktail en el proyecto)." },
+    { "prioridad": "ALTO", "archivo": "Regresión de purchaseCost por periodo en finanzas", "estado": "CORRECCION_AUDIT", "nota": "Ya estaba cubierto: test/features/finanzas/application/finanzas_cubit_test.dart ya tiene 'AnimalProfitability.purchaseCost only hits the period the purchase happened in' y '...falls back to period-scoped purchase records', que son exactamente la regresión del fix de Fase 3. El audit no se había actualizado tras ese trabajo." },
+    { "prioridad": "ALTO", "archivo": "Widget test: fecha opcional se preserva al cancelar", "estado": "CORRECCION_AUDIT", "nota": "Ya estaba cubierto: test/features/registro/registro_pages_validation_test.dart tiene 'registro sanitario: cancelling the next date picker preserves the already-picked date' y el equivalente para bulk health registro. El audit no se había actualizado tras el fix de Fase 1.4." }
+  ]
+}

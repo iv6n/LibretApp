@@ -3,12 +3,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:libretapp/core/advisor/livestock_advisor.dart';
-import 'package:libretapp/core/advisor/widgets/advisor_tips_panel.dart';
+import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
+import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalMovementFormPage extends StatefulWidget {
@@ -106,123 +107,101 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.detailFormMovementTitle)),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<MovementReason>(
-                initialValue: _reason,
+    return RecordFormScaffold(
+      title: l10n.detailFormMovementTitle,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      fields: [
+        DropdownButtonFormField<MovementReason>(
+          initialValue: _reason,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormMovementReason,
+            border: const OutlineInputBorder(),
+          ),
+          items: MovementReason.values
+              .map(
+                (r) => DropdownMenuItem(value: r, child: Text(r.displayName)),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _reason = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _fromController,
                 decoration: InputDecoration(
-                  labelText: l10n.detailFormMovementReason,
-                  border: const OutlineInputBorder(),
-                ),
-                items: MovementReason.values
-                    .map(
-                      (r) => DropdownMenuItem(
-                        value: r,
-                        child: Text(r.displayName),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _reason = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _fromController,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormMovementFrom,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _toController,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormMovementTo,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _movedByController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormMovementMovedBy,
+                  labelText: l10n.detailFormMovementFrom,
                   border: const OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 16),
-              if (_animal != null) ...[
-                AdvisorTipsPanel(
-                  tips: LivestockAdvisor.forMovement(
-                    _animal!,
-                    MovementRecord(
-                      id: null,
-                      fromLocation: null,
-                      toLocation: _toController.text.trim(),
-                      date: _date,
-                      reason: _reason,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.actionSave),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _toController,
+                decoration: InputDecoration(
+                  labelText: l10n.detailFormMovementTo,
+                  border: const OutlineInputBorder(),
                 ),
               ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.today),
+          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _date,
+              firstDate: DateTime(_date.year - 5),
+              lastDate: DateTime(_date.year + 1),
+            );
+            if (picked == null) return;
+            setState(() => _date = picked);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: l10n.fieldNotes,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _movedByController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormMovementMovedBy,
+            border: const OutlineInputBorder(),
           ),
         ),
-      ),
+        const SizedBox(height: 16),
+        if (_animal != null) ...[
+          AdvisorTipsPanel(
+            tips: LivestockAdvisor.forMovement(
+              _animal!,
+              MovementRecord(
+                id: null,
+                fromLocation: null,
+                toLocation: _toController.text.trim(),
+                date: _date,
+                reason: _reason,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
     );
   }
 }

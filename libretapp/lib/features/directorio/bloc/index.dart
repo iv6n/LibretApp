@@ -13,3 +13,4 @@ export 'lotes_tab_state.dart';
 export 'ubicaciones_tab_bloc.dart';
 export 'ubicaciones_tab_event.dart';
 export 'ubicaciones_tab_state.dart';
+export 'watch_list_tab_bloc.dart';

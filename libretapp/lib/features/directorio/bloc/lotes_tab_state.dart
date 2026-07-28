@@ -4,6 +4,8 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
+const Object _copyWithUnset = Object();
+
 abstract class LotesTabState extends Equatable {
   const LotesTabState();
 
@@ -33,11 +35,13 @@ class LotesTabLoaded extends LotesTabState {
 
   LotesTabLoaded copyWith({
     List<LoteEntity>? lotes,
-    List<LoteEntity>? filteredLotes,
+    Object? filteredLotes = _copyWithUnset,
   }) {
     return LotesTabLoaded(
       lotes: lotes ?? this.lotes,
-      filteredLotes: filteredLotes ?? this.filteredLotes,
+      filteredLotes: identical(filteredLotes, _copyWithUnset)
+          ? this.filteredLotes
+          : filteredLotes as List<LoteEntity>?,
     );
   }
 

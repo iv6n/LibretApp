@@ -1,4 +1,4 @@
-/// core › advisor › livestock_tip — data class for a single advisor tip.
+/// features > directorio > animales > advisor > livestock_tip — data class for a single advisor tip.
 library;
 
 import 'package:equatable/equatable.dart';

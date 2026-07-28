@@ -1,7 +1,7 @@
-/// features › perfil › data › library_repository — local mock library (prepared for CMS).
+/// features > biblioteca > data > library_repository — local mock library (prepared for CMS).
 library;
 
-import 'package:libretapp/features/perfil/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/library_item.dart';
 
 abstract class LibraryRepository {
   Future<List<LibraryItem>> getAll();

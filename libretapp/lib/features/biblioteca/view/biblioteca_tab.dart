@@ -1,23 +1,24 @@
-/// Tab C — educational library.
+/// features > biblioteca > view > biblioteca_tab — educational library tab,
+/// currently rendered inside Perfil's tab bar.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/core/widgets/app_search_bar.dart';
-import 'package:libretapp/features/perfil/cubit/perfil_tabs_cubit.dart';
-import 'package:libretapp/features/perfil/data/library_item.dart';
-import 'package:libretapp/features/perfil/widgets/library_category_card.dart';
+import 'package:libretapp/features/biblioteca/cubit/biblioteca_cubit.dart';
+import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/widgets/library_category_card.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
-class PerfilBibliotecaTab extends StatefulWidget {
-  const PerfilBibliotecaTab({super.key});
+class BibliotecaTab extends StatefulWidget {
+  const BibliotecaTab({super.key});
 
   @override
-  State<PerfilBibliotecaTab> createState() => _PerfilBibliotecaTabState();
+  State<BibliotecaTab> createState() => _BibliotecaTabState();
 }
 
-class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
+class _BibliotecaTabState extends State<BibliotecaTab>
     with AutomaticKeepAliveClientMixin {
   LibraryCategory? _filter;
   final _searchController = TextEditingController();
@@ -28,7 +29,7 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
   @override
   void initState() {
     super.initState();
-    context.read<PerfilTabsCubit>().loadBiblioteca();
+    context.read<BibliotecaCubit>().loadBiblioteca();
   }
 
   @override
@@ -38,7 +39,7 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
   }
 
   void _search(String query) {
-    context.read<PerfilTabsCubit>().loadBiblioteca(query: query);
+    context.read<BibliotecaCubit>().loadBiblioteca(query: query);
     setState(() => _filter = null);
   }
 
@@ -46,11 +47,11 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return BlocBuilder<PerfilTabsCubit, PerfilTabsState>(
+    return BlocBuilder<BibliotecaCubit, BibliotecaState>(
       builder: (context, state) {
         final items = _filter == null
-            ? state.libraryItems
-            : state.libraryItems
+            ? state.items
+            : state.items
                   .where((i) => i.category == _filter)
                   .toList();
 
@@ -73,11 +74,11 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
                 },
               ),
             ),
-            if (state.libraryStatus == PerfilTabLoadStatus.loading)
+            if (state.status == BibliotecaLoadStatus.loading)
               const Expanded(
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (state.libraryStatus == PerfilTabLoadStatus.error)
+            else if (state.status == BibliotecaLoadStatus.error)
               Expanded(
                 child: AppEmptyState(
                   icon: Icons.error_outline,
@@ -85,7 +86,7 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
                   message: state.errorMessage,
                 ),
               )
-            else if (_filter == null && state.libraryQuery.isEmpty) ...[
+            else if (_filter == null && state.query.isEmpty) ...[
               Padding(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
@@ -108,8 +109,8 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
                   ),
                   children: [
                     _FeaturedLibraryCard(
-                      item: state.libraryItems.isNotEmpty
-                          ? state.libraryItems.first
+                      item: state.items.isNotEmpty
+                          ? state.items.first
                           : _mockFeaturedItem,
                       onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -119,7 +120,7 @@ class _PerfilBibliotecaTabState extends State<PerfilBibliotecaTab>
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     ...LibraryCategory.values.map((cat) {
-                      final count = state.libraryItems
+                      final count = state.items
                           .where((i) => i.category == cat)
                           .length;
                       if (count == 0) return const SizedBox.shrink();

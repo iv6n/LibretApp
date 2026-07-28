@@ -47,3 +47,4 @@ app.*.map.json
 
 # Native Isar library copied locally to run desktop/CI tests (see .github/workflows)
 /libisar.so
+/isar.dll

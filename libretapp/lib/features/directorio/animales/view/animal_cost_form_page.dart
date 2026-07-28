@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalCostFormPage extends StatefulWidget {
@@ -86,98 +87,78 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.detailFormCostTitle)),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<CostType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormCostType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: CostType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _type = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCostAmount,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _currencyController,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCostCurrency,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text('${_date.year}-${_date.month}-${_date.day}'),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.actionSave),
-                ),
-              ),
-            ],
+    return RecordFormScaffold(
+      title: l10n.detailFormCostTitle,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      fields: [
+        DropdownButtonFormField<CostType>(
+          initialValue: _type,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormCostType,
+            border: const OutlineInputBorder(),
           ),
+          items: CostType.values
+              .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _type = value);
+          },
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: l10n.detailFormCostAmount,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _currencyController,
+                decoration: InputDecoration(
+                  labelText: l10n.detailFormCostCurrency,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.today),
+          label: Text('${_date.year}-${_date.month}-${_date.day}'),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _date,
+              firstDate: DateTime(_date.year - 5),
+              lastDate: DateTime(_date.year + 1),
+            );
+            if (picked == null) return;
+            setState(() => _date = picked);
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: l10n.fieldNotes,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+      ],
     );
   }
 }

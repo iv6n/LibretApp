@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -58,14 +59,6 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
   var _date = DateTime.now();
   AnimalEntity? _selectedAnimal;
 
-  double? _parseDouble(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (normalized.isEmpty) {
-      return null;
-    }
-    return double.tryParse(normalized);
-  }
-
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -85,7 +78,7 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
       return;
     }
 
-    final amount = _parseDouble(_amountCtrl.text);
+    final amount = parseFormDouble(_amountCtrl.text);
     if (amount == null) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormCostAmountRequired)),

@@ -1,4 +1,4 @@
-/// features › perfil › data › library_item — educational library content model.
+/// features > biblioteca > data > library_item — educational library content model.
 library;
 
 import 'package:equatable/equatable.dart';

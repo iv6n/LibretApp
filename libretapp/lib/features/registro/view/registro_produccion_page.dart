@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -60,22 +61,6 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
   var _date = DateTime.now();
   AnimalEntity? _selectedAnimal;
 
-  double? _parseDouble(String raw) {
-    final normalized = raw.trim().replaceAll(',', '.');
-    if (normalized.isEmpty) {
-      return null;
-    }
-    return double.tryParse(normalized);
-  }
-
-  int? _parseInt(String raw) {
-    final normalized = raw.trim();
-    if (normalized.isEmpty) {
-      return null;
-    }
-    return int.tryParse(normalized);
-  }
-
   @override
   void dispose() {
     _valueCtrl.dispose();
@@ -97,7 +82,7 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
     }
 
     final rawValue = _valueCtrl.text.trim();
-    final parsedValue = _parseDouble(rawValue);
+    final parsedValue = parseFormDouble(rawValue);
     if (rawValue.isNotEmpty && parsedValue == null) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormNumberInvalid)),
@@ -112,7 +97,7 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
     }
 
     final rawScore = _scoreCtrl.text.trim();
-    final parsedScore = _parseInt(rawScore);
+    final parsedScore = parseFormInt(rawScore);
     if (rawScore.isNotEmpty && parsedScore == null) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormProductionScoreInvalid)),

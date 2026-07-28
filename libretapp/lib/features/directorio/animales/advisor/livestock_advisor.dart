@@ -1,12 +1,12 @@
-/// core › advisor › livestock_advisor — engine that applies care rules to produce tips.
+/// features > directorio > animales > advisor > livestock_advisor — engine that applies care rules to produce tips.
 library;
 
-import 'package:libretapp/core/advisor/livestock_tip.dart';
-import 'package:libretapp/core/advisor/rules/health_rules.dart';
-import 'package:libretapp/core/advisor/rules/movement_rules.dart';
-import 'package:libretapp/core/advisor/rules/nutrition_rules.dart';
-import 'package:libretapp/core/advisor/rules/production_rules.dart';
-import 'package:libretapp/core/advisor/rules/reproduction_rules.dart';
+import 'package:libretapp/features/directorio/animales/advisor/livestock_tip.dart';
+import 'package:libretapp/features/directorio/animales/advisor/rules/health_rules.dart';
+import 'package:libretapp/features/directorio/animales/advisor/rules/movement_rules.dart';
+import 'package:libretapp/features/directorio/animales/advisor/rules/nutrition_rules.dart';
+import 'package:libretapp/features/directorio/animales/advisor/rules/production_rules.dart';
+import 'package:libretapp/features/directorio/animales/advisor/rules/reproduction_rules.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';

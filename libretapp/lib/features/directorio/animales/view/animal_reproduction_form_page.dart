@@ -3,12 +3,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:libretapp/core/advisor/livestock_advisor.dart';
-import 'package:libretapp/core/advisor/widgets/advisor_tips_panel.dart';
+import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
+import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalReproductionFormPage extends StatefulWidget {
@@ -94,135 +95,116 @@ class _AnimalReproductionFormPageState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.detailFormReproductionTitle)),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButtonFormField<ServiceType>(
-                initialValue: _serviceType,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionServiceType,
-                  border: const OutlineInputBorder(),
+    return RecordFormScaffold(
+      title: l10n.detailFormReproductionTitle,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      fields: [
+        DropdownButtonFormField<ServiceType>(
+          initialValue: _serviceType,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormReproductionServiceType,
+            border: const OutlineInputBorder(),
+          ),
+          items: ServiceType.values
+              .map(
+                (s) => DropdownMenuItem(
+                  value: s,
+                  child: Text(
+                    s == ServiceType.naturalService
+                        ? l10n.detailFormReproductionServiceNatural
+                        : s == ServiceType.artificialInsemination
+                        ? l10n.detailFormReproductionServiceAi
+                        : l10n.detailFormReproductionServiceIvf,
+                  ),
                 ),
-                items: ServiceType.values
-                    .map(
-                      (s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(
-                          s == ServiceType.naturalService
-                              ? l10n.detailFormReproductionServiceNatural
-                              : s == ServiceType.artificialInsemination
-                              ? l10n.detailFormReproductionServiceAi
-                              : l10n.detailFormReproductionServiceIvf,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() => _serviceType = value);
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() => _serviceType = value);
+          },
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.event),
+                label: Text(
+                  '${_serviceDate.year}-${_serviceDate.month}-${_serviceDate.day}',
+                ),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _serviceDate,
+                    firstDate: DateTime(_serviceDate.year - 5),
+                    lastDate: DateTime(_serviceDate.year + 1),
+                  );
+                  if (picked == null) return;
+                  setState(() => _serviceDate = picked);
                 },
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.event),
-                      label: Text(
-                        '${_serviceDate.year}-${_serviceDate.month}-${_serviceDate.day}',
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _serviceDate,
-                          firstDate: DateTime(_serviceDate.year - 5),
-                          lastDate: DateTime(_serviceDate.year + 1),
-                        );
-                        if (picked == null) return;
-                        setState(() => _serviceDate = picked);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.child_friendly),
-                      label: Text(
-                        _expectedCalvingDate == null
-                            ? l10n.detailFormReproductionExpectedCalving
-                            : '${_expectedCalvingDate!.year}-${_expectedCalvingDate!.month}-${_expectedCalvingDate!.day}',
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _expectedCalvingDate ?? _serviceDate,
-                          firstDate: DateTime(_serviceDate.year - 1),
-                          lastDate: DateTime(_serviceDate.year + 2),
-                        );
-                        if (picked == null) return;
-                        setState(() => _expectedCalvingDate = picked);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _sireController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionSire,
-                  border: const OutlineInputBorder(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.child_friendly),
+                label: Text(
+                  _expectedCalvingDate == null
+                      ? l10n.detailFormReproductionExpectedCalving
+                      : '${_expectedCalvingDate!.year}-${_expectedCalvingDate!.month}-${_expectedCalvingDate!.day}',
                 ),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _expectedCalvingDate ?? _serviceDate,
+                    firstDate: DateTime(_serviceDate.year - 1),
+                    lastDate: DateTime(_serviceDate.year + 2),
+                  );
+                  if (picked == null) return;
+                  setState(() => _expectedCalvingDate = picked);
+                },
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionNotes,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-              if (_animal != null) ...[
-                AdvisorTipsPanel(
-                  tips: LivestockAdvisor.forReproduction(
-                    _animal!,
-                    ReproductionRecord(
-                      serviceDate: _serviceDate,
-                      serviceType: _serviceType,
-                      maleSireIdentifier: _sireController.text.trim().isEmpty
-                          ? null
-                          : _sireController.text.trim(),
-                      expectedCalvingDate: _expectedCalvingDate,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _saving ? null : _save,
-                  child: _saving
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(l10n.actionSave),
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _sireController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormReproductionSire,
+            border: const OutlineInputBorder(),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _notesController,
+          decoration: InputDecoration(
+            labelText: l10n.detailFormReproductionNotes,
+            border: const OutlineInputBorder(),
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 16),
+        if (_animal != null) ...[
+          AdvisorTipsPanel(
+            tips: LivestockAdvisor.forReproduction(
+              _animal!,
+              ReproductionRecord(
+                serviceDate: _serviceDate,
+                serviceType: _serviceType,
+                maleSireIdentifier: _sireController.text.trim().isEmpty
+                    ? null
+                    : _sireController.text.trim(),
+                expectedCalvingDate: _expectedCalvingDate,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
     );
   }
 }

@@ -1,6 +1,12 @@
 /// core › di › injection — GetIt service locator setup.
 ///
 /// Call [setupLocator] once at startup to register all dependencies.
+///
+/// Registration is split into one helper per domain purely for
+/// readability — GetIt's `registerLazySingleton` only stores a factory, it
+/// doesn't invoke it, so the *order* these helpers run in doesn't matter as
+/// long as they all complete (which they do, synchronously) before anything
+/// is actually resolved via `locator<T>()`.
 library;
 
 import 'package:get_it/get_it.dart';
@@ -11,16 +17,20 @@ import 'package:libretapp/core/security/services/auth_service.dart';
 import 'package:libretapp/core/security/services/crypto_stub_service.dart';
 import 'package:libretapp/core/security/services/default_key_provider_service.dart';
 import 'package:libretapp/core/security/services/native_crypto_service.dart';
-import 'package:libretapp/core/security/services/prefs_secure_store_service.dart';
+import 'package:libretapp/core/security/services/prefs_key_value_store_service.dart';
 import 'package:libretapp/core/security/services/secure_logger_service.dart';
 import 'package:libretapp/core/security/services/token_store_service.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/export_service.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/theme_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/features/agenda/data/eventos_export_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animales_export_sheet.dart';
+import 'package:libretapp/features/ubicaciones/infrastructure/ubicaciones_export_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -34,11 +44,11 @@ import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migr
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/inicio/data/weather_service.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
+import 'package:libretapp/features/biblioteca/data/library_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_shared_prefs_repository.dart';
-import 'package:libretapp/features/perfil/data/library_repository.dart';
-import 'package:libretapp/features/perfil/domain/report_summary_service.dart';
-import 'package:libretapp/features/perfil/domain/finance_summary_service.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
+import 'package:libretapp/features/reportes/domain/report_summary_service.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
@@ -98,14 +108,36 @@ Future<void> setupLocator() async {
 
   final sharedPreferences = await SharedPreferences.getInstance();
 
+  _registerInfrastructure(isarDatabase, sharedPreferences);
+  _registerSecurity();
+  _registerDirectorioAnimales();
+  _registerDirectorioLotes();
+  _registerUbicaciones(sharedPreferences);
+  _registerAgenda();
+  _registerMilkingFinanzas();
+  _registerBackupExport();
+  _registerInicioPerfilReportes();
+}
+
+void _registerInfrastructure(
+  IsarDatabase isarDatabase,
+  SharedPreferences sharedPreferences,
+) {
   locator
     ..registerSingleton<IsarDatabase>(isarDatabase)
     ..registerSingleton<SharedPrefsService>(
       SharedPrefsService(sharedPreferences),
     )
+    ..registerLazySingleton<ThemeRepository>(
+      () => ThemeRepository(locator<SharedPrefsService>()),
+    );
+}
+
+void _registerSecurity() {
+  locator
     ..registerLazySingleton<SensitiveLoggerPort>(SecureLoggerService.new)
     ..registerLazySingleton<SecureStorePort>(
-      () => PrefsSecureStoreService(locator<SharedPrefsService>()),
+      () => PrefsKeyValueStoreService(locator<SharedPrefsService>()),
     )
     ..registerLazySingleton<KeyProviderPort>(DefaultKeyProviderService.new)
     ..registerLazySingleton<CryptoPort>(() {
@@ -146,10 +178,11 @@ Future<void> setupLocator() async {
         tokenPort: locator<TokenPort>(),
         logger: locator<SensitiveLoggerPort>(),
       ),
-    )
-    ..registerLazySingleton<ThemeRepository>(
-      () => ThemeRepository(locator<SharedPrefsService>()),
-    )
+    );
+}
+
+void _registerDirectorioAnimales() {
+  locator
     ..registerLazySingleton<AnimalRemoteDataSource>(
       kDebugMode ? AnimalApiMock.new : _NoOpAnimalRemoteDataSource.new,
     )
@@ -160,46 +193,10 @@ Future<void> setupLocator() async {
         locator<AnimalRemoteDataSource>(),
       ),
     )
-    ..registerLazySingleton<LotesRepository>(
-      () => LotesRepositoryIsar(locator<IsarDatabase>()),
-    )
-    ..registerLazySingleton<MilkingRepository>(
-      () => MilkingRepositoryIsar(locator<IsarDatabase>()),
-    )
-    ..registerLazySingleton<BackupService>(
-        () => BackupService(
-          animalRepository: locator<AnimalRepository>(),
-          lotesRepository: locator<LotesRepository>(),
-          agendaRepository: locator<AgendaRepository>(),
-          workforceRepository: locator<WorkforceRepository>(),
-          milkingRepository: locator<MilkingRepository>(),
-        ),
-    )
-    ..registerLazySingleton<ExportService>(
-      () => ExportService(
+    ..registerLazySingleton<AnimalExcelImportService>(
+      () => AnimalExcelImportService(
         animalRepository: locator<AnimalRepository>(),
-          locationRepository: locator<LocationRepository>(),
-          eventosRepository: locator<AgendaRepository>(),
-          workforceRepository: locator<WorkforceRepository>(),
-        ),
-    )
-    ..registerLazySingleton<LocationRepository>(
-      () => IsarLocationRepository(locator<IsarDatabase>()),
-    )
-    ..registerLazySingleton<LocationEnumMigrationService>(
-      () => LocationEnumMigrationService(
-        isar: locator<IsarDatabase>().isar,
-        prefs: sharedPreferences,
       ),
-    )
-    ..registerLazySingleton<AgendaRepository>(
-      () => IsarAgendaRepository(
-        locator<IsarDatabase>(),
-        locator<SharedPrefsService>(),
-      ),
-    )
-    ..registerLazySingleton<WorkforceRepository>(
-      () => IsarWorkforceRepository(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<WeightRecordRepository>(
       () => WeightRecordRepositoryIsar(locator<IsarDatabase>()),
@@ -221,6 +218,38 @@ Future<void> setupLocator() async {
     )
     ..registerLazySingleton<CostRecordRepository>(
       () => CostRecordRepositoryIsar(locator<IsarDatabase>()),
+    );
+}
+
+void _registerDirectorioLotes() {
+  locator.registerLazySingleton<LotesRepository>(
+    () => LotesRepositoryIsar(locator<IsarDatabase>()),
+  );
+}
+
+void _registerUbicaciones(SharedPreferences sharedPreferences) {
+  locator
+    ..registerLazySingleton<LocationRepository>(
+      () => IsarLocationRepository(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<LocationEnumMigrationService>(
+      () => LocationEnumMigrationService(
+        isar: locator<IsarDatabase>().isar,
+        prefs: sharedPreferences,
+      ),
+    );
+}
+
+void _registerAgenda() {
+  locator
+    ..registerLazySingleton<AgendaRepository>(
+      () => IsarAgendaRepository(
+        locator<IsarDatabase>(),
+        locator<SharedPrefsService>(),
+      ),
+    )
+    ..registerLazySingleton<WorkforceRepository>(
+      () => IsarWorkforceRepository(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<AgendaReminderSyncService>(
       () => AgendaReminderSyncService(
@@ -229,7 +258,50 @@ Future<void> setupLocator() async {
         healthRepo: locator<HealthRecordRepository>(),
         reproductionRepo: locator<ReproductionRecordRepository>(),
       ),
+    );
+}
+
+void _registerMilkingFinanzas() {
+  locator
+    ..registerLazySingleton<MilkingRepository>(
+      () => MilkingRepositoryIsar(locator<IsarDatabase>()),
     )
+    ..registerLazySingleton<FinanzasRepository>(
+      () => IsarFinanzasRepository(locator<IsarDatabase>()),
+    );
+}
+
+void _registerBackupExport() {
+  locator
+    ..registerLazySingleton<BackupService>(
+      () => BackupService(
+        animalRepository: locator<AnimalRepository>(),
+        lotesRepository: locator<LotesRepository>(),
+        agendaRepository: locator<AgendaRepository>(),
+        workforceRepository: locator<WorkforceRepository>(),
+        milkingRepository: locator<MilkingRepository>(),
+        fetchAllAnimalsIncludingArchived: () {
+          final repo = locator<AnimalRepository>();
+          return repo is AnimalRepositoryIsar
+              ? repo.getAllIncludingArchived()
+              : repo.getAll();
+        },
+      ),
+    )
+    ..registerLazySingleton<ExportService>(
+      () => ExportService(
+        animalsSheet: AnimalesExportSheet(locator<AnimalRepository>()),
+        ubicacionesSheet: UbicacionesExportSheet(locator<LocationRepository>()),
+        eventosSheet: EventosExportSheet(
+          agendaRepository: locator<AgendaRepository>(),
+          workforceRepository: locator<WorkforceRepository>(),
+        ),
+      ),
+    );
+}
+
+void _registerInicioPerfilReportes() {
+  locator
     ..registerLazySingleton<WeatherService>(OpenMeteoWeatherService.new)
     ..registerLazySingleton<InicioDashboardService>(
       () => InicioDashboardService(
@@ -244,9 +316,6 @@ Future<void> setupLocator() async {
     )
     ..registerLazySingleton<PerfilRepository>(
       () => PerfilSharedPrefsRepository(locator<SharedPrefsService>()),
-    )
-    ..registerLazySingleton<FinanzasRepository>(
-      () => IsarFinanzasRepository(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<DashboardConfigRepository>(
       () => DashboardConfigRepository(locator<SharedPrefsService>()),

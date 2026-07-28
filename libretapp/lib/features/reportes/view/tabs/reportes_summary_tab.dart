@@ -8,10 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
-import 'package:libretapp/features/perfil/cubit/perfil_tabs_cubit.dart';
-import 'package:libretapp/features/perfil/data/report_summary.dart';
-import 'package:libretapp/features/perfil/widgets/report_card.dart';
-import 'package:libretapp/features/perfil/widgets/summary_metric_card.dart';
+import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
+import 'package:libretapp/features/reportes/data/report_summary.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -30,7 +28,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
   @override
   void initState() {
     super.initState();
-    context.read<PerfilTabsCubit>().loadReportes();
+    context.read<ReportesCubit>().loadReportes();
   }
 
   @override
@@ -44,15 +42,15 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
       bottomInset + 8,
     );
 
-    return BlocBuilder<PerfilTabsCubit, PerfilTabsState>(
+    return BlocBuilder<ReportesCubit, ReportesState>(
       builder: (context, state) {
-        if (state.reportStatus == PerfilTabLoadStatus.loading) {
+        if (state.reportStatus == ReportesLoadStatus.loading) {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: const Center(child: CircularProgressIndicator()),
           );
         }
-        if (state.reportStatus == PerfilTabLoadStatus.error) {
+        if (state.reportStatus == ReportesLoadStatus.error) {
           return Padding(
             padding: EdgeInsets.only(bottom: bottomInset),
             child: AppEmptyState(
@@ -61,7 +59,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
               message: state.errorMessage,
               action: FilledButton(
                 onPressed: () =>
-                    context.read<PerfilTabsCubit>().refreshReportes(),
+                    context.read<ReportesCubit>().refreshReportes(),
                 child: const Text('Reintentar'),
               ),
             ),
@@ -83,7 +81,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
         }
 
         return RefreshIndicator(
-          onRefresh: () => context.read<PerfilTabsCubit>().refreshReportes(),
+          onRefresh: () => context.read<ReportesCubit>().refreshReportes(),
           child: ListView(
             padding: listPadding,
             children: [

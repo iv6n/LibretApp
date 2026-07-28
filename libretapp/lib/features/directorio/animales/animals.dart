@@ -2,6 +2,7 @@
 library;
 
 // Exportaciones agrupadas del mÃ³dulo de animales
+export 'advisor/advisor.dart';
 export 'domain/domain.dart' hide AnimalStatus;
 export 'application/application.dart';
 export 'infrastructure/infrastructure.dart';

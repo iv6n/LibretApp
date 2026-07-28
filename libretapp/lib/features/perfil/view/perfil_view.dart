@@ -4,12 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
-import 'package:libretapp/core/widgets/app_empty_state.dart';import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';import 'package:libretapp/features/biblioteca/view/biblioteca_tab.dart';
+import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_state.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/view/perfil_settings_sheet.dart';
-import 'package:libretapp/features/perfil/view/tabs/perfil_biblioteca_tab.dart';
 import 'package:libretapp/features/perfil/widgets/profile_header_card.dart';
 
 class PerfilView extends StatelessWidget {
@@ -98,7 +98,7 @@ class _PerfilTabbedContentState extends State<_PerfilTabbedContent>
       body: TabBarView(
         controller: _tabController,
         children: [
-          const PerfilBibliotecaTab(),
+          const BibliotecaTab(),
           PerfilSettingsContent(perfil: widget.perfil),
         ],
       ),

@@ -8,6 +8,7 @@ import 'package:libretapp/core/extensions/context_extensions.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_form_sheet.dart';
+import 'package:libretapp/features/ubicaciones/widgets/location_hierarchy_validation.dart';
 
 class LocationFormPage extends StatefulWidget {
   const LocationFormPage({this.locationUuid, this.presetParentUuid, super.key});
@@ -93,6 +94,11 @@ class _LocationFormPageState extends State<LocationFormPage> {
 
   Future<void> _onSubmit(LocationEntity value) async {
     if (_saving) return;
+    final validationError = validateLocationParent(value, _allLocations);
+    if (validationError != null) {
+      context.showErrorSnackBar(validationError);
+      return;
+    }
     setState(() {
       _saving = true;
     });

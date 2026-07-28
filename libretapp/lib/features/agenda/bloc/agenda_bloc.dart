@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_recurrence.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -119,6 +120,7 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
       );
 
       await repository.updateEntry(updated);
+      await _scheduleNextOccurrenceIfNeeded(before: entry, after: updated);
       final refreshed = await repository.fetchEntries();
       emit(AgendaLoaded(refreshed));
     } catch (e) {
@@ -154,10 +156,24 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
         ],
       );
       await repository.updateEntry(updated);
+      await _scheduleNextOccurrenceIfNeeded(before: entry, after: updated);
       emit(AgendaLoaded(await repository.fetchEntries()));
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
+  }
+
+  /// If [after] just transitioned into `completado` (and wasn't already),
+  /// and the entry recurs, persists the next occurrence so a recurring task
+  /// actually keeps producing future tasks instead of ending after one.
+  Future<void> _scheduleNextOccurrenceIfNeeded({
+    required AgendaEntry before,
+    required AgendaEntry after,
+  }) async {
+    if (after.estado != AgendaEstado.completado) return;
+    if (before.estado == AgendaEstado.completado) return;
+    final next = buildNextOccurrence(after);
+    if (next != null) await repository.saveEntry(next);
   }
 
   Future<void> _onToggleChecklistItem(

@@ -23,7 +23,7 @@
 ## Datos y persistencia
 - Isar como store local: base en [lib/core/database/isar_database.dart](../lib/core/database/isar_database.dart); SharedPreferences en [lib/core/services/shared_prefs_service.dart](../lib/core/services/shared_prefs_service.dart).
 - Repos de dominio registrados en DI: animales y lotes (Isar), ubicaciones (Isar), eventos y perfil (in-memory/mock). Ejemplos: [lib/features/directorio/animales/infrastructure/animal_repository_isar.dart](../lib/features/directorio/animales/infrastructure/animal_repository_isar.dart), [lib/features/directorio/lotes/infrastructure/lotes_repository_isar.dart](../lib/features/directorio/lotes/infrastructure/lotes_repository_isar.dart), [lib/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart](../lib/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart).
-- Seeding/migración descrita en [IMPLEMENTATION_SUMMARY.md](../IMPLEMENTATION_SUMMARY.md). `BatchMigrationService` se ejecuta al arrancar desde `AppBloc`.
+- Seeding/migración descrita en [IMPLEMENTATION_SUMMARY.md](../IMPLEMENTATION_SUMMARY.md).
 
 ## Theming y UX chrome
 - Temas M3 en [lib/theme/app_theme.dart](../lib/theme/app_theme.dart) exportados por [lib/theme/theme.dart](../lib/theme/theme.dart); define paletas, spacing/radii, tipografía, `ShellChromeTheme` para nav/FAB.

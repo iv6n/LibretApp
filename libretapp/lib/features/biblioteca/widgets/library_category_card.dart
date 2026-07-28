@@ -1,8 +1,8 @@
-/// Library category or item card.
+/// features > biblioteca > widgets > library_category_card — library category or item card.
 library;
 
 import 'package:flutter/material.dart';
-import 'package:libretapp/features/perfil/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/library_item.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class LibraryCategoryCard extends StatelessWidget {

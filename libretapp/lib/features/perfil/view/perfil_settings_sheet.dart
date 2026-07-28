@@ -7,10 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/export_service.dart';
 import 'package:libretapp/features/exportar/cubit/export_cubit.dart';
-import 'package:libretapp/features/exportar/cubit/export_state.dart';
+import 'package:libretapp/features/exportar/widgets/export_selection_panel.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
@@ -36,10 +37,6 @@ class PerfilSettingsContent extends StatefulWidget {
 }
 
 class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
-  bool _animals = true;
-  bool _ubicaciones = true;
-  bool _eventos = true;
-
   void _openEdit() {
     final perfilBloc = context.read<PerfilBloc>();
     if (widget.closeBeforeEdit) {
@@ -113,69 +110,18 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               title: const Text('Exportar a Excel'),
               onTap: () => context.push(AppRoutes.exportar),
             ),
+            ListTile(
+              leading: const Icon(Icons.upload_outlined),
+              title: const Text('Importar animales desde Excel'),
+              subtitle: const Text(
+                'Solo la hoja "Animales" de una exportación previa — datos básicos.',
+              ),
+              onTap: () => _importAnimalsFromExcel(context),
+            ),
             const Divider(),
             BlocProvider(
               create: (_) => ExportCubit(locator<ExportService>()),
-              child: BlocConsumer<ExportCubit, ExportState>(
-                listener: (context, state) {
-                  if (state is ExportSuccess) {
-                    Share.shareXFiles([XFile(state.filePath)]);
-                    context.read<ExportCubit>().reset();
-                  } else if (state is ExportError) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(state.message)));
-                    context.read<ExportCubit>().reset();
-                  }
-                },
-                builder: (context, state) {
-                  final loading = state is ExportLoading;
-                  return Column(
-                    children: [
-                      CheckboxListTile(
-                        title: const Text('Animales'),
-                        value: _animals,
-                        onChanged: loading
-                            ? null
-                            : (v) => setState(() => _animals = v ?? false),
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Ubicaciones'),
-                        value: _ubicaciones,
-                        onChanged: loading
-                            ? null
-                            : (v) => setState(() => _ubicaciones = v ?? false),
-                      ),
-                      CheckboxListTile(
-                        title: const Text('Eventos'),
-                        value: _eventos,
-                        onChanged: loading
-                            ? null
-                            : (v) => setState(() => _eventos = v ?? false),
-                      ),
-                      FilledButton.icon(
-                        onPressed:
-                            loading || (!_animals && !_ubicaciones && !_eventos)
-                            ? null
-                            : () => context.read<ExportCubit>().export(
-                                animals: _animals,
-                                ubicaciones: _ubicaciones,
-                                eventos: _eventos,
-                              ),
-                        icon: loading
-                            ? const SizedBox.square(
-                                dimension: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.ios_share_outlined),
-                        label: Text(loading ? 'Generando…' : 'Exportar rápido'),
-                      ),
-                    ],
-                  );
-                },
-              ),
+              child: const ExportResultListener(child: ExportSelectionPanel()),
             ),
           ],
         ),
@@ -257,6 +203,35 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
+    }
+  }
+
+  Future<void> _importAnimalsFromExcel(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final summary = await locator<AnimalExcelImportService>()
+          .importFromPickedFile();
+      if (summary == null) return;
+      final parts = <String>[
+        if (summary.created > 0) '${summary.created} animales nuevos',
+        if (summary.updated > 0) '${summary.updated} actualizados',
+      ];
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            parts.isEmpty
+                ? 'No se importó ningún animal.'
+                : '${parts.join(', ')}.'
+                      '${summary.warnings.isEmpty ? '' : ' ${summary.warnings.length} aviso(s), ver logs.'}',
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+      for (final warning in summary.warnings) {
+        debugPrint('[ImportarExcel] $warning');
+      }
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 }
