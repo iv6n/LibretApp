@@ -63,9 +63,6 @@ class _FakeAgendaRepository implements AgendaRepository {
 
   @override
   Future<void> clearAll() async => _entries.clear();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeLotesRepository implements LotesRepository {

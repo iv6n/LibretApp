@@ -42,7 +42,6 @@ class IsarLote {
   late bool synced;
   String? remoteId;
   DateTime? syncDate;
-  String? contentHash;
 
   late DateTime lastUpdateDate;
 }

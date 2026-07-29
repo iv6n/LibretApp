@@ -61,9 +61,6 @@ class AuthService implements AuthPort {
   }
 
   @override
-  Future<AuthResult> signUp(AuthCredentials credentials) => signIn(credentials);
-
-  @override
   Future<void> signOut() async {
     await _tokenPort.clearTokens();
     _logger.info('Session cleared', tag: 'Auth');
@@ -73,7 +70,4 @@ class AuthService implements AuthPort {
   Future<bool> isSessionValid() async {
     return !(await _tokenPort.isAccessTokenExpired());
   }
-
-  @override
-  String? get currentUserId => null;
 }

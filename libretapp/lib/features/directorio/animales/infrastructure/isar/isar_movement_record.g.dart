@@ -23,60 +23,35 @@ const IsarMovementRecordSchema = CollectionSchema(
       name: r'animalUuid',
       type: IsarType.string,
     ),
-    r'contentHash': PropertySchema(
-      id: 1,
-      name: r'contentHash',
-      type: IsarType.string,
-    ),
     r'date': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'date',
       type: IsarType.dateTime,
     ),
     r'fromLocation': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'fromLocation',
       type: IsarType.string,
     ),
     r'movedBy': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'movedBy',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'notes',
       type: IsarType.string,
     ),
     r'reason': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'reason',
       type: IsarType.string,
     ),
-    r'remoteId': PropertySchema(
-      id: 7,
-      name: r'remoteId',
-      type: IsarType.string,
-    ),
-    r'syncDate': PropertySchema(
-      id: 8,
-      name: r'syncDate',
-      type: IsarType.dateTime,
-    ),
-    r'synced': PropertySchema(
-      id: 9,
-      name: r'synced',
-      type: IsarType.bool,
-    ),
     r'toLocation': PropertySchema(
-      id: 10,
+      id: 6,
       name: r'toLocation',
       type: IsarType.string,
-    ),
-    r'updatedAt': PropertySchema(
-      id: 11,
-      name: r'updatedAt',
-      type: IsarType.dateTime,
     )
   },
   estimateSize: _isarMovementRecordEstimateSize,
@@ -115,12 +90,6 @@ int _isarMovementRecordEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.animalUuid.length * 3;
   {
-    final value = object.contentHash;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
     final value = object.fromLocation;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -139,12 +108,6 @@ int _isarMovementRecordEstimateSize(
     }
   }
   bytesCount += 3 + object.reason.length * 3;
-  {
-    final value = object.remoteId;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
   bytesCount += 3 + object.toLocation.length * 3;
   return bytesCount;
 }
@@ -156,17 +119,12 @@ void _isarMovementRecordSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.animalUuid);
-  writer.writeString(offsets[1], object.contentHash);
-  writer.writeDateTime(offsets[2], object.date);
-  writer.writeString(offsets[3], object.fromLocation);
-  writer.writeString(offsets[4], object.movedBy);
-  writer.writeString(offsets[5], object.notes);
-  writer.writeString(offsets[6], object.reason);
-  writer.writeString(offsets[7], object.remoteId);
-  writer.writeDateTime(offsets[8], object.syncDate);
-  writer.writeBool(offsets[9], object.synced);
-  writer.writeString(offsets[10], object.toLocation);
-  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeDateTime(offsets[1], object.date);
+  writer.writeString(offsets[2], object.fromLocation);
+  writer.writeString(offsets[3], object.movedBy);
+  writer.writeString(offsets[4], object.notes);
+  writer.writeString(offsets[5], object.reason);
+  writer.writeString(offsets[6], object.toLocation);
 }
 
 IsarMovementRecord _isarMovementRecordDeserialize(
@@ -177,18 +135,13 @@ IsarMovementRecord _isarMovementRecordDeserialize(
 ) {
   final object = IsarMovementRecord();
   object.animalUuid = reader.readString(offsets[0]);
-  object.contentHash = reader.readStringOrNull(offsets[1]);
-  object.date = reader.readDateTime(offsets[2]);
-  object.fromLocation = reader.readStringOrNull(offsets[3]);
+  object.date = reader.readDateTime(offsets[1]);
+  object.fromLocation = reader.readStringOrNull(offsets[2]);
   object.id = id;
-  object.movedBy = reader.readStringOrNull(offsets[4]);
-  object.notes = reader.readStringOrNull(offsets[5]);
-  object.reason = reader.readString(offsets[6]);
-  object.remoteId = reader.readStringOrNull(offsets[7]);
-  object.syncDate = reader.readDateTimeOrNull(offsets[8]);
-  object.synced = reader.readBool(offsets[9]);
-  object.toLocation = reader.readString(offsets[10]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[11]);
+  object.movedBy = reader.readStringOrNull(offsets[3]);
+  object.notes = reader.readStringOrNull(offsets[4]);
+  object.reason = reader.readString(offsets[5]);
+  object.toLocation = reader.readString(offsets[6]);
   return object;
 }
 
@@ -202,27 +155,17 @@ P _isarMovementRecordDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    case 2:
       return (reader.readDateTime(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
       return (reader.readString(offset)) as P;
-    case 7:
-      return (reader.readStringOrNull(offset)) as P;
-    case 8:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 9:
-      return (reader.readBool(offset)) as P;
-    case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -500,160 +443,6 @@ extension IsarMovementRecordQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'animalUuid',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'contentHash',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'contentHash',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'contentHash',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'contentHash',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'contentHash',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      contentHashIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'contentHash',
         value: '',
       ));
     });
@@ -1370,244 +1159,6 @@ extension IsarMovementRecordQueryFilter
   }
 
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'remoteId',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'remoteId',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'remoteId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'remoteId',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'remoteId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      remoteIdIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'remoteId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'syncDate',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'syncDate',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateEqualTo(DateTime? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncDateBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'syncDate',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      syncedEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'synced',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
       toLocationEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1742,80 +1293,6 @@ extension IsarMovementRecordQueryFilter
       ));
     });
   }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'updatedAt',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'updatedAt',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtEqualTo(DateTime? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
-      updatedAtBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'updatedAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
 }
 
 extension IsarMovementRecordQueryObject
@@ -1837,20 +1314,6 @@ extension IsarMovementRecordQuerySortBy
       sortByAnimalUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'animalUuid', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByContentHash() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByContentHashDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -1925,48 +1388,6 @@ extension IsarMovementRecordQuerySortBy
   }
 
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByRemoteId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByRemoteIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortBySyncDateDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortBySyncedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
       sortByToLocation() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toLocation', Sort.asc);
@@ -1977,20 +1398,6 @@ extension IsarMovementRecordQuerySortBy
       sortByToLocationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toLocation', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      sortByUpdatedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -2008,20 +1415,6 @@ extension IsarMovementRecordQuerySortThenBy
       thenByAnimalUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'animalUuid', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByContentHash() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByContentHashDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -2110,48 +1503,6 @@ extension IsarMovementRecordQuerySortThenBy
   }
 
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByRemoteId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByRemoteIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenBySyncDateDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenBySyncedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
       thenByToLocation() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toLocation', Sort.asc);
@@ -2164,20 +1515,6 @@ extension IsarMovementRecordQuerySortThenBy
       return query.addSortBy(r'toLocation', Sort.desc);
     });
   }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
-      thenByUpdatedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.desc);
-    });
-  }
 }
 
 extension IsarMovementRecordQueryWhereDistinct
@@ -2186,13 +1523,6 @@ extension IsarMovementRecordQueryWhereDistinct
       distinctByAnimalUuid({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'animalUuid', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
-      distinctByContentHash({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'contentHash', caseSensitive: caseSensitive);
     });
   }
 
@@ -2232,37 +1562,9 @@ extension IsarMovementRecordQueryWhereDistinct
   }
 
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
-      distinctByRemoteId({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
-      distinctBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'syncDate');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
-      distinctBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'synced');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
       distinctByToLocation({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'toLocation', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
-      distinctByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -2279,13 +1581,6 @@ extension IsarMovementRecordQueryProperty
       animalUuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'animalUuid');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, String?, QQueryOperations>
-      contentHashProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'contentHash');
     });
   }
 
@@ -2321,37 +1616,10 @@ extension IsarMovementRecordQueryProperty
     });
   }
 
-  QueryBuilder<IsarMovementRecord, String?, QQueryOperations>
-      remoteIdProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'remoteId');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, DateTime?, QQueryOperations>
-      syncDateProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'syncDate');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, bool, QQueryOperations> syncedProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'synced');
-    });
-  }
-
   QueryBuilder<IsarMovementRecord, String, QQueryOperations>
       toLocationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toLocation');
-    });
-  }
-
-  QueryBuilder<IsarMovementRecord, DateTime?, QQueryOperations>
-      updatedAtProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'updatedAt');
     });
   }
 }

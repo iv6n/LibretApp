@@ -2,13 +2,12 @@
 library;
 
 import 'package:isar/isar.dart';
-import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 
 part 'isar_commercial_record.g.dart';
 
 @collection
-class IsarCommercialRecord implements AnimalRecordSyncFields {
+class IsarCommercialRecord {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -20,13 +19,6 @@ class IsarCommercialRecord implements AnimalRecordSyncFields {
   String? currency;
   String? counterparty;
   String? notes;
-
-  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
-  DateTime? updatedAt;
-  late bool synced = false;
-  String? remoteId;
-  DateTime? syncDate;
-  String? contentHash;
 }
 
 extension IsarCommercialRecordMapper on IsarCommercialRecord {

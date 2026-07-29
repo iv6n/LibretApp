@@ -16,12 +16,4 @@ abstract class FinanzasRepository {
   Future<List<GeneralExpenseRecord>> getExpenses(DateRange range);
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record);
   Future<void> deleteExpense(String id);
-
-  // Sincronización (respaldo en la nube): dos colecciones comparten este
-  // repositorio, por lo que se expone un par get/mark por cada una en vez de
-  // un único SyncableRepository<T>.
-  Future<List<IncomeRecord>> getUnsynchronizedIncomes();
-  Future<void> markIncomeSynced(String id, String remoteId);
-  Future<List<GeneralExpenseRecord>> getUnsynchronizedExpenses();
-  Future<void> markExpenseSynced(String id, String remoteId);
 }

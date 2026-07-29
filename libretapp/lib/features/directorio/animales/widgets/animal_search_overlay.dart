@@ -13,7 +13,6 @@ Future<String?> showAnimalSearchOverlay({
 }) {
   return showModalBottomSheet<String>(
     context: context,
-    useRootNavigator: true,
     useSafeArea: true,
     isScrollControlled: true,
     showDragHandle: true,

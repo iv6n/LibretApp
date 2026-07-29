@@ -52,7 +52,6 @@ class _LotesListViewState extends State<LotesListView> {
   Future<void> _confirmDeleteLote(LoteEntity lote) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar lote'),
         content: Text(

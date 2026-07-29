@@ -34,7 +34,6 @@ Future<WorkforceSelection?> showWorkforceSelector({
 
   return showModalBottomSheet<WorkforceSelection>(
     context: context,
-    useRootNavigator: true,
     isScrollControlled: true,
     builder: (_) => _WorkforceSelectorSheet(
       workers: results[0] as List<WorkerProfile>,
@@ -49,7 +48,6 @@ Future<WorkforceSelection?> showWorkforceSelector({
 Future<void> showWorkforceManager(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
-    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (_) => const _WorkforceManagerSheet(),
@@ -283,7 +281,6 @@ class _WorkforceManagerSheetState extends State<_WorkforceManagerSheet> {
     var role = WorkerRole.worker;
     final save = await showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Nuevo integrante'),
@@ -346,7 +343,6 @@ class _WorkforceManagerSheetState extends State<_WorkforceManagerSheet> {
     final selected = <String>{};
     final save = await showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Nueva cuadrilla'),

@@ -2,13 +2,12 @@
 library;
 
 import 'package:isar/isar.dart';
-import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 
 part 'isar_production_record.g.dart';
 
 @collection
-class IsarProductionRecord implements AnimalRecordSyncFields {
+class IsarProductionRecord {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -20,13 +19,6 @@ class IsarProductionRecord implements AnimalRecordSyncFields {
   String? unit;
   int? score;
   String? notes;
-
-  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
-  DateTime? updatedAt;
-  late bool synced = false;
-  String? remoteId;
-  DateTime? syncDate;
-  String? contentHash;
 }
 
 extension IsarProductionRecordMapper on IsarProductionRecord {

@@ -4,8 +4,6 @@ library;
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
-import 'package:libretapp/core/sync/sync_fields.dart';
-import 'package:libretapp/core/sync/syncable_repository.dart';
 
 /// Shared CRUD skeleton for the animal "child record" repositories (health,
 /// movement, weight, cost, commercial, production, reproduction), which all
@@ -15,19 +13,7 @@ import 'package:libretapp/core/sync/syncable_repository.dart';
 /// (sort field differs per record type), the entity<->model mapping, and an
 /// optional [onSaved] hook for the repos that also need to update the
 /// parent `IsarAnimal` (health/movement/weight).
-///
-/// Also implements [AnimalScopedSyncableRepository] for the cloud backup
-/// feature: since these records have no cross-device UUID of their own,
-/// [markAsSynced] keys off the same stringified Isar autoincrement id
-/// already used as the entity's local `id`, and the cloud row's own uuid is
-/// what gets stored in [SyncFields.remoteId]. [getUnsynchronized] pairs each
-/// entity with its owning animal's uuid since the entity itself doesn't
-/// carry it (see [AnimalRecordSyncFields]).
-abstract class IsarRecordRepositoryBase<
-  TEntity,
-  TIsarModel extends AnimalRecordSyncFields
->
-    implements AnimalScopedSyncableRepository<TEntity> {
+abstract class IsarRecordRepositoryBase<TEntity, TIsarModel> {
   IsarRecordRepositoryBase(this._database);
 
   final IsarDatabase _database;
@@ -81,45 +67,6 @@ abstract class IsarRecordRepositoryBase<
     if (id == null) return;
     await db.writeTxn(() async {
       await collection(db).delete(id);
-    });
-  }
-
-  @override
-  Future<List<(String animalUuid, TEntity record)>> getUnsynchronized() async {
-    final db = await isar;
-    final all = await collection(db).where().findAll();
-    return all
-        .where((model) => !model.synced)
-        .map((model) => (model.animalUuid, toEntity(model)))
-        .toList(growable: false);
-  }
-
-  @override
-  Future<void> markAsSynced(String localId, String remoteId) async {
-    final db = await isar;
-    final id = int.tryParse(localId);
-    if (id == null) return;
-    await db.writeTxn(() async {
-      final model = await collection(db).get(id);
-      if (model == null) return;
-      model
-        ..synced = true
-        ..remoteId = remoteId
-        ..syncDate = DateTime.now();
-      await collection(db).put(model);
-    });
-  }
-
-  @override
-  Future<void> markAsUnsynchronized(String localId) async {
-    final db = await isar;
-    final id = int.tryParse(localId);
-    if (id == null) return;
-    await db.writeTxn(() async {
-      final model = await collection(db).get(id);
-      if (model == null) return;
-      model.synced = false;
-      await collection(db).put(model);
     });
   }
 }

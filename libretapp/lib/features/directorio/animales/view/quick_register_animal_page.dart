@@ -211,7 +211,6 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   Future<bool> _confirmMissingEarTag(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Arete recomendado'),
         content: const Text(

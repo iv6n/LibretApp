@@ -10,7 +10,6 @@ class WarehouseSection extends StatelessWidget {
   Future<void> _showAddSheet(BuildContext context) async {
     final item = await showModalBottomSheet<InventoryItem>(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => const InventoryItemFormSheet(),
     );
@@ -22,7 +21,6 @@ class WarehouseSection extends StatelessWidget {
   Future<void> _showEditSheet(BuildContext context, InventoryItem item) async {
     final updated = await showModalBottomSheet<InventoryItem>(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => InventoryItemFormSheet(initial: item),
     );
@@ -34,7 +32,6 @@ class WarehouseSection extends StatelessWidget {
   void _confirmDelete(BuildContext context, InventoryItem item) {
     showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar artículo'),
         content: Text('¿Eliminar "${item.name}" del inventario?'),

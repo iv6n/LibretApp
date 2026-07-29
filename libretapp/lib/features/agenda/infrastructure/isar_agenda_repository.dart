@@ -73,11 +73,7 @@ class IsarAgendaRepository implements AgendaRepository {
     final isar = await _isar;
     final model = entry.toIsar();
     final existing = await isar.isarAgendaEntrys.where().uuidEqualTo(entry.id).findFirst();
-    if (existing != null) {
-      model.isarId = existing.isarId;
-      model.remoteId = existing.remoteId;
-    }
-    model.synced = false;
+    if (existing != null) model.isarId = existing.isarId;
     await isar.writeTxn(() => isar.isarAgendaEntrys.put(model));
   }
 
@@ -104,48 +100,5 @@ class IsarAgendaRepository implements AgendaRepository {
   Future<void> clearAll() async {
     final isar = await _isar;
     await isar.writeTxn(() => isar.isarAgendaEntrys.clear());
-  }
-
-  @override
-  Future<List<AgendaEntry>> getUnsynchronized() async {
-    final isar = await _isar;
-    final all = await isar.isarAgendaEntrys
-        .filter()
-        .syncedEqualTo(false)
-        .findAll();
-    return all.map((e) => e.toEntity()).toList(growable: false);
-  }
-
-  @override
-  Future<void> markAsSynced(String uuid, String remoteId) async {
-    final isar = await _isar;
-    await isar.writeTxn(() async {
-      final entry = await isar.isarAgendaEntrys
-          .where()
-          .uuidEqualTo(uuid)
-          .findFirst();
-      if (entry != null) {
-        entry
-          ..synced = true
-          ..remoteId = remoteId
-          ..syncDate = DateTime.now();
-        await isar.isarAgendaEntrys.put(entry);
-      }
-    });
-  }
-
-  @override
-  Future<void> markAsUnsynchronized(String uuid) async {
-    final isar = await _isar;
-    await isar.writeTxn(() async {
-      final entry = await isar.isarAgendaEntrys
-          .where()
-          .uuidEqualTo(uuid)
-          .findFirst();
-      if (entry != null) {
-        entry.synced = false;
-        await isar.isarAgendaEntrys.put(entry);
-      }
-    });
   }
 }

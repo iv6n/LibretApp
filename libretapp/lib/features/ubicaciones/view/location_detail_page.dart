@@ -363,7 +363,6 @@ class _LocationDetailView extends StatelessWidget {
   ) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
-      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar cultivo'),
         content: Text(

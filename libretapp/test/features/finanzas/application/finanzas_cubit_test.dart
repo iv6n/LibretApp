@@ -54,9 +54,6 @@ class _FakeFinanzasRepository implements FinanzasRepository {
   Future<void> deleteExpense(String id) async {
     _expenses.removeWhere((r) => r.id == id);
   }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
@@ -134,9 +131,6 @@ class _FakeCostRecordRepository implements CostRecordRepository {
       throw UnimplementedError();
   @override
   Future<void> deleteCostRecord(String recordId) => throw UnimplementedError();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeCommercialRecordRepository implements CommercialRecordRepository {
@@ -159,9 +153,6 @@ class _FakeCommercialRecordRepository implements CommercialRecordRepository {
   @override
   Future<void> deleteCommercialRecord(String recordId) =>
       throw UnimplementedError();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 // ─── Helper factories ─────────────────────────────────────────────────────────

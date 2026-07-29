@@ -69,13 +69,6 @@ class IsarLocation {
   List<IsarRainRecord> rains = [];
   List<IsarLocationCostRecord> costs = [];
   List<IsarCropRecord> crops = [];
-
-  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
-  DateTime? updatedAt;
-  late bool synced = false;
-  String? remoteId;
-  DateTime? syncDate;
-  String? contentHash;
 }
 
 @embedded

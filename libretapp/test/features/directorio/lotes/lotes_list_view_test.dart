@@ -110,9 +110,6 @@ class _FakeLotesRepository implements LotesRepository {
   @override
   Future<List<LoteEntity>> getInactiveLotes() async =>
       _lotes.where((lote) => !lote.active).toList();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

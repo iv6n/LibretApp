@@ -256,7 +256,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
     final crop = await showModalBottomSheet<CropRecord>(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       builder: (sheetContext) => CropFormSheet(locationName: location.name),
     );
@@ -291,7 +290,6 @@ class _RegistroPageState extends State<RegistroPage> {
       case _CropRecordMenuAction.harvest:
         final record = await showModalBottomSheet<HarvestRecord>(
           context: context,
-          useRootNavigator: true,
           isScrollControlled: true,
           builder: (sheetContext) => HarvestFormSheet(cropName: crop.cropName),
         );
@@ -301,7 +299,6 @@ class _RegistroPageState extends State<RegistroPage> {
       case _CropRecordMenuAction.watering:
         final record = await showModalBottomSheet<CropWateringRecord>(
           context: context,
-          useRootNavigator: true,
           isScrollControlled: true,
           builder: (sheetContext) =>
               CropWateringFormSheet(cropName: crop.cropName),
@@ -316,7 +313,6 @@ class _RegistroPageState extends State<RegistroPage> {
       case _CropRecordMenuAction.health:
         final record = await showModalBottomSheet<CropHealthRecord>(
           context: context,
-          useRootNavigator: true,
           isScrollControlled: true,
           builder: (sheetContext) =>
               CropHealthFormSheet(cropName: crop.cropName),
@@ -331,7 +327,6 @@ class _RegistroPageState extends State<RegistroPage> {
       case _CropRecordMenuAction.task:
         final task = await showModalBottomSheet<CropTask>(
           context: context,
-          useRootNavigator: true,
           isScrollControlled: true,
           builder: (sheetContext) => CropTaskFormSheet(cropName: crop.cropName),
         );
@@ -351,7 +346,6 @@ class _RegistroPageState extends State<RegistroPage> {
     String selectedUuid = locations.first.uuid;
     return showDialog<LocationEntity>(
       context: context,
-      useRootNavigator: true,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (stateContext, setDialogState) => AlertDialog(
@@ -404,7 +398,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
     return showDialog<_LocationCropSelection>(
       context: context,
-      useRootNavigator: true,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (stateContext, setDialogState) {

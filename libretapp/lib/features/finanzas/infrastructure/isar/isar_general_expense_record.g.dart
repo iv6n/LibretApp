@@ -23,50 +23,25 @@ const IsarGeneralExpenseRecordSchema = CollectionSchema(
       name: r'amount',
       type: IsarType.double,
     ),
-    r'contentHash': PropertySchema(
-      id: 1,
-      name: r'contentHash',
-      type: IsarType.string,
-    ),
     r'currency': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'currency',
       type: IsarType.string,
     ),
     r'date': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'date',
       type: IsarType.dateTime,
     ),
     r'notes': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'notes',
       type: IsarType.string,
     ),
-    r'remoteId': PropertySchema(
-      id: 5,
-      name: r'remoteId',
-      type: IsarType.string,
-    ),
-    r'syncDate': PropertySchema(
-      id: 6,
-      name: r'syncDate',
-      type: IsarType.dateTime,
-    ),
-    r'synced': PropertySchema(
-      id: 7,
-      name: r'synced',
-      type: IsarType.bool,
-    ),
     r'type': PropertySchema(
-      id: 8,
+      id: 4,
       name: r'type',
       type: IsarType.string,
-    ),
-    r'updatedAt': PropertySchema(
-      id: 9,
-      name: r'updatedAt',
-      type: IsarType.dateTime,
     )
   },
   estimateSize: _isarGeneralExpenseRecordEstimateSize,
@@ -104,12 +79,6 @@ int _isarGeneralExpenseRecordEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
-    final value = object.contentHash;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
     final value = object.currency;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -117,12 +86,6 @@ int _isarGeneralExpenseRecordEstimateSize(
   }
   {
     final value = object.notes;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
-    final value = object.remoteId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -138,15 +101,10 @@ void _isarGeneralExpenseRecordSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.amount);
-  writer.writeString(offsets[1], object.contentHash);
-  writer.writeString(offsets[2], object.currency);
-  writer.writeDateTime(offsets[3], object.date);
-  writer.writeString(offsets[4], object.notes);
-  writer.writeString(offsets[5], object.remoteId);
-  writer.writeDateTime(offsets[6], object.syncDate);
-  writer.writeBool(offsets[7], object.synced);
-  writer.writeString(offsets[8], object.type);
-  writer.writeDateTime(offsets[9], object.updatedAt);
+  writer.writeString(offsets[1], object.currency);
+  writer.writeDateTime(offsets[2], object.date);
+  writer.writeString(offsets[3], object.notes);
+  writer.writeString(offsets[4], object.type);
 }
 
 IsarGeneralExpenseRecord _isarGeneralExpenseRecordDeserialize(
@@ -157,16 +115,11 @@ IsarGeneralExpenseRecord _isarGeneralExpenseRecordDeserialize(
 ) {
   final object = IsarGeneralExpenseRecord();
   object.amount = reader.readDouble(offsets[0]);
-  object.contentHash = reader.readStringOrNull(offsets[1]);
-  object.currency = reader.readStringOrNull(offsets[2]);
-  object.date = reader.readDateTime(offsets[3]);
+  object.currency = reader.readStringOrNull(offsets[1]);
+  object.date = reader.readDateTime(offsets[2]);
   object.id = id;
-  object.notes = reader.readStringOrNull(offsets[4]);
-  object.remoteId = reader.readStringOrNull(offsets[5]);
-  object.syncDate = reader.readDateTimeOrNull(offsets[6]);
-  object.synced = reader.readBool(offsets[7]);
-  object.type = reader.readString(offsets[8]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[9]);
+  object.notes = reader.readStringOrNull(offsets[3]);
+  object.type = reader.readString(offsets[4]);
   return object;
 }
 
@@ -182,21 +135,11 @@ P _isarGeneralExpenseRecordDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
-    case 3:
       return (reader.readDateTime(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
-      return (reader.readStringOrNull(offset)) as P;
-    case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
       return (reader.readString(offset)) as P;
-    case 9:
-      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -463,162 +406,6 @@ extension IsarGeneralExpenseRecordQueryFilter on QueryBuilder<
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'contentHash',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'contentHash',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'contentHash',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-          QAfterFilterCondition>
-      contentHashContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'contentHash',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-          QAfterFilterCondition>
-      contentHashMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'contentHash',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'contentHash',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> contentHashIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'contentHash',
-        value: '',
       ));
     });
   }
@@ -1048,246 +835,6 @@ extension IsarGeneralExpenseRecordQueryFilter on QueryBuilder<
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'remoteId',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'remoteId',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'remoteId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-          QAfterFilterCondition>
-      remoteIdContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'remoteId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-          QAfterFilterCondition>
-      remoteIdMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'remoteId',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'remoteId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> remoteIdIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'remoteId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'syncDate',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'syncDate',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateEqualTo(DateTime? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'syncDate',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncDateBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'syncDate',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> syncedEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'synced',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
       QAfterFilterCondition> typeEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1424,80 +971,6 @@ extension IsarGeneralExpenseRecordQueryFilter on QueryBuilder<
       ));
     });
   }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'updatedAt',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'updatedAt',
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtEqualTo(DateTime? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtGreaterThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtLessThan(
-    DateTime? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'updatedAt',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
-      QAfterFilterCondition> updatedAtBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'updatedAt',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
 }
 
 extension IsarGeneralExpenseRecordQueryObject on QueryBuilder<
@@ -1519,20 +992,6 @@ extension IsarGeneralExpenseRecordQuerySortBy on QueryBuilder<
       sortByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByContentHash() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByContentHashDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -1579,48 +1038,6 @@ extension IsarGeneralExpenseRecordQuerySortBy on QueryBuilder<
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByRemoteId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByRemoteIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortBySyncDateDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortBySyncedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
       sortByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -1631,20 +1048,6 @@ extension IsarGeneralExpenseRecordQuerySortBy on QueryBuilder<
       sortByTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      sortByUpdatedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -1662,20 +1065,6 @@ extension IsarGeneralExpenseRecordQuerySortThenBy on QueryBuilder<
       thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByContentHash() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByContentHashDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -1736,48 +1125,6 @@ extension IsarGeneralExpenseRecordQuerySortThenBy on QueryBuilder<
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByRemoteId() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByRemoteIdDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'remoteId', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenBySyncDateDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'syncDate', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenBySyncedDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'synced', Sort.desc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
       thenByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
@@ -1790,20 +1137,6 @@ extension IsarGeneralExpenseRecordQuerySortThenBy on QueryBuilder<
       return query.addSortBy(r'type', Sort.desc);
     });
   }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-      thenByUpdatedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'updatedAt', Sort.desc);
-    });
-  }
 }
 
 extension IsarGeneralExpenseRecordQueryWhereDistinct on QueryBuilder<
@@ -1812,13 +1145,6 @@ extension IsarGeneralExpenseRecordQueryWhereDistinct on QueryBuilder<
       distinctByAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'amount');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-      distinctByContentHash({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'contentHash', caseSensitive: caseSensitive);
     });
   }
 
@@ -1844,37 +1170,9 @@ extension IsarGeneralExpenseRecordQueryWhereDistinct on QueryBuilder<
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-      distinctByRemoteId({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-      distinctBySyncDate() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'syncDate');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-      distinctBySynced() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'synced');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
       distinctByType({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'type', caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-      distinctByUpdatedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -1891,13 +1189,6 @@ extension IsarGeneralExpenseRecordQueryProperty on QueryBuilder<
       amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, String?, QQueryOperations>
-      contentHashProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'contentHash');
     });
   }
 
@@ -1922,38 +1213,10 @@ extension IsarGeneralExpenseRecordQueryProperty on QueryBuilder<
     });
   }
 
-  QueryBuilder<IsarGeneralExpenseRecord, String?, QQueryOperations>
-      remoteIdProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'remoteId');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, DateTime?, QQueryOperations>
-      syncDateProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'syncDate');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, bool, QQueryOperations>
-      syncedProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'synced');
-    });
-  }
-
   QueryBuilder<IsarGeneralExpenseRecord, String, QQueryOperations>
       typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
-    });
-  }
-
-  QueryBuilder<IsarGeneralExpenseRecord, DateTime?, QQueryOperations>
-      updatedAtProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'updatedAt');
     });
   }
 }

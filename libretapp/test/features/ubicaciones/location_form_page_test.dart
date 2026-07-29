@@ -166,9 +166,6 @@ class _FormFakeLocationRepository implements LocationRepository {
     String itemUuid,
   ) async {}
 
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-
   Future<void> dispose() async {
     await _controller.close();
   }

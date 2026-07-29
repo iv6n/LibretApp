@@ -18,13 +18,6 @@ class IsarIncomeRecord {
   String? currency;
   String? animalUuid;
   String? notes;
-
-  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
-  DateTime? updatedAt;
-  late bool synced = false;
-  String? remoteId;
-  DateTime? syncDate;
-  String? contentHash;
 }
 
 extension IsarIncomeRecordMapper on IsarIncomeRecord {

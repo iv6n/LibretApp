@@ -5,15 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
-import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/export_service.dart';
-import 'package:libretapp/core/sync/sync_service.dart';
 import 'package:libretapp/features/exportar/cubit/export_cubit.dart';
-import 'package:libretapp/features/perfil/view/cloud_auth_sheet.dart';
 import 'package:libretapp/features/exportar/widgets/export_selection_panel.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
@@ -47,7 +44,6 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
     }
     showModalBottomSheet<void>(
       context: context,
-      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => BlocProvider.value(
@@ -60,15 +56,11 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // In its one current usage this content sits inside a tab body under the
-    // shell's floating bottom nav bar (Scaffold(extendBody: true)), so it
-    // needs the shared shell inset — not just the keyboard inset — or the
-    // last list tiles end up hidden (and untappable) behind the nav bar.
-    final bottomInset = ShellInsets.bottomSafePadding(context);
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
 
     return ListView(
       shrinkWrap: widget.shrinkWrap,
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 24),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -112,24 +104,6 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               leading: const Icon(Icons.download_for_offline_outlined),
               title: const Text('Importar respaldo JSON'),
               onTap: () => _importBackup(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: const Text('Cuenta en la nube'),
-              subtitle: const Text('Iniciar sesión, crear cuenta o cerrar sesión.'),
-              onTap: () => showModalBottomSheet<void>(
-                context: context,
-                useRootNavigator: true,
-                isScrollControlled: true,
-                useSafeArea: true,
-                builder: (_) => const CloudAuthSheet(),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_upload_outlined),
-              title: const Text('Respaldar ahora'),
-              subtitle: const Text('Sube los cambios locales a tu respaldo en la nube.'),
-              onTap: () => _syncNow(context),
             ),
             ListTile(
               leading: const Icon(Icons.table_chart_outlined),
@@ -185,7 +159,6 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
   Future<void> _importBackup(BuildContext context) async {
     final mode = await showDialog<BackupImportMode>(
       context: context,
-      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         title: const Text('Modo de importación'),
         content: const Text(
@@ -229,35 +202,6 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  Future<void> _syncNow(BuildContext context) async {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Respaldando en la nube...')),
-    );
-    try {
-      final result = await locator<SyncService>().syncNow();
-      if (!context.mounted) return;
-      if (result.isUnavailable) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(result.unavailableReason!)),
-        );
-        return;
-      }
-      final message = result.hasErrors
-          ? '${result.pushed} registro(s) respaldados. '
-                '${result.errors.length} error(es), ver logs.'
-          : '${result.pushed} registro(s) respaldados.';
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-      for (final error in result.errors) {
-        debugPrint('[Respaldar] $error');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }

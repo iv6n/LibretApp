@@ -1,14 +1,12 @@
 ﻿/// features \u203a ubicaciones \u203a domain \u203a repositories \u203a location_repository \u2014 abstract LocationRepository port.
 library;
 
-import 'package:libretapp/core/sync/syncable_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 
-abstract class LocationRepository
-    implements SyncableRepository<LocationEntity> {
+abstract class LocationRepository {
   Stream<List<LocationEntity>> watchAll();
   Future<List<LocationEntity>> getAll();
   Future<LocationEntity?> getByUuid(String uuid);

@@ -5,10 +5,9 @@ import 'dart:convert';
 
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
-import 'package:libretapp/core/sync/syncable_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 
-abstract class AgendaRepository implements SyncableRepository<AgendaEntry> {
+abstract class AgendaRepository {
   Future<List<AgendaEntry>> fetchEntries();
   Future<AgendaEntry> getEntry(String id);
   Future<void> saveEntry(AgendaEntry entry);
@@ -107,16 +106,4 @@ class AgendaRepositoryImpl implements AgendaRepository {
     _cache = <AgendaEntry>[];
     await _prefs.remove(PrefsKeys.eventsStorage);
   }
-
-  // This legacy SharedPreferences-backed implementation is only kept around
-  // as a one-time migration source (see IsarAgendaRepository) and is never
-  // registered as the live AgendaRepository, so it has nothing to push.
-  @override
-  Future<List<AgendaEntry>> getUnsynchronized() async => const [];
-
-  @override
-  Future<void> markAsSynced(String localId, String remoteId) async {}
-
-  @override
-  Future<void> markAsUnsynchronized(String localId) async {}
 }

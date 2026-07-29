@@ -37,11 +37,7 @@ class IsarWorkforceRepository implements WorkforceRepository {
     final isar = await _isar;
     final model = worker.toIsar();
     final existing = await isar.isarWorkerProfiles.where().uuidEqualTo(worker.id).findFirst();
-    if (existing != null) {
-      model.isarId = existing.isarId;
-      model.remoteId = existing.remoteId;
-    }
-    model.synced = false;
+    if (existing != null) model.isarId = existing.isarId;
     await isar.writeTxn(() => isar.isarWorkerProfiles.put(model));
   }
 
@@ -50,11 +46,7 @@ class IsarWorkforceRepository implements WorkforceRepository {
     final isar = await _isar;
     final model = team.toIsar();
     final existing = await isar.isarWorkTeams.where().uuidEqualTo(team.id).findFirst();
-    if (existing != null) {
-      model.isarId = existing.isarId;
-      model.remoteId = existing.remoteId;
-    }
-    model.synced = false;
+    if (existing != null) model.isarId = existing.isarId;
     await isar.writeTxn(() => isar.isarWorkTeams.put(model));
   }
 
@@ -95,62 +87,6 @@ class IsarWorkforceRepository implements WorkforceRepository {
       await isar.isarWorkTeams.putAll(
         teams.map((team) => team.toIsar()).toList(growable: false),
       );
-    });
-  }
-
-  @override
-  Future<List<WorkerProfile>> getUnsynchronizedWorkers() async {
-    final isar = await _isar;
-    final all = await isar.isarWorkerProfiles
-        .filter()
-        .syncedEqualTo(false)
-        .findAll();
-    return all.map((w) => w.toEntity()).toList(growable: false);
-  }
-
-  @override
-  Future<void> markWorkerSynced(String id, String remoteId) async {
-    final isar = await _isar;
-    await isar.writeTxn(() async {
-      final worker = await isar.isarWorkerProfiles
-          .where()
-          .uuidEqualTo(id)
-          .findFirst();
-      if (worker != null) {
-        worker
-          ..synced = true
-          ..remoteId = remoteId
-          ..syncDate = DateTime.now();
-        await isar.isarWorkerProfiles.put(worker);
-      }
-    });
-  }
-
-  @override
-  Future<List<WorkTeam>> getUnsynchronizedTeams() async {
-    final isar = await _isar;
-    final all = await isar.isarWorkTeams
-        .filter()
-        .syncedEqualTo(false)
-        .findAll();
-    return all.map((t) => t.toEntity()).toList(growable: false);
-  }
-
-  @override
-  Future<void> markTeamSynced(String id, String remoteId) async {
-    final isar = await _isar;
-    await isar.writeTxn(() async {
-      final team = await isar.isarWorkTeams
-          .where()
-          .uuidEqualTo(id)
-          .findFirst();
-      if (team != null) {
-        team
-          ..synced = true
-          ..remoteId = remoteId
-          ..syncDate = DateTime.now();
-        await isar.isarWorkTeams.put(team);
-      }
     });
   }
 }

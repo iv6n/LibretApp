@@ -22,7 +22,6 @@ Future<AgendaSelectionResult?> showAgendaAnimalSelector(
 }) async {
   return showModalBottomSheet<AgendaSelectionResult>(
     context: context,
-    useRootNavigator: true,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
