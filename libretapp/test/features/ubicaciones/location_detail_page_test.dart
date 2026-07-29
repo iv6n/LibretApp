@@ -51,6 +51,9 @@ class _FakeAgendaRepository implements AgendaRepository {
 
   @override
   Future<void> clearAll() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeLocationRepository implements LocationRepository {
@@ -126,6 +129,9 @@ class _FakeMovementRecordRepository implements MovementRecordRepository {
 
   @override
   Future<void> deleteMovementRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 AnimalEntity _animal({required String uuid, required String locationId}) {

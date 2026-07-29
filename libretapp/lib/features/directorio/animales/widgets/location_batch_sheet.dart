@@ -65,6 +65,7 @@ Future<void> showLocationBatchSheet(
 
   await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     builder: (context) {
       return StatefulBuilder(

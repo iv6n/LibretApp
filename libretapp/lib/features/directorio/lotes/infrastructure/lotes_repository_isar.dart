@@ -247,4 +247,38 @@ class LotesRepositoryIsar implements LotesRepository {
     }
     return null;
   }
+
+  @override
+  Future<List<LoteEntity>> getUnsynchronized() async {
+    final isar = await _isar;
+    final lotes = await isar.isarLotes.filter().syncedEqualTo(false).findAll();
+    return lotes.map((l) => l.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<void> markAsSynced(String uuid, String remoteId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final lote = await isar.isarLotes.where().uuidEqualTo(uuid).findFirst();
+      if (lote != null) {
+        lote
+          ..synced = true
+          ..remoteId = remoteId
+          ..syncDate = DateTime.now();
+        await isar.isarLotes.put(lote);
+      }
+    });
+  }
+
+  @override
+  Future<void> markAsUnsynchronized(String uuid) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final lote = await isar.isarLotes.where().uuidEqualTo(uuid).findFirst();
+      if (lote != null) {
+        lote.synced = false;
+        await isar.isarLotes.put(lote);
+      }
+    });
+  }
 }

@@ -24,6 +24,12 @@ class IsarWorkerProfile {
 
   late DateTime createdAt;
   late DateTime updatedAt;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 @collection
@@ -43,6 +49,12 @@ class IsarWorkTeam {
 
   late DateTime createdAt;
   late DateTime updatedAt;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarWorkerProfileMapper on IsarWorkerProfile {

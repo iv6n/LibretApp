@@ -2,12 +2,13 @@
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 
 part 'isar_movement_record.g.dart';
 
 @collection
-class IsarMovementRecord {
+class IsarMovementRecord implements AnimalRecordSyncFields {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -19,6 +20,13 @@ class IsarMovementRecord {
   late String reason;
   String? notes;
   String? movedBy;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarMovementRecordMapper on IsarMovementRecord {

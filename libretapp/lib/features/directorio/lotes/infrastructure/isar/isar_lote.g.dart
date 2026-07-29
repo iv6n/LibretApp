@@ -27,58 +27,63 @@ const IsarLoteSchema = CollectionSchema(
       name: r'animalUuids',
       type: IsarType.stringList,
     ),
-    r'currentLocationId': PropertySchema(
+    r'contentHash': PropertySchema(
       id: 2,
+      name: r'contentHash',
+      type: IsarType.string,
+    ),
+    r'currentLocationId': PropertySchema(
+      id: 3,
       name: r'currentLocationId',
       type: IsarType.string,
     ),
     r'descripcion': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'descripcion',
       type: IsarType.string,
     ),
     r'fechaCierre': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'fechaCierre',
       type: IsarType.dateTime,
     ),
     r'fechaCreacion': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'fechaCreacion',
       type: IsarType.dateTime,
     ),
     r'lastUpdateDate': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'lastUpdateDate',
       type: IsarType.dateTime,
     ),
     r'nombre': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'notas': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'notas',
       type: IsarType.string,
     ),
     r'remoteId': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'remoteId',
       type: IsarType.string,
     ),
     r'syncDate': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'syncDate',
       type: IsarType.dateTime,
     ),
     r'synced': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'synced',
       type: IsarType.bool,
     ),
     r'uuid': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -125,6 +130,12 @@ int _isarLoteEstimateSize(
     }
   }
   {
+    final value = object.contentHash;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.currentLocationId;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -161,17 +172,18 @@ void _isarLoteSerialize(
 ) {
   writer.writeBool(offsets[0], object.active);
   writer.writeStringList(offsets[1], object.animalUuids);
-  writer.writeString(offsets[2], object.currentLocationId);
-  writer.writeString(offsets[3], object.description);
-  writer.writeDateTime(offsets[4], object.closedAt);
-  writer.writeDateTime(offsets[5], object.createdAt);
-  writer.writeDateTime(offsets[6], object.lastUpdateDate);
-  writer.writeString(offsets[7], object.name);
-  writer.writeString(offsets[8], object.notes);
-  writer.writeString(offsets[9], object.remoteId);
-  writer.writeDateTime(offsets[10], object.syncDate);
-  writer.writeBool(offsets[11], object.synced);
-  writer.writeString(offsets[12], object.uuid);
+  writer.writeString(offsets[2], object.contentHash);
+  writer.writeString(offsets[3], object.currentLocationId);
+  writer.writeString(offsets[4], object.description);
+  writer.writeDateTime(offsets[5], object.closedAt);
+  writer.writeDateTime(offsets[6], object.createdAt);
+  writer.writeDateTime(offsets[7], object.lastUpdateDate);
+  writer.writeString(offsets[8], object.name);
+  writer.writeString(offsets[9], object.notes);
+  writer.writeString(offsets[10], object.remoteId);
+  writer.writeDateTime(offsets[11], object.syncDate);
+  writer.writeBool(offsets[12], object.synced);
+  writer.writeString(offsets[13], object.uuid);
 }
 
 IsarLote _isarLoteDeserialize(
@@ -183,18 +195,19 @@ IsarLote _isarLoteDeserialize(
   final object = IsarLote();
   object.active = reader.readBool(offsets[0]);
   object.animalUuids = reader.readStringList(offsets[1]) ?? [];
-  object.currentLocationId = reader.readStringOrNull(offsets[2]);
-  object.description = reader.readStringOrNull(offsets[3]);
-  object.closedAt = reader.readDateTimeOrNull(offsets[4]);
-  object.createdAt = reader.readDateTime(offsets[5]);
+  object.contentHash = reader.readStringOrNull(offsets[2]);
+  object.currentLocationId = reader.readStringOrNull(offsets[3]);
+  object.description = reader.readStringOrNull(offsets[4]);
+  object.closedAt = reader.readDateTimeOrNull(offsets[5]);
+  object.createdAt = reader.readDateTime(offsets[6]);
   object.id = id;
-  object.lastUpdateDate = reader.readDateTime(offsets[6]);
-  object.name = reader.readString(offsets[7]);
-  object.notes = reader.readStringOrNull(offsets[8]);
-  object.remoteId = reader.readStringOrNull(offsets[9]);
-  object.syncDate = reader.readDateTimeOrNull(offsets[10]);
-  object.synced = reader.readBool(offsets[11]);
-  object.uuid = reader.readString(offsets[12]);
+  object.lastUpdateDate = reader.readDateTime(offsets[7]);
+  object.name = reader.readString(offsets[8]);
+  object.notes = reader.readStringOrNull(offsets[9]);
+  object.remoteId = reader.readStringOrNull(offsets[10]);
+  object.syncDate = reader.readDateTimeOrNull(offsets[11]);
+  object.synced = reader.readBool(offsets[12]);
+  object.uuid = reader.readString(offsets[13]);
   return object;
 }
 
@@ -214,22 +227,24 @@ P _isarLoteDeserializeProp<P>(
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
       return (reader.readDateTime(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -654,6 +669,155 @@ extension IsarLoteQueryFilter
         upper,
         includeUpper,
       );
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'contentHash',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      contentHashIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'contentHash',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      contentHashGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'contentHash',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'contentHash',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> contentHashIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'contentHash',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      contentHashIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'contentHash',
+        value: '',
+      ));
     });
   }
 
@@ -1840,6 +2004,18 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByContentHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByContentHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByCurrentLocationId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currentLocationId', Sort.asc);
@@ -1984,6 +2160,18 @@ extension IsarLoteQuerySortThenBy
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByActiveDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'activo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByContentHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByContentHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -2146,6 +2334,13 @@ extension IsarLoteQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByContentHash(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'contentHash', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByCurrentLocationId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2237,6 +2432,12 @@ extension IsarLoteQueryProperty
   QueryBuilder<IsarLote, List<String>, QQueryOperations> animalUuidsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'animalUuids');
+    });
+  }
+
+  QueryBuilder<IsarLote, String?, QQueryOperations> contentHashProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'contentHash');
     });
   }
 

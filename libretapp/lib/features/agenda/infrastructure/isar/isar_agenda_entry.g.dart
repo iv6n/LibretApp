@@ -52,93 +52,113 @@ const IsarAgendaEntrySchema = CollectionSchema(
       name: r'completedAnimalIds',
       type: IsarType.stringList,
     ),
-    r'createdAt': PropertySchema(
+    r'contentHash': PropertySchema(
       id: 7,
+      name: r'contentHash',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 8,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'createdById': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'createdById',
       type: IsarType.string,
     ),
     r'descripcion': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'descripcion',
       type: IsarType.string,
     ),
     r'estado': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'estado',
       type: IsarType.string,
     ),
     r'evidenceJson': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'evidenceJson',
       type: IsarType.stringList,
     ),
     r'fecha': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'fecha',
       type: IsarType.dateTime,
     ),
     r'fechaCompletado': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'fechaCompletado',
       type: IsarType.dateTime,
     ),
     r'locationUuid': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'locationUuid',
       type: IsarType.string,
     ),
     r'loteIds': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'loteIds',
       type: IsarType.stringList,
     ),
     r'notas': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'notas',
       type: IsarType.string,
     ),
     r'prioridad': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'prioridad',
       type: IsarType.string,
     ),
     r'recurrenceRule': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'recurrenceRule',
       type: IsarType.string,
     ),
+    r'remoteId': PropertySchema(
+      id: 20,
+      name: r'remoteId',
+      type: IsarType.string,
+    ),
+    r'syncDate': PropertySchema(
+      id: 21,
+      name: r'syncDate',
+      type: IsarType.dateTime,
+    ),
+    r'synced': PropertySchema(
+      id: 22,
+      name: r'synced',
+      type: IsarType.bool,
+    ),
     r'tipo': PropertySchema(
-      id: 19,
+      id: 23,
       name: r'tipo',
       type: IsarType.string,
     ),
     r'titulo': PropertySchema(
-      id: 20,
+      id: 24,
       name: r'titulo',
       type: IsarType.string,
     ),
     r'ubicacion': PropertySchema(
-      id: 21,
+      id: 25,
       name: r'ubicacion',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 22,
+      id: 26,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 23,
+      id: 27,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'workTeamId': PropertySchema(
-      id: 24,
+      id: 28,
       name: r'workTeamId',
       type: IsarType.string,
     )
@@ -277,6 +297,12 @@ int _isarAgendaEntryEstimateSize(
     }
   }
   {
+    final value = object.contentHash;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.createdById;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -312,6 +338,12 @@ int _isarAgendaEntryEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.remoteId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.tipo.length * 3;
   bytesCount += 3 + object.titulo.length * 3;
   bytesCount += 3 + object.ubicacion.length * 3;
@@ -338,24 +370,28 @@ void _isarAgendaEntrySerialize(
   writer.writeStringList(offsets[4], object.checklistJson);
   writer.writeStringList(offsets[5], object.collaboratorIds);
   writer.writeStringList(offsets[6], object.completedAnimalIds);
-  writer.writeDateTime(offsets[7], object.createdAt);
-  writer.writeString(offsets[8], object.createdById);
-  writer.writeString(offsets[9], object.descripcion);
-  writer.writeString(offsets[10], object.estado);
-  writer.writeStringList(offsets[11], object.evidenceJson);
-  writer.writeDateTime(offsets[12], object.fecha);
-  writer.writeDateTime(offsets[13], object.fechaCompletado);
-  writer.writeString(offsets[14], object.locationUuid);
-  writer.writeStringList(offsets[15], object.loteIds);
-  writer.writeString(offsets[16], object.notas);
-  writer.writeString(offsets[17], object.prioridad);
-  writer.writeString(offsets[18], object.recurrenceRule);
-  writer.writeString(offsets[19], object.tipo);
-  writer.writeString(offsets[20], object.titulo);
-  writer.writeString(offsets[21], object.ubicacion);
-  writer.writeDateTime(offsets[22], object.updatedAt);
-  writer.writeString(offsets[23], object.uuid);
-  writer.writeString(offsets[24], object.workTeamId);
+  writer.writeString(offsets[7], object.contentHash);
+  writer.writeDateTime(offsets[8], object.createdAt);
+  writer.writeString(offsets[9], object.createdById);
+  writer.writeString(offsets[10], object.descripcion);
+  writer.writeString(offsets[11], object.estado);
+  writer.writeStringList(offsets[12], object.evidenceJson);
+  writer.writeDateTime(offsets[13], object.fecha);
+  writer.writeDateTime(offsets[14], object.fechaCompletado);
+  writer.writeString(offsets[15], object.locationUuid);
+  writer.writeStringList(offsets[16], object.loteIds);
+  writer.writeString(offsets[17], object.notas);
+  writer.writeString(offsets[18], object.prioridad);
+  writer.writeString(offsets[19], object.recurrenceRule);
+  writer.writeString(offsets[20], object.remoteId);
+  writer.writeDateTime(offsets[21], object.syncDate);
+  writer.writeBool(offsets[22], object.synced);
+  writer.writeString(offsets[23], object.tipo);
+  writer.writeString(offsets[24], object.titulo);
+  writer.writeString(offsets[25], object.ubicacion);
+  writer.writeDateTime(offsets[26], object.updatedAt);
+  writer.writeString(offsets[27], object.uuid);
+  writer.writeString(offsets[28], object.workTeamId);
 }
 
 IsarAgendaEntry _isarAgendaEntryDeserialize(
@@ -372,25 +408,29 @@ IsarAgendaEntry _isarAgendaEntryDeserialize(
   object.checklistJson = reader.readStringList(offsets[4]) ?? [];
   object.collaboratorIds = reader.readStringList(offsets[5]) ?? [];
   object.completedAnimalIds = reader.readStringList(offsets[6]) ?? [];
-  object.createdAt = reader.readDateTimeOrNull(offsets[7]);
-  object.createdById = reader.readStringOrNull(offsets[8]);
-  object.descripcion = reader.readString(offsets[9]);
-  object.estado = reader.readString(offsets[10]);
-  object.evidenceJson = reader.readStringList(offsets[11]) ?? [];
-  object.fecha = reader.readDateTime(offsets[12]);
-  object.fechaCompletado = reader.readDateTimeOrNull(offsets[13]);
+  object.contentHash = reader.readStringOrNull(offsets[7]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[8]);
+  object.createdById = reader.readStringOrNull(offsets[9]);
+  object.descripcion = reader.readString(offsets[10]);
+  object.estado = reader.readString(offsets[11]);
+  object.evidenceJson = reader.readStringList(offsets[12]) ?? [];
+  object.fecha = reader.readDateTime(offsets[13]);
+  object.fechaCompletado = reader.readDateTimeOrNull(offsets[14]);
   object.isarId = id;
-  object.locationUuid = reader.readStringOrNull(offsets[14]);
-  object.loteIds = reader.readStringList(offsets[15]) ?? [];
-  object.notas = reader.readString(offsets[16]);
-  object.prioridad = reader.readString(offsets[17]);
-  object.recurrenceRule = reader.readStringOrNull(offsets[18]);
-  object.tipo = reader.readString(offsets[19]);
-  object.titulo = reader.readString(offsets[20]);
-  object.ubicacion = reader.readString(offsets[21]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[22]);
-  object.uuid = reader.readString(offsets[23]);
-  object.workTeamId = reader.readStringOrNull(offsets[24]);
+  object.locationUuid = reader.readStringOrNull(offsets[15]);
+  object.loteIds = reader.readStringList(offsets[16]) ?? [];
+  object.notas = reader.readString(offsets[17]);
+  object.prioridad = reader.readString(offsets[18]);
+  object.recurrenceRule = reader.readStringOrNull(offsets[19]);
+  object.remoteId = reader.readStringOrNull(offsets[20]);
+  object.syncDate = reader.readDateTimeOrNull(offsets[21]);
+  object.synced = reader.readBool(offsets[22]);
+  object.tipo = reader.readString(offsets[23]);
+  object.titulo = reader.readString(offsets[24]);
+  object.ubicacion = reader.readString(offsets[25]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[26]);
+  object.uuid = reader.readString(offsets[27]);
+  object.workTeamId = reader.readStringOrNull(offsets[28]);
   return object;
 }
 
@@ -416,40 +456,48 @@ P _isarAgendaEntryDeserializeProp<P>(
     case 6:
       return (reader.readStringList(offset) ?? []) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 8:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 12:
-      return (reader.readDateTime(offset)) as P;
-    case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 14:
-      return (reader.readStringOrNull(offset)) as P;
-    case 15:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 16:
       return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 15:
+      return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readStringList(offset) ?? []) as P;
     case 17:
       return (reader.readString(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 19:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 20:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
-      return (reader.readString(offset)) as P;
-    case 22:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 22:
+      return (reader.readBool(offset)) as P;
     case 23:
       return (reader.readString(offset)) as P;
     case 24:
+      return (reader.readString(offset)) as P;
+    case 25:
+      return (reader.readString(offset)) as P;
+    case 26:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 27:
+      return (reader.readString(offset)) as P;
+    case 28:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2326,6 +2374,160 @@ extension IsarAgendaEntryQueryFilter
   }
 
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'contentHash',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'contentHash',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'contentHash',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'contentHash',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'contentHash',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'contentHash',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      contentHashIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'contentHash',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
       createdAtIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4042,6 +4244,244 @@ extension IsarAgendaEntryQueryFilter
   }
 
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'remoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'remoteId',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'remoteId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'remoteId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'remoteId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      remoteIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'remoteId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'syncDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'syncDate',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'syncDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'syncDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'syncDate',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncDateBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'syncDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
+      syncedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'synced',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterFilterCondition>
       tipoEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -4851,6 +5291,20 @@ extension IsarAgendaEntryQuerySortBy
   }
 
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortByContentHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortByContentHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
       sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -4987,6 +5441,47 @@ extension IsarAgendaEntryQuerySortBy
     });
   }
 
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortBySyncDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortBySyncDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy> sortBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      sortBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy> sortByTipo() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tipo', Sort.asc);
@@ -5096,6 +5591,20 @@ extension IsarAgendaEntryQuerySortThenBy
       thenByBlockedReasonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'blockedReason', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenByContentHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenByContentHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentHash', Sort.desc);
     });
   }
 
@@ -5249,6 +5758,47 @@ extension IsarAgendaEntryQuerySortThenBy
     });
   }
 
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenByRemoteId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenByRemoteIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remoteId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenBySyncDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenBySyncDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'syncDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy> thenBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy>
+      thenBySyncedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'synced', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QAfterSortBy> thenByTipo() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tipo', Sort.asc);
@@ -5384,6 +5934,13 @@ extension IsarAgendaEntryQueryWhereDistinct
   }
 
   QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QDistinct>
+      distinctByContentHash({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'contentHash', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QDistinct>
       distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -5464,6 +6021,26 @@ extension IsarAgendaEntryQueryWhereDistinct
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'recurrenceRule',
           caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QDistinct> distinctByRemoteId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'remoteId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QDistinct>
+      distinctBySyncDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'syncDate');
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, IsarAgendaEntry, QDistinct> distinctBySynced() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'synced');
     });
   }
 
@@ -5567,6 +6144,13 @@ extension IsarAgendaEntryQueryProperty
     });
   }
 
+  QueryBuilder<IsarAgendaEntry, String?, QQueryOperations>
+      contentHashProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'contentHash');
+    });
+  }
+
   QueryBuilder<IsarAgendaEntry, DateTime?, QQueryOperations>
       createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -5644,6 +6228,25 @@ extension IsarAgendaEntryQueryProperty
       recurrenceRuleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'recurrenceRule');
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, String?, QQueryOperations> remoteIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'remoteId');
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, DateTime?, QQueryOperations>
+      syncDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'syncDate');
+    });
+  }
+
+  QueryBuilder<IsarAgendaEntry, bool, QQueryOperations> syncedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'synced');
     });
   }
 

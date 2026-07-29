@@ -17,6 +17,13 @@ class IsarGeneralExpenseRecord {
   late double amount;
   String? currency;
   String? notes;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarGeneralExpenseRecordMapper on IsarGeneralExpenseRecord {

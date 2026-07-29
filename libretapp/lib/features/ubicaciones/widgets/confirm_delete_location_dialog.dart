@@ -10,6 +10,7 @@ Future<bool> confirmDeleteLocation(
 ) async {
   final result = await showDialog<bool>(
     context: context,
+    useRootNavigator: true,
     builder: (context) => AlertDialog(
       title: const Text('Eliminar ubicación'),
       content: Text(

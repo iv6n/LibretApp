@@ -19,6 +19,7 @@ Future<void> showDashboardCustomizeSheet({
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     builder: (_) => _DashboardCustomizeSheet(

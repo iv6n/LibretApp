@@ -2,12 +2,13 @@
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 
 part 'isar_health_record.g.dart';
 
 @collection
-class IsarHealthRecord {
+class IsarHealthRecord implements AnimalRecordSyncFields {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -24,6 +25,13 @@ class IsarHealthRecord {
   String? medicineBatch;
   int? withdrawalDays;
   DateTime? withdrawalEndDate;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarHealthRecordMapper on IsarHealthRecord {

@@ -2,12 +2,13 @@
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 
 part 'isar_reproduction_record.g.dart';
 
 @collection
-class IsarReproductionRecord {
+class IsarReproductionRecord implements AnimalRecordSyncFields {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -24,6 +25,13 @@ class IsarReproductionRecord {
   String? calvingResult;
   String? notes;
   String? servicedBy;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarReproductionRecordMapper on IsarReproductionRecord {

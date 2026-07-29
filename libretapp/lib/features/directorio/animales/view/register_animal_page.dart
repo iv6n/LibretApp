@@ -1681,6 +1681,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
     final added = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
@@ -1980,6 +1981,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
     final added = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
@@ -2426,6 +2428,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
     final action = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Borrador encontrado'),
@@ -3179,6 +3182,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }) async {
     final result = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(title),

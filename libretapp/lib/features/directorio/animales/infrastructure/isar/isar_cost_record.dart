@@ -2,12 +2,13 @@
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
 
 part 'isar_cost_record.g.dart';
 
 @collection
-class IsarCostRecord {
+class IsarCostRecord implements AnimalRecordSyncFields {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -18,6 +19,13 @@ class IsarCostRecord {
   late double amount;
   String? currency;
   String? notes;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarCostRecordMapper on IsarCostRecord {

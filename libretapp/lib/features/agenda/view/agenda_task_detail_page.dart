@@ -171,6 +171,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     final controller = TextEditingController();
     final reason = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Bloquear tarea'),
         content: TextField(
@@ -228,6 +229,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
   Future<void> _addEvidence() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
+      useRootNavigator: true,
       builder: (sheetContext) => SafeArea(
         child: Wrap(
           children: [
@@ -333,6 +335,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
       // Generic: just mark as completed with a confirm dialog
       final confirmed = await showDialog<bool>(
         context: context,
+        useRootNavigator: true,
         builder: (ctx) => AlertDialog(
           title: Text('Registrar: ${_animalLabel(animal)}'),
           content: Text(

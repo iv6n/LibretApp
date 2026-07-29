@@ -22,6 +22,12 @@ class IsarMilkingEntry {
   String? notes;
   late DateTime createdAt;
   late DateTime updatedAt;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarMilkingEntryMapper on IsarMilkingEntry {

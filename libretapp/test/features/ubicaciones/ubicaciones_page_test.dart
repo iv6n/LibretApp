@@ -125,6 +125,9 @@ class _FakeLocationRepository implements LocationRepository {
     String locationUuid,
     String itemUuid,
   ) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {

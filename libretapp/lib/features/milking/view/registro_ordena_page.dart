@@ -89,6 +89,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final l10n = AppLocalizations.of(context);
     return await showDialog<bool>(
           context: context,
+          useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: Text(l10n.detailFormMilkingUnusualAmountTitle),
             content: Text(
@@ -226,6 +227,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final l10n = AppLocalizations.of(context);
     return showModalBottomSheet<AnimalEntity>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
@@ -752,6 +754,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
           onPressed: () async {
             final confirmed = await showDialog<bool>(
               context: context,
+              useRootNavigator: true,
               builder: (context) => AlertDialog(
                 title: Text(l10n.detailFormMilkingRemoveEntryTitle),
                 content: Text(l10n.detailFormMilkingRemoveEntryMessage),

@@ -14,4 +14,12 @@ abstract class WorkforceRepository {
     required List<WorkerProfile> workers,
     required List<WorkTeam> teams,
   });
+
+  // Two collections share this repository, so the sync surface is split into
+  // one get/mark pair per collection rather than implementing a single
+  // SyncableRepository<T>.
+  Future<List<WorkerProfile>> getUnsynchronizedWorkers();
+  Future<void> markWorkerSynced(String id, String remoteId);
+  Future<List<WorkTeam>> getUnsynchronizedTeams();
+  Future<void> markTeamSynced(String id, String remoteId);
 }

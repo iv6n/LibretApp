@@ -447,6 +447,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   Future<bool> _confirmMissingEarTag() async {
     final result = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Arete recomendado'),
         content: const Text(

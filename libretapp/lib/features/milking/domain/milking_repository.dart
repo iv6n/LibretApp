@@ -17,4 +17,12 @@ abstract class MilkingRepository {
     required List<MilkingSession> sessions,
     required List<MilkingEntry> entries,
   });
+
+  // Sincronización (respaldo en la nube): dos colecciones comparten este
+  // repositorio, por lo que se expone un par get/mark por cada una en vez de
+  // un único SyncableRepository<T>.
+  Future<List<MilkingSession>> getUnsynchronizedSessions();
+  Future<void> markSessionSynced(String uuid, String remoteId);
+  Future<List<MilkingEntry>> getUnsynchronizedEntries();
+  Future<void> markEntrySynced(String uuid, String remoteId);
 }

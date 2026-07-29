@@ -243,6 +243,7 @@ Future<void> showAdvisorTipsSheet(
 
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     builder: (ctx) {
       final theme = Theme.of(ctx);

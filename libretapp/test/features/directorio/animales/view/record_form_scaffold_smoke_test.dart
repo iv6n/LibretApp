@@ -29,6 +29,9 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
 
   @override
   Future<void> deleteWeightRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Widget _testApp(Widget child) {

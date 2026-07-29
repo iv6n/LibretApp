@@ -2,12 +2,13 @@
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/sync/sync_fields.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 
 part 'isar_weight_record.g.dart';
 
 @collection
-class IsarWeightRecord {
+class IsarWeightRecord implements AnimalRecordSyncFields {
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -18,6 +19,13 @@ class IsarWeightRecord {
   late String method;
   String? measuredBy;
   String? notes;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  DateTime? updatedAt;
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarWeightRecordMapper on IsarWeightRecord {

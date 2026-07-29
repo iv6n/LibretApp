@@ -112,7 +112,14 @@ class MilkingRepositoryIsar implements MilkingRepository {
           .uuidEqualTo(session.uuid)
           .findFirst();
       final stored = session.toIsar();
-      if (existing != null) stored.id = existing.id;
+      if (existing != null) {
+        stored.id = existing.id;
+        // An edit means the cloud copy is stale, but keep pointing at the
+        // same remote row so the next push updates it instead of
+        // duplicating it.
+        stored.remoteId = existing.remoteId;
+      }
+      stored.synced = false;
       await isar.isarMilkingSessions.put(stored);
     });
   }
@@ -133,7 +140,11 @@ class MilkingRepositoryIsar implements MilkingRepository {
           .animalUuidEqualTo(entry.animalUuid)
           .findFirst();
       final existing = existingByUuid ?? existingForAnimal;
-      if (existing != null) stored.id = existing.id;
+      if (existing != null) {
+        stored.id = existing.id;
+        stored.remoteId = existing.remoteId;
+      }
+      stored.synced = false;
       await isar.isarMilkingEntrys.put(stored);
     });
     return entry;
@@ -189,6 +200,62 @@ class MilkingRepositoryIsar implements MilkingRepository {
       await isar.isarMilkingEntrys.putAll(
         entries.map((entry) => entry.toIsar()).toList(growable: false),
       );
+    });
+  }
+
+  @override
+  Future<List<MilkingSession>> getUnsynchronizedSessions() async {
+    final isar = await _isar;
+    final all = await isar.isarMilkingSessions
+        .filter()
+        .syncedEqualTo(false)
+        .findAll();
+    return all.map((s) => s.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<void> markSessionSynced(String uuid, String remoteId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final session = await isar.isarMilkingSessions
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (session != null) {
+        session
+          ..synced = true
+          ..remoteId = remoteId
+          ..syncDate = DateTime.now();
+        await isar.isarMilkingSessions.put(session);
+      }
+    });
+  }
+
+  @override
+  Future<List<MilkingEntry>> getUnsynchronizedEntries() async {
+    final isar = await _isar;
+    final all = await isar.isarMilkingEntrys
+        .filter()
+        .syncedEqualTo(false)
+        .findAll();
+    return all.map((e) => e.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<void> markEntrySynced(String uuid, String remoteId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final entry = await isar.isarMilkingEntrys
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (entry != null) {
+        entry
+          ..synced = true
+          ..remoteId = remoteId
+          ..syncDate = DateTime.now();
+        await isar.isarMilkingEntrys.put(entry);
+      }
     });
   }
 }

@@ -1,10 +1,11 @@
 ﻿/// features › directorio › animales › infrastructure › animal_repository — abstract AnimalRepository port.
 library;
 
+import 'package:libretapp/core/sync/syncable_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 
 /// Contrato para la persistencia y acceso de datos de animales.
-abstract class AnimalRepository {
+abstract class AnimalRepository implements SyncableRepository<AnimalEntity> {
   Stream<List<AnimalEntity>> watchAll();
   Stream<void> watchChanges();
   Future<bool> refreshFromRemote({bool force = false});

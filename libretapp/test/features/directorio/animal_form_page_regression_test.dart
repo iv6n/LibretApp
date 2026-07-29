@@ -786,6 +786,9 @@ class _FakeHealthRecordRepository implements HealthRecordRepository {
 
   @override
   Future<void> deleteHealthRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeMovementRecordRepository implements MovementRecordRepository {
@@ -801,6 +804,9 @@ class _FakeMovementRecordRepository implements MovementRecordRepository {
 
   @override
   Future<void> deleteMovementRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeReproductionRecordRepository
@@ -822,4 +828,7 @@ class _FakeReproductionRecordRepository
   @override
   Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
   getUpcomingCalvings(DateTime from, DateTime to) async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

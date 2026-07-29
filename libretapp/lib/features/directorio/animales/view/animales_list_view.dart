@@ -415,6 +415,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     final animalesBloc = context.read<AnimalesBloc>();
     final shouldContinue = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: Text(l10n.animalsBulkMaintenanceConfirmTitle),
         content: Text(
@@ -1094,6 +1095,7 @@ Future<void> _confirmDeleteAnimal(
 ) async {
   final confirmed = await showDialog<bool>(
     context: context,
+    useRootNavigator: true,
     builder: (ctx) => AlertDialog(
       title: const Text('Eliminar animal'),
       content: Text(
@@ -1210,6 +1212,7 @@ void _showSearchFilterPopup(
 }) {
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 import 'package:libretapp/core/security/services/auth_service.dart';
+import 'package:libretapp/core/security/services/supabase_auth_service.dart';
 import 'package:libretapp/core/security/services/crypto_stub_service.dart';
 import 'package:libretapp/core/security/services/default_key_provider_service.dart';
 import 'package:libretapp/core/security/services/native_crypto_service.dart';
@@ -27,6 +28,9 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/theme_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/sync/supabase_config.dart';
+import 'package:libretapp/core/sync/sync_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:libretapp/features/agenda/data/eventos_export_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animales_export_sheet.dart';
@@ -117,6 +121,7 @@ Future<void> setupLocator() async {
   _registerMilkingFinanzas();
   _registerBackupExport();
   _registerInicioPerfilReportes();
+  _registerSync();
 }
 
 void _registerInfrastructure(
@@ -174,10 +179,16 @@ void _registerSecurity() {
       ),
     )
     ..registerLazySingleton<AuthPort>(
-      () => AuthService(
-        tokenPort: locator<TokenPort>(),
-        logger: locator<SensitiveLoggerPort>(),
-      ),
+      () => SupabaseConfig.isConfigured
+          ? SupabaseAuthService(
+              client: Supabase.instance.client,
+              tokenPort: locator<TokenPort>(),
+              logger: locator<SensitiveLoggerPort>(),
+            )
+          : AuthService(
+              tokenPort: locator<TokenPort>(),
+              logger: locator<SensitiveLoggerPort>(),
+            ),
     );
 }
 
@@ -337,6 +348,27 @@ void _registerInicioPerfilReportes() {
         commercialRepo: locator<CommercialRecordRepository>(),
       ),
     );
+}
+
+void _registerSync() {
+  locator.registerLazySingleton<SyncService>(
+    () => SyncService(
+      animalRepository: locator<AnimalRepository>(),
+      lotesRepository: locator<LotesRepository>(),
+      healthRecordRepository: locator<HealthRecordRepository>(),
+      weightRecordRepository: locator<WeightRecordRepository>(),
+      movementRecordRepository: locator<MovementRecordRepository>(),
+      costRecordRepository: locator<CostRecordRepository>(),
+      commercialRecordRepository: locator<CommercialRecordRepository>(),
+      productionRecordRepository: locator<ProductionRecordRepository>(),
+      reproductionRecordRepository: locator<ReproductionRecordRepository>(),
+      finanzasRepository: locator<FinanzasRepository>(),
+      milkingRepository: locator<MilkingRepository>(),
+      locationRepository: locator<LocationRepository>(),
+      agendaRepository: locator<AgendaRepository>(),
+      workforceRepository: locator<WorkforceRepository>(),
+    ),
+  );
 }
 
 /// Production stub for [AnimalRemoteDataSource].

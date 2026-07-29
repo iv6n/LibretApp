@@ -51,6 +51,12 @@ class IsarAgendaEntry {
   late List<String> checklistJson;
   late List<String> activitiesJson;
   late List<String> evidenceJson;
+
+  // ─── SYNCHRONIZATION ───────────────────────────────────────────────
+  late bool synced = false;
+  String? remoteId;
+  DateTime? syncDate;
+  String? contentHash;
 }
 
 extension IsarAgendaEntryMapper on IsarAgendaEntry {

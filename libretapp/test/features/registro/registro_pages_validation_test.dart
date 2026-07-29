@@ -346,6 +346,9 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   ) async => record;
   @override
   Future<void> deleteWeightRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeHealthRecordRepository implements HealthRecordRepository {
@@ -364,6 +367,9 @@ class _FakeHealthRecordRepository implements HealthRecordRepository {
   ) async {}
   @override
   Future<void> deleteHealthRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeProductionRecordRepository implements ProductionRecordRepository {
@@ -378,6 +384,9 @@ class _FakeProductionRecordRepository implements ProductionRecordRepository {
   ) async => record;
   @override
   Future<void> deleteProductionRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeReproductionRecordRepository
@@ -396,6 +405,9 @@ class _FakeReproductionRecordRepository
   @override
   Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
   getUpcomingCalvings(DateTime from, DateTime to) async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeCommercialRecordRepository implements CommercialRecordRepository {
@@ -410,6 +422,9 @@ class _FakeCommercialRecordRepository implements CommercialRecordRepository {
   ) async => record;
   @override
   Future<void> deleteCommercialRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeMovementRecordRepository implements MovementRecordRepository {
@@ -423,6 +438,9 @@ class _FakeMovementRecordRepository implements MovementRecordRepository {
   ) async => record;
   @override
   Future<void> deleteMovementRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeCostRecordRepository implements CostRecordRepository {
@@ -435,4 +453,7 @@ class _FakeCostRecordRepository implements CostRecordRepository {
   ) async => record;
   @override
   Future<void> deleteCostRecord(String recordId) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

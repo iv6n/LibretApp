@@ -48,3 +48,7 @@ app.*.map.json
 # Native Isar library copied locally to run desktop/CI tests (see .github/workflows)
 /libisar.so
 /isar.dll
+
+# Local cloud-backup credentials (Supabase URL/anon key) — never commit real
+# project credentials, even the "safe for client" anon key.
+dart_define.local.json

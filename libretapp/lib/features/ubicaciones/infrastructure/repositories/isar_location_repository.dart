@@ -56,7 +56,56 @@ class IsarLocationRepository implements LocationRepository {
           .uuidEqualTo(location.uuid)
           .findFirst();
       final model = location.toIsar(existing?.id);
+      if (existing != null) {
+        // Preserve the cloud link across edits so the next push updates the
+        // same remote row instead of creating a duplicate.
+        model.remoteId = existing.remoteId;
+      }
+      model.synced = false;
       await isar.isarLocations.put(model);
+    });
+  }
+
+  @override
+  Future<List<LocationEntity>> getUnsynchronized() async {
+    final isar = await _database.initialize();
+    final items = await isar.isarLocations
+        .filter()
+        .syncedEqualTo(false)
+        .findAll();
+    return items.map((e) => e.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<void> markAsSynced(String uuid, String remoteId) async {
+    final isar = await _database.initialize();
+    await isar.writeTxn(() async {
+      final item = await isar.isarLocations
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (item != null) {
+        item
+          ..synced = true
+          ..remoteId = remoteId
+          ..syncDate = DateTime.now();
+        await isar.isarLocations.put(item);
+      }
+    });
+  }
+
+  @override
+  Future<void> markAsUnsynchronized(String uuid) async {
+    final isar = await _database.initialize();
+    await isar.writeTxn(() async {
+      final item = await isar.isarLocations
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (item != null) {
+        item.synced = false;
+        await isar.isarLocations.put(item);
+      }
     });
   }
 
@@ -275,6 +324,7 @@ class IsarLocationRepository implements LocationRepository {
         throw StateError('Ubicacion $uuid no encontrada');
       }
       updater(location);
+      location.synced = false;
       await isar.isarLocations.put(location);
     });
   }
