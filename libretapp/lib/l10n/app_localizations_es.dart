@@ -33,7 +33,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navProfile => 'Perfil';
 
   @override
-  String get navAdd => 'Registrar:';
+  String get navAdd => 'Registrar';
 
   @override
   String get animalsTitle => 'Animales';

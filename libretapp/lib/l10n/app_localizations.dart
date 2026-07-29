@@ -149,7 +149,7 @@ abstract class AppLocalizations {
   /// No description provided for @navAdd.
   ///
   /// In es, this message translates to:
-  /// **'Registrar:'**
+  /// **'Registrar'**
   String get navAdd;
 
   /// No description provided for @animalsTitle.

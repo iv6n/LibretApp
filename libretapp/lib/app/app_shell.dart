@@ -3,9 +3,11 @@
 /// Hosts the five main tabs via [StatefulShellRoute.indexedStack].
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/shell_route_policy.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -32,7 +34,6 @@ class _AppShellState extends State<AppShell>
   static const double _barHorizontalPadding = 10;
   static const double _barBottomGap = ShellInsets.defaultBarBottomGap;
 
-  static const bool _fabLogEnabled = true;
   int _fabVersion = 0;
   final Map<int, ShellFabConfig> _fabCache = <int, ShellFabConfig>{};
   final Map<int, bool> _chromeCache = <int, bool>{};
@@ -50,9 +51,9 @@ class _AppShellState extends State<AppShell>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final selectedIndex = widget.navigationShell.currentIndex;
-    final routePath = GoRouterState.of(context).uri.path;
+    final routeUri = GoRouterState.of(context).uri;
     final chromeVisible =
-        !_isOverlayRoute(routePath) && _chromeForIndex(selectedIndex);
+        !shouldHideShellChrome(routeUri) && _chromeForIndex(selectedIndex);
     final fabConfig = _fabForIndex(selectedIndex);
     final accent = Theme.of(context).colorScheme.tertiary;
     final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
@@ -208,7 +209,7 @@ class _AppShellState extends State<AppShell>
           ),
         ),
         Text(
-          isHomeSelected ? 'Registrar' : l10n.navHome,
+          isHomeSelected ? l10n.navAdd : l10n.navHome,
           style: TextStyle(
             fontSize: 9.0,
             fontWeight: isHomeSelected ? FontWeight.w700 : FontWeight.w600,
@@ -311,22 +312,6 @@ class _AppShellState extends State<AppShell>
 
   bool _isFabAllowed(int index) => index != 4;
 
-  /// Returns true for overlay/detail routes where the shell chrome
-  /// (bottom nav + FAB) should be hidden immediately — before the
-  /// ShellChromeScope post-frame callback fires.
-  bool _isOverlayRoute(String path) {
-    // Matches any path containing a known overlay segment.
-    return path.contains('/animales/') ||
-        path.endsWith('/animales/nuevo') ||
-        path.endsWith('/lotes/nuevo') ||
-        path.contains('/lotes/') ||
-        path.startsWith('${AppRoutes.agenda}/') ||
-        path.endsWith('/ubicaciones/nueva') ||
-        path.contains('/ubicaciones/') ||
-        path == AppRoutes.registro ||
-        path.startsWith('${AppRoutes.registro}/');
-  }
-
   void _updateChromeVisibility(bool visible, {required int branchIndex}) {
     if (!_canMutateShell) return;
     final index = branchIndex;
@@ -366,7 +351,7 @@ class _AppShellState extends State<AppShell>
   }
 
   void _logFab(String message) {
-    if (!_fabLogEnabled) return;
+    if (!kDebugMode) return;
     debugPrint('[FAB] $message');
   }
 

@@ -27,9 +27,8 @@ jobs:
           lib=$(find "$HOME/.pub-cache" -name libisar.so -path '*isar_flutter_libs*linux*' | head -n1)
           cp "$lib" libisar.so
 
-      # Pre-existing lint debt (109 info-level issues) isn't part of this
-      # gate yet, so analyze reports but never blocks the build.
-      - run: flutter analyze
-        continue-on-error: true
+      # Existing info-level lint debt is reported but does not fail the build.
+      # New analyzer warnings and errors remain blocking.
+      - run: flutter analyze --no-fatal-infos
 
       - run: flutter test
