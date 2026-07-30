@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a view \u203a animal_detail_page \u2014 detail page for a single animal.
+/// features \u203a directorio \u203a animales \u203a view \u203a animal_detail_page \u2014 detail page for a single animal.
 library;
 
 import 'package:flutter/material.dart';
@@ -145,7 +145,9 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final fabBottomPadding = widget.showQuickActions
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final showFab = widget.showQuickActions && !keyboardVisible;
+    final fabBottomPadding = showFab
         ? ShellInsets.fabDockPadding(context)
         : 0.0;
 
@@ -154,10 +156,10 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
-          floatingActionButtonLocation: widget.showQuickActions
+          floatingActionButtonLocation: showFab
               ? FloatingActionButtonLocation.endDocked
               : null,
-          floatingActionButton: widget.showQuickActions
+          floatingActionButton: showFab
               ? Padding(
                   padding: EdgeInsets.only(bottom: fabBottomPadding),
                   child: QuickActionsFab(

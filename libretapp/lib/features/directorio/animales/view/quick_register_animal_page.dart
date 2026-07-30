@@ -30,10 +30,12 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   final _earTagFocus = FocusNode();
   final _earTagCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
+  final _breedCtrl = TextEditingController();
 
   Species _species = Species.cattle;
   Sex _sex = Sex.female;
   int _ageMonths = 12;
+  ProductionPurpose? _purpose;
   bool _saving = false;
 
   static const _commonSpecies = [
@@ -59,7 +61,50 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     _earTagFocus.dispose();
     _earTagCtrl.dispose();
     _weightCtrl.dispose();
+    _breedCtrl.dispose();
     super.dispose();
+  }
+
+  /// Optional production-purpose choices relevant to each species. Mirrors
+  /// the species-specific fields [AnimalEntity.validateSpeciesRequirements]
+  /// flags as worth completing, kept optional here to preserve quick entry.
+  List<ProductionPurpose> _purposeOptionsFor(Species species) {
+    switch (species) {
+      case Species.cattle:
+      case Species.goat:
+      case Species.sheep:
+      case Species.pig:
+        return const [
+          ProductionPurpose.dairy,
+          ProductionPurpose.meat,
+          ProductionPurpose.dual,
+          ProductionPurpose.breeding,
+        ];
+      case Species.equine:
+      case Species.canine:
+        return const [
+          ProductionPurpose.work,
+          ProductionPurpose.companion,
+          ProductionPurpose.breeding,
+        ];
+      case Species.poultry:
+        return const [
+          ProductionPurpose.meat,
+          ProductionPurpose.breeding,
+          ProductionPurpose.other,
+        ];
+      case Species.other:
+        return const [];
+    }
+  }
+
+  void _onSpeciesSelected(Species species) {
+    setState(() {
+      _species = species;
+      if (!_purposeOptionsFor(species).contains(_purpose)) {
+        _purpose = null;
+      }
+    });
   }
 
   Category _defaultCategory() {
@@ -116,7 +161,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         category: category,
         lifeStage: lifeStage,
         sex: _sex,
-        breed: '',
+        breed: _breedCtrl.text.trim(),
         crossBreed: null,
         birthDate: birthDate,
         ageMonths: lifecycle.ageMonths,
@@ -135,7 +180,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         firstServiceDate: null,
         lastServiceDate: null,
         expectedCalvingDate: null,
-        productionPurpose: ProductionPurpose.undefined,
+        productionPurpose: _purpose ?? ProductionPurpose.undefined,
         productionStage: ProductionStage.unknown,
         productionSystem: ProductionSystem.unknown,
         feedType: null,
@@ -249,8 +294,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -290,7 +335,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                         child: ChoiceChip(
                           label: Text(s.displayName),
                           selected: selected,
-                          onSelected: (_) => setState(() => _species = s),
+                          onSelected: (_) => _onSpeciesSelected(s),
                           selectedColor: colorScheme.primaryContainer,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -303,6 +348,39 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                 ),
               ),
               const SizedBox(height: 20),
+
+              // — Breed (optional) ————————————————————————————
+              TextField(
+                controller: _breedCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Raza — opcional',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.pets_outlined),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // — Purpose (optional, species-dependent) ————————
+              if (_purposeOptionsFor(_species).isNotEmpty) ...[
+                Text('Propósito — opcional', style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _purposeOptionsFor(_species).map((purpose) {
+                    final selected = _purpose == purpose;
+                    return ChoiceChip(
+                      label: Text(purpose.displayName),
+                      selected: selected,
+                      onSelected: (_) => setState(() {
+                        _purpose = selected ? null : purpose;
+                      }),
+                      selectedColor: colorScheme.primaryContainer,
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // — Sex ——————————————————————————————————————————
               Text('Sexo', style: theme.textTheme.labelLarge),
@@ -367,7 +445,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                   suffixText: 'kg',
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 28),
 
               // — Save button ———————————————————————————————————
               SizedBox(

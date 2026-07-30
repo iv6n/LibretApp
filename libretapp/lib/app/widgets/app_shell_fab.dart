@@ -25,7 +25,8 @@ class AppShellFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fabConfig = config;
-    if (fabConfig == null) {
+    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
+    if (fabConfig == null || keyboardVisible) {
       return const SizedBox.shrink(key: ValueKey('fab_none'));
     }
 

@@ -136,7 +136,9 @@ class _FinanzasViewState extends State<_FinanzasView>
           );
         },
       ),
-      floatingActionButton: FinanzasFab(tabController: _tabController),
+      floatingActionButton: MediaQuery.viewInsetsOf(context).bottom == 0
+          ? FinanzasFab(tabController: _tabController)
+          : null,
     );
   }
 }

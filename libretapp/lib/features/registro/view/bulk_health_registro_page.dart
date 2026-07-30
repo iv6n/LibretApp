@@ -183,7 +183,8 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
             : null,
       ),
       body: _step == 0 ? _buildSelectionStep() : _buildFormStep(),
-      floatingActionButton: _step == 0
+      floatingActionButton:
+          _step == 0 && MediaQuery.viewInsetsOf(context).bottom == 0
           ? FloatingActionButton.extended(
               onPressed: _selectedUuids.isEmpty
                   ? null
@@ -356,7 +357,12 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
                   border: const OutlineInputBorder(),
                 ),
                 items: HealthRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _recordType = v);
