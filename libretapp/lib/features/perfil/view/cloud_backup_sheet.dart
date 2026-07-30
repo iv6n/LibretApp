@@ -128,70 +128,83 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
         ),
       );
     }
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-        child: Column(
-          children: [
-            Row(
+    // This sheet is shown with useRootNavigator: true, so it renders above
+    // the whole app on the root Overlay — including above AppShell's own
+    // Scaffold. Without a ScaffoldMessenger of its own here,
+    // ScaffoldMessenger.of(context) below would resolve to whichever
+    // ScaffoldMessenger is currently registered as active (AppShell's), whose
+    // SnackBar host paints on AppShell's layer — i.e. *underneath* this
+    // sheet. Scoping a ScaffoldMessenger to this subtree makes the SnackBar
+    // render as part of the sheet's own layer instead.
+    return ScaffoldMessenger(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: Column(
               children: [
-                Text(
-                  'Copias en la nube',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  children: [
+                    Text(
+                      'Copias en la nube',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const Spacer(),
+                    FilledButton.icon(
+                      onPressed: _busy ? null : _backupNow,
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: const Text('Respaldar'),
+                    ),
+                  ],
                 ),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: _busy ? null : _backupNow,
-                  icon: const Icon(Icons.cloud_upload_outlined),
-                  label: const Text('Respaldar'),
+                const SizedBox(height: 12),
+                if (_busy) const LinearProgressIndicator(),
+                Expanded(
+                  child: FutureBuilder<List<CloudBackupMetadata>>(
+                    future: _snapshots,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final items = snapshot.data!;
+                      if (items.isEmpty) {
+                        return const Center(
+                          child: Text('Todavía no hay copias verificadas.'),
+                        );
+                      }
+                      return ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, _) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return ListTile(
+                            leading: const Icon(Icons.cloud_done_outlined),
+                            title: Text(
+                              DateFormat(
+                                'dd/MM/yyyy HH:mm',
+                              ).format(item.createdAt.toLocal()),
+                            ),
+                            subtitle: Text(
+                              '${(item.sizeBytes / 1024).toStringAsFixed(1)} KB · '
+                              'v${item.schemaVersion}',
+                            ),
+                            trailing: TextButton(
+                              onPressed: _busy ? null : () => _restore(item),
+                              child: const Text('Restaurar'),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (_busy) const LinearProgressIndicator(),
-            Expanded(
-              child: FutureBuilder<List<CloudBackupMetadata>>(
-                future: _snapshots,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final items = snapshot.data!;
-                  if (items.isEmpty) {
-                    return const Center(
-                      child: Text('Todavía no hay copias verificadas.'),
-                    );
-                  }
-                  return ListView.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return ListTile(
-                        leading: const Icon(Icons.cloud_done_outlined),
-                        title: Text(
-                          DateFormat(
-                            'dd/MM/yyyy HH:mm',
-                          ).format(item.createdAt.toLocal()),
-                        ),
-                        subtitle: Text(
-                          '${(item.sizeBytes / 1024).toStringAsFixed(1)} KB · '
-                          'v${item.schemaVersion}',
-                        ),
-                        trailing: TextButton(
-                          onPressed: _busy ? null : () => _restore(item),
-                          child: const Text('Restaurar'),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

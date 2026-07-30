@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
+import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
@@ -59,11 +60,15 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    // In its one current usage this content sits inside a tab body under the
+    // shell's floating bottom nav bar (Scaffold(extendBody: true)), so it
+    // needs the shared shell inset — not just the keyboard inset — or the
+    // last list tiles end up hidden (and untappable) behind the nav bar.
+    final bottomInset = ShellInsets.bottomSafePadding(context);
 
     return ListView(
       shrinkWrap: widget.shrinkWrap,
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottom + 24),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
