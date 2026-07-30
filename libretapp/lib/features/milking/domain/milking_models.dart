@@ -25,6 +25,19 @@ enum MilkingShift {
 enum MilkingStatus { draft, completed }
 
 class MilkingSession extends Equatable {
+
+  factory MilkingSession.fromJson(Map<String, dynamic> json) {
+    return MilkingSession(
+      uuid: json['uuid'] as String,
+      occurredAt: DateTime.parse(json['occurredAt'] as String).toLocal(),
+      shift: MilkingShift.values.byName(json['shift'] as String),
+      status: MilkingStatus.values.byName(json['status'] as String),
+      sourceLoteUuid: json['sourceLoteUuid'] as String?,
+      notes: json['notes'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
+    );
+  }
   const MilkingSession({
     required this.uuid,
     required this.occurredAt,
@@ -78,19 +91,6 @@ class MilkingSession extends Equatable {
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };
 
-  factory MilkingSession.fromJson(Map<String, dynamic> json) {
-    return MilkingSession(
-      uuid: json['uuid'] as String,
-      occurredAt: DateTime.parse(json['occurredAt'] as String).toLocal(),
-      shift: MilkingShift.values.byName(json['shift'] as String),
-      status: MilkingStatus.values.byName(json['status'] as String),
-      sourceLoteUuid: json['sourceLoteUuid'] as String?,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-      updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
-    );
-  }
-
   @override
   List<Object?> get props => [
     uuid,
@@ -105,6 +105,18 @@ class MilkingSession extends Equatable {
 }
 
 class MilkingEntry extends Equatable {
+
+  factory MilkingEntry.fromJson(Map<String, dynamic> json) {
+    return MilkingEntry(
+      uuid: json['uuid'] as String,
+      sessionUuid: json['sessionUuid'] as String,
+      animalUuid: json['animalUuid'] as String,
+      volumeMilliliters: json['volumeMilliliters'] as int,
+      notes: json['notes'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
+      updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
+    );
+  }
   const MilkingEntry({
     required this.uuid,
     required this.sessionUuid,
@@ -150,18 +162,6 @@ class MilkingEntry extends Equatable {
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
   };
-
-  factory MilkingEntry.fromJson(Map<String, dynamic> json) {
-    return MilkingEntry(
-      uuid: json['uuid'] as String,
-      sessionUuid: json['sessionUuid'] as String,
-      animalUuid: json['animalUuid'] as String,
-      volumeMilliliters: json['volumeMilliliters'] as int,
-      notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-      updatedAt: DateTime.parse(json['updatedAt'] as String).toLocal(),
-    );
-  }
 
   @override
   List<Object?> get props => [

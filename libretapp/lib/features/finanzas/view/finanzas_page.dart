@@ -37,7 +37,7 @@ class FinanzasPage extends StatelessWidget {
         animalRepository: locator<AnimalRepository>(),
         costRepo: locator<CostRecordRepository>(),
         commercialRepo: locator<CommercialRecordRepository>(),
-      )..add(LoadPreset(FinancialPeriodPreset.thisMonth)),
+      )..add(const LoadPreset(FinancialPeriodPreset.thisMonth)),
       child: const _FinanzasView(),
     );
   }

@@ -23,6 +23,18 @@ final Map<int, IconData> _iconByCodePoint = {
 };
 
 class DashboardQuickAction extends Equatable {
+
+  factory DashboardQuickAction.fromJson(Map<String, dynamic> json) {
+    return DashboardQuickAction(
+      id: json['id'] as String? ?? '',
+      label: json['label'] as String? ?? '',
+      icon: _iconByCodePoint[json['iconCodePoint'] as int?] ?? Icons.touch_app,
+      routeName: json['routeName'] as String? ?? AppRoutes.nameInicio,
+      enabled: json['enabled'] as bool? ?? true,
+      order: json['order'] as int? ?? 0,
+      tone: json['tone'] != null ? Color(json['tone'] as int) : null,
+    );
+  }
   const DashboardQuickAction({
     required this.id,
     required this.label,
@@ -72,18 +84,6 @@ class DashboardQuickAction extends Equatable {
     'order': order,
     if (tone != null) 'tone': tone!.toARGB32(),
   };
-
-  factory DashboardQuickAction.fromJson(Map<String, dynamic> json) {
-    return DashboardQuickAction(
-      id: json['id'] as String? ?? '',
-      label: json['label'] as String? ?? '',
-      icon: _iconByCodePoint[json['iconCodePoint'] as int?] ?? Icons.touch_app,
-      routeName: json['routeName'] as String? ?? AppRoutes.nameInicio,
-      enabled: json['enabled'] as bool? ?? true,
-      order: json['order'] as int? ?? 0,
-      tone: json['tone'] != null ? Color(json['tone'] as int) : null,
-    );
-  }
 
   @override
   List<Object?> get props => [id, label, icon, routeName, enabled, order, tone];

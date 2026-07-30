@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── InventorySection ─────────────────────────────────────────────────────────
 
 class InventorySection extends StatelessWidget {
-  const InventorySection({required this.location});
+  const InventorySection({super.key, required this.location});
 
   final LocationEntity location;
 
@@ -117,7 +117,7 @@ class InventorySection extends StatelessWidget {
 // ─── ConditionSection ─────────────────────────────────────────────────────────
 
 class ConditionSection extends StatelessWidget {
-  const ConditionSection({required this.location});
+  const ConditionSection({super.key, required this.location});
 
   final LocationEntity location;
 

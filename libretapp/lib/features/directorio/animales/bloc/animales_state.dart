@@ -21,7 +21,6 @@ class AnimalesLoading extends AnimalesState {
 }
 
 class AnimalesLoaded extends AnimalesState {
-  static const int pageSize = 20;
 
   const AnimalesLoaded({
     required this.allAnimals,
@@ -35,6 +34,7 @@ class AnimalesLoaded extends AnimalesState {
     this.isLoadingMore = false,
     this.currentOffset = 0,
   });
+  static const int pageSize = 20;
 
   final List<AnimalEntity> allAnimals;
   final List<AnimalEntity> visibleAnimals;

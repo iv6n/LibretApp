@@ -25,7 +25,7 @@ class AnimalList extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: profitabilities.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final p = profitabilities[i];
         final color = p.isProfitable ? Colors.green : Colors.red;

@@ -57,10 +57,10 @@ class _FakeFinanzasRepository implements FinanzasRepository {
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
-  final List<AnimalEntity> _animals;
 
   _FakeAnimalRepository({List<AnimalEntity>? animals})
     : _animals = animals ?? [];
+  final List<AnimalEntity> _animals;
 
   @override
   Future<List<AnimalEntity>> getAll() async => _animals;
@@ -117,10 +117,10 @@ class _FakeAnimalRepository implements AnimalRepository {
 }
 
 class _FakeCostRecordRepository implements CostRecordRepository {
-  final Map<String, List<CostRecord>> _costs;
 
   _FakeCostRecordRepository({Map<String, List<CostRecord>>? costs})
     : _costs = costs ?? {};
+  final Map<String, List<CostRecord>> _costs;
 
   @override
   Future<List<CostRecord>> getCostRecords(String animalUuid) async =>
@@ -134,11 +134,11 @@ class _FakeCostRecordRepository implements CostRecordRepository {
 }
 
 class _FakeCommercialRecordRepository implements CommercialRecordRepository {
-  final Map<String, List<CommercialRecord>> _commercials;
 
   _FakeCommercialRecordRepository({
     Map<String, List<CommercialRecord>>? commercials,
   }) : _commercials = commercials ?? {};
+  final Map<String, List<CommercialRecord>> _commercials;
 
   @override
   Future<List<CommercialRecord>> getCommercialRecords(
@@ -285,7 +285,7 @@ void main() {
     commercialRepo = _FakeCommercialRecordRepository();
   });
 
-  FinanzasBloc _cubit() => FinanzasBloc(
+  FinanzasBloc cubit0() => FinanzasBloc(
     finanzasRepository: finanzasRepo,
     animalRepository: animalRepo,
     costRepo: costRepo,
@@ -294,18 +294,18 @@ void main() {
 
   group('FinanzasCubit initial state', () {
     test('status is initial', () {
-      expect(_cubit().state.status, FinanzasStatus.initial);
+      expect(cubit0().state.status, FinanzasStatus.initial);
     });
 
     test('incomes, expenses and profitabilities are empty', () {
-      final s = _cubit().state;
+      final s = cubit0().state;
       expect(s.incomes, isEmpty);
       expect(s.expenses, isEmpty);
       expect(s.animalProfitabilities, isEmpty);
     });
 
     test('period and summary are null', () {
-      final s = _cubit().state;
+      final s = cubit0().state;
       expect(s.period, isNull);
       expect(s.summary, isNull);
     });
@@ -313,7 +313,7 @@ void main() {
 
   group('FinanzasCubit.loadPeriod', () {
     test('emits loading then loaded', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
 
       final expectation = expectLater(
         cubit.stream,
@@ -335,14 +335,14 @@ void main() {
     });
 
     test('loaded state has the correct period', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.period, period);
       await cubit.close();
     });
 
     test('with no records produces all-zero summary', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
 
       final s = cubit.state.summary!;
@@ -355,7 +355,7 @@ void main() {
     });
 
     test('with no animals produces empty profitabilities list', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.animalProfitabilities, isEmpty);
       await cubit.close();
@@ -619,7 +619,7 @@ void main() {
 
     test('emits error state when repository throws', () async {
       finanzasRepo.failOnGet = true;
-      final cubit = _cubit();
+      final cubit = cubit0();
 
       await cubit.loadPeriod(period);
       // Yield to the microtask queue so the stream delivers the error state.
@@ -633,7 +633,7 @@ void main() {
     test('clears previous error when reloading successfully', () async {
       // First load fails
       finanzasRepo.failOnGet = true;
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.status, FinanzasStatus.error);
 
@@ -648,7 +648,7 @@ void main() {
 
   group('FinanzasCubit.addIncome', () {
     test('adds income to repository and reloads period', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.incomes, isEmpty);
 
@@ -659,7 +659,7 @@ void main() {
     });
 
     test('does not reload when no period has been set', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       // No loadPeriod called — period is null
       await cubit.addIncome(_makeIncome(date: DateTime(2025, 1, 5)));
       expect(cubit.state.status, FinanzasStatus.initial);
@@ -669,7 +669,7 @@ void main() {
 
   group('FinanzasCubit.addExpense', () {
     test('adds expense to repository and reloads period', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.expenses, isEmpty);
 
@@ -680,7 +680,7 @@ void main() {
     });
 
     test('does not reload when no period has been set', () async {
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.addExpense(_makeExpense(date: DateTime(2025, 1, 5)));
       expect(cubit.state.status, FinanzasStatus.initial);
       await cubit.close();
@@ -692,7 +692,7 @@ void main() {
       final income = _makeIncome(date: DateTime(2025, 1, 8), id: 'del-1');
       await finanzasRepo.addIncome(income);
 
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.incomes, hasLength(1));
 
@@ -707,7 +707,7 @@ void main() {
       final expense = _makeExpense(date: DateTime(2025, 1, 8), id: 'del-2');
       await finanzasRepo.addExpense(expense);
 
-      final cubit = _cubit();
+      final cubit = cubit0();
       await cubit.loadPeriod(period);
       expect(cubit.state.expenses, hasLength(1));
 

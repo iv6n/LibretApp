@@ -143,7 +143,7 @@ class _UbicacionesSearchAppBarState extends State<UbicacionesSearchAppBar> {
             hintText: 'Buscar ubicaciones',
             autofocus: true,
             onChanged: (value) => bloc.add(SearchQueryChanged(value)),
-            onClear: () => bloc.add(ClearSearch()),
+            onClear: () => bloc.add(const ClearSearch()),
           ),
         ),
       ],

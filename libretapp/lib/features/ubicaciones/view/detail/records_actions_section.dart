@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── RecordActions ────────────────────────────────────────────────────────────
 
 class RecordActions extends StatelessWidget {
-  const RecordActions({
+  const RecordActions({super.key, 
     required this.onVisit,
     required this.onWater,
     required this.onSalt,

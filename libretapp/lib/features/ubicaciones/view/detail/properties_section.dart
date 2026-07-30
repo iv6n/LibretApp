@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── AdaptivePropertiesSection ──────────────────────────────────────────────
 
 class AdaptivePropertiesSection extends StatelessWidget {
-  const AdaptivePropertiesSection({required this.location});
+  const AdaptivePropertiesSection({super.key, required this.location});
 
   final LocationEntity location;
 
@@ -169,7 +169,7 @@ class _PropertyPill extends StatelessWidget {
 // ─── InfrastructureSection ────────────────────────────────────────────────────
 
 class InfrastructureSection extends StatelessWidget {
-  const InfrastructureSection({required this.location});
+  const InfrastructureSection({super.key, required this.location});
 
   final LocationEntity location;
 

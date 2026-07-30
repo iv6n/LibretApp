@@ -91,7 +91,7 @@ class _BibliotecaTabState extends State<BibliotecaTab>
                 padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: AppColors.amber),
+                    const Icon(Icons.info_outline, size: 16, color: AppColors.amber),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(

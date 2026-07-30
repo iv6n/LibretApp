@@ -101,7 +101,7 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<InventoryCategory>(
-                value: _category,
+                initialValue: _category,
                 decoration: const InputDecoration(
                   labelText: 'Categoría',
                   prefixIcon: Icon(Icons.label_outline),

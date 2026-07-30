@@ -9,35 +9,6 @@ import 'dart:convert';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
 class LoteDto {
-  const LoteDto({
-    this.id,
-    required this.uuid,
-    required this.name,
-    this.description,
-    required this.animalUuids,
-    required this.createdAt,
-    this.closedAt,
-    required this.active,
-    this.notes,
-    required this.lastUpdateDate,
-    required this.synced,
-    this.remoteId,
-    this.syncDate,
-  });
-
-  final int? id;
-  final String uuid;
-  final String name;
-  final String? description;
-  final List<String> animalUuids;
-  final String createdAt;
-  final String? closedAt;
-  final bool active;
-  final String? notes;
-  final String lastUpdateDate;
-  final bool synced;
-  final String? remoteId;
-  final String? syncDate;
 
   factory LoteDto.fromEntity(LoteEntity entity) {
     return LoteDto(
@@ -79,6 +50,35 @@ class LoteDto {
 
   factory LoteDto.fromJsonString(String value) =>
       LoteDto.fromJson(jsonDecode(value) as Map<String, dynamic>);
+  const LoteDto({
+    this.id,
+    required this.uuid,
+    required this.name,
+    this.description,
+    required this.animalUuids,
+    required this.createdAt,
+    this.closedAt,
+    required this.active,
+    this.notes,
+    required this.lastUpdateDate,
+    required this.synced,
+    this.remoteId,
+    this.syncDate,
+  });
+
+  final int? id;
+  final String uuid;
+  final String name;
+  final String? description;
+  final List<String> animalUuids;
+  final String createdAt;
+  final String? closedAt;
+  final bool active;
+  final String? notes;
+  final String lastUpdateDate;
+  final bool synced;
+  final String? remoteId;
+  final String? syncDate;
 
   LoteEntity toEntity() {
     return LoteEntity(

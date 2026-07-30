@@ -2,6 +2,7 @@
 ///
 /// Exports the BLoC layer, domain entities + repository contract,
 /// infrastructure implementation, and the view page.
+library;
 export 'application/index.dart';
 export 'domain/entities/animal_profitability.dart';
 export 'domain/entities/financial_period_summary.dart';

@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── AnimalsSection ───────────────────────────────────────────────────────────
 
 class AnimalsSection extends StatelessWidget {
-  const AnimalsSection({
+  const AnimalsSection({super.key, 
     required this.animalsHere,
     required this.location,
     required this.assigning,
@@ -49,7 +49,7 @@ class AnimalsSection extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: animalsHere.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final animal = animalsHere[index];
                   final subtitle = _animalSubtitle(animal);
@@ -88,7 +88,7 @@ class AnimalsSection extends StatelessWidget {
 // ─── ActionsRow ───────────────────────────────────────────────────────────────
 
 class ActionsRow extends StatelessWidget {
-  const ActionsRow({required this.onEdit, required this.onDelete});
+  const ActionsRow({super.key, required this.onEdit, required this.onDelete});
 
   final VoidCallback onEdit;
   final VoidCallback onDelete;

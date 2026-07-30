@@ -34,7 +34,7 @@ class ReportActivityTile extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.history,
                   size: 18,
                   color: AppColors.primary,

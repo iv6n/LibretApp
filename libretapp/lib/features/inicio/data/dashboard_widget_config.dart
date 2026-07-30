@@ -49,6 +49,22 @@ extension DashboardWidgetTypeLabel on DashboardWidgetType {
 }
 
 class DashboardWidgetConfig extends Equatable {
+
+  factory DashboardWidgetConfig.fromJson(Map<String, dynamic> json) {
+    return DashboardWidgetConfig(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      type: DashboardWidgetType.values.byName(
+        json['type'] as String? ?? DashboardWidgetType.animalSummary.name,
+      ),
+      enabled: json['enabled'] as bool? ?? true,
+      order: json['order'] as int? ?? 0,
+      size: DashboardWidgetSize.values.byName(
+        json['size'] as String? ?? DashboardWidgetSize.compact.name,
+      ),
+      settings: json['settings'] as Map<String, dynamic>?,
+    );
+  }
   const DashboardWidgetConfig({
     required this.id,
     required this.title,
@@ -96,22 +112,6 @@ class DashboardWidgetConfig extends Equatable {
     'size': size.name,
     if (settings != null) 'settings': settings,
   };
-
-  factory DashboardWidgetConfig.fromJson(Map<String, dynamic> json) {
-    return DashboardWidgetConfig(
-      id: json['id'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      type: DashboardWidgetType.values.byName(
-        json['type'] as String? ?? DashboardWidgetType.animalSummary.name,
-      ),
-      enabled: json['enabled'] as bool? ?? true,
-      order: json['order'] as int? ?? 0,
-      size: DashboardWidgetSize.values.byName(
-        json['size'] as String? ?? DashboardWidgetSize.compact.name,
-      ),
-      settings: json['settings'] as Map<String, dynamic>?,
-    );
-  }
 
   @override
   List<Object?> get props => [id, title, type, enabled, order, size, settings];

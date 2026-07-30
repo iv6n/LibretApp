@@ -2,6 +2,7 @@
 ///
 /// Exports the lotes domain, infrastructure, BLoC, and view layers,
 /// including the inline list view used by [DirectorioView].
+library;
 export 'domain/domain.dart';
 export 'infrastructure/infrastructure.dart';
 export 'bloc/bloc.dart';

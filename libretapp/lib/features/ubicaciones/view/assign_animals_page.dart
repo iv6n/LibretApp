@@ -41,7 +41,7 @@ class _AssignAnimalsPageState extends State<AssignAnimalsPage> {
               Expanded(
                 child: ListView.separated(
                   itemCount: animals.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  separatorBuilder: (_, _) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final animal = animals[index];
                     final checked = _selected.contains(animal.uuid);

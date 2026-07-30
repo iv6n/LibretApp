@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── ActivitiesSection ────────────────────────────────────────────────────────
 
 class ActivitiesSection extends StatelessWidget {
-  const ActivitiesSection({
+  const ActivitiesSection({super.key, 
     required this.location,
     required this.allLocations,
   });

@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── LocationHeader ───────────────────────────────────────────────────────────
 
 class LocationHeader extends StatelessWidget {
-  const LocationHeader({required this.location, required this.animalsHere});
+  const LocationHeader({super.key, required this.location, required this.animalsHere});
 
   final LocationEntity location;
   final List<AnimalEntity> animalsHere;
@@ -334,7 +334,7 @@ class _GalleryStrip extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           return Container(
             width: 88,

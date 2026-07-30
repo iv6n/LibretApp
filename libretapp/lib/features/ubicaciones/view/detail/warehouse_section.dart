@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── WarehouseSection ─────────────────────────────────────────────────────────
 
 class WarehouseSection extends StatelessWidget {
-  const WarehouseSection({required this.location});
+  const WarehouseSection({super.key, required this.location});
 
   final LocationEntity location;
 

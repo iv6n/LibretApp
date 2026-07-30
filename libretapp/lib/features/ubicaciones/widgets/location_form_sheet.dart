@@ -348,7 +348,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
               if (_type.canNestAsSubLocation || !_type.isRootType) ...[
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String?>(
-                  value: _parentUuid,
+                  initialValue: _parentUuid,
                   decoration: const InputDecoration(
                     labelText: 'Ubicación padre (opcional)',
                     prefixIcon: Icon(Icons.account_tree_outlined),
@@ -487,7 +487,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                         width: 90,
                         height: 90,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, err, __) => Container(
+                        errorBuilder: (_, err, _) => Container(
                           width: 90,
                           height: 90,
                           decoration: BoxDecoration(

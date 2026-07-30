@@ -112,7 +112,7 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
             Text('Tipo de ingreso', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
             DropdownButtonFormField<IncomeType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(

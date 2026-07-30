@@ -381,7 +381,7 @@ class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
         // White card that sits on top with rounded top corners.
         Positioned.fill(
           top: topRadius, // push it down so only the rounded arch is clipped
-          child: ColoredBox(color: const Color.fromARGB(255, 240, 239, 239)),
+          child: const ColoredBox(color: Color.fromARGB(255, 240, 239, 239)),
         ),
         // The actual rounded container wrapping the TabBar.
         Positioned.fill(

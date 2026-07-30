@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── LocationRecords ──────────────────────────────────────────────────────────
 
 class LocationRecords extends StatelessWidget {
-  const LocationRecords({required this.location});
+  const LocationRecords({super.key, required this.location});
 
   final LocationEntity location;
 

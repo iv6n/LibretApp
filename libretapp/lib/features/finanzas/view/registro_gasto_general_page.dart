@@ -105,7 +105,7 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
             Text('Tipo de gasto', style: theme.textTheme.labelMedium),
             const SizedBox(height: 6),
             DropdownButtonFormField<GeneralExpenseType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(

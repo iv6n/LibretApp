@@ -565,7 +565,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
 
                   if (_entry.activities.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    _SectionTitle(
+                    const _SectionTitle(
                       title: 'Bitácora',
                       icon: Icons.history_outlined,
                     ),

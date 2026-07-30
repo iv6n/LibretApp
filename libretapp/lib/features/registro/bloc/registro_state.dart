@@ -25,6 +25,9 @@ enum RegistroStatus {
 
 /// State emitted by [RegistroBloc].
 class RegistroState extends Equatable {
+
+  /// Convenience factory for the idle (reset) state.
+  factory RegistroState.initial() => const RegistroState();
   /// Creates an idle [RegistroState].
   const RegistroState({this.status = RegistroStatus.idle, this.errorMessage});
 
@@ -41,9 +44,6 @@ class RegistroState extends Equatable {
       errorMessage: errorMessage ?? this.errorMessage,
     );
   }
-
-  /// Convenience factory for the idle (reset) state.
-  factory RegistroState.initial() => const RegistroState();
 
   @override
   List<Object?> get props => [status, errorMessage];

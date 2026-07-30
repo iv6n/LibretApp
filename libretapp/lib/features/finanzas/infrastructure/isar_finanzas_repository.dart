@@ -47,8 +47,9 @@ class IsarFinanzasRepository implements FinanzasRepository {
   @override
   Future<void> deleteIncome(String id) async {
     final isarId = int.tryParse(id);
-    if (isarId == null)
+    if (isarId == null) {
       throw ArgumentError.value(id, 'id', 'Income ID is not a valid integer');
+    }
     await _isar.writeTxn(() async {
       await _isar.isarIncomeRecords.delete(isarId);
     });
@@ -83,8 +84,9 @@ class IsarFinanzasRepository implements FinanzasRepository {
   @override
   Future<void> deleteExpense(String id) async {
     final isarId = int.tryParse(id);
-    if (isarId == null)
+    if (isarId == null) {
       throw ArgumentError.value(id, 'id', 'Expense ID is not a valid integer');
+    }
     await _isar.writeTxn(() async {
       await _isar.isarGeneralExpenseRecords.delete(isarId);
     });

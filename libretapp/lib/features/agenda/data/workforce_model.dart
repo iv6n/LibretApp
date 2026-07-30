@@ -10,6 +10,16 @@ class WorkerRole {
 }
 
 class WorkerProfile extends Equatable {
+
+  factory WorkerProfile.fromJson(Map<String, dynamic> json) => WorkerProfile(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    role: json['role'] as String,
+    phone: json['phone'] as String?,
+    active: json['active'] as bool? ?? true,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
   const WorkerProfile({
     required this.id,
     required this.name,
@@ -54,21 +64,21 @@ class WorkerProfile extends Equatable {
     'updatedAt': updatedAt.toIso8601String(),
   };
 
-  factory WorkerProfile.fromJson(Map<String, dynamic> json) => WorkerProfile(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    role: json['role'] as String,
-    phone: json['phone'] as String?,
-    active: json['active'] as bool? ?? true,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
-  );
-
   @override
   List<Object?> get props => [id, name, role, phone, active, createdAt, updatedAt];
 }
 
 class WorkTeam extends Equatable {
+
+  factory WorkTeam.fromJson(Map<String, dynamic> json) => WorkTeam(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    memberIds: (json['memberIds'] as List<dynamic>? ?? const [])
+        .cast<String>(),
+    active: json['active'] as bool? ?? true,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+  );
   const WorkTeam({
     required this.id,
     required this.name,
@@ -107,16 +117,6 @@ class WorkTeam extends Equatable {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
   };
-
-  factory WorkTeam.fromJson(Map<String, dynamic> json) => WorkTeam(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    memberIds: (json['memberIds'] as List<dynamic>? ?? const [])
-        .cast<String>(),
-    active: json['active'] as bool? ?? true,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    updatedAt: DateTime.parse(json['updatedAt'] as String),
-  );
 
   @override
   List<Object?> get props => [id, name, memberIds, active, createdAt, updatedAt];

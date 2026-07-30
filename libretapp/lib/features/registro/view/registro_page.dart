@@ -357,7 +357,7 @@ class _RegistroPageState extends State<RegistroPage> {
           builder: (stateContext, setDialogState) => AlertDialog(
             title: const Text('Seleccionar ubicacion'),
             content: DropdownButtonFormField<String>(
-              value: selectedUuid,
+              initialValue: selectedUuid,
               decoration: const InputDecoration(labelText: 'Ubicacion'),
               isExpanded: true,
               items: locations
@@ -422,7 +422,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   DropdownButtonFormField<String>(
-                    value: locationUuid,
+                    initialValue: locationUuid,
                     decoration: const InputDecoration(labelText: 'Ubicacion'),
                     isExpanded: true,
                     items: locations
@@ -442,7 +442,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: cropUuid,
+                    initialValue: cropUuid,
                     decoration: const InputDecoration(labelText: 'Cultivo'),
                     isExpanded: true,
                     items: crops

@@ -120,11 +120,11 @@ void main() {
       ..registerSingleton<MilkingRepository>(_FakeMilkingRepository());
 
     await tester.pumpWidget(
-      MaterialApp(
+      const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('es'),
-        home: const RegistroOrdenaPage(),
+        locale: Locale('es'),
+        home: RegistroOrdenaPage(),
       ),
     );
     await tester.pumpAndSettle();

@@ -304,8 +304,9 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     final stripped = earTag.replaceFirst(RegExp(r'^0+'), '');
     final strippedLower = stripped.toLowerCase();
     if (strippedLower.contains(normalized)) return true;
-    if (normalized.length <= 4 && strippedLower.endsWith(normalized))
+    if (normalized.length <= 4 && strippedLower.endsWith(normalized)) {
       return true;
+    }
 
     return false;
   }

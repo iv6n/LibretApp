@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── UpcomingTasksCard ────────────────────────────────────────────────────────
 
 class UpcomingTasksCard extends StatelessWidget {
-  const UpcomingTasksCard({required this.location, required this.onComplete});
+  const UpcomingTasksCard({super.key, required this.location, required this.onComplete});
 
   final LocationEntity location;
   final void Function(String cropUuid, String taskUuid) onComplete;
@@ -136,7 +136,7 @@ class UpcomingTasksCard extends StatelessWidget {
 // ─── CropsSection ─────────────────────────────────────────────────────────────
 
 class CropsSection extends StatelessWidget {
-  const CropsSection({
+  const CropsSection({super.key, 
     required this.location,
     required this.onAddCrop,
     required this.onEditCrop,

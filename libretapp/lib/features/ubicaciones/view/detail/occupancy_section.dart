@@ -3,7 +3,7 @@ part of '../location_detail_widgets.dart';
 // ─── OccupancyCard ────────────────────────────────────────────────────────────
 
 class OccupancyCard extends StatelessWidget {
-  const OccupancyCard({required this.location, required this.animalsHere});
+  const OccupancyCard({super.key, required this.location, required this.animalsHere});
 
   final LocationEntity location;
   final List<AnimalEntity> animalsHere;

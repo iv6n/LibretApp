@@ -50,7 +50,7 @@ class _SheetHeader extends StatelessWidget {
 // ─── Visit ────────────────────────────────────────────────────────────────────
 
 class VisitRecordSheet extends StatefulWidget {
-  const VisitRecordSheet({required this.locationName});
+  const VisitRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 
@@ -163,7 +163,7 @@ class _VisitRecordSheetState extends State<VisitRecordSheet> {
 // ─── Water ────────────────────────────────────────────────────────────────────
 
 class WaterRecordSheet extends StatefulWidget {
-  const WaterRecordSheet({required this.locationName});
+  const WaterRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 
@@ -282,7 +282,7 @@ class _WaterRecordSheetState extends State<WaterRecordSheet> {
 // ─── Salt ─────────────────────────────────────────────────────────────────────
 
 class SaltRecordSheet extends StatefulWidget {
-  const SaltRecordSheet({required this.locationName});
+  const SaltRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 
@@ -383,7 +383,7 @@ class _SaltRecordSheetState extends State<SaltRecordSheet> {
 // ─── Shade ────────────────────────────────────────────────────────────────────
 
 class ShadeRecordSheet extends StatefulWidget {
-  const ShadeRecordSheet({required this.locationName});
+  const ShadeRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 
@@ -499,7 +499,7 @@ class _ShadeRecordSheetState extends State<ShadeRecordSheet> {
 // ─── Pasture ──────────────────────────────────────────────────────────────────
 
 class PastureRecordSheet extends StatefulWidget {
-  const PastureRecordSheet({required this.locationName});
+  const PastureRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 
@@ -614,7 +614,7 @@ class _PastureRecordSheetState extends State<PastureRecordSheet> {
 // ─── Cost ─────────────────────────────────────────────────────────────────────
 
 class CostRecordSheet extends StatefulWidget {
-  const CostRecordSheet({required this.locationName});
+  const CostRecordSheet({super.key, required this.locationName});
 
   final String locationName;
 

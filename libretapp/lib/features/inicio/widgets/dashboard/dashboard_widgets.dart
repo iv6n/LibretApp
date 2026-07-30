@@ -263,8 +263,8 @@ class _FinanceWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('+${fmt.format(s.totalRevenue)}', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
-              Text('-${fmt.format(s.totalExpenses)}', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              Text('+${fmt.format(s.totalRevenue)}', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
+              Text('-${fmt.format(s.totalExpenses)}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
