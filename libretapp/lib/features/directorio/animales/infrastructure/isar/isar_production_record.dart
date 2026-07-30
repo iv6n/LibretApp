@@ -1,14 +1,20 @@
-﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_production_record \u2014 Isar schema for ProductionRecord.
+/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_production_record \u2014 Isar schema for ProductionRecord.
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 
 part 'isar_production_record.g.dart';
 
 @collection
-class IsarProductionRecord {
+class IsarProductionRecord implements StableRecordModel {
+  @override
   Id id = Isar.autoIncrement;
+
+  @override
+  @Index(unique: true, replace: true)
+  String recordUuid = '';
 
   @Index()
   late String animalUuid;

@@ -11,6 +11,13 @@ library;
 
 import 'package:get_it/get_it.dart';
 import 'package:flutter/foundation.dart';
+import 'package:libretapp/core/backup/backup_store.dart';
+import 'package:libretapp/core/backup/cloud_backup_repository.dart';
+import 'package:libretapp/core/backup/cloud_backup_service.dart';
+import 'package:libretapp/core/backup/isar_backup_store.dart';
+import 'package:libretapp/core/backup/supabase_cloud_backup_repository.dart';
+import 'package:libretapp/core/backup/supabase_config.dart';
+import 'package:libretapp/core/backup/unavailable_cloud_backup_repository.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 import 'package:libretapp/core/security/services/auth_service.dart';
@@ -19,6 +26,7 @@ import 'package:libretapp/core/security/services/default_key_provider_service.da
 import 'package:libretapp/core/security/services/native_crypto_service.dart';
 import 'package:libretapp/core/security/services/prefs_key_value_store_service.dart';
 import 'package:libretapp/core/security/services/secure_logger_service.dart';
+import 'package:libretapp/core/security/services/supabase_auth_service.dart';
 import 'package:libretapp/core/security/services/token_store_service.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
@@ -56,6 +64,7 @@ import 'package:libretapp/features/milking/infrastructure/milking_repository_isa
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -174,10 +183,16 @@ void _registerSecurity() {
       ),
     )
     ..registerLazySingleton<AuthPort>(
-      () => AuthService(
-        tokenPort: locator<TokenPort>(),
-        logger: locator<SensitiveLoggerPort>(),
-      ),
+      () => SupabaseConfig.isConfigured
+          ? SupabaseAuthService(
+              client: Supabase.instance.client,
+              tokenPort: locator<TokenPort>(),
+              logger: locator<SensitiveLoggerPort>(),
+            )
+          : AuthService(
+              tokenPort: locator<TokenPort>(),
+              logger: locator<SensitiveLoggerPort>(),
+            ),
     );
 }
 
@@ -273,6 +288,12 @@ void _registerMilkingFinanzas() {
 
 void _registerBackupExport() {
   locator
+    ..registerLazySingleton<BackupStore>(
+      () => IsarBackupStore(
+        database: locator<IsarDatabase>(),
+        perfilRepository: locator<PerfilRepository>(),
+      ),
+    )
     ..registerLazySingleton<BackupService>(
       () => BackupService(
         animalRepository: locator<AnimalRepository>(),
@@ -280,12 +301,24 @@ void _registerBackupExport() {
         agendaRepository: locator<AgendaRepository>(),
         workforceRepository: locator<WorkforceRepository>(),
         milkingRepository: locator<MilkingRepository>(),
+        backupStore: locator<BackupStore>(),
         fetchAllAnimalsIncludingArchived: () {
           final repo = locator<AnimalRepository>();
           return repo is AnimalRepositoryIsar
               ? repo.getAllIncludingArchived()
               : repo.getAll();
         },
+      ),
+    )
+    ..registerLazySingleton<CloudBackupRepository>(
+      () => SupabaseConfig.isConfigured
+          ? SupabaseCloudBackupRepository(Supabase.instance.client)
+          : const UnavailableCloudBackupRepository(),
+    )
+    ..registerLazySingleton<CloudBackupService>(
+      () => CloudBackupService(
+        backupService: locator<BackupService>(),
+        repository: locator<CloudBackupRepository>(),
       ),
     )
     ..registerLazySingleton<ExportService>(

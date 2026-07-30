@@ -15,6 +15,8 @@ import 'package:libretapp/features/exportar/widgets/export_selection_panel.dart'
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
+import 'package:libretapp/features/perfil/view/cloud_auth_sheet.dart';
+import 'package:libretapp/features/perfil/view/cloud_backup_sheet.dart';
 import 'package:libretapp/theme/app_theme.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -97,13 +99,41 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
             ),
             ListTile(
               leading: const Icon(Icons.upload_file_outlined),
-              title: const Text('Exportar respaldo JSON'),
+              title: const Text('Exportar respaldo completo'),
               onTap: () => _exportBackup(context),
             ),
             ListTile(
               leading: const Icon(Icons.download_for_offline_outlined),
-              title: const Text('Importar respaldo JSON'),
+              title: const Text('Importar respaldo completo'),
               onTap: () => _importBackup(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text('Cuenta de respaldo'),
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (_) => const CloudAuthSheet(),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_done_outlined),
+              title: const Text('Copias en la nube'),
+              subtitle: const Text(
+                'Crear, revisar o restaurar copias verificadas.',
+              ),
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (_) => const FractionallySizedBox(
+                  heightFactor: 0.85,
+                  child: CloudBackupSheet(),
+                ),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.table_chart_outlined),

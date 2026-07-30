@@ -1,5 +1,8 @@
 ﻿## PROJECT CONTEXT (synthesized from exhaustive codebase analysis)
 
+> **Historical snapshot (May 2026).** For the Android pilot, current setup,
+> backup, cloud, and release instructions live in `libretapp/README.md`.
+
 ### Reality Check Status (2026-05-28)
 - **Verification scope**: exhaustively spot-checked against live code (`pubspec.yaml`, `lib/main.dart`, `lib/app/app_router.dart`, `lib/app/app_bloc.dart`, `lib/core/router/app_routes.dart`, `lib/core/di/injection.dart`, `lib/core/utils/`, `lib/features/agenda/`, `lib/features/finanzas/`, `lib/features/exportar/`, `lib/features/inicio/`, `lib/features/perfil/`, `lib/core/services/`, `lib/core/security/` ports+services, `lib/core/mock/`, `lib/features/registro/bloc/`, all route constants, animales record repositories, AnimalBloc, AnimalesBloc, UbicacionesBloc, pagination state, and full test tree).
 - **Confidence**: High for project identity, module layout, persistence stack, all features, security layer, and technical debt; updated to reflect 2026-05-28 codebase state.

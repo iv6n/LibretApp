@@ -3,7 +3,9 @@ library;
 
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:uuid/uuid.dart';
 
 /// Shared CRUD skeleton for the animal "child record" repositories (health,
 /// movement, weight, cost, commercial, production, reproduction), which all
@@ -13,7 +15,10 @@ import 'package:libretapp/core/services/logger_service.dart';
 /// (sort field differs per record type), the entity<->model mapping, and an
 /// optional [onSaved] hook for the repos that also need to update the
 /// parent `IsarAnimal` (health/movement/weight).
-abstract class IsarRecordRepositoryBase<TEntity, TIsarModel> {
+abstract class IsarRecordRepositoryBase<
+  TEntity,
+  TIsarModel extends StableRecordModel
+> {
   IsarRecordRepositoryBase(this._database);
 
   final IsarDatabase _database;
@@ -52,6 +57,14 @@ abstract class IsarRecordRepositoryBase<TEntity, TIsarModel> {
     final db = await isar;
     final model = toIsarModel(record, animalUuid);
     await db.writeTxn(() async {
+      if (model.recordUuid.isEmpty) {
+        final existing = model.id == Isar.autoIncrement
+            ? null
+            : await collection(db).get(model.id);
+        model.recordUuid = existing?.recordUuid.isNotEmpty == true
+            ? existing!.recordUuid
+            : const Uuid().v4();
+      }
       final id = await collection(db).put(model);
       assignId(model, id);
       if (onSaved != null) await onSaved(db, model);

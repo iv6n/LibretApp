@@ -12,9 +12,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_index.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/mock/mock_data_seeder.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  if (SupabaseConfig.isConfigured) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      publishableKey: SupabaseConfig.anonKey,
+    );
+  }
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     LoggerService.e(

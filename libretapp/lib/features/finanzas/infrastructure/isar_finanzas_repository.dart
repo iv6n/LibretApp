@@ -1,4 +1,4 @@
-﻿/// features \u203a finanzas \u203a infrastructure \u203a isar_finanzas_repository \u2014 Isar implementation of FinanzasRepository.
+/// features \u203a finanzas \u203a infrastructure \u203a isar_finanzas_repository \u2014 Isar implementation of FinanzasRepository.
 library;
 
 import 'package:isar/isar.dart';
@@ -9,6 +9,7 @@ import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
+import 'package:uuid/uuid.dart';
 
 class IsarFinanzasRepository implements FinanzasRepository {
   IsarFinanzasRepository(this._db);
@@ -32,6 +33,12 @@ class IsarFinanzasRepository implements FinanzasRepository {
   Future<IncomeRecord> addIncome(IncomeRecord record) async {
     final model = record.toIsar();
     await _isar.writeTxn(() async {
+      final existing = model.id == Isar.autoIncrement
+          ? null
+          : await _isar.isarIncomeRecords.get(model.id);
+      model.recordUuid = existing?.recordUuid.isNotEmpty == true
+          ? existing!.recordUuid
+          : const Uuid().v4();
       await _isar.isarIncomeRecords.put(model);
     });
     return model.toEntity();
@@ -62,6 +69,12 @@ class IsarFinanzasRepository implements FinanzasRepository {
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async {
     final model = record.toIsar();
     await _isar.writeTxn(() async {
+      final existing = model.id == Isar.autoIncrement
+          ? null
+          : await _isar.isarGeneralExpenseRecords.get(model.id);
+      model.recordUuid = existing?.recordUuid.isNotEmpty == true
+          ? existing!.recordUuid
+          : const Uuid().v4();
       await _isar.isarGeneralExpenseRecords.put(model);
     });
     return model.toEntity();

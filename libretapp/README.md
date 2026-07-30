@@ -1,16 +1,109 @@
-# libretapp
+# LibretApp
 
-A new Flutter project.
+LibretApp is an offline-first livestock management application built with
+Flutter. It manages animals, lots, locations, operational records, agenda,
+workforce, milking, and farm finances in a local Isar database.
 
-## Getting Started
+The current release line is `0.1.x`, intended for a controlled Android pilot.
+Spanish is the only enabled application locale.
 
-This project is a starting point for a Flutter application.
+## Development setup
 
-A few resources to get you started if this is your first Flutter project:
+Requirements:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Flutter 3.41 or a compatible stable release
+- Dart 3.11 or newer
+- Java 17 and Android SDK 36 for Android builds
+- Docker and the Supabase CLI for database security tests
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Install dependencies and generate Isar sources:
+
+```powershell
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze --no-fatal-infos
+flutter test
+```
+
+Plain debug builds remain fully offline. Optional cloud backups are enabled
+only when both Supabase values are supplied:
+
+```powershell
+flutter run --dart-define-from-file=dart_define.local.json
+```
+
+Copy `dart_define.example.json` to `dart_define.local.json` and fill in local
+values. The local file is ignored by Git.
+
+## Backup and recovery
+
+Local and cloud backups use the same `.libretbackup` format:
+
+- schema version 4;
+- all 17 Isar collections;
+- persisted farm profile;
+- referenced local media, stored by content hash;
+- no authentication tokens, encryption keys, theme, language, or other
+  device-specific preferences.
+
+Legacy schema v1-v3 JSON files remain importable. Before any replace-all
+restore, the app writes an emergency `.libretbackup` snapshot under the
+application support directory.
+
+Cloud backup is versioned disaster recovery, not background synchronization.
+Each upload is downloaded and SHA-256 verified before it is marked usable.
+The five newest verified snapshots are retained. Multi-device merge and
+bidirectional sync are intentionally deferred until after the pilot.
+
+Apply the local Supabase migration and security tests with:
+
+```powershell
+supabase start
+supabase test db
+```
+
+The migration creates a private Storage bucket and an RLS-protected
+`backup_snapshots` metadata table. Users can access only objects below their
+own authenticated user ID.
+
+## Signed Android pilot builds
+
+Release builds require a private keystore and fail if
+`android/key.properties` is absent. Copy
+`android/key.properties.example`, fill it locally, and never commit the
+keystore or passwords.
+
+Required release definitions:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `LIBRET_TOKEN_MASTER_KEY`
+
+Build an APK with:
+
+```powershell
+flutter build apk --release `
+  --dart-define-from-file=dart_define.local.json
+```
+
+The pilot application ID is `app.libret`. Changing it after pilot
+installation would break the normal Android upgrade path.
+
+## Architecture
+
+- Flutter, Material 3, GoRouter
+- BLoC/Cubit state management
+- GetIt dependency injection
+- Isar offline persistence
+- SharedPreferences for profile/settings data
+- Supabase Auth and private Storage for optional versioned backups
+
+See `docs/CODING_GUIDE.md` and `docs/ARQUITECTURA.md` for module and repository
+details.
+
+## Pilot limitations
+
+The pilot does not include maps, expanded camera workflows, push
+notifications, multi-farm sharing, or live multi-device synchronization.
+These features should be prioritized from observed pilot usage rather than
+added before recovery and data-integrity drills pass.

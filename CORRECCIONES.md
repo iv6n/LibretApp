@@ -1,5 +1,10 @@
 # Correcciones a la Auditoría LibretApp — Julio 2026
 
+> **Documento histórico.** Este corte describe el estado del 26 de julio y ya
+> no es la fuente vigente para el piloto Android. La rama
+> `codex/android-pilot` usa respaldos completos schema v4 y snapshots
+> versionados; consulta `libretapp/README.md` para el estado operativo actual.
+
 > Este documento cruza cada hallazgo del reporte original (`auditoria-libretapp-actualizada.html` en esta misma carpeta, o el artifact original) contra el estado **real y verificado** del código en la rama `main-5enhm8` a día de hoy. Cada afirmación de "arreglado" fue confirmada con grep/lectura del archivo, no con memoria de lo que se hizo — y en el camino aparecieron 3 correcciones al propio audit (no eran del todo precisas).
 >
 > Archivos hermanos en esta carpeta: `auditoria-estado.json` (para que yo lo use como memoria de trabajo en próximas sesiones) y `auditoria-libretapp-actualizada.html` (la misma pieza visual del audit original, con el estado de cada item marcado).

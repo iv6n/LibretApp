@@ -1,14 +1,20 @@
-﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_cost_record \u2014 Isar schema for CostRecord.
+/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_cost_record \u2014 Isar schema for CostRecord.
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
 
 part 'isar_cost_record.g.dart';
 
 @collection
-class IsarCostRecord {
+class IsarCostRecord implements StableRecordModel {
+  @override
   Id id = Isar.autoIncrement;
+
+  @override
+  @Index(unique: true, replace: true)
+  String recordUuid = '';
 
   @Index()
   late String animalUuid;

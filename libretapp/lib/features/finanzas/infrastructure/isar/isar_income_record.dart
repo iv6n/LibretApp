@@ -1,14 +1,20 @@
-﻿/// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_income_record \u2014 Isar schema for IncomeRecord.
+/// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_income_record \u2014 Isar schema for IncomeRecord.
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 
 part 'isar_income_record.g.dart';
 
 @collection
-class IsarIncomeRecord {
+class IsarIncomeRecord implements StableRecordModel {
+  @override
   Id id = Isar.autoIncrement;
+
+  @override
+  @Index(unique: true, replace: true)
+  String recordUuid = '';
 
   @Index()
   late DateTime date;

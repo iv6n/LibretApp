@@ -14,6 +14,14 @@ val hasReleaseSigning = keystorePropertiesFile.exists()
 if (hasReleaseSigning) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val isReleaseTask = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+if (isReleaseTask && !hasReleaseSigning) {
+    throw GradleException(
+        "A private android/key.properties file is required for release builds."
+    )
+}
 
 android {
     namespace = "app.libret"
@@ -31,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Permanent pilot identity; changing it would break Android upgrades.
         applicationId = "app.libret"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -70,10 +78,8 @@ android {
             // genuinely unsigned APK, which Android refuses to install
             // (INSTALL_PARSE_FAILED_NO_CERTIFICATES). Never publish a build
             // signed with the debug key to a store.
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

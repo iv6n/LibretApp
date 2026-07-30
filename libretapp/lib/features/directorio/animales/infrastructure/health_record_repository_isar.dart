@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/healt
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
+import 'package:uuid/uuid.dart';
 
 class HealthRecordRepositoryIsar
     extends IsarRecordRepositoryBase<HealthRecord, IsarHealthRecord>
@@ -18,13 +19,18 @@ class HealthRecordRepositoryIsar
   String get logTag => 'HealthRecordRepositoryIsar';
 
   @override
-  IsarCollection<IsarHealthRecord> collection(Isar isar) => isar.isarHealthRecords;
+  IsarCollection<IsarHealthRecord> collection(Isar isar) =>
+      isar.isarHealthRecords;
 
   @override
   Future<List<IsarHealthRecord>> queryByAnimal(
     IsarCollection<IsarHealthRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection
+      .filter()
+      .animalUuidEqualTo(animalUuid)
+      .sortByDateDesc()
+      .findAll();
 
   @override
   IsarHealthRecord toIsarModel(HealthRecord record, String animalUuid) =>
@@ -62,7 +68,10 @@ class HealthRecordRepositoryIsar
     if (animalUuids.isEmpty) return;
     final db = await isar;
     final models = animalUuids
-        .map((animalUuid) => record.toIsar(animalUuid))
+        .map(
+          (animalUuid) =>
+              record.toIsar(animalUuid)..recordUuid = const Uuid().v4(),
+        )
         .toList(growable: false);
     await db.writeTxn(() async {
       await db.isarHealthRecords.putAll(models);
@@ -78,7 +87,8 @@ class HealthRecordRepositoryIsar
   }
 
   @override
-  Future<void> deleteHealthRecord(String recordId) => deleteRecordById(recordId);
+  Future<void> deleteHealthRecord(String recordId) =>
+      deleteRecordById(recordId);
 
   Future<void> _applyHealthEffects(
     Isar isar,
@@ -86,7 +96,10 @@ class HealthRecordRepositoryIsar
     HealthRecord record, {
     DateTime? now,
   }) async {
-    final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+    final animal = await isar.isarAnimals
+        .where()
+        .uuidEqualTo(animalUuid)
+        .findFirst();
     if (animal == null) return;
     if (record.type == HealthRecordType.vaccine) animal.vaccinated = true;
     if (record.type == HealthRecordType.deworming) animal.dewormed = true;

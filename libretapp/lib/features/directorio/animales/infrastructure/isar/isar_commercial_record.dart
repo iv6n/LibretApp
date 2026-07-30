@@ -1,14 +1,20 @@
-﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_commercial_record \u2014 Isar schema for CommercialRecord.
+/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_commercial_record \u2014 Isar schema for CommercialRecord.
 library;
 
 import 'package:isar/isar.dart';
+import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 
 part 'isar_commercial_record.g.dart';
 
 @collection
-class IsarCommercialRecord {
+class IsarCommercialRecord implements StableRecordModel {
+  @override
   Id id = Isar.autoIncrement;
+
+  @override
+  @Index(unique: true, replace: true)
+  String recordUuid = '';
 
   @Index()
   late String animalUuid;
