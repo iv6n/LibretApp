@@ -1,0 +1,36 @@
+{
+  // Las credenciales viven en libretapp/dart_define.local.json, que está en
+  // .gitignore. Copia libretapp/dart_define.example.json si te falta.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "libretapp (con respaldo en la nube)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define-from-file=dart_define.local.json"]
+    },
+    {
+      "name": "libretapp (solo local, sin nube)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "libretapp (profile mode)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "args": ["--dart-define-from-file=dart_define.local.json"]
+    },
+    {
+      "name": "libretapp (release mode)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": ["--dart-define-from-file=dart_define.local.json"]
+    }
+  ]
+}
