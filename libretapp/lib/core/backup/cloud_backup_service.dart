@@ -29,14 +29,21 @@ class CloudBackupService {
       bytes: bytes,
       sha256: _backupService.digestArchive(bytes),
       schemaVersion: BackupEnvelope.currentSchemaVersion,
-      appVersion: '0.1.0+2',
+      appVersion: BackupEnvelope.currentAppVersion,
     );
   }
 
   Future<List<CloudBackupMetadata>> listSnapshots() =>
       _repository.listSnapshots();
 
-  Future<BackupImportSummary> restore(CloudBackupMetadata metadata) async {
+  /// Restores [metadata] into local storage.
+  ///
+  /// [mode] is required rather than defaulted so no caller can reach the
+  /// destructive [BackupImportMode.replaceAll] path by omission.
+  Future<BackupImportSummary> restore(
+    CloudBackupMetadata metadata, {
+    required BackupImportMode mode,
+  }) async {
     final bytes = await _repository.downloadSnapshot(metadata);
     final actualDigest = sha256.convert(bytes).toString();
     if (actualDigest != metadata.sha256) {
@@ -44,9 +51,6 @@ class CloudBackupService {
         'La copia descargada no coincide con su huella de integridad.',
       );
     }
-    return _backupService.importArchiveBytes(
-      bytes,
-      mode: BackupImportMode.replaceAll,
-    );
+    return _backupService.importArchiveBytes(bytes, mode: mode);
   }
 }

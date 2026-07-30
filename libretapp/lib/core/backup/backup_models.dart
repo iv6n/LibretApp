@@ -14,6 +14,10 @@ class BackupEnvelope {
 
   static const currentSchemaVersion = 4;
 
+  /// Stamped into every archive and cloud snapshot. Kept here so a version bump
+  /// is a single edit — must stay in step with `version:` in pubspec.yaml.
+  static const currentAppVersion = '0.1.0+2';
+
   final int schemaVersion;
   final String appVersion;
   final DateTime exportedAt;

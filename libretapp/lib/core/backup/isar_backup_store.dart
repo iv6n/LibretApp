@@ -91,7 +91,7 @@ class IsarBackupStore implements BackupStore {
     });
     return BackupEnvelope(
       schemaVersion: BackupEnvelope.currentSchemaVersion,
-      appVersion: '0.1.0+2',
+      appVersion: BackupEnvelope.currentAppVersion,
       exportedAt: DateTime.now().toUtc(),
       collections: collections,
       profile: profile.toJson(),
@@ -153,9 +153,11 @@ class IsarBackupStore implements BackupStore {
         ),
       );
     }
+    // Counts come from [prepared], not from the envelope: a merge drops rows
+    // whose local copy is newer, so the incoming totals would over-report what
+    // was actually written.
     return BackupRestoreResult({
-      for (final entry in envelope.collections.entries)
-        entry.key: entry.value.length,
+      for (final entry in prepared.entries) entry.key: entry.value.length,
     });
   }
 
@@ -277,33 +279,97 @@ class IsarBackupStore implements BackupStore {
           existing[name]!,
           stableField: stableFields[name]!,
           idField: idFields[name] ?? 'id',
+          updatedAtField: updatedAtFields[name],
         ),
     };
   }
 
+  /// Modification timestamp per collection, used by [BackupImportMode.merge] to
+  /// decide whether an incoming row may overwrite the local one.
+  ///
+  /// The animal child records and both finanzas collections are absent on
+  /// purpose: they are insert/delete-only (no repository exposes an update for
+  /// them), so they carry no modification timestamp and fall back to the
+  /// original merge behaviour of letting the snapshot win.
+  static const updatedAtFields = <String, String>{
+    'animals': 'lastUpdateDate',
+    'lotes': 'lastUpdateDate',
+    'locations': 'updatedAt',
+    'agendaEntries': 'updatedAt',
+    'workerProfiles': 'updatedAt',
+    'workTeams': 'updatedAt',
+    'milkingSessions': 'updatedAt',
+    'milkingEntries': 'updatedAt',
+  };
+
+  /// Reconciles [incoming] against [existing] by stable id.
+  ///
+  /// Rows that are new locally get a fresh Isar id and are inserted. Rows that
+  /// already exist are rewritten in place (reusing the local Isar id) *unless*
+  /// the local copy is newer — those are dropped from the result so `importJson`
+  /// never touches them and the local edit survives the restore.
   List<Map<String, dynamic>> _mergeRows(
     List<Map<String, dynamic>> incoming,
     List<Map<String, dynamic>> existing, {
     required String stableField,
     required String idField,
+    String? updatedAtField,
   }) {
-    final existingIds = <String, int>{
+    final existingRows = <String, Map<String, dynamic>>{
       for (final row in existing)
         if (row[stableField] is String && row[idField] is int)
-          row[stableField] as String: row[idField] as int,
+          row[stableField] as String: row,
     };
     var nextId = existing
         .map((row) => row[idField])
         .whereType<int>()
         .fold<int>(0, (max, id) => id > max ? id : max);
-    return incoming
-        .map((source) {
-          final row = Map<String, dynamic>.from(source);
-          final stableId = row[stableField] as String;
-          row[idField] = existingIds[stableId] ?? ++nextId;
-          return row;
-        })
-        .toList(growable: false);
+
+    final merged = <Map<String, dynamic>>[];
+    for (final source in incoming) {
+      final stableId = source[stableField];
+      if (stableId is! String) continue;
+      final local = existingRows[stableId];
+      if (local != null && _localCopyWins(local, source, updatedAtField)) {
+        continue;
+      }
+      final row = Map<String, dynamic>.from(source);
+      row[idField] = local?[idField] as int? ?? ++nextId;
+      merged.add(row);
+    }
+    return List<Map<String, dynamic>>.unmodifiable(merged);
+  }
+
+  /// Whether the local row must survive untouched instead of being overwritten
+  /// by [incoming].
+  bool _localCopyWins(
+    Map<String, dynamic> local,
+    Map<String, dynamic> incoming,
+    String? updatedAtField,
+  ) {
+    // Collections without a modification timestamp keep the pre-existing merge
+    // semantics (the snapshot wins). There is no basis to claim the local row is
+    // newer, and skipping it would make a restore silently do nothing for the
+    // insert-only collections.
+    if (updatedAtField == null) return false;
+    final localAt = _readTimestamp(local[updatedAtField]);
+    final incomingAt = _readTimestamp(incoming[updatedAtField]);
+    // An unknown local time can't be defended, so let the snapshot win; an
+    // unknown incoming time must never clobber a known local edit.
+    if (localAt == null) return false;
+    if (incomingAt == null) return true;
+    return localAt.isAfter(incomingAt);
+  }
+
+  /// Isar's `exportJson` writes `DateTime` as microseconds since epoch. Plain
+  /// ISO-8601 strings are also accepted because the manifest inside an archive
+  /// is human-readable JSON and may have been produced by other tooling.
+  DateTime? _readTimestamp(Object? raw) {
+    if (raw is int) {
+      return DateTime.fromMicrosecondsSinceEpoch(raw, isUtc: true);
+    }
+    if (raw is String) return DateTime.tryParse(raw)?.toUtc();
+    return null;
   }
 
   Future<void> _clearAll(Isar isar) async {

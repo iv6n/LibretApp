@@ -300,7 +300,10 @@ void main() {
       );
 
       await expectLater(
-        () => service.restore(_metadata(digest: 'not-the-real-digest')),
+        () => service.restore(
+          _metadata(digest: 'not-the-real-digest'),
+          mode: BackupImportMode.replaceAll,
+        ),
         throwsA(isA<FormatException>()),
       );
       expect(store.restored, isNull);

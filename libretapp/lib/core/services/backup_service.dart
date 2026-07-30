@@ -90,7 +90,7 @@ class BackupService {
        _fetchAllAnimalsIncludingArchived = fetchAllAnimalsIncludingArchived;
 
   static const _schemaVersion = BackupEnvelope.currentSchemaVersion;
-  static const _appVersion = '0.1.0+2';
+  static const _appVersion = BackupEnvelope.currentAppVersion;
 
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;

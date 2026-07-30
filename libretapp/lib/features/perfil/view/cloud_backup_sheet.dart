@@ -56,35 +56,47 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
   }
 
   Future<void> _restore(CloudBackupMetadata metadata) async {
-    final confirmed = await showDialog<bool>(
+    final mode = await showDialog<BackupImportMode>(
       context: context,
+      useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Restaurar esta copia'),
         content: const Text(
-          'Se guardará una copia de emergencia y después se reemplazarán '
-          'los datos locales por esta versión.',
+          'Fusionar agrega lo que falte y conserva los cambios locales más '
+          'recientes.\n\n'
+          'Reemplazar todo borra los datos locales y los sustituye por esta '
+          'copia; antes de hacerlo se guarda una copia de emergencia en el '
+          'dispositivo.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
           ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, BackupImportMode.replaceAll),
+            child: const Text('Reemplazar todo'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Restaurar'),
+            onPressed: () =>
+                Navigator.pop(dialogContext, BackupImportMode.merge),
+            child: const Text('Fusionar'),
           ),
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (mode == null || !mounted) return;
     setState(() => _busy = true);
     try {
-      await _service.restore(metadata);
+      await _service.restore(metadata, mode: mode);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Copia restaurada. Reinicia la app para recargar todo.',
+            mode == BackupImportMode.merge
+                ? 'Copia fusionada. Reinicia la app para recargar todo.'
+                : 'Copia restaurada. Reinicia la app para recargar todo.',
           ),
         ),
       );

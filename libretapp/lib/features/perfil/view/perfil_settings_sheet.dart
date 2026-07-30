@@ -192,7 +192,11 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
       builder: (ctx) => AlertDialog(
         title: const Text('Modo de importación'),
         content: const Text(
-          'Mezclar conserva datos locales. Reemplazar borra todo.',
+          'Fusionar agrega lo que falte y conserva los cambios locales más '
+          'recientes.\n\n'
+          'Reemplazar todo borra los datos locales y los sustituye por el '
+          'archivo; antes de hacerlo se guarda una copia de emergencia en el '
+          'dispositivo.',
         ),
         actions: [
           TextButton(
@@ -200,12 +204,12 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(ctx, BackupImportMode.merge),
-            child: const Text('Mezclar'),
+            onPressed: () => Navigator.pop(ctx, BackupImportMode.replaceAll),
+            child: const Text('Reemplazar todo'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, BackupImportMode.replaceAll),
-            child: const Text('Reemplazar'),
+            onPressed: () => Navigator.pop(ctx, BackupImportMode.merge),
+            child: const Text('Fusionar'),
           ),
         ],
       ),
