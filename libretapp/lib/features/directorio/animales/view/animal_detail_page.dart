@@ -130,7 +130,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     );
   }
 
-  void _reload() => setState(() => _future = _loadData());
+  void _reload() {
+    // A block body is required, not `=>`: the arrow form's "return value" is
+    // the assignment's value — a Future here — and setState()'s callback must
+    // return void, or Flutter throws in debug mode even though nothing is
+    // awaited.
+    setState(() {
+      _future = _loadData();
+    });
+  }
 
   // ── build ─────────────────────────────────────────────────────────────
 

@@ -32,7 +32,13 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
   }
 
   void _reload() {
-    setState(() => _snapshots = _load());
+    // A block body is required, not `=>`: the arrow form's "return value" is
+    // the assignment's value — a Future here — and setState()'s callback
+    // must return void, or Flutter throws in debug mode even though nothing
+    // is awaited.
+    setState(() {
+      _snapshots = _load();
+    });
   }
 
   Future<void> _backupNow() async {
