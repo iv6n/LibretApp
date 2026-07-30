@@ -221,6 +221,7 @@ class AgendaSummaryCard extends StatelessWidget {
   Future<void> _showDeleteConfirm(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar tarea'),
         content: Text('¿Eliminar "${entry.titulo}"?'),

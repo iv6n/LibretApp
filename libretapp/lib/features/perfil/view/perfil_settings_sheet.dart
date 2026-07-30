@@ -46,6 +46,7 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
     }
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => BlocProvider.value(
@@ -189,6 +190,7 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
   Future<void> _importBackup(BuildContext context) async {
     final mode = await showDialog<BackupImportMode>(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         title: const Text('Modo de importación'),
         content: const Text(

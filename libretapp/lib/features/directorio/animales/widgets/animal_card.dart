@@ -406,6 +406,7 @@ class _AnimalCardQuickMenu extends StatelessWidget {
 
       final selected = await showMenu<AnimalCardMenuAction>(
         context: context,
+        useRootNavigator: true,
         position: RelativeRect.fromRect(
           Rect.fromLTWH(origin.dx, menuTop, button.size.width, 0),
           Offset.zero & overlay.size,

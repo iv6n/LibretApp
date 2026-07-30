@@ -77,6 +77,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
   Future<void> _confirmDelete(LoteEntity lote) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('Eliminar lote'),
         content: Text(
@@ -140,6 +141,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
 
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (sheetCtx) {
         return StatefulBuilder(
