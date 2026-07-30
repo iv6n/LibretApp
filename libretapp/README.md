@@ -52,8 +52,23 @@ application support directory.
 
 Cloud backup is versioned disaster recovery, not background synchronization.
 Each upload is downloaded and SHA-256 verified before it is marked usable.
-The five newest verified snapshots are retained. Multi-device merge and
-bidirectional sync are intentionally deferred until after the pilot.
+The five newest verified snapshots are retained.
+
+Restoring a snapshot offers two modes:
+
+- **Replace all** clears local data and imports the snapshot. An emergency
+  `.libretbackup` snapshot is written to the application support directory
+  first.
+- **Merge** matches rows by their stable identity (`uuid`, or `recordUuid` for
+  records that have no business key) and keeps whichever copy was modified
+  last, so restoring another device's snapshot cannot discard newer local
+  edits. Collections with no modification timestamp — the insert-only animal
+  child records and both finanzas collections — let the snapshot win, because
+  no local edit path exists for them.
+
+Merge makes a restore usable across devices, but it is still a manual,
+user-initiated operation. Background and bidirectional synchronization remain
+intentionally deferred until after the pilot.
 
 Apply the local Supabase migration and security tests with:
 
