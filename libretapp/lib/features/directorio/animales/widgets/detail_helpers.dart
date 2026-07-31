@@ -18,6 +18,8 @@ class DetailData {
     required this.movements,
     required this.costs,
     required this.milkingRecords,
+    this.ancestors = const <String, AnimalEntity>{},
+    this.offspring = const <AnimalEntity>[],
   });
 
   final AnimalEntity animal;
@@ -29,6 +31,15 @@ class DetailData {
   final List<MovementRecord> movements;
   final List<CostRecord> costs;
   final List<MilkingRecord> milkingRecords;
+
+  /// Every ancestor resolved for the pedigree tree, keyed by uuid. Parents
+  /// recorded but missing from the herd (an outside sire) are simply absent,
+  /// and the tree renders them as unknown.
+  final Map<String, AnimalEntity> ancestors;
+
+  /// Direct offspring, newest first. For a breeding female this list is her
+  /// production history.
+  final List<AnimalEntity> offspring;
 }
 
 Color detailStageColor(LifeStage stage) {

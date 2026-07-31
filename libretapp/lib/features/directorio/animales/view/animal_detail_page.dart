@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -14,6 +15,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/pedigree_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
@@ -80,7 +82,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _future = _loadData();
   }
 
@@ -107,6 +109,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final movementsFuture = widget.movementRepo.getMovementRecords(uuid);
     final costsFuture = widget.costRepo.getCostRecords(uuid);
     final milkingFuture = widget.milkingRepo.getRecordsByAnimal(uuid);
+    final offspringFuture = widget.repository.getByParentUuid(uuid);
 
     final weights = await weightsFuture;
     final reproductions = await reproductionsFuture;
@@ -116,6 +119,8 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final movements = await movementsFuture;
     final costs = await costsFuture;
     final milkingRecords = await milkingFuture;
+    final offspring = await offspringFuture;
+    final ancestors = await _loadAncestors(animal);
 
     return DetailData(
       animal: animal,
@@ -127,7 +132,47 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       movements: movements,
       costs: costs,
       milkingRecords: milkingRecords,
+      ancestors: ancestors,
+      offspring: offspring,
     );
+  }
+
+  /// Walks up the parent links breadth-first, fetching only the animals the
+  /// pedigree tree will actually draw. A three-generation tree tops out at 6
+  /// ancestors, so this stays far cheaper than loading the herd.
+  Future<Map<String, AnimalEntity>> _loadAncestors(AnimalEntity animal) async {
+    final resolved = <String, AnimalEntity>{animal.uuid: animal};
+    var frontier = <String>{
+      ...?_parentUuids(animal),
+    };
+
+    for (var depth = 1; depth < PedigreeService.defaultDepth; depth++) {
+      final pending = frontier.difference(resolved.keys.toSet());
+      if (pending.isEmpty) break;
+
+      final fetched = await Future.wait(
+        pending.map(widget.repository.getByUuid),
+      );
+
+      final next = <String>{};
+      for (final ancestor in fetched) {
+        if (ancestor == null) continue;
+        resolved[ancestor.uuid] = ancestor;
+        next.addAll(_parentUuids(ancestor) ?? const <String>{});
+      }
+      frontier = next;
+    }
+
+    return resolved;
+  }
+
+  Set<String>? _parentUuids(AnimalEntity animal) {
+    final parents = <String>{};
+    for (final uuid in [animal.sireUuid, animal.damUuid]) {
+      final trimmed = uuid?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) parents.add(trimmed);
+    }
+    return parents.isEmpty ? null : parents;
   }
 
   void _reload() {
@@ -321,10 +366,13 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
               indicatorColor: Theme.of(context).primaryColor,
               indicatorWeight: 3,
               dividerHeight: 0,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               tabs: [
                 Tab(text: l10n.tabInformation),
                 Tab(text: l10n.tabHistory),
                 Tab(text: l10n.tabRecords),
+                const Tab(text: 'Genealogía'),
               ],
             ),
             height: tabBarHeight,
@@ -348,6 +396,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
             data: data,
           ),
           RecordsTab(key: const PageStorageKey('records_tab'), data: data),
+          PedigreeTab(key: const PageStorageKey('pedigree_tab'), data: data),
         ],
       ),
     );

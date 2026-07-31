@@ -1,9 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -81,6 +83,114 @@ void main() {
       expect(find.text('Siguiente'), findsOneWidget);
     });
 
+    for (final width in [320.0, 360.0, 600.0, 840.0]) {
+      testWidgets('renders step 1 without overflow at ${width.toInt()} dp', (
+        tester,
+      ) async {
+        locator
+          ..registerSingleton<AnimalRepository>(
+            _FakeAnimalRepository(allAnimals: const []),
+          )
+          ..registerSingleton<LotesRepository>(
+            _FakeLotesRepository(activeLotes: const []),
+          )
+          ..registerSingleton<LocationRepository>(
+            _FakeLocationRepository(allLocations: const []),
+          );
+        tester.view.physicalSize = Size(width, 1000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('hydrates all quick-registration seed values', (tester) async {
+      final animalRepo = _FakeAnimalRepository(allAnimals: const []);
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(
+          _FakeLotesRepository(activeLotes: const []),
+        )
+        ..registerSingleton<LocationRepository>(
+          _FakeLocationRepository(allLocations: const []),
+        );
+
+      const seed = AnimalRegistrationSeed(
+        species: Species.equine,
+        sex: Sex.male,
+        ageMonths: 43,
+        identification: 'EQ-22',
+        name: 'Relámpago',
+        breed: 'Criollo',
+        weight: 410,
+        productionPurpose: ProductionPurpose.sport,
+      );
+
+      await tester.pumpWidget(
+        _testApp(const RegisterAnimalPage(initialSeed: seed)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Équido'), findsOneWidget);
+      expect(find.text('3 años 7 meses'), findsOneWidget);
+      expect(
+        _editableTextForLabel(tester, 'Microchip, pasaporte o identificación'),
+        'EQ-22',
+      );
+      expect(
+        _editableTextForLabel(tester, 'Nombre o alias — opcional'),
+        'Relámpago',
+      );
+      expect(_editableTextForLabel(tester, 'Raza — opcional'), 'Criollo');
+      expect(
+        _editableTextForLabel(tester, 'Peso inicial (kg) — opcional'),
+        '410.0',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('opens help and autosaves a restorable draft with debounce', (
+      tester,
+    ) async {
+      locator
+        ..registerSingleton<AnimalRepository>(
+          _FakeAnimalRepository(allAnimals: const []),
+        )
+        ..registerSingleton<LotesRepository>(
+          _FakeLotesRepository(activeLotes: const []),
+        )
+        ..registerSingleton<LocationRepository>(
+          _FakeLocationRepository(allLocations: const []),
+        );
+
+      await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Ayuda'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cómo funciona el registro'), findsOneWidget);
+      await tester.tap(find.text('Entendido'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        _fieldByFormLabel('Nombre o alias — opcional'),
+        'Borrador',
+      );
+      await tester.pump(const Duration(milliseconds: 550));
+
+      final raw = locator<SharedPrefsService>().getString(
+        PrefsKeys.animalWizardDraft,
+      );
+      expect(raw, isNotNull);
+      expect(jsonDecode(raw!)['name'], 'Borrador');
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('sanitizes stale selected values in edit mode', (tester) async {
       final now = DateTime(2025, 1, 1);
       final editingAnimal = _animal(
@@ -135,15 +245,13 @@ void main() {
       await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DropdownButtonFormField<Species>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Équido').last);
+      await tester.tap(find.text('Équido'));
       await tester.pumpAndSettle();
 
       final categoryField = tester.widget<DropdownButtonFormField<Category>>(
         find.byType(DropdownButtonFormField<Category>),
       );
-      expect(categoryField.initialValue, Category.juvenile);
+      expect(categoryField.initialValue, Category.grower);
       expect(tester.takeException(), isNull);
     });
 
@@ -168,7 +276,7 @@ void main() {
       await tester.enterText(_breedFieldFinder(), 'Criolla');
       await tester.pump();
       await _tapFilledButtonByLabel(tester, 'Siguiente');
-      expect(find.text('Arete recomendado'), findsOneWidget);
+      expect(find.text('Dejar arete pendiente'), findsOneWidget);
 
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
@@ -200,9 +308,9 @@ void main() {
       await tester.enterText(_breedFieldFinder(), 'Criolla');
       await tester.pump();
       await _tapFilledButtonByLabel(tester, 'Siguiente');
-      expect(find.text('Arete recomendado'), findsOneWidget);
+      expect(find.text('Dejar arete pendiente'), findsOneWidget);
 
-      await tester.tap(find.text('Continuar sin arete'));
+      await tester.tap(find.text('Guardar como pendiente'));
       await tester.pumpAndSettle();
 
       expect(find.text('Anterior'), findsOneWidget);
@@ -256,7 +364,7 @@ void main() {
       await _fillStep1RequiredFields(tester, earTag: '2001');
 
       await _navigateToLastStep(tester);
-      await _tapFilledButtonByLabel(tester, 'Terminar');
+      await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
       expect(animalRepo.saveCallCount, 1);
       expect(
@@ -288,7 +396,7 @@ void main() {
         await _fillStep1RequiredFields(tester, earTag: '2002');
 
         await _navigateToLastStep(tester);
-        await _tapFilledButtonByLabel(tester, 'Terminar');
+        await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
         expect(animalRepo.saveCallCount, 1);
         expect(
@@ -328,7 +436,7 @@ void main() {
         await _fillStep1RequiredFields(tester, earTag: '3002');
 
         await _navigateToLastStep(tester);
-        await _tapFilledButtonByLabel(tester, 'Terminar');
+        await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
         expect(animalRepo.updateCallCount, 1);
         expect(
@@ -371,7 +479,7 @@ void main() {
         await _fillStep1RequiredFields(tester, earTag: '3003');
 
         await _navigateToLastStep(tester);
-        await _tapFilledButtonByLabel(tester, 'Terminar');
+        await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
         expect(animalRepo.updateCallCount, 1);
         expect(
@@ -435,14 +543,14 @@ void main() {
       await _fillStep1RequiredFields(tester, earTag: '4001');
 
       await _navigateToLastStep(tester);
-      await _tapFilledButtonByLabel(tester, 'Terminar');
+      await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
       expect(animalRepo.saveCallCount, 1);
       expect(animalRepo.savedAnimals.last.breed, 'Criolla');
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('shows breed required error when breed field is empty', (
+    testWidgets('normalizes an empty optional breed when saved', (
       tester,
     ) async {
       final now = DateTime(2025, 1, 1);
@@ -460,16 +568,14 @@ void main() {
       await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
       await tester.pumpAndSettle();
 
-      // Fill only ear tag — leave breed empty
       await tester.enterText(_earTagFieldFinder(), '5001');
       await tester.pump();
 
-      await _tapFilledButtonByLabel(tester, 'Siguiente');
+      await _navigateToLastStep(tester);
+      await _tapFilledButtonByLabel(tester, 'Guardar animal');
 
-      // Validation error should appear and form stays on step 0 (no 'Anterior' button)
-      expect(find.text('Ingresa la raza'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Anterior'), findsNothing);
-      expect(animalRepo.saveCallCount, 0);
+      expect(animalRepo.saveCallCount, 1);
+      expect(animalRepo.savedAnimals.single.breed, 'Desconocido');
       expect(tester.takeException(), isNull);
     });
 
@@ -494,9 +600,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.enterText(_editFieldByLabel('Arete / Identificacion'), '900');
+      await tester.enterText(
+        _editFieldByLabel('N.º de arete / caravana'),
+        '900',
+      );
       await tester.enterText(_editFieldByLabel('Nombre o alias'), 'Paloma');
-      await tester.enterText(_editFieldByLabel('Raza'), 'Simmental');
+      await tester.enterText(_editFieldByLabel('Raza — opcional'), 'Simmental');
       await tester.pump();
 
       await _tapFilledButtonByLabel(tester, 'Guardar cambios');
@@ -542,7 +651,7 @@ Future<void> _fillStep1RequiredFields(
 }
 
 Finder _earTagFieldFinder() {
-  final label = find.text('Arete / Identificacion');
+  final label = find.text('N.º de arete / caravana');
   final textFormField = find.ancestor(
     of: label,
     matching: find.byType(TextFormField),
@@ -554,7 +663,7 @@ Finder _earTagFieldFinder() {
 }
 
 Finder _breedFieldFinder() {
-  final label = find.text('Raza 1');
+  final label = find.text('Raza — opcional');
   final textFormField = find.ancestor(
     of: label,
     matching: find.byType(TextFormField),
@@ -575,6 +684,25 @@ Finder _editFieldByLabel(String labelText) {
     of: textFormField,
     matching: find.byType(EditableText),
   );
+}
+
+Finder _fieldByFormLabel(String labelText) {
+  final field = find.ancestor(
+    of: find.text(labelText),
+    matching: find.byType(TextFormField),
+  );
+  return find.descendant(of: field, matching: find.byType(EditableText));
+}
+
+String _editableTextForLabel(WidgetTester tester, String labelText) {
+  final editable = find.descendant(
+    of: find.ancestor(
+      of: find.text(labelText),
+      matching: find.byType(TextFormField),
+    ),
+    matching: find.byType(EditableText),
+  );
+  return tester.widget<EditableText>(editable).controller.text;
 }
 
 class _TestEditAnimalForm extends StatelessWidget {
@@ -773,6 +901,12 @@ class _FakeHealthRecordRepository implements HealthRecordRepository {
       const [];
 
   @override
+  Future<Map<String, DateTime>> getActiveWithdrawals(
+    Set<String> animalUuids, {
+    DateTime? asOf,
+  }) async => const {};
+
+  @override
   Future<HealthRecord> addHealthRecord(
     String animalUuid,
     HealthRecord record,
@@ -809,6 +943,10 @@ class _FakeReproductionRecordRepository
   Future<List<ReproductionRecord>> getReproductionRecords(
     String animalUuid,
   ) async => const [];
+
+  @override
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids) async => const {};
 
   @override
   Future<ReproductionRecord> addReproductionRecord(

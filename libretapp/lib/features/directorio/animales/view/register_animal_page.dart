@@ -1,6 +1,7 @@
 /// features \u203a directorio \u203a animales \u203a view \u203a register_animal_page \u2014 page for registering a new animal.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
@@ -13,6 +14,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
@@ -23,9 +25,10 @@ import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class RegisterAnimalPage extends StatefulWidget {
-  const RegisterAnimalPage({this.animalUuid, super.key});
+  const RegisterAnimalPage({this.animalUuid, this.initialSeed, super.key});
 
   final String? animalUuid;
+  final AnimalRegistrationSeed? initialSeed;
 
   bool get isEdit => animalUuid != null;
 
@@ -80,12 +83,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   bool _loading = true;
   bool _saving = false;
   AnimalEntity? _editingAnimal;
+  Timer? _draftDebounce;
 
   Species _species = Species.cattle;
-  Category _category = Category.calf;
+  Category _category = Category.heifer;
   Sex _sex = Sex.female;
   AnimalStatus _status = AnimalStatus.active;
   DateTime? _birthDate;
+  _BirthInputMode _birthInputMode = _BirthInputMode.approximate;
+  ApproximateAge _approximateAge = const ApproximateAge(years: 1, months: 0);
   DateTime _registrationDate = DateTime.now();
 
   OriginType _originType = OriginType.own;
@@ -118,6 +124,33 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   final List<_RecordDraft> _exams = [];
   final List<_ReproductionDraft> _reproductions = [];
 
+  AnimalRegistrationPolicy get _policy =>
+      AnimalRegistrationPolicy.forSpecies(_species);
+
+  Iterable<TextEditingController> get _draftControllers => [
+    _earTagCtrl,
+    _nameCtrl,
+    _breedCtrl,
+    _crossBreedCtrl,
+    _ageMonthsCtrl,
+    _coatColorCtrl,
+    _weightCtrl,
+    _notesCtrl,
+    _crossBreedTypeCtrl,
+    _feedTypeCtrl,
+    _sireBreedCtrl,
+    _damBreedCtrl,
+    _bloodPercentageCtrl,
+    _genealogicalRegistryCtrl,
+    _originNotesCtrl,
+    _approximateDensityCtrl,
+    _locationNotesCtrl,
+    _feedNotesCtrl,
+    _visualIdCtrl,
+    _distinguishingMarksCtrl,
+    _healthNotesCtrl,
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +161,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _lotesRepository = locator<LotesRepository>();
     _locationRepository = locator<LocationRepository>();
     _sharedPrefsService = locator<SharedPrefsService>();
+    for (final controller in _draftControllers) {
+      controller.addListener(_scheduleDraftSave);
+    }
     _loadData();
   }
 
@@ -157,6 +193,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             _applyAnimalToForm(editingAnimal);
           }
         } else {
+          final seed = widget.initialSeed;
+          if (seed != null) {
+            _applySeed(seed);
+          }
           _selectedProvenanceUuid = _firstRanch?.uuid;
           _selectedRanchUuid = _firstRanch?.uuid;
           _selectedPaddockUuid = _paddocksForSelectedRanch.isNotEmpty
@@ -171,7 +211,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         if (editingAnimal == null) {
           _showMessage('No se encontró el animal para editar.');
         }
-      } else {
+      } else if (widget.initialSeed == null) {
         await _promptRestoreDraft();
       }
     } catch (_) {
@@ -213,14 +253,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _sex = animal.sex;
     _status = animal.status;
     _birthDate = animal.birthDate;
+    _birthInputMode = _BirthInputMode.exact;
+    _approximateAge = ApproximateAge.fromTotalMonths(animal.ageMonths);
     _registrationDate = animal.lastMovementDate ?? animal.lastUpdateDate;
     _reproductiveStatus = animal.reproductiveStatus;
     _productionSystem = animal.productionSystem;
     _productionPurpose = animal.productionPurpose;
-    _originType = OriginType.values.firstWhere(
-      (value) => value.name == animal.originType,
-      orElse: () => OriginType.own,
-    );
+    _originType = animal.originType ?? OriginType.own;
 
     if (animal.healthStatus == HealthStatus.poor) {
       _healthMode = _InitialHealthMode.problem;
@@ -254,6 +293,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   @override
   void dispose() {
+    _draftDebounce?.cancel();
+    for (final controller in _draftControllers) {
+      controller.removeListener(_scheduleDraftSave);
+    }
     _earTagCtrl.dispose();
     _nameCtrl.dispose();
     _breedCtrl.dispose();
@@ -276,6 +319,33 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _distinguishingMarksCtrl.dispose();
     _healthNotesCtrl.dispose();
     super.dispose();
+  }
+
+  void _applySeed(AnimalRegistrationSeed seed) {
+    _species = seed.species;
+    _sex = seed.sex;
+    _approximateAge = ApproximateAge.fromTotalMonths(seed.ageMonths);
+    _ageMonthsCtrl.text = seed.ageMonths.toString();
+    _birthInputMode = _BirthInputMode.approximate;
+    _birthDate = null;
+    _earTagCtrl.text = seed.identification ?? '';
+    _nameCtrl.text = seed.name ?? '';
+    _breedCtrl.text = seed.breed ?? '';
+    _weightCtrl.text = seed.weight?.toString() ?? '';
+    _productionPurpose = seed.productionPurpose ?? ProductionPurpose.undefined;
+    _category = AnimalTaxonomy.defaultCategory(
+      species: _species,
+      sex: _sex,
+      ageMonths: seed.ageMonths,
+    );
+  }
+
+  void _scheduleDraftSave() {
+    if (widget.isEdit || _loading) return;
+    _draftDebounce?.cancel();
+    _draftDebounce = Timer(const Duration(milliseconds: 500), () {
+      _persistDraft();
+    });
   }
 
   @override
@@ -301,7 +371,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             titleSpacing: 0,
             actions: [
               TextButton.icon(
-                onPressed: () {},
+                onPressed: _showRegistrationHelp,
                 icon: const Icon(Icons.help_outline),
                 label: Text(widget.isEdit ? 'Editar' : 'Ayuda'),
               ),
@@ -455,6 +525,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   Widget _buildStep1() {
     final theme = Theme.of(context);
+    final policy = _policy;
     return Form(
       key: _step1FormKey,
       child: Padding(
@@ -471,149 +542,101 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownButtonFormField<Species>(
-                      initialValue: _species,
-                      decoration: const InputDecoration(labelText: 'Especie'),
-                      items: Species.values
-                          .map(
-                            (species) => DropdownMenuItem(
-                              value: species,
-                              child: Text(species.displayName),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 600;
+                    Widget pair(Widget first, Widget second) {
+                      if (!wide) {
+                        return Column(
+                          children: [first, const SizedBox(height: 12), second],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(child: first),
+                          const SizedBox(width: 12),
+                          Expanded(child: second),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Especie', style: theme.textTheme.labelLarge),
+                        const SizedBox(height: 8),
+                        AnimalSpeciesSelector(
+                          value: _species,
+                          onChanged: _onSpeciesChanged,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _earTagCtrl,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: InputDecoration(
+                            labelText: policy.identificationLabel,
+                            hintText: policy.identificationHint,
+                            helperText: policy.tracksPendingEarTag
+                                ? 'Recomendado. Puedes dejarlo pendiente.'
+                                : 'Opcional',
+                            suffixIcon: const Icon(
+                              Icons.qr_code_scanner_outlined,
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _nameCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre o alias — opcional',
+                            hintText: 'Ej. Manchas, Estrella, etc.',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text('Sexo', style: theme.textTheme.labelLarge),
+                        const SizedBox(height: 8),
+                        CompactSexSelector(
+                          value: _sex,
+                          onChanged: _onSexChanged,
+                        ),
+                        const SizedBox(height: 16),
+                        SegmentedButton<_BirthInputMode>(
+                          segments: const [
+                            ButtonSegment(
+                              value: _BirthInputMode.approximate,
+                              icon: Icon(Icons.cake_outlined),
+                              label: Text('Edad aproximada'),
+                            ),
+                            ButtonSegment(
+                              value: _BirthInputMode.exact,
+                              icon: Icon(Icons.calendar_month_outlined),
+                              label: Text('Fecha exacta'),
+                            ),
+                          ],
+                          selected: {_birthInputMode},
+                          onSelectionChanged: (values) {
+                            _changeBirthInputMode(values.first);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        if (_birthInputMode == _BirthInputMode.approximate)
+                          ApproximateAgeField(
+                            value: _approximateAge,
+                            onChanged: _onApproximateAgeChanged,
                           )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _species = value;
-                          final ageMonths = _birthDate == null
-                              ? _parseOptionalInt(_ageMonthsCtrl.text) ?? 24
-                              : AnimalLifecycleCalculator.calculate(
-                                  birthDate: _birthDate!,
-                                  species: _species,
-                                  sex: _sex,
-                                ).ageMonths;
-                          final available = AnimalTaxonomy.categoriesFor(
-                            species: _species,
-                            sex: _sex,
-                            ageMonths: ageMonths,
-                          );
-                          if (!available.contains(_category)) {
-                            _category = AnimalTaxonomy.defaultCategory(
-                              species: _species,
-                              sex: _sex,
-                              ageMonths: ageMonths,
-                              neutered:
-                                  _reproductiveStatus ==
-                                  ReproductiveStatus.neutered,
-                            );
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<Category>(
-                            initialValue: _category,
-                            decoration: const InputDecoration(
-                              labelText: 'Categoria',
-                            ),
-                            items: _availableCategories
-                                .map(
-                                  (category) => DropdownMenuItem(
-                                    value: category,
-                                    child: Text(category.displayName),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() {
-                                _applyTriFieldCascade(newCategory: value);
-                              });
-                              _maybShowDateAdjustedSnackbar();
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: DropdownButtonFormField<Sex>(
-                            initialValue: _sex,
-                            decoration: const InputDecoration(
-                              labelText: 'Genero',
-                            ),
-                            items: Sex.values
-                                .map(
-                                  (sex) => DropdownMenuItem(
-                                    value: sex,
-                                    child: Text(sex.displayName),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() {
-                                _applyTriFieldCascade(newSex: value);
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _breedCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Raza 1',
-                              hintText: 'Ej. Angus',
-                              suffixIcon: Icon(Icons.expand_more),
-                            ),
-                            validator: (value) {
-                              if ((value ?? '').trim().isEmpty) {
-                                return 'Ingresa la raza';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _crossBreedCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Raza 2 (opcional)',
-                              hintText: 'Ej. Brahman (si aplica)',
-                              suffixIcon: Icon(Icons.expand_more),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
+                        else
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
                             onTap: _pickBirthDate,
                             child: InputDecorator(
                               decoration: const InputDecoration(
-                                labelText: 'Fecha de nacimiento (opcional)',
+                                labelText: 'Fecha de nacimiento',
                                 suffixIcon: Icon(Icons.calendar_month_outlined),
                               ),
-                              isEmpty: false,
                               child: Text(
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
                                 _birthDate == null
-                                    ? 'Selecciona la fecha de nacimiento'
+                                    ? 'Selecciona la fecha'
                                     : _formatDate(_birthDate!),
                                 style: _birthDate == null
                                     ? TextStyle(color: theme.hintColor)
@@ -621,130 +644,123 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                               ),
                             ),
                           ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<Category>(
+                          key: ValueKey(
+                            'category-${_species.name}-${_sex.name}-'
+                            '${_currentAgeMonths()}-${_category.name}',
+                          ),
+                          initialValue: _category,
+                          decoration: const InputDecoration(
+                            labelText: 'Categoría sugerida',
+                            helperText: 'Se ajusta según especie, sexo y edad.',
+                          ),
+                          items: _availableCategories
+                              .map(
+                                (category) => DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category.displayName),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _category = value);
+                            _scheduleDraftSave();
+                          },
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _ageMonthsCtrl,
-                            keyboardType: TextInputType.number,
+                        const SizedBox(height: 12),
+                        pair(
+                          TextFormField(
+                            controller: _breedCtrl,
+                            textCapitalization: TextCapitalization.words,
                             decoration: const InputDecoration(
-                              labelText: 'Edad aproximada (meses) (opcional)',
+                              labelText: 'Raza — opcional',
+                              hintText: 'Ej. Angus',
+                            ),
+                          ),
+                          TextFormField(
+                            controller: _crossBreedCtrl,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              labelText: 'Segunda raza / cruza — opcional',
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    if (_birthDate == null &&
-                        _estimatedAgeLabel(_category) != null) ...[
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 14,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _estimatedAgeLabel(_category)!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _earTagCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Arete / Identificacion',
-                        hintText: '00 23 5132 1842',
-                        helperText:
-                            'Recomendado para identificar y buscar al animal.',
-                        suffixIcon: Icon(Icons.qr_code_scanner_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _nameCtrl,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre o alias',
-                        hintText: 'Ej. Manchas, Estrella, etc.',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                        const SizedBox(height: 12),
+                        pair(
+                          TextFormField(
                             controller: _coatColorCtrl,
-                            decoration: const InputDecoration(
-                              labelText: 'Color / Pelaje',
+                            decoration: InputDecoration(
+                              labelText: '${policy.coatLabel} — opcional',
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
+                          TextFormField(
                             controller: _weightCtrl,
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
                             decoration: const InputDecoration(
-                              labelText: 'Peso inicial (kg)',
+                              labelText: 'Peso inicial (kg) — opcional',
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _distinguishingMarksCtrl,
-                      maxLength: 120,
-                      decoration: const InputDecoration(
-                        labelText: 'Senas particulares',
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _notesCtrl,
-                      maxLines: 3,
-                      maxLength: 300,
-                      decoration: const InputDecoration(
-                        labelText: 'Observaciones',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<AnimalStatus>(
-                      initialValue: _status,
-                      decoration: const InputDecoration(labelText: 'Estado *'),
-                      items: AnimalStatus.values
-                          .map(
-                            (status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(status.displayName),
+                        const SizedBox(height: 12),
+                        ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: const Text('Detalles adicionales'),
+                          subtitle: const Text('Señas, observaciones y estado'),
+                          children: [
+                            TextFormField(
+                              controller: _distinguishingMarksCtrl,
+                              maxLength: 120,
+                              decoration: const InputDecoration(
+                                labelText: 'Señas particulares',
+                              ),
                             ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _status = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _pickRegistrationDate,
-                      icon: const Icon(Icons.event_available_outlined),
-                      label: Text(
-                        'Fecha de registro: ${_formatDate(_registrationDate)}',
-                      ),
-                    ),
-                  ],
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _notesCtrl,
+                              maxLines: 3,
+                              maxLength: 300,
+                              decoration: const InputDecoration(
+                                labelText: 'Observaciones',
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<AnimalStatus>(
+                              initialValue: _status,
+                              decoration: const InputDecoration(
+                                labelText: 'Estado',
+                              ),
+                              items: AnimalStatus.values
+                                  .map(
+                                    (status) => DropdownMenuItem(
+                                      value: status,
+                                      child: Text(status.displayName),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _status = value);
+                                _scheduleDraftSave();
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: _pickRegistrationDate,
+                          icon: const Icon(Icons.event_available_outlined),
+                          label: Text(
+                            'Fecha de registro: '
+                            '${_formatDate(_registrationDate)}',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -757,61 +773,72 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   Widget _buildStep2() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('Origen del animal', Icons.hub_outlined),
-          const SizedBox(height: 12),
-          SegmentedButton<OriginType>(
-            segments: OriginType.values
-                .map(
-                  (originType) => ButtonSegment(
-                    value: originType,
-                    label: Text(originType.displayName),
-                  ),
-                )
-                .toList(),
-            selected: {_originType},
-            onSelectionChanged: (value) {
-              if (value.isEmpty) return;
-              setState(() {
-                _originType = value.first;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedProvenanceUuid,
-            decoration: const InputDecoration(labelText: 'Procedencia'),
-            items: _ranches
-                .map(
-                  (location) => DropdownMenuItem(
-                    value: location.uuid,
-                    child: Text(location.name),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedProvenanceUuid = value;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final usePairs = constraints.maxWidth >= 600;
+          Widget pair(Widget first, Widget second) {
+            if (!usePairs) {
+              return Column(
+                children: [first, const SizedBox(height: 12), second],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: first),
+                const SizedBox(width: 12),
+                Expanded(child: second),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
+              _buildSectionTitle('Origen del animal', Icons.hub_outlined),
+              const SizedBox(height: 12),
+              SegmentedButton<OriginType>(
+                segments: OriginType.values
+                    .map(
+                      (originType) => ButtonSegment(
+                        value: originType,
+                        label: Text(originType.displayName),
+                      ),
+                    )
+                    .toList(),
+                selected: {_originType},
+                onSelectionChanged: (value) {
+                  if (value.isEmpty) return;
+                  setState(() => _originType = value.first);
+                  _scheduleDraftSave();
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedProvenanceUuid,
+                decoration: const InputDecoration(labelText: 'Procedencia'),
+                items: _ranches
+                    .map(
+                      (location) => DropdownMenuItem(
+                        value: location.uuid,
+                        child: Text(location.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() => _selectedProvenanceUuid = value);
+                  _scheduleDraftSave();
+                },
+              ),
+              const SizedBox(height: 12),
+              pair(
+                DropdownButtonFormField<String>(
                   isExpanded: true,
                   initialValue: _selectedDamUuid,
                   decoration: const InputDecoration(
-                    label: Text(
-                      'Madre (opcional)',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    labelText: 'Madre (opcional)',
                   ),
-                  items: _animals
+                  items: _eligibleMothers
                       .map(
                         (animal) => DropdownMenuItem(
                           value: animal.uuid,
@@ -820,25 +847,17 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       )
                       .toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _selectedDamUuid = value;
-                    });
+                    setState(() => _selectedDamUuid = value);
+                    _scheduleDraftSave();
                   },
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DropdownButtonFormField<String>(
+                DropdownButtonFormField<String>(
                   isExpanded: true,
                   initialValue: _selectedSireUuid,
                   decoration: const InputDecoration(
-                    label: Text(
-                      'Padre (opcional)',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    labelText: 'Padre (opcional)',
                   ),
-                  items: _animals
+                  items: _eligibleFathers
                       .map(
                         (animal) => DropdownMenuItem(
                           value: animal.uuid,
@@ -847,81 +866,70 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       )
                       .toList(),
                   onChanged: (value) {
-                    setState(() {
-                      _selectedSireUuid = value;
-                    });
+                    setState(() => _selectedSireUuid = value);
+                    _scheduleDraftSave();
                   },
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _originNotesCtrl,
-            maxLength: 250,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Observaciones del origen',
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildSectionTitle(
-            'Informacion genetica (opcional)',
-            Icons.bubble_chart,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _crossBreedTypeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de cruzamiento',
-                  ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _originNotesCtrl,
+                maxLength: 250,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Observaciones del origen',
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _sireBreedCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Raza del padre',
+              const SizedBox(height: 8),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(bottom: 8),
+                leading: const Icon(Icons.bubble_chart_outlined),
+                title: const Text('Genética avanzada'),
+                subtitle: const Text('Opcional'),
+                children: [
+                  pair(
+                    TextFormField(
+                      controller: _crossBreedTypeCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de cruzamiento',
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _sireBreedCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Raza del padre',
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _damBreedCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Raza de la madre',
+                  const SizedBox(height: 12),
+                  pair(
+                    TextFormField(
+                      controller: _damBreedCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Raza de la madre',
+                      ),
+                    ),
+                    TextFormField(
+                      controller: _bloodPercentageCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Porcentaje de sangre',
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _bloodPercentageCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Porcentaje de sangre',
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _genealogicalRegistryCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Registro genealógico',
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _genealogicalRegistryCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Registro genealogico',
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -995,20 +1003,27 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 12),
           DropdownButtonFormField<ProductionPurpose>(
             initialValue: _productionPurpose,
-            decoration: const InputDecoration(labelText: 'Propósito de producción'),
+            decoration: const InputDecoration(
+              labelText: 'Propósito de producción',
+            ),
             items: [
               const DropdownMenuItem(
                 value: ProductionPurpose.undefined,
                 child: Text('Sin asignar'),
               ),
-              ...ProductionPurpose.values
-                  .where((value) => value != ProductionPurpose.undefined)
-                  .map(
-                    (value) => DropdownMenuItem(
-                      value: value,
-                      child: Text(value.displayName),
-                    ),
-                  ),
+              ..._policy.purposeOptions.map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(value.displayName),
+                ),
+              ),
+              if (widget.isEdit &&
+                  _productionPurpose != ProductionPurpose.undefined &&
+                  !_policy.purposeOptions.contains(_productionPurpose))
+                DropdownMenuItem(
+                  value: _productionPurpose,
+                  child: Text('${_productionPurpose.displayName} (existente)'),
+                ),
             ],
             onChanged: (value) {
               if (value == null) return;
@@ -1018,83 +1033,86 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             },
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<ProductionSystem>(
-            initialValue: _productionSystem,
-            decoration: const InputDecoration(labelText: 'Sistema de manejo *'),
-            items: ProductionSystem.values
-                .map(
+          if (_policy.productionSystems.isNotEmpty) ...[
+            DropdownButtonFormField<ProductionSystem>(
+              key: ValueKey('system-${_species.name}'),
+              initialValue: _productionSystem,
+              decoration: const InputDecoration(labelText: 'Sistema de manejo'),
+              items: [
+                ..._policy.productionSystems.map(
                   (value) => DropdownMenuItem(
                     value: value,
                     child: Text(value.displayName),
                   ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                _productionSystem = value;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Tipo de alojamiento',
-                  value: _housingType,
-                  options: const ['Libre en potrero', 'Corral', 'Mixto'],
-                  onSelected: (value) {
-                    setState(() {
-                      _housingType = value;
-                    });
-                  },
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Disponibilidad de sombra',
-                  value: _shadingAvailability,
-                  options: const ['Nula', 'Parcial', 'Amplia'],
-                  onSelected: (value) {
-                    setState(() {
-                      _shadingAvailability = value;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Fuente de agua',
-                  value: _waterSource,
-                  options: const [
-                    'Bebedero automatico',
-                    'Bebedero manual',
-                    'Quebrada',
-                  ],
-                  onSelected: (value) {
-                    setState(() {
-                      _waterSource = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _approximateDensityCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Densidad aproximada',
+                if (widget.isEdit &&
+                    !_policy.productionSystems.contains(_productionSystem))
+                  DropdownMenuItem(
+                    value: _productionSystem,
+                    child: Text('${_productionSystem.displayName} (existente)'),
                   ),
-                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _productionSystem = value;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+          _responsiveFieldPair(
+            _buildSimpleSelection(
+              label: 'Tipo de alojamiento',
+              value: _housingType,
+              options: [
+                ..._policy.housingOptions,
+                if (widget.isEdit &&
+                    !_policy.housingOptions.contains(_housingType))
+                  _housingType,
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _housingType = value;
+                });
+                _scheduleDraftSave();
+              },
+            ),
+            _buildSimpleSelection(
+              label: 'Disponibilidad de sombra',
+              value: _shadingAvailability,
+              options: const ['Nula', 'Parcial', 'Amplia'],
+              onSelected: (value) {
+                setState(() {
+                  _shadingAvailability = value;
+                });
+                _scheduleDraftSave();
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          _responsiveFieldPair(
+            _buildSimpleSelection(
+              label: 'Fuente de agua',
+              value: _waterSource,
+              options: const [
+                'Bebedero automatico',
+                'Bebedero manual',
+                'Quebrada',
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _waterSource = value;
+                });
+                _scheduleDraftSave();
+              },
+            ),
+            TextFormField(
+              controller: _approximateDensityCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Densidad aproximada',
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 12),
           TextFormField(
@@ -1108,98 +1126,82 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 16),
           _buildSectionTitle('Alimentacion actual', Icons.grass_outlined),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _feedTypeCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo de alimentacion',
-                  ),
-                ),
+          _responsiveFieldPair(
+            TextFormField(
+              controller: _feedTypeCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de alimentacion',
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Frecuencia',
-                  value: _feedFrequency,
-                  options: const [
-                    '1 vez al dia',
-                    '2 veces al dia',
-                    '3 veces al dia',
-                  ],
-                  onSelected: (value) {
-                    setState(() {
-                      _feedFrequency = value;
-                    });
-                  },
-                ),
-              ),
-            ],
+            ),
+            _buildSimpleSelection(
+              label: 'Frecuencia',
+              value: _feedFrequency,
+              options: const [
+                '1 vez al dia',
+                '2 veces al dia',
+                '3 veces al dia',
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _feedFrequency = value;
+                });
+                _scheduleDraftSave();
+              },
+            ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Suplementos',
-                  value: _feedSupplements,
-                  options: const [
-                    'Ninguno',
-                    'Sal mineral',
-                    'Concentrado',
-                    'Vitaminas',
-                  ],
-                  onSelected: (value) {
-                    setState(() {
-                      _feedSupplements = value;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _feedNotesCtrl,
-                  decoration: const InputDecoration(labelText: 'Observaciones'),
-                ),
-              ),
-            ],
+          _responsiveFieldPair(
+            _buildSimpleSelection(
+              label: 'Suplementos',
+              value: _feedSupplements,
+              options: const [
+                'Ninguno',
+                'Sal mineral',
+                'Concentrado',
+                'Vitaminas',
+              ],
+              onSelected: (value) {
+                setState(() {
+                  _feedSupplements = value;
+                });
+                _scheduleDraftSave();
+              },
+            ),
+            TextFormField(
+              controller: _feedNotesCtrl,
+              decoration: const InputDecoration(labelText: 'Observaciones'),
+            ),
           ),
           const SizedBox(height: 16),
           _buildSectionTitle('Identificacion adicional', Icons.sell_outlined),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleSelection(
-                  label: 'Color de arete',
-                  value: _earTagColor,
-                  options: const [
-                    'Amarillo',
-                    'Rojo',
-                    'Azul',
-                    'Verde',
-                    'Blanco',
-                  ],
-                  onSelected: (value) {
-                    setState(() {
-                      _earTagColor = value;
-                    });
-                  },
+          if (_policy.supportsEarTagColor)
+            _responsiveFieldPair(
+              _buildSimpleSelection(
+                label: 'Color de arete',
+                value: _earTagColor,
+                options: const ['Amarillo', 'Rojo', 'Azul', 'Verde', 'Blanco'],
+                onSelected: (value) {
+                  setState(() {
+                    _earTagColor = value;
+                  });
+                  _scheduleDraftSave();
+                },
+              ),
+              TextFormField(
+                controller: _visualIdCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Número de arete visual',
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _visualIdCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Numero arete visual',
-                  ),
-                ),
+            )
+          else
+            TextFormField(
+              controller: _visualIdCtrl,
+              decoration: InputDecoration(
+                labelText: '${_policy.identificationLabel} visible',
               ),
-            ],
-          ),
+            ),
         ],
       ),
     );
@@ -1237,7 +1239,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             },
           ),
           const SizedBox(height: 12),
-          if (_sex == Sex.male && _species == Species.cattle) ...[
+          if (_sex == Sex.male && _policy.supportsCastration) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Castrado'),
@@ -1247,30 +1249,41 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               value: _reproductiveStatus == ReproductiveStatus.neutered,
               onChanged: (value) {
                 setState(() {
-                  _applyTriFieldCascade(newNeutered: value);
+                  _reproductiveStatus = value
+                      ? ReproductiveStatus.neutered
+                      : ReproductiveStatus.active;
+                  _synchronizeTaxonomy();
                 });
+                _scheduleDraftSave();
               },
             ),
             const SizedBox(height: 4),
           ],
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(5, (index) {
-              final score = index + 1;
-              final selected = score == _bodyConditionScore;
-              return ChoiceChip(
-                label: Text('$score'),
-                selected: selected,
-                onSelected: (_) {
-                  setState(() {
-                    _bodyConditionScore = score;
-                  });
-                },
-              );
-            }),
-          ),
-          const SizedBox(height: 16),
+          if (_policy.supportsBodyConditionScore) ...[
+            Text(
+              'Condición corporal (1–5)',
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(5, (index) {
+                final score = index + 1;
+                final selected = score == _bodyConditionScore;
+                return ChoiceChip(
+                  label: Text('$score'),
+                  selected: selected,
+                  onSelected: (_) {
+                    setState(() {
+                      _bodyConditionScore = score;
+                    });
+                  },
+                );
+              }),
+            ),
+            const SizedBox(height: 16),
+          ],
           _buildRecordSection(
             title: 'Tratamientos aplicados',
             icon: Icons.medication_outlined,
@@ -1333,11 +1346,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 12),
           _buildReviewCard(
             title: 'Informacion basica',
+            onEdit: () => setState(() => _currentStep = 0),
             rows: [
               _ReviewRow(
-                'Arete',
+                _policy.identificationLabel,
                 _earTagCtrl.text.trim().isEmpty
-                    ? 'Sin arete'
+                    ? (_policy.tracksPendingEarTag
+                          ? 'Pendiente'
+                          : 'Sin identificación')
                     : _safeText(_earTagCtrl.text),
               ),
               _ReviewRow('Nombre', _safeText(_nameCtrl.text)),
@@ -1361,6 +1377,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 10),
           _buildReviewCard(
             title: 'Origen',
+            onEdit: () => setState(() => _currentStep = 1),
             rows: [
               _ReviewRow('Tipo de origen', _originType.displayName),
               _ReviewRow(
@@ -1382,6 +1399,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 10),
           _buildReviewCard(
             title: 'Ubicacion y manejo',
+            onEdit: () => setState(() => _currentStep = 3),
             rows: [
               _ReviewRow('Rancho', _locationNameByUuid(_selectedRanchUuid)),
               _ReviewRow(
@@ -1405,12 +1423,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(height: 10),
           _buildReviewCard(
             title: 'Salud inicial',
+            onEdit: () => setState(() => _currentStep = 2),
             rows: [
               _ReviewRow(
                 'Estado sanitario',
                 healthTuple.healthStatus.displayName,
               ),
-              _ReviewRow('BSC', '$_bodyConditionScore'),
+              if (_policy.supportsBodyConditionScore)
+                _ReviewRow('Condición corporal', '$_bodyConditionScore'),
               _ReviewRow('Riesgo', healthTuple.riskLevel.displayName),
               _ReviewRow('Tipo de alimentacion', _safeText(_feedTypeCtrl.text)),
               _ReviewRow('Tratamientos', '${_treatments.length}'),
@@ -1457,7 +1477,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                 ? OutlinedButton.icon(
                     onPressed: _saving ? null : _onSaveForLater,
                     icon: const Icon(Icons.save_alt_outlined),
-                    label: const Text('Terminar'),
+                    label: const Text('Guardar borrador'),
                   )
                 : ElevatedButton.icon(
                     onPressed: _onPreviousStep,
@@ -1480,7 +1500,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                 _saving
                     ? 'Guardando...'
                     : isLastStep
-                    ? 'Terminar'
+                    ? 'Guardar animal'
                     : 'Siguiente',
               ),
             ),
@@ -1527,6 +1547,20 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _responsiveFieldPair(Widget first, Widget second) {
+    if (MediaQuery.sizeOf(context).width < 600) {
+      return Column(children: [first, const SizedBox(height: 12), second]);
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 12),
+        Expanded(child: second),
       ],
     );
   }
@@ -1928,21 +1962,31 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   Widget _buildReviewCard({
     required String title,
     required List<_ReviewRow> rows,
+    required VoidCallback onEdit,
   }) {
+    final visibleRows = rows.where((row) => row.value != '--').toList();
+    if (visibleRows.isEmpty) return const SizedBox.shrink();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton(onPressed: onEdit, child: const Text('Editar')),
+              ],
             ),
             const SizedBox(height: 8),
-            ...rows.map(
+            ...visibleRows.map(
               (row) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
@@ -2067,195 +2111,108 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     }
   }
 
-  // ─── Tri-field cascade: Date ↔ Category ↔ Sex ↔ Castrated ───────────────
-  //
-  // Call this inside setState() when any of the four fields changes.
-  // Pass only the field that was the trigger; the others will be derived.
-  void _applyTriFieldCascade({
-    DateTime? newDate,
-    Category? newCategory,
-    Sex? newSex,
-    bool? newNeutered,
-  }) {
-    assert(
-      [
-            newDate,
-            newCategory,
-            newSex,
-            newNeutered,
-          ].where((v) => v != null).length ==
-          1,
-      '_applyTriFieldCascade must have exactly one trigger',
+  int _currentAgeMonths() {
+    if (_birthInputMode == _BirthInputMode.approximate) {
+      return _approximateAge.totalMonths;
+    }
+    final birthDate = _birthDate;
+    if (birthDate == null) return _approximateAge.totalMonths;
+    return AnimalLifecycleCalculator.calculate(
+      birthDate: birthDate,
+      species: _species,
+      sex: _sex,
+    ).ageMonths;
+  }
+
+  void _synchronizeTaxonomy() {
+    final ageMonths = _currentAgeMonths();
+    final categories = AnimalTaxonomy.categoriesFor(
+      species: _species,
+      sex: _sex,
+      ageMonths: ageMonths,
+      neutered: _reproductiveStatus == ReproductiveStatus.neutered,
     );
-
-    // ── Trigger: date ──────────────────────────────────────────────────────
-    if (newDate != null) {
-      _birthDate = newDate;
-      if (_species == Species.cattle) {
-        final ageMonths = AnimalLifecycleCalculator.calculate(
-          birthDate: newDate,
-          species: _species,
-          sex: _sex,
-        ).ageMonths;
-        final valid = _categoriesForAge(ageMonths);
-        if (!valid.contains(_category)) {
-          final neutered = _reproductiveStatus == ReproductiveStatus.neutered;
-          if (ageMonths < 12) {
-            _category = Category.calf;
-          } else if (ageMonths < 24) {
-            if (_sex == Sex.female) {
-              _category = Category.heifer;
-            } else if (neutered) {
-              _category = Category.steer;
-            } else {
-              _category = Category.youngBull;
-            }
-          } else {
-            if (_sex == Sex.female) {
-              _category = Category.cow;
-            } else if (neutered) {
-              _category = Category.oxen;
-            } else {
-              _category = Category.bull;
-            }
-          }
-        }
-      }
-      return;
-    }
-
-    // ── Trigger: category ─────────────────────────────────────────────────
-    if (newCategory != null) {
-      _category = newCategory;
-      final now = DateTime.now();
-
-      int? currentAgeMonths;
-      if (_birthDate != null && _species == Species.cattle) {
-        currentAgeMonths = AnimalLifecycleCalculator.calculate(
-          birthDate: _birthDate!,
-          species: _species,
-          sex: _sex,
-        ).ageMonths;
-      }
-
-      switch (newCategory) {
-        case Category.heifer:
-          _sex = Sex.female;
-          if (currentAgeMonths != null && currentAgeMonths < 12) {
-            _birthDate = now.subtract(const Duration(days: 366));
-            _dateAdjustedSnackbar = true;
-          }
-          if (_reproductiveStatus == ReproductiveStatus.neutered) {
-            _reproductiveStatus = ReproductiveStatus.unknown;
-          }
-        case Category.youngBull:
-          _sex = Sex.male;
-          if (currentAgeMonths != null && currentAgeMonths < 12) {
-            _birthDate = now.subtract(const Duration(days: 366));
-            _dateAdjustedSnackbar = true;
-          }
-          if (_reproductiveStatus == ReproductiveStatus.neutered) {
-            _reproductiveStatus = ReproductiveStatus.active;
-          }
-        case Category.steer:
-          _sex = Sex.male;
-          if (currentAgeMonths != null && currentAgeMonths < 12) {
-            _birthDate = now.subtract(const Duration(days: 366));
-            _dateAdjustedSnackbar = true;
-          }
-          _reproductiveStatus = ReproductiveStatus.neutered;
-        case Category.cow:
-          _sex = Sex.female;
-          if (currentAgeMonths != null && currentAgeMonths < 24) {
-            _birthDate = now.subtract(const Duration(days: 731));
-            _dateAdjustedSnackbar = true;
-          }
-          if (_reproductiveStatus == ReproductiveStatus.neutered) {
-            _reproductiveStatus = ReproductiveStatus.unknown;
-          }
-        case Category.bull:
-          _sex = Sex.male;
-          if (currentAgeMonths != null && currentAgeMonths < 24) {
-            _birthDate = now.subtract(const Duration(days: 731));
-            _dateAdjustedSnackbar = true;
-          }
-          if (_reproductiveStatus == ReproductiveStatus.neutered) {
-            _reproductiveStatus = ReproductiveStatus.active;
-          }
-        case Category.oxen:
-          _sex = Sex.male;
-          if (currentAgeMonths != null && currentAgeMonths < 24) {
-            _birthDate = now.subtract(const Duration(days: 731));
-            _dateAdjustedSnackbar = true;
-          }
-          _reproductiveStatus = ReproductiveStatus.neutered;
-        default:
-          break;
-      }
-      return;
-    }
-
-    // ── Trigger: sex ──────────────────────────────────────────────────────
-    if (newSex != null) {
-      _sex = newSex;
-      final neutered = _reproductiveStatus == ReproductiveStatus.neutered;
-
-      if (newSex == Sex.female) {
-        switch (_category) {
-          case Category.youngBull:
-          case Category.steer:
-            _category = Category.heifer;
-            if (neutered) _reproductiveStatus = ReproductiveStatus.unknown;
-          case Category.bull:
-            _category = Category.cow;
-          case Category.oxen:
-            _category = Category.cow;
-            if (neutered) _reproductiveStatus = ReproductiveStatus.unknown;
-          default:
-            break;
-        }
-      } else {
-        // male
-        switch (_category) {
-          case Category.heifer:
-            _category = neutered ? Category.steer : Category.youngBull;
-          case Category.cow:
-            _category = neutered ? Category.oxen : Category.bull;
-          default:
-            break;
-        }
-      }
-      return;
-    }
-
-    // ── Trigger: neutered toggle ──────────────────────────────────────────
-    if (newNeutered != null) {
-      if (newNeutered) {
-        _reproductiveStatus = ReproductiveStatus.neutered;
-        if (_sex == Sex.male) {
-          if (_category == Category.bull) _category = Category.oxen;
-          if (_category == Category.youngBull) _category = Category.steer;
-        }
-      } else {
-        _reproductiveStatus = _sex == Sex.female
-            ? ReproductiveStatus.unknown
-            : ReproductiveStatus.active;
-        if (_sex == Sex.male) {
-          if (_category == Category.oxen) _category = Category.bull;
-          if (_category == Category.steer) _category = Category.youngBull;
-        }
-      }
+    if (!categories.contains(_category)) {
+      _category = AnimalTaxonomy.defaultCategory(
+        species: _species,
+        sex: _sex,
+        ageMonths: ageMonths,
+        neutered: _reproductiveStatus == ReproductiveStatus.neutered,
+      );
     }
   }
 
-  // Helper flag — set inside _applyTriFieldCascade, consumed after setState
-  bool _dateAdjustedSnackbar = false;
+  void _onSpeciesChanged(Species species) {
+    setState(() {
+      _species = species;
+      if (!widget.isEdit) {
+        _selectedDamUuid = null;
+        _selectedSireUuid = null;
+        if (!_policy.purposeOptions.contains(_productionPurpose)) {
+          _productionPurpose = ProductionPurpose.undefined;
+        }
+        if (_policy.productionSystems.isNotEmpty &&
+            !_policy.productionSystems.contains(_productionSystem)) {
+          _productionSystem = _policy.productionSystems.first;
+        }
+        if (_policy.housingOptions.isNotEmpty &&
+            !_policy.housingOptions.contains(_housingType)) {
+          _housingType = _policy.housingOptions.first;
+        }
+      }
+      _synchronizeTaxonomy();
+      if (!_policy.supportsEarTagColor) {
+        _earTagColor = 'Amarillo';
+      }
+    });
+    _scheduleDraftSave();
+  }
 
-  void _maybShowDateAdjustedSnackbar() {
-    if (_dateAdjustedSnackbar) {
-      _dateAdjustedSnackbar = false;
-      _showMessage('Fecha ajustada a la edad mínima de la categoría.');
-    }
+  void _onSexChanged(Sex sex) {
+    setState(() {
+      _sex = sex;
+      if (sex == Sex.female &&
+          _reproductiveStatus == ReproductiveStatus.neutered) {
+        _reproductiveStatus = ReproductiveStatus.unknown;
+      }
+      _synchronizeTaxonomy();
+    });
+    _scheduleDraftSave();
+  }
+
+  void _onApproximateAgeChanged(ApproximateAge age) {
+    setState(() {
+      _approximateAge = age;
+      _ageMonthsCtrl.text = age.totalMonths.toString();
+      _birthDate = null;
+      _synchronizeTaxonomy();
+    });
+    _scheduleDraftSave();
+  }
+
+  void _changeBirthInputMode(_BirthInputMode mode) {
+    if (mode == _birthInputMode) return;
+    setState(() {
+      if (mode == _BirthInputMode.approximate) {
+        final birthDate = _birthDate;
+        if (birthDate != null) {
+          final lifecycle = AnimalLifecycleCalculator.calculate(
+            birthDate: birthDate,
+            species: _species,
+            sex: _sex,
+          );
+          _approximateAge = ApproximateAge.fromTotalMonths(lifecycle.ageMonths);
+          _ageMonthsCtrl.text = _approximateAge.totalMonths.toString();
+        }
+        _birthDate = null;
+      } else {
+        _birthDate = _approximateAge.estimatedBirthDate();
+        _ageMonthsCtrl.clear();
+      }
+      _birthInputMode = mode;
+      _synchronizeTaxonomy();
+    });
+    _scheduleDraftSave();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -2271,8 +2228,17 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
     if (picked == null) return;
     setState(() {
-      _applyTriFieldCascade(newDate: picked);
+      _birthDate = picked;
+      final lifecycle = AnimalLifecycleCalculator.calculate(
+        birthDate: picked,
+        species: _species,
+        sex: _sex,
+      );
+      _approximateAge = ApproximateAge.fromTotalMonths(lifecycle.ageMonths);
+      _ageMonthsCtrl.clear();
+      _synchronizeTaxonomy();
     });
+    _scheduleDraftSave();
   }
 
   Future<void> _pickRegistrationDate() async {
@@ -2297,7 +2263,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         return;
       }
 
-      if (_earTagCtrl.text.trim().isEmpty) {
+      if (_policy.tracksPendingEarTag && _earTagCtrl.text.trim().isEmpty) {
         final continueWithoutEarTag = await _confirmMissingEarTag();
         if (!mounted || !continueWithoutEarTag) return;
       } else {
@@ -2314,6 +2280,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     setState(() {
       _currentStep += 1;
     });
+    await _persistDraft();
   }
 
   Future<void> _onAttemptExit() async {
@@ -2381,6 +2348,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     'reproductiveStatus': _reproductiveStatus.name,
     // Dates
     'birthDate': _birthDate?.toIso8601String(),
+    'birthInputMode': _birthInputMode.name,
     'registrationDate': _registrationDate.toIso8601String(),
     // UUID selections
     'provenanceUuid': _selectedProvenanceUuid,
@@ -2570,6 +2538,24 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       // Dates
       final birthStr = m['birthDate'] as String?;
       _birthDate = birthStr != null ? DateTime.tryParse(birthStr) : null;
+      _birthInputMode = safeEnum(
+        _BirthInputMode.values,
+        m['birthInputMode'] as String?,
+        _birthDate == null
+            ? _BirthInputMode.approximate
+            : _BirthInputMode.exact,
+      );
+      final draftAge = _parseOptionalInt(_ageMonthsCtrl.text);
+      if (draftAge != null) {
+        _approximateAge = ApproximateAge.fromTotalMonths(draftAge);
+      } else if (_birthDate != null) {
+        final lifecycle = AnimalLifecycleCalculator.calculate(
+          birthDate: _birthDate!,
+          species: _species,
+          sex: _sex,
+        );
+        _approximateAge = ApproximateAge.fromTotalMonths(lifecycle.ageMonths);
+      }
       final regStr = m['registrationDate'] as String?;
       _registrationDate = regStr != null
           ? (DateTime.tryParse(regStr) ?? _registrationDate)
@@ -2615,6 +2601,18 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       _reproductions
         ..clear()
         ..addAll(parseReproductionRecords(m['reproductions']));
+      if (!_policy.purposeOptions.contains(_productionPurpose)) {
+        _productionPurpose = ProductionPurpose.undefined;
+      }
+      if (_policy.productionSystems.isNotEmpty &&
+          !_policy.productionSystems.contains(_productionSystem)) {
+        _productionSystem = _policy.productionSystems.first;
+      }
+      if (_policy.housingOptions.isNotEmpty &&
+          !_policy.housingOptions.contains(_housingType)) {
+        _housingType = _policy.housingOptions.first;
+      }
+      _synchronizeTaxonomy();
     });
   }
 
@@ -2644,6 +2642,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     setState(() {
       _currentStep -= 1;
     });
+    _persistDraft();
   }
 
   bool get _canFinishRegistration {
@@ -2652,15 +2651,18 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   bool get _showReproductionSection {
-    if (_species != Species.cattle) return false;
+    if (!_policy.supportsReproduction) return false;
     if (_reproductiveStatus == ReproductiveStatus.neutered) return false;
-    const eligible = {
-      Category.heifer,
-      Category.cow,
-      Category.youngBull,
-      Category.bull,
+    final minimumAge = switch (_species) {
+      Species.cattle => 12,
+      Species.equine => 36,
+      Species.sheep || Species.goat || Species.pig => 12,
+      Species.canine => 18,
+      Species.poultry || Species.other => 9999,
     };
-    return eligible.contains(_category);
+    return _currentAgeMonths() >= minimumAge ||
+        _productionPurpose == ProductionPurpose.breeding ||
+        _category == Category.reproduction;
   }
 
   Future<void> _onSave() async {
@@ -2669,12 +2671,14 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       return;
     }
 
-    if (_earTagCtrl.text.trim().isEmpty) {
+    if (_policy.tracksPendingEarTag && _earTagCtrl.text.trim().isEmpty) {
       final continueWithoutEarTag = await _confirmMissingEarTag();
       if (!mounted || !continueWithoutEarTag) return;
     }
 
-    final birthDate = _birthDate ?? _estimatedBirthDate(_category);
+    final birthDate = _birthInputMode == _BirthInputMode.exact
+        ? (_birthDate ?? _approximateAge.estimatedBirthDate())
+        : _approximateAge.estimatedBirthDate();
 
     final weight = _parseOptionalDouble(_weightCtrl.text);
     if (_weightCtrl.text.trim().isNotEmpty && weight == null) {
@@ -2682,11 +2686,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       return;
     }
 
-    final manualAgeMonths = _parseOptionalInt(_ageMonthsCtrl.text);
-    if (_ageMonthsCtrl.text.trim().isNotEmpty && manualAgeMonths == null) {
-      _showMessage('La edad aproximada no es valida.');
-      return;
-    }
+    final manualAgeMonths = _birthInputMode == _BirthInputMode.approximate
+        ? _approximateAge.totalMonths
+        : null;
 
     final bloodPercentage = _parseOptionalInt(_bloodPercentageCtrl.text);
     if (_bloodPercentageCtrl.text.trim().isNotEmpty &&
@@ -2749,154 +2751,168 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     final normalizedVisualId =
         _nullableText(_visualIdCtrl.text) ?? normalizedName;
 
-    final animal = widget.isEdit
-        ? _editingAnimal!.copyWith(
-            earTagNumber: _earTagCtrl.text.trim(),
-            customName: normalizedName,
-            visualId: normalizedVisualId,
-            batchUuid: _selectedBatchUuid,
-            species: _species,
-            category: _category,
-            lifeStage: resolvedLifeStage,
-            sex: _sex,
-            breed: _breedCtrl.text.trim().isEmpty
-                ? 'Desconocido'
-                : _breedCtrl.text.trim(),
-            crossBreed: _nullableText(_crossBreedCtrl.text),
-            birthDate: birthDate,
-            ageMonths: resolvedAgeMonths,
-            weight: weight,
-            sireUuid: _selectedSireUuid,
-            damUuid: _selectedDamUuid,
-            healthStatus: healthTuple.healthStatus,
-            bodyConditionScore: _bodyConditionScore,
-            vaccinated: _vaccinations.isNotEmpty,
-            dewormed: _treatments.any(
-              (record) => record.type == HealthRecordType.deworming,
+    final animal = AnimalRegistrationNormalizer.normalizeEntity(
+      widget.isEdit
+          ? _editingAnimal!.copyWith(
+              earTagNumber: _earTagCtrl.text.trim(),
+              customName: normalizedName,
+              visualId: normalizedVisualId,
+              batchUuid: _selectedBatchUuid,
+              species: _species,
+              category: _category,
+              lifeStage: resolvedLifeStage,
+              sex: _sex,
+              breed: _breedCtrl.text,
+              crossBreed: _nullableText(_crossBreedCtrl.text),
+              birthDate: birthDate,
+              ageMonths: resolvedAgeMonths,
+              weight: weight,
+              sireUuid: _selectedSireUuid,
+              damUuid: _selectedDamUuid,
+              healthStatus: healthTuple.healthStatus,
+              bodyConditionScore: _policy.supportsBodyConditionScore
+                  ? _bodyConditionScore
+                  : _editingAnimal!.bodyConditionScore,
+              vaccinated: _vaccinations.isNotEmpty,
+              dewormed: _treatments.any(
+                (record) => record.type == HealthRecordType.deworming,
+              ),
+              hasVitamins: _treatments.any(
+                (record) => record.type == HealthRecordType.vitamins,
+              ),
+              hasChronicIssues: _healthMode == _InitialHealthMode.problem,
+              chronicNotes: _nullableText(_healthNotesCtrl.text),
+              reproductiveStatus: _reproductiveStatus,
+              productionPurpose: _productionPurpose,
+              productionSystem: _policy.productionSystems.isEmpty
+                  ? _editingAnimal!.productionSystem
+                  : _productionSystem,
+              feedType: _nullableText(_feedTypeCtrl.text),
+              coatColor: _nullableText(_coatColorCtrl.text),
+              distinguishingMarks: _nullableText(_distinguishingMarksCtrl.text),
+              notes: _nullableText(_notesCtrl.text),
+              originType: _originType,
+              provenance: _selectedProvenanceUuid,
+              crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
+              sireBreed: _nullableText(_sireBreedCtrl.text),
+              damBreed: _nullableText(_damBreedCtrl.text),
+              bloodPercentage: bloodPercentage,
+              genealogicalRegistry: _nullableText(
+                _genealogicalRegistryCtrl.text,
+              ),
+              originNotes: _nullableText(_originNotesCtrl.text),
+              housingType: _nullableText(_housingType),
+              shadingAvailability: _nullableText(_shadingAvailability),
+              animalWaterSource: _nullableText(_waterSource),
+              approximateDensity: _nullableText(_approximateDensityCtrl.text),
+              locationNotes: _nullableText(_locationNotesCtrl.text),
+              feedFrequency: _nullableText(_feedFrequency),
+              feedSupplements: _nullableText(_feedSupplements),
+              feedNotes: _nullableText(_feedNotesCtrl.text),
+              earTagColor: _policy.supportsEarTagColor
+                  ? _nullableText(_earTagColor)
+                  : _editingAnimal!.earTagColor,
+              currentLocationId: _selectedPaddockUuid,
+              initialLocationId:
+                  _editingAnimal!.initialLocationId ??
+                  _selectedPaddockUuid ??
+                  _selectedRanchUuid,
+              lastMovementDate: _registrationDate,
+              underObservation: healthTuple.underObservation,
+              requiresAttention: healthTuple.requiresAttention,
+              riskLevel: healthTuple.riskLevel,
+              status: _status,
+              synced: false,
+              lastUpdateDate: now,
+            )
+          : AnimalEntity(
+              id: null,
+              uuid: uuid,
+              earTagNumber: _earTagCtrl.text.trim(),
+              customName: normalizedName,
+              visualId: normalizedVisualId,
+              brand: null,
+              rfidTag: null,
+              batchUuid: _selectedBatchUuid,
+              species: _species,
+              category: _category,
+              lifeStage: resolvedLifeStage,
+              sex: _sex,
+              breed: _breedCtrl.text,
+              crossBreed: _nullableText(_crossBreedCtrl.text),
+              birthDate: birthDate,
+              ageMonths: resolvedAgeMonths,
+              weight: weight,
+              sireUuid: _selectedSireUuid,
+              damUuid: _selectedDamUuid,
+              generation: 1,
+              healthStatus: healthTuple.healthStatus,
+              bodyConditionScore: _policy.supportsBodyConditionScore
+                  ? _bodyConditionScore
+                  : null,
+              vaccinated: _vaccinations.isNotEmpty,
+              dewormed: _treatments.any(
+                (record) => record.type == HealthRecordType.deworming,
+              ),
+              hasVitamins: _treatments.any(
+                (record) => record.type == HealthRecordType.vitamins,
+              ),
+              hasChronicIssues: _healthMode == _InitialHealthMode.problem,
+              chronicNotes: _nullableText(_healthNotesCtrl.text),
+              reproductiveStatus: derivedReproStatus,
+              firstServiceDate: derivedFirstService,
+              lastServiceDate: derivedLastService,
+              expectedCalvingDate: derivedCalvingDate,
+              productionPurpose: _productionPurpose,
+              productionStage: ProductionStage.unknown,
+              productionSystem: _policy.productionSystems.isEmpty
+                  ? ProductionSystem.unknown
+                  : _productionSystem,
+              feedType: _nullableText(_feedTypeCtrl.text),
+              dailyGainEstimate: null,
+              coatColor: _nullableText(_coatColorCtrl.text),
+              distinguishingMarks: _nullableText(_distinguishingMarksCtrl.text),
+              notes: _nullableText(_notesCtrl.text),
+              originType: _originType,
+              provenance: _selectedProvenanceUuid,
+              crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
+              sireBreed: _nullableText(_sireBreedCtrl.text),
+              damBreed: _nullableText(_damBreedCtrl.text),
+              bloodPercentage: bloodPercentage,
+              genealogicalRegistry: _nullableText(
+                _genealogicalRegistryCtrl.text,
+              ),
+              originNotes: _nullableText(_originNotesCtrl.text),
+              housingType: _nullableText(_housingType),
+              shadingAvailability: _nullableText(_shadingAvailability),
+              animalWaterSource: _nullableText(_waterSource),
+              approximateDensity: _nullableText(_approximateDensityCtrl.text),
+              locationNotes: _nullableText(_locationNotesCtrl.text),
+              feedFrequency: _nullableText(_feedFrequency),
+              feedSupplements: _nullableText(_feedSupplements),
+              feedNotes: _nullableText(_feedNotesCtrl.text),
+              earTagColor: _policy.supportsEarTagColor
+                  ? _nullableText(_earTagColor)
+                  : null,
+              currentLocationId: _selectedPaddockUuid,
+              initialLocationId: _selectedPaddockUuid ?? _selectedRanchUuid,
+              lastMovementDate: _registrationDate,
+              underObservation: healthTuple.underObservation,
+              requiresAttention: healthTuple.requiresAttention,
+              riskLevel: healthTuple.riskLevel,
+              profilePhoto: null,
+              gallery: const [],
+              owner: null,
+              purchasePrice: null,
+              status: _status,
+              synced: false,
+              remoteId: null,
+              syncDate: null,
+              contentHash: null,
+              creationDate: now,
+              lastUpdateDate: now,
             ),
-            hasVitamins: _treatments.any(
-              (record) => record.type == HealthRecordType.vitamins,
-            ),
-            hasChronicIssues: _healthMode == _InitialHealthMode.problem,
-            chronicNotes: _nullableText(_healthNotesCtrl.text),
-            reproductiveStatus: _reproductiveStatus,
-            productionPurpose: _productionPurpose,
-            productionSystem: _productionSystem,
-            feedType: _nullableText(_feedTypeCtrl.text),
-            coatColor: _nullableText(_coatColorCtrl.text),
-            distinguishingMarks: _nullableText(_distinguishingMarksCtrl.text),
-            notes: _nullableText(_notesCtrl.text),
-            originType: _originType.name,
-            provenance: _selectedProvenanceUuid,
-            crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
-            sireBreed: _nullableText(_sireBreedCtrl.text),
-            damBreed: _nullableText(_damBreedCtrl.text),
-            bloodPercentage: bloodPercentage,
-            genealogicalRegistry: _nullableText(_genealogicalRegistryCtrl.text),
-            originNotes: _nullableText(_originNotesCtrl.text),
-            housingType: _nullableText(_housingType),
-            shadingAvailability: _nullableText(_shadingAvailability),
-            animalWaterSource: _nullableText(_waterSource),
-            approximateDensity: _nullableText(_approximateDensityCtrl.text),
-            locationNotes: _nullableText(_locationNotesCtrl.text),
-            feedFrequency: _nullableText(_feedFrequency),
-            feedSupplements: _nullableText(_feedSupplements),
-            feedNotes: _nullableText(_feedNotesCtrl.text),
-            earTagColor: _nullableText(_earTagColor),
-            currentLocationId: _selectedPaddockUuid,
-            initialLocationId:
-                _editingAnimal!.initialLocationId ??
-                _selectedPaddockUuid ??
-                _selectedRanchUuid,
-            lastMovementDate: _registrationDate,
-            underObservation: healthTuple.underObservation,
-            requiresAttention: healthTuple.requiresAttention,
-            riskLevel: healthTuple.riskLevel,
-            status: _status,
-            synced: false,
-            lastUpdateDate: now,
-          )
-        : AnimalEntity(
-            id: null,
-            uuid: uuid,
-            earTagNumber: _earTagCtrl.text.trim(),
-            customName: normalizedName,
-            visualId: normalizedVisualId,
-            brand: null,
-            rfidTag: null,
-            batchUuid: _selectedBatchUuid,
-            species: _species,
-            category: _category,
-            lifeStage: resolvedLifeStage,
-            sex: _sex,
-            breed: _breedCtrl.text.trim().isEmpty
-                ? 'Desconocido'
-                : _breedCtrl.text.trim(),
-            crossBreed: _nullableText(_crossBreedCtrl.text),
-            birthDate: birthDate,
-            ageMonths: resolvedAgeMonths,
-            weight: weight,
-            sireUuid: _selectedSireUuid,
-            damUuid: _selectedDamUuid,
-            generation: 1,
-            healthStatus: healthTuple.healthStatus,
-            bodyConditionScore: _bodyConditionScore,
-            vaccinated: _vaccinations.isNotEmpty,
-            dewormed: _treatments.any(
-              (record) => record.type == HealthRecordType.deworming,
-            ),
-            hasVitamins: _treatments.any(
-              (record) => record.type == HealthRecordType.vitamins,
-            ),
-            hasChronicIssues: _healthMode == _InitialHealthMode.problem,
-            chronicNotes: _nullableText(_healthNotesCtrl.text),
-            reproductiveStatus: derivedReproStatus,
-            firstServiceDate: derivedFirstService,
-            lastServiceDate: derivedLastService,
-            expectedCalvingDate: derivedCalvingDate,
-            productionPurpose: _productionPurpose,
-            productionStage: ProductionStage.unknown,
-            productionSystem: _productionSystem,
-            feedType: _nullableText(_feedTypeCtrl.text),
-            dailyGainEstimate: null,
-            coatColor: _nullableText(_coatColorCtrl.text),
-            distinguishingMarks: _nullableText(_distinguishingMarksCtrl.text),
-            notes: _nullableText(_notesCtrl.text),
-            originType: _originType.name,
-            provenance: _selectedProvenanceUuid,
-            crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
-            sireBreed: _nullableText(_sireBreedCtrl.text),
-            damBreed: _nullableText(_damBreedCtrl.text),
-            bloodPercentage: bloodPercentage,
-            genealogicalRegistry: _nullableText(_genealogicalRegistryCtrl.text),
-            originNotes: _nullableText(_originNotesCtrl.text),
-            housingType: _nullableText(_housingType),
-            shadingAvailability: _nullableText(_shadingAvailability),
-            animalWaterSource: _nullableText(_waterSource),
-            approximateDensity: _nullableText(_approximateDensityCtrl.text),
-            locationNotes: _nullableText(_locationNotesCtrl.text),
-            feedFrequency: _nullableText(_feedFrequency),
-            feedSupplements: _nullableText(_feedSupplements),
-            feedNotes: _nullableText(_feedNotesCtrl.text),
-            earTagColor: _nullableText(_earTagColor),
-            currentLocationId: _selectedPaddockUuid,
-            initialLocationId: _selectedPaddockUuid ?? _selectedRanchUuid,
-            lastMovementDate: _registrationDate,
-            underObservation: healthTuple.underObservation,
-            requiresAttention: healthTuple.requiresAttention,
-            riskLevel: healthTuple.riskLevel,
-            profilePhoto: null,
-            gallery: const [],
-            owner: null,
-            purchasePrice: null,
-            status: _status,
-            synced: false,
-            remoteId: null,
-            syncDate: null,
-            contentHash: null,
-            creationDate: now,
-            lastUpdateDate: now,
-          );
+    );
 
     setState(() {
       _saving = true;
@@ -3003,103 +3019,58 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   List<Category> get _availableCategories {
-    final birthDate = _birthDate;
-    final manualAge = _parseOptionalInt(_ageMonthsCtrl.text);
-    if (birthDate == null) {
-      final base = AnimalTaxonomy.categoriesFor(
-        species: _species,
-        sex: _sex,
-        ageMonths: manualAge,
-      ).toList(growable: true);
-      if (!base.contains(_category)) base.add(_category);
-      return base;
-    }
-
-    final ageMonths = AnimalLifecycleCalculator.calculate(
-      birthDate: birthDate,
-      species: _species,
-      sex: _sex,
-    ).ageMonths;
-
     final filtered = AnimalTaxonomy.categoriesFor(
       species: _species,
       sex: _sex,
-      ageMonths: ageMonths,
+      ageMonths: _currentAgeMonths(),
+      neutered: _reproductiveStatus == ReproductiveStatus.neutered,
     );
-    if (!filtered.contains(_category)) return [...filtered, _category];
+    if (widget.isEdit && !filtered.contains(_category)) {
+      return [...filtered, _category];
+    }
     return filtered;
-  }
-
-  List<Category> _categoriesForAge(int ageMonths) {
-    return AnimalTaxonomy.categoriesFor(
-      species: _species,
-      sex: _sex,
-      ageMonths: ageMonths,
-    );
-  }
-
-  String? _estimatedAgeLabel(Category c) {
-    switch (c) {
-      case Category.calf:
-        return '~0 a 6 meses estimado';
-      case Category.weaned:
-        return '~6 a 12 meses estimado';
-      case Category.heifer:
-      case Category.youngBull:
-      case Category.steer:
-        return '~12 a 24 meses estimado';
-      case Category.cow:
-      case Category.bull:
-      case Category.oxen:
-        return 'Más de 24 meses estimado';
-      case Category.juvenile:
-        return '~0 a 12 meses estimado';
-      case Category.grower:
-        return '~12 a 24 meses estimado';
-      case Category.fattening:
-      case Category.production:
-      case Category.reproduction:
-      case Category.work:
-      case Category.guard:
-        return 'Adulto estimado';
-      default:
-        return null;
-    }
-  }
-
-  DateTime _estimatedBirthDate(Category c) {
-    final now = DateTime.now();
-    switch (c) {
-      case Category.calf:
-        return now.subtract(const Duration(days: 90));
-      case Category.weaned:
-        return now.subtract(const Duration(days: 270));
-      case Category.heifer:
-      case Category.youngBull:
-      case Category.steer:
-        return now.subtract(const Duration(days: 540));
-      case Category.cow:
-      case Category.bull:
-      case Category.oxen:
-        return now.subtract(const Duration(days: 900));
-      case Category.juvenile:
-        return now.subtract(const Duration(days: 180));
-      case Category.grower:
-        return now.subtract(const Duration(days: 540));
-      case Category.fattening:
-      case Category.production:
-      case Category.reproduction:
-      case Category.work:
-      case Category.guard:
-        return now.subtract(const Duration(days: 900));
-      default:
-        return now.subtract(const Duration(days: 365));
-    }
   }
 
   List<LocationEntity> get _ranches {
     return _locations.where((location) => location.type.isRootType).toList();
   }
+
+  /// Candidate parents of [sex], excluding the animal itself and everything
+  /// descended from it: offering a daughter as a mother would record the
+  /// animal as its own ancestor and turn the pedigree into a cycle.
+  ///
+  /// [alreadySelectedUuid] is kept in the list while editing so an existing
+  /// choice never silently disappears from the dropdown.
+  List<AnimalEntity> _eligibleParents(Sex sex, String? alreadySelectedUuid) {
+    const pedigree = PedigreeService();
+    final editing = _editingAnimal;
+
+    final allowed = editing == null
+        ? _animals.where(
+            (animal) => animal.species == _species && animal.sex == sex,
+          )
+        : pedigree.candidateParents(
+            herd: _animals,
+            sex: sex,
+            excluding: editing,
+          );
+
+    final result = allowed.toList();
+    if (widget.isEdit && alreadySelectedUuid != null &&
+        !result.any((animal) => animal.uuid == alreadySelectedUuid)) {
+      final selected = _animals
+          .where((animal) => animal.uuid == alreadySelectedUuid)
+          .toList();
+      result.addAll(selected);
+    }
+    return result;
+  }
+
+  List<AnimalEntity> get _eligibleMothers =>
+      _eligibleParents(Sex.female, _selectedDamUuid);
+
+  List<AnimalEntity> get _eligibleFathers =>
+      _eligibleParents(Sex.male, _selectedSireUuid);
 
   LocationEntity? get _firstRanch {
     if (_ranches.isEmpty) return null;
@@ -3129,16 +3100,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   Future<bool> _isEarTagDuplicated(String earTag) async {
-    final normalized = earTag.trim();
-    if (normalized.isEmpty) {
-      return false;
-    }
     final animals = await _animalRepository.getAll();
-    final editingUuid = _editingAnimal?.uuid;
-    return animals.any(
-      (animal) =>
-          animal.uuid != editingUuid &&
-          animal.earTagNumber.trim() == normalized,
+    return AnimalRegistrationNormalizer.isDuplicateIdentification(
+      candidate: earTag,
+      animals: animals,
+      excludingUuid: _editingAnimal?.uuid,
     );
   }
 
@@ -3146,6 +3112,74 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showRegistrationHelp() {
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Cómo funciona el registro',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 16),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.auto_awesome_outlined),
+              title: Text('Adaptado a la especie'),
+              subtitle: Text(
+                'Categorías, propósitos e identificación cambian '
+                'automáticamente.',
+              ),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.pending_actions_outlined),
+              title: Text('Aretes pendientes'),
+              subtitle: Text(
+                'En bovinos, ovinos, caprinos y porcinos puedes guardar sin '
+                'arete y completarlo después.',
+              ),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.save_outlined),
+              title: Text('Borrador automático'),
+              subtitle: Text(
+                'Tus cambios se guardan mientras avanzas para poder continuar '
+                'más tarde.',
+              ),
+            ),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.info_outline),
+              title: Text('Campos opcionales'),
+              subtitle: Text(
+                'Nombre, raza y peso pueden completarse ahora o posteriormente.',
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(sheetContext).pop(),
+                child: const Text('Entendido'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _formatDate(DateTime value) {
@@ -3206,10 +3240,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   Future<bool> _confirmMissingEarTag() {
     return _confirmDiscardDialog(
-      title: 'Arete recomendado',
+      title: 'Dejar arete pendiente',
       message:
-          'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
-      confirmLabel: 'Continuar sin arete',
+          'El animal quedará registrado y aparecerá en tus pendientes hasta '
+          'que agregues el número de arete.',
+      confirmLabel: 'Guardar como pendiente',
     );
   }
 
@@ -3252,6 +3287,8 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 }
 
 enum _InitialHealthMode { healthy, observation, problem }
+
+enum _BirthInputMode { approximate, exact }
 
 class _ResolvedHealth {
   const _ResolvedHealth({
