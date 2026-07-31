@@ -102,7 +102,7 @@ class _FormFakeLocationRepository implements LocationRepository {
   Future<void> addRain(String uuid, RainRecord record) async {}
 
   @override
-  Future<void> addCost(String uuid, CostRecord record) async {}
+  Future<void> addCost(String uuid, LocationCostRecord record) async {}
 
   @override
   Future<void> addCrop(String locationUuid, CropRecord crop) async {}

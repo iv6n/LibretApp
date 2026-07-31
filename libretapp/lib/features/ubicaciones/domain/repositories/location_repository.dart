@@ -20,7 +20,7 @@ abstract class LocationRepository {
   Future<void> addSeeding(String uuid, SeedingRecord record);
   Future<void> addIrrigation(String uuid, IrrigationRecord record);
   Future<void> addRain(String uuid, RainRecord record);
-  Future<void> addCost(String uuid, CostRecord record);
+  Future<void> addCost(String uuid, LocationCostRecord record);
 
   // Crop management
   Future<void> addCrop(String locationUuid, CropRecord crop);

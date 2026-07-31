@@ -7,6 +7,7 @@ import '../enums/animal_status.dart';
 import '../enums/category.dart';
 import '../enums/health_status.dart';
 import '../enums/life_stage.dart';
+import '../enums/origin_type.dart';
 import '../enums/production_purpose.dart';
 import '../enums/production_stage.dart';
 import '../enums/production_system.dart';
@@ -162,7 +163,7 @@ class AnimalEntity extends Equatable {
   final String? coatColor;
   final String? distinguishingMarks;
   final String? notes;
-  final String? originType;
+  final OriginType? originType;
   final String? provenance;
   final String? crossBreedType;
   final String? sireBreed;
@@ -336,7 +337,7 @@ class AnimalEntity extends Equatable {
         this.distinguishingMarks,
       ),
       notes: nullable<String>(notes, this.notes),
-      originType: nullable<String>(originType, this.originType),
+      originType: nullable<OriginType>(originType, this.originType),
       provenance: nullable<String>(provenance, this.provenance),
       crossBreedType: nullable<String>(crossBreedType, this.crossBreedType),
       sireBreed: nullable<String>(sireBreed, this.sireBreed),

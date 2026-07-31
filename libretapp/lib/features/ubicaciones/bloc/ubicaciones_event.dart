@@ -163,7 +163,7 @@ class AddRainRecordEvent extends UbicacionesEvent {
 class AddCostRecordEvent extends UbicacionesEvent {
   const AddCostRecordEvent(this.uuid, this.record);
   final String uuid;
-  final CostRecord record;
+  final LocationCostRecord record;
 
   @override
   List<Object> get props => [uuid, record];

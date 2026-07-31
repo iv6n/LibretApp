@@ -129,7 +129,7 @@ class IsarLocationRepository implements LocationRepository {
   }
 
   @override
-  Future<void> addCost(String uuid, CostRecord record) async {
+  Future<void> addCost(String uuid, LocationCostRecord record) async {
     await _modify(uuid, (location) {
       location.costs.add(IsarLocationCostRecord.fromEntity(record));
     });
@@ -331,7 +331,7 @@ class IsarLocationRepository implements LocationRepository {
         ),
       ],
       costs: [
-        CostRecord(
+        LocationCostRecord(
           date: now.subtract(const Duration(days: 14)),
           maintenance: 300,
           fences: 150,

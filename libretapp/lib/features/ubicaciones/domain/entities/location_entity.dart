@@ -81,7 +81,7 @@ class LocationEntity extends Equatable {
   final List<SeedingRecord> seedings;
   final List<IrrigationRecord> irrigations;
   final List<RainRecord> rains;
-  final List<CostRecord> costs;
+  final List<LocationCostRecord> costs;
   final List<CropRecord> crops;
 
   /// Effective category: explicit override first, otherwise derived from type.
@@ -132,7 +132,7 @@ class LocationEntity extends Equatable {
     List<SeedingRecord>? seedings,
     List<IrrigationRecord>? irrigations,
     List<RainRecord>? rains,
-    List<CostRecord>? costs,
+    List<LocationCostRecord>? costs,
     List<CropRecord>? crops,
   }) {
     return LocationEntity(

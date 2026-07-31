@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/animal_statu
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/health_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/origin_type.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -148,7 +149,7 @@ class AnimalDto {
       coatColor: entity.coatColor,
       distinguishingMarks: entity.distinguishingMarks,
       notes: entity.notes,
-      originType: entity.originType,
+      originType: entity.originType?.name,
       provenance: entity.provenance,
       crossBreedType: entity.crossBreedType,
       sireBreed: entity.sireBreed,
@@ -423,7 +424,8 @@ class AnimalDto {
       coatColor: coatColor,
       distinguishingMarks: distinguishingMarks,
       notes: notes,
-      originType: originType,
+      // Tolerates the Spanish labels older builds wrote to this field.
+      originType: OriginType.fromStored(originType),
       provenance: provenance,
       crossBreedType: crossBreedType,
       sireBreed: sireBreed,

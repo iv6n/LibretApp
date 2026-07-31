@@ -128,13 +128,16 @@ class RainRecord extends Equatable {
   List<Object?> get props => [date, millimeters, location];
 }
 
-// NOTE: This CostRecord shares its name with the animal CostRecord in
-// features/directorio/animales/domain/entities/cost_record.dart.
-// If both are needed in the same file, use a prefix import:
-//   import '...' as location;
-//   location.CostRecord(...)
-class CostRecord extends Equatable {
-  const CostRecord({
+/// Upkeep spending booked against a location.
+///
+/// Named for its owner rather than plain `CostRecord` so it never collides
+/// with the animal-side cost record in
+/// features/directorio/animales/domain/entities/cost_record.dart — the two
+/// model different things and used to force prefixed imports wherever both
+/// were in scope. The Isar side has always been `IsarLocationCostRecord`, so
+/// the stored schema is unaffected by this name.
+class LocationCostRecord extends Equatable {
+  const LocationCostRecord({
     required this.date,
     required this.maintenance,
     required this.fences,
@@ -149,7 +152,7 @@ class CostRecord extends Equatable {
   final Money labor;
   final Money total;
 
-  CostRecord copyWith({
+  LocationCostRecord copyWith({
     DateTime? date,
     Money? maintenance,
     Money? fences,
@@ -157,7 +160,7 @@ class CostRecord extends Equatable {
     Money? labor,
     Money? total,
   }) {
-    return CostRecord(
+    return LocationCostRecord(
       date: date ?? this.date,
       maintenance: maintenance ?? this.maintenance,
       fences: fences ?? this.fences,

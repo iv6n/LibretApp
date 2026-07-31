@@ -52,7 +52,7 @@ AnimalEntity _fullyPopulatedAnimal() {
     coatColor: 'Negro',
     distinguishingMarks: 'Mancha blanca en frente',
     notes: 'Animal tranquilo',
-    originType: 'Compra',
+    originType: OriginType.purchased,
     provenance: 'Rancho vecino',
     crossBreedType: 'F1',
     sireBreed: 'Holstein',
@@ -131,5 +131,22 @@ void main() {
 
       expect(restored.status, AnimalStatus.active);
     });
+
+    test(
+      'round-trips every production purpose including adaptive additions',
+      () {
+        for (final purpose in ProductionPurpose.values) {
+          final animal = _fullyPopulatedAnimal().copyWith(
+            productionPurpose: purpose,
+          );
+
+          final restored = AnimalDto.fromJson(
+            AnimalDto.fromEntity(animal).toJson(),
+          ).toEntity();
+
+          expect(restored.productionPurpose, purpose, reason: purpose.name);
+        }
+      },
+    );
   });
 }

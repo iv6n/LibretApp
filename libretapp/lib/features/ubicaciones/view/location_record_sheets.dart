@@ -741,7 +741,7 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
         : (double.tryParse(_totalController.text) ??
               maintenance + fences + repairs + labor);
 
-    final record = CostRecord(
+    final record = LocationCostRecord(
       date: DateTime.now(),
       maintenance: maintenance,
       fences: fences,

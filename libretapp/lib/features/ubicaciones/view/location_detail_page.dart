@@ -328,7 +328,7 @@ class _LocationDetailView extends StatelessWidget {
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<CostRecord>(
+    final record = await _openRecordFormPage<LocationCostRecord>(
       context,
       CostRecordSheet(locationName: location.name),
     );
