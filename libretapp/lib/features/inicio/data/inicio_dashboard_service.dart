@@ -1,10 +1,11 @@
-﻿/// features \u203a inicio \u203a data \u203a inicio_dashboard_service \u2014 service that aggregates data for the home dashboard.
+/// features \u203a inicio \u203a data \u203a inicio_dashboard_service \u2014 service that aggregates data for the home dashboard.
 library;
 
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -75,6 +76,7 @@ class InicioDashboardService {
 
     final unvaccinated = animals.where((a) => !a.vaccinated).length;
     final underObservation = animals.where((a) => a.underObservation).length;
+    final pendingEarTags = animals.where(hasPendingEarTag).length;
 
     // Category breakdown – only categories with ≥1 animal.
     final categoryTotals = <Category, ({int male, int female})>{};
@@ -143,7 +145,7 @@ class InicioDashboardService {
           title: 'Animales con prioridad alta',
           message: '$attentionAnimals requieren revision inmediata.',
           severity: InicioAlertSeverity.critical,
-          targetRoute: AppRoutes.animales,
+          targetRoute: AppRoutes.animalesPath(attention: true),
         ),
       );
     }
@@ -198,7 +200,7 @@ class InicioDashboardService {
         InicioTaskItem(
           title: 'Seguir animales en observacion',
           message: '$underObservation animales con seguimiento activo.',
-          targetRoute: AppRoutes.animales,
+          targetRoute: AppRoutes.animalesPath(attention: true),
         ),
       );
     }
@@ -219,6 +221,19 @@ class InicioDashboardService {
           title: 'Crear un lote activo',
           message: 'Agrupa animales para gestionar campanas y recorridos.',
           targetRoute: AppRoutes.directorio,
+        ),
+      );
+    }
+
+    if (pendingEarTags > 0) {
+      tasks.add(
+        InicioTaskItem(
+          title: 'Asignar aretes pendientes',
+          message:
+              '$pendingEarTags animal${pendingEarTags == 1 ? '' : 'es'} '
+              '${pendingEarTags == 1 ? 'requiere' : 'requieren'} identificación.',
+          targetRoute:
+              AppRoutes.animalesPath(pendingEarTag: true),
         ),
       );
     }
@@ -256,8 +271,11 @@ class InicioDashboardService {
     for (final animal in animals) {
       final locationUuid = animal.currentLocationId;
       if (locationUuid == null || locationUuid.isEmpty) continue;
-      animalCountsByLocation.update(locationUuid, (count) => count + 1,
-          ifAbsent: () => 1);
+      animalCountsByLocation.update(
+        locationUuid,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
     }
 
     final activeLocations = List<LocationEntity>.from(locations)

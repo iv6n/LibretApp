@@ -5,7 +5,7 @@ library;
 class AppRoutes {
   static const directorio = '/directorio';
   static const inicio = '/';
-  static const animales = '/animales';
+  static const animales = '/directorio?tab=animales';
   static const animalNuevo = '/directorio/animales/nuevo';
   static const animalNuevoRapido = '/directorio/animales/nuevo-rapido';
   static const animalDetalle = '/directorio/animales/:uuid';
@@ -23,6 +23,7 @@ class AppRoutes {
   static const animalRegistroCosto =
       '/directorio/animales/:uuid/registros/costo';
   static const animalEditar = '/directorio/animales/:uuid/editar';
+  static const animalCompletar = '/directorio/animales/:uuid/completar';
   static const loteNuevo = '/directorio/lotes/nuevo';
   static const loteDetalle = '/directorio/lotes/:uuid';
   static const loteEditar = '/directorio/lotes/:uuid/editar';
@@ -55,7 +56,6 @@ class AppRoutes {
 
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
-  static const nameAnimales = 'animales';
   static const nameAnimalNuevo = 'animal_nuevo';
   static const nameAnimalNuevoRapido = 'animal_nuevo_rapido';
   static const nameAnimalDetalle = 'animal_detalle';
@@ -67,6 +67,7 @@ class AppRoutes {
   static const nameAnimalRegistroComercial = 'animal_registro_comercial';
   static const nameAnimalRegistroCosto = 'animal_registro_costo';
   static const nameAnimalEditar = 'animal_editar';
+  static const nameAnimalCompletar = 'animal_completar';
   static const nameLoteNuevo = 'lote_nuevo';
   static const nameLoteDetalle = 'lote_detalle';
   static const nameLoteEditar = 'lote_editar';
@@ -115,9 +116,24 @@ class AppRoutes {
       '/directorio/animales/$uuid/registros/costo';
   static String animalEditarPath(String uuid) =>
       '/directorio/animales/$uuid/editar';
+  static String animalCompletarPath(String uuid) =>
+      '/directorio/animales/$uuid/completar';
   static String loteNuevoPath() => '/directorio/lotes/nuevo';
   static String loteDetallePath(String uuid) => '/directorio/lotes/$uuid';
   static String loteEditarPath(String uuid) => '/directorio/lotes/$uuid/editar';
+  /// Builds a deep link into the animals tab of the directory, optionally
+  /// pre-applying one of the list filters. There is no standalone `/animales`
+  /// route: the list lives inside the directory shell branch.
+  static String animalesPath({
+    bool attention = false,
+    bool pendingEarTag = false,
+  }) {
+    final buffer = StringBuffer('/directorio?tab=animales');
+    if (attention) buffer.write('&attention=true');
+    if (pendingEarTag) buffer.write('&pendingEarTag=true');
+    return buffer.toString();
+  }
+
   static String directorioUbicacionesPath() => '/directorio?tab=ubicaciones';
   static String ubicacionNuevaPath() => '/directorio/ubicaciones/nueva';
   static String ubicacionDetallePath(String uuid) =>

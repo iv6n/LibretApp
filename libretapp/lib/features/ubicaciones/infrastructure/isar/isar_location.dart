@@ -49,10 +49,6 @@ class IsarLocation {
   bool isCommunal = false;
 
   /// Local file paths or URIs for images attached to this location.
-  ///
-  /// NOTE: This field requires running `dart run build_runner build` to
-  /// regenerate [isar_location.g.dart] before it persists to the database.
-  /// Until then, Isar ignores it and images are ephemeral within a session.
   List<String> imagePaths = [];
 
   List<IsarDynamicAttribute> attributes = [];
@@ -268,7 +264,7 @@ class IsarLocationCostRecord {
   late double labor;
   late double total;
 
-  CostRecord toEntity() => CostRecord(
+  LocationCostRecord toEntity() => LocationCostRecord(
     date: date,
     maintenance: maintenance,
     fences: fences,
@@ -277,7 +273,7 @@ class IsarLocationCostRecord {
     total: total,
   );
 
-  static IsarLocationCostRecord fromEntity(CostRecord record) =>
+  static IsarLocationCostRecord fromEntity(LocationCostRecord record) =>
       IsarLocationCostRecord()
         ..date = record.date
         ..maintenance = record.maintenance
