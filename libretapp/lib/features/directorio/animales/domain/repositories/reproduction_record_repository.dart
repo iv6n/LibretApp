@@ -6,6 +6,13 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 abstract class ReproductionRecordRepository {
   Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid);
 
+  /// Services performed by [sireUuid], newest first.
+  ///
+  /// Derived from the same rows the female already owns rather than a copy on
+  /// the male's side: when she is diagnosed or calves, his numbers follow on
+  /// their own instead of drifting out of sync.
+  Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid);
+
   /// Records for several animals in one query, keyed by animal uuid.
   ///
   /// Exists so building the indicators for a page of cards costs one round

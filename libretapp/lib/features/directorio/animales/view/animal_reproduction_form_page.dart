@@ -30,6 +30,7 @@ class _AnimalReproductionFormPageState
   DateTime? _expectedCalvingDate;
   bool _saving = false;
   AnimalEntity? _animal;
+  Map<String, AnimalEntity> _herd = const {};
 
   late final TextEditingController _sireController;
   late final TextEditingController _notesController;
@@ -53,11 +54,16 @@ class _AnimalReproductionFormPageState
   }
 
   Future<void> _loadAnimal() async {
-    final animal = await locator<AnimalRepository>().getByUuid(
-      widget.animalUuid,
-    );
+    final repository = locator<AnimalRepository>();
+    final animal = await repository.getByUuid(widget.animalUuid);
+    // The inbreeding check walks the pedigree, so it needs the herd indexed by
+    // uuid; without it the rule can only spot a direct sire-daughter mating.
+    final herd = PedigreeService.indexByUuid(await repository.getAll());
     if (!mounted) return;
-    setState(() => _animal = animal);
+    setState(() {
+      _animal = animal;
+      _herd = herd;
+    });
   }
 
   @override
@@ -214,6 +220,7 @@ class _AnimalReproductionFormPageState
                     : _sireController.text.trim(),
                 expectedCalvingDate: _expectedCalvingDate,
               ),
+              herd: _herd,
             ),
           ),
           const SizedBox(height: 12),

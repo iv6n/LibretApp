@@ -112,6 +112,46 @@ class HerdReproductiveKpis {
   final double? averageServicesPerConception;
 }
 
+/// How a sire is performing, derived from the services attributed to him.
+class SireReproductiveKpis {
+  const SireReproductiveKpis({
+    required this.serviceCount,
+    required this.femalesServed,
+    required this.diagnosedCount,
+    required this.confirmedPregnancies,
+    required this.offspringCount,
+    this.conceptionRate,
+    this.lastServiceDate,
+  });
+
+  static const SireReproductiveKpis empty = SireReproductiveKpis(
+    serviceCount: 0,
+    femalesServed: 0,
+    diagnosedCount: 0,
+    confirmedPregnancies: 0,
+    offspringCount: 0,
+  );
+
+  final int serviceCount;
+
+  /// Distinct females served. A bull with many services over few cows is
+  /// repeating on the same ones, which is itself a finding.
+  final int femalesServed;
+
+  final int diagnosedCount;
+  final int confirmedPregnancies;
+
+  /// Calves registered from his services.
+  final int offspringCount;
+
+  /// Confirmed pregnancies over services that were actually diagnosed.
+  /// Null until at least one service has a result — otherwise an untested
+  /// bull would show a rate of zero and look sterile.
+  final double? conceptionRate;
+
+  final DateTime? lastServiceDate;
+}
+
 /// Computes reproductive indicators from reproduction records.
 ///
 /// Pure and I/O free: callers hand over the records they already loaded. Note
@@ -245,6 +285,51 @@ class ReproductiveKpiService {
       currentGestationDays: currentGestationDays,
       lastCalvingDate: lastCalving,
       expectedCalvingDate: openCycle?.expectedCalvingDate,
+    );
+  }
+
+  /// Performance of a sire, from the services attributed to him.
+  ///
+  /// [records] come from `getRecordsBySire`, which reads the rows the females
+  /// own — so this recomputes on its own as they are diagnosed and calve.
+  SireReproductiveKpis forSire({
+    required List<ReproductionRecord> records,
+    Map<String, String> femaleByRecord = const {},
+  }) {
+    if (records.isEmpty) return SireReproductiveKpis.empty;
+
+    final diagnosed = records
+        .where(
+          (record) =>
+              record.pregnancyResult != null &&
+              record.pregnancyResult != PregnancyCheckResult.notChecked,
+        )
+        .toList();
+    final confirmed = records.where(_isConfirmedPregnancy).length;
+
+    final females = <String>{};
+    for (final record in records) {
+      final female = femaleByRecord[record.id];
+      if (female != null) females.add(female);
+    }
+
+    final lastService = records
+        .map((record) => record.serviceDate)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+
+    return SireReproductiveKpis(
+      serviceCount: records.length,
+      // Falls back to the service count when the caller did not supply the
+      // mapping, rather than reporting zero females for real services.
+      femalesServed: females.isEmpty ? records.length : females.length,
+      diagnosedCount: diagnosed.length,
+      confirmedPregnancies: confirmed,
+      offspringCount: records.fold(
+        0,
+        (total, record) => total + record.offspringUuids.length,
+      ),
+      conceptionRate: diagnosed.isEmpty ? null : confirmed / diagnosed.length,
+      lastServiceDate: lastService,
     );
   }
 

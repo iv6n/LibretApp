@@ -130,6 +130,19 @@ const IsarReproductionRecordSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'maleSireUuid': IndexSchema(
+      id: -1789971849784757890,
+      name: r'maleSireUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'maleSireUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -533,6 +546,73 @@ extension IsarReproductionRecordQueryWhere on QueryBuilder<
               indexName: r'animalUuid',
               lower: [],
               upper: [animalUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterWhereClause> maleSireUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'maleSireUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterWhereClause> maleSireUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'maleSireUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterWhereClause> maleSireUuidEqualTo(String? maleSireUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'maleSireUuid',
+        value: [maleSireUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterWhereClause> maleSireUuidNotEqualTo(String? maleSireUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'maleSireUuid',
+              lower: [],
+              upper: [maleSireUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'maleSireUuid',
+              lower: [maleSireUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'maleSireUuid',
+              lower: [maleSireUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'maleSireUuid',
+              lower: [],
+              upper: [maleSireUuid],
               includeUpper: false,
             ));
       }

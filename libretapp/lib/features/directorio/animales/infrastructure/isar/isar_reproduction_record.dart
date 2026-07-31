@@ -21,7 +21,12 @@ class IsarReproductionRecord implements StableRecordModel {
 
   late DateTime serviceDate;
   late String serviceType;
+
+  /// Indexed so a bull's service history can be derived from the cow-side
+  /// records instead of duplicating a row on his side.
+  @Index()
   String? maleSireUuid;
+
   String? maleSireIdentifier;
   DateTime? pregnancyCheckDate;
   String? pregnancyResult;

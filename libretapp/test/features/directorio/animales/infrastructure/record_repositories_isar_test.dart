@@ -11,6 +11,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/movement_
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/reproductive_kpi_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
@@ -676,6 +677,89 @@ void main() {
         );
 
         expect((await reloadAnimal(uuid)).reproductiveStatus, 'neutered');
+      });
+
+      test('a service stamps the sire too and shows up on his side', () async {
+        // The bull's history is derived from the cow's row, not duplicated,
+        // so it cannot drift out of sync with her diagnosis or calving.
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final cow = await seedAnimal('repro-cow-with-sire');
+        final bull = await seedAnimal('repro-bull', sex: 'male');
+
+        await repo.addReproductionRecord(
+          cow,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            maleSireUuid: bull,
+            maleSireIdentifier: 'TAG-repro-bull',
+          ),
+        );
+
+        expect((await reloadAnimal(bull)).lastServiceDate, DateTime(2026, 1, 10));
+        expect((await reloadAnimal(cow)).lastServiceDate, DateTime(2026, 1, 10));
+
+        final fromSire = await repo.getRecordsBySire(bull);
+        expect(fromSire, hasLength(1));
+        expect(fromSire.single.serviceDate, DateTime(2026, 1, 10));
+      });
+
+      test('a free-text sire leaves no link and breaks nothing', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final cow = await seedAnimal('repro-external-sire');
+
+        await repo.addReproductionRecord(
+          cow,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            maleSireIdentifier: 'Toro del vecino',
+          ),
+        );
+
+        final stored = await repo.getReproductionRecords(cow);
+        expect(stored.single.maleSireUuid, isNull);
+        expect(stored.single.maleSireIdentifier, 'Toro del vecino');
+        expect(await repo.getRecordsBySire(''), isEmpty);
+      });
+
+      test('confirming the cow raises the sire conception rate', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final cow = await seedAnimal('repro-rate-cow');
+        final bull = await seedAnimal('repro-rate-bull', sex: 'male');
+
+        final saved = await repo.addReproductionRecord(
+          cow,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            maleSireUuid: bull,
+          ),
+        );
+
+        const kpiService = ReproductiveKpiService();
+        var sireKpis = kpiService.forSire(
+          records: await repo.getRecordsBySire(bull),
+        );
+        expect(sireKpis.serviceCount, 1);
+        expect(
+          sireKpis.conceptionRate,
+          isNull,
+          reason: 'an undiagnosed service must not read as a failed one',
+        );
+
+        // Nothing is written on the bull here — only on the cow.
+        await repo.addReproductionRecord(
+          cow,
+          saved.copyWith(pregnancyResult: PregnancyCheckResult.positive),
+        );
+
+        sireKpis = kpiService.forSire(
+          records: await repo.getRecordsBySire(bull),
+        );
+        expect(sireKpis.serviceCount, 1);
+        expect(sireKpis.confirmedPregnancies, 1);
+        expect(sireKpis.conceptionRate, 1.0);
       });
 
       test('a male never becomes pregnant', () async {

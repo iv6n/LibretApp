@@ -47,6 +47,21 @@ class ReproductionRecordRepositoryIsar
       getRecordsFor(animalUuid);
 
   @override
+  Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid) async {
+    if (sireUuid.trim().isEmpty) return const [];
+
+    final db = await isar;
+    final records = await db.isarReproductionRecords
+        .where()
+        .maleSireUuidEqualTo(sireUuid)
+        .findAll();
+
+    final entities = records.map((record) => record.toEntity()).toList()
+      ..sort((a, b) => b.serviceDate.compareTo(a.serviceDate));
+    return List<ReproductionRecord>.unmodifiable(entities);
+  }
+
+  @override
   Future<Map<String, List<ReproductionRecord>>>
   getReproductionRecordsForAnimals(Set<String> animalUuids) async {
     if (animalUuids.isEmpty) return const {};
@@ -111,6 +126,39 @@ class ReproductionRecordRepositoryIsar
       ..lastUpdateDate = now ?? DateTime.now()
       ..synced = false;
     await isar.isarAnimals.put(animal);
+
+    await _markSireServed(isar, record, now);
+  }
+
+  /// Stamps the service on the bull too, so his profile can answer "when did
+  /// this sire last work". Only his dates move — the status transition above
+  /// is guarded by sex and would be meaningless for him.
+  Future<void> _markSireServed(
+    Isar isar,
+    ReproductionRecord record,
+    DateTime? now,
+  ) async {
+    final sireUuid = record.maleSireUuid?.trim();
+    if (sireUuid == null || sireUuid.isEmpty) return;
+
+    final sire = await isar.isarAnimals
+        .where()
+        .uuidEqualTo(sireUuid)
+        .findFirst();
+    // A sire typed in as free text, or one that is not in the herd, simply has
+    // nowhere to record this.
+    if (sire == null) return;
+
+    final currentLast = sire.lastServiceDate;
+    if (currentLast == null || record.serviceDate.isAfter(currentLast)) {
+      sire.lastServiceDate = record.serviceDate;
+    }
+    sire.firstServiceDate ??= record.serviceDate;
+
+    sire
+      ..lastUpdateDate = now ?? DateTime.now()
+      ..synced = false;
+    await isar.isarAnimals.put(sire);
   }
 
   void _applyStatusTransition(IsarAnimal animal, ReproductionRecord record) {

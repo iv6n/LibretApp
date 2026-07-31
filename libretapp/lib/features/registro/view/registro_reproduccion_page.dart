@@ -63,9 +63,13 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   var _serviceType = ServiceType.naturalService;
   var _serviceDate = DateTime.now();
   DateTime? _expectedCalvingDate;
-  String? _sireId;
   String? _notes;
   AnimalEntity? _selectedAnimal;
+
+  /// Sire chosen from the herd. When set, the record carries his uuid and the
+  /// link survives; a free-text name only ever reaches the display field.
+  AnimalEntity? _selectedSire;
+  final _externalSireCtrl = TextEditingController();
 
   /// The confirmed-pregnant cycle awaiting a calving, if the selected female
   /// has one. Its presence is what turns this page into a calving form.
@@ -138,6 +142,21 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     });
   }
 
+  /// Males of the same species, excluding the cow's own descendants so her
+  /// son can never be offered as her sire.
+  bool _isEligibleSire(AnimalEntity candidate) {
+    if (candidate.sex != Sex.male) return false;
+    final cow = _selectedAnimal;
+    if (cow == null) return true;
+    return candidate.species == cow.species && candidate.uuid != cow.uuid;
+  }
+
+  @override
+  void dispose() {
+    _externalSireCtrl.dispose();
+    super.dispose();
+  }
+
   String _cycleSubtitle(ReproductionRecord cycle) {
     final expected = cycle.expectedCalvingDate;
     return expected == null
@@ -204,10 +223,14 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       return;
     }
 
+    final external = _externalSireCtrl.text.trim();
     final record = ReproductionRecord(
       serviceDate: _serviceDate,
       serviceType: _serviceType,
-      maleSireIdentifier: _sireId,
+      maleSireUuid: _selectedSire?.uuid,
+      maleSireIdentifier: _selectedSire != null
+          ? primaryAnimalLabel(_selectedSire!)
+          : (external.isEmpty ? null : external),
       expectedCalvingDate: _expectedCalvingDate,
       notes: _notes,
     );
@@ -522,12 +545,26 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                 ],
               ),
               const SizedBox(height: 12),
+              // Picking the sire from the herd is what fills maleSireUuid, and
+              // that is what links the calf's paternal side, feeds the bull's
+              // own service history and lets the inbreeding check work.
+              AnimalSelector(
+                label: l10n.detailFormReproductionSire,
+                selectedAnimal: _selectedSire,
+                eligible: _isEligibleSire,
+                onSelected: (sire) => setState(() {
+                  _selectedSire = sire;
+                  if (sire != null) _externalSireCtrl.clear();
+                }),
+              ),
+              const SizedBox(height: 8),
               TextField(
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionSire,
-                  border: const OutlineInputBorder(),
+                controller: _externalSireCtrl,
+                enabled: _selectedSire == null,
+                decoration: const InputDecoration(
+                  labelText: 'O semental externo al hato',
+                  border: OutlineInputBorder(),
                 ),
-                onChanged: (v) => _sireId = v.trim().isEmpty ? null : v.trim(),
               ),
               const SizedBox(height: 12),
               TextField(

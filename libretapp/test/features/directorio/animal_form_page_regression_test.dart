@@ -949,6 +949,10 @@ class _FakeReproductionRecordRepository
   getReproductionRecordsForAnimals(Set<String> animalUuids) async => const {};
 
   @override
+  Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid) async =>
+      const [];
+
+  @override
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,
     ReproductionRecord record,

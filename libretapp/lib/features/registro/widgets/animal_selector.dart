@@ -10,11 +10,21 @@ class AnimalSelector extends StatefulWidget {
   const AnimalSelector({
     required this.onSelected,
     this.selectedAnimal,
+    this.label = 'Animal',
+    this.eligible,
     super.key,
   });
 
   final ValueChanged<AnimalEntity?> onSelected;
   final AnimalEntity? selectedAnimal;
+
+  /// Heading above the field, so the same widget can ask for a cow or a sire.
+  final String label;
+
+  /// Narrows the herd to the animals that make sense for the field — males of
+  /// the same species when picking a sire, for instance. Null means the whole
+  /// active herd.
+  final bool Function(AnimalEntity)? eligible;
 
   @override
   State<AnimalSelector> createState() => _AnimalSelectorState();
@@ -35,7 +45,9 @@ class _AnimalSelectorState extends State<AnimalSelector> {
 
   Future<void> _loadAnimals() async {
     final repo = locator<AnimalRepository>();
-    final animals = await repo.getAll();
+    final all = await repo.getAll();
+    final eligible = widget.eligible;
+    final animals = eligible == null ? all : all.where(eligible).toList();
     if (!mounted) return;
     setState(() {
       _animals = animals;
@@ -92,7 +104,7 @@ class _AnimalSelectorState extends State<AnimalSelector> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Animal', style: theme.textTheme.titleSmall),
+        Text(widget.label, style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
         InkWell(
           borderRadius: BorderRadius.circular(12),
