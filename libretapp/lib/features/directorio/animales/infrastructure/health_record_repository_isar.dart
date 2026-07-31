@@ -4,6 +4,7 @@ library;
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
@@ -137,6 +138,14 @@ class HealthRecordRepositoryIsar
       animal
         ..underObservation = true
         ..requiresAttention = true;
+    }
+    if (record.type == HealthRecordType.death) {
+      // Recording a death has to take the animal out of the herd, or it keeps
+      // counting in the inventory and the totals.
+      animal
+        ..status = AnimalStatus.dead.name
+        ..underObservation = false
+        ..requiresAttention = false;
     }
     animal
       ..lastUpdateDate = now ?? DateTime.now()

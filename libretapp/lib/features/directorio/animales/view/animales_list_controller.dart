@@ -18,6 +18,7 @@ class AnimalesListState {
     required this.selectedStages,
     required this.onlyAttention,
     required this.onlyPendingEarTag,
+    this.includeInactive = false,
     this.indicatorSnapshots = const <String, AnimalIndicatorSnapshot>{},
   });
 
@@ -33,6 +34,10 @@ class AnimalesListState {
   final bool onlyAttention;
   final bool onlyPendingEarTag;
 
+  /// Shows animals that left the herd — sold, dead or archived. Off by
+  /// default so the list reflects what is actually out in the field.
+  final bool includeInactive;
+
   /// Record-derived card figures, keyed by animal uuid. Missing entries simply
   /// mean the card falls back to the animal's denormalized fields.
   final Map<String, AnimalIndicatorSnapshot> indicatorSnapshots;
@@ -42,6 +47,7 @@ class AnimalesListState {
     Set<LifeStage>? selectedStages,
     bool? onlyAttention,
     bool? onlyPendingEarTag,
+    bool? includeInactive,
     Map<String, AnimalIndicatorSnapshot>? indicatorSnapshots,
   }) {
     return AnimalesListState(
@@ -49,12 +55,16 @@ class AnimalesListState {
       selectedStages: selectedStages ?? this.selectedStages,
       onlyAttention: onlyAttention ?? this.onlyAttention,
       onlyPendingEarTag: onlyPendingEarTag ?? this.onlyPendingEarTag,
+      includeInactive: includeInactive ?? this.includeInactive,
       indicatorSnapshots: indicatorSnapshots ?? this.indicatorSnapshots,
     );
   }
 
   bool get hasFilters =>
-      selectedStages.isNotEmpty || onlyAttention || onlyPendingEarTag;
+      selectedStages.isNotEmpty ||
+      onlyAttention ||
+      onlyPendingEarTag ||
+      includeInactive;
 }
 
 class AnimalesListController extends ChangeNotifier {
@@ -220,6 +230,10 @@ class AnimalesListController extends ChangeNotifier {
     _setState(_state.copyWith(onlyPendingEarTag: value));
   }
 
+  void setIncludeInactive(bool value) {
+    _setState(_state.copyWith(includeInactive: value));
+  }
+
   LocationEntity? locationById(String? uuid) {
     final normalizedLookup = _normalizeLookup(uuid);
     if (normalizedLookup == null) return null;
@@ -285,8 +299,15 @@ class AnimalesListController extends ChangeNotifier {
       final matchesAttention = !_state.onlyAttention || needsAttention;
       final matchesPendingEarTag =
           !_state.onlyPendingEarTag || hasPendingEarTag(animal);
+      // The repository already limits the feed to the active herd; this only
+      // matters when a caller hands over inactive animals too.
+      final matchesHerd =
+          _state.includeInactive || animal.status.isInActiveHerd;
 
-      return matchesStage && matchesAttention && matchesPendingEarTag;
+      return matchesStage &&
+          matchesAttention &&
+          matchesPendingEarTag &&
+          matchesHerd;
     }).toList();
 
     // Sort critical/attention cases first, then by severity and most recent.

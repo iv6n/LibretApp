@@ -126,6 +126,85 @@ void main() {
   );
 
   test(
+    'sold and dead animals leave the active herd but stay in the pedigree',
+    () async {
+      // Until AnimalStatus.isInActiveHerd existed the repository only filtered
+      // archived, so a sold animal kept showing up in lists and counts.
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPrefs = await SharedPreferences.getInstance();
+      final repository = AnimalRepositoryIsar(
+        IsarDatabase(),
+        SharedPrefsService(sharedPrefs),
+        _FakeAnimalRemoteDataSource(),
+      );
+      await repository.clearAll();
+
+      final now = DateTime.now();
+      AnimalEntity build(
+        String uuid, {
+        AnimalStatus status = AnimalStatus.active,
+        String? damUuid,
+      }) {
+        return AnimalEntity(
+          uuid: uuid,
+          earTagNumber: 'TAG-$uuid',
+          species: Species.cattle,
+          category: Category.cow,
+          lifeStage: LifeStage.cow,
+          sex: Sex.female,
+          breed: 'Cebu',
+          birthDate: DateTime(2024, 1, 1),
+          ageMonths: 24,
+          damUuid: damUuid,
+          healthStatus: HealthStatus.good,
+          vaccinated: true,
+          dewormed: true,
+          hasVitamins: false,
+          hasChronicIssues: false,
+          reproductiveStatus: ReproductiveStatus.unknown,
+          productionPurpose: ProductionPurpose.undefined,
+          productionStage: ProductionStage.unknown,
+          productionSystem: ProductionSystem.unknown,
+          underObservation: false,
+          requiresAttention: false,
+          riskLevel: RiskLevel.low,
+          gallery: const <String>[],
+          status: status,
+          synced: true,
+          creationDate: now,
+          lastUpdateDate: now,
+        );
+      }
+
+      await repository.save(build('madre'));
+      await repository.save(build('activa', damUuid: 'madre'));
+      await repository.save(
+        build('vendida', status: AnimalStatus.sold, damUuid: 'madre'),
+      );
+      await repository.save(
+        build('muerta', status: AnimalStatus.dead, damUuid: 'madre'),
+      );
+
+      final active = await repository.getAll();
+      expect(
+        active.map((a) => a.uuid),
+        containsAll(<String>['madre', 'activa']),
+      );
+      expect(active.map((a) => a.uuid), isNot(contains('vendida')));
+      expect(active.map((a) => a.uuid), isNot(contains('muerta')));
+
+      // The dam's production history must not shrink because a calf was sold
+      // or died — that is precisely what shows she produces.
+      final offspring = await repository.getByParentUuid('madre');
+      expect(
+        offspring.map((a) => a.uuid),
+        containsAll(<String>['activa', 'vendida', 'muerta']),
+      );
+    },
+    skip: !_canRunIsarNative(),
+  );
+
+  test(
     'round-trips adaptive production purposes through Isar',
     () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});

@@ -153,6 +153,27 @@ void main() {
       expect(await repo.getHealthRecords(b), hasLength(1));
     });
 
+    test('a death record takes the animal out of the herd', () async {
+      // AnimalStatus.dead was never written by any code path: recording a
+      // death left the animal active and still counting in the inventory.
+      final repo = HealthRecordRepositoryIsar(db);
+      final animalUuid = await seedAnimal('health-death');
+
+      await repo.addHealthRecord(
+        animalUuid,
+        HealthRecord(
+          date: DateTime(2026, 2, 1),
+          type: HealthRecordType.death,
+          product: 'Necropsia',
+          cause: 'Timpanismo',
+        ),
+      );
+
+      final animal = await reloadAnimal(animalUuid);
+      expect(animal.status, 'dead');
+      expect(animal.requiresAttention, isFalse);
+    });
+
     test('deleteHealthRecord removes the record', () async {
       final repo = HealthRecordRepositoryIsar(db);
       final animalUuid = await seedAnimal('health-delete');
@@ -287,6 +308,109 @@ void main() {
 
       await repo.deleteProductionRecord(saved.id!);
       expect(await repo.getProductionRecords(animalUuid), isEmpty);
+    });
+  });
+
+  // Selling or losing an animal used to leave it in the herd: neither
+  // AnimalStatus.sold nor AnimalStatus.dead was written by any code path.
+  group('leaving the herd', () {
+    test('a sale marks the animal sold', () async {
+      final repo = CommercialRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('commercial-sold');
+
+      await repo.addCommercialRecord(
+        uuid,
+        CommercialRecord(
+          date: DateTime(2026, 5, 1),
+          type: CommercialRecordType.sale,
+          amount: 18000,
+          counterparty: 'Rastro municipal',
+        ),
+      );
+
+      final animal = await reloadAnimal(uuid);
+      expect(animal.status, 'sold');
+      expect(animal.synced, isFalse);
+    });
+
+    test('a death write-off marks the animal dead', () async {
+      final repo = CommercialRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('commercial-dead');
+
+      await repo.addCommercialRecord(
+        uuid,
+        CommercialRecord(
+          date: DateTime(2026, 5, 1),
+          type: CommercialRecordType.writeOffDeath,
+        ),
+      );
+
+      expect((await reloadAnimal(uuid)).status, 'dead');
+    });
+
+    test('a change of owner keeps the animal in the herd', () async {
+      // It is still alive and still grazing here; only the paperwork changed.
+      final repo = CommercialRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('commercial-owner');
+
+      await repo.addCommercialRecord(
+        uuid,
+        CommercialRecord(
+          date: DateTime(2026, 5, 1),
+          type: CommercialRecordType.ownershipChange,
+          counterparty: 'Socio',
+        ),
+      );
+
+      expect((await reloadAnimal(uuid)).status, 'active');
+    });
+
+    test('a purchase keeps the animal in the herd', () async {
+      final repo = CommercialRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('commercial-purchase');
+
+      await repo.addCommercialRecord(
+        uuid,
+        CommercialRecord(
+          date: DateTime(2026, 5, 1),
+          type: CommercialRecordType.purchase,
+          amount: 15000,
+        ),
+      );
+
+      expect((await reloadAnimal(uuid)).status, 'active');
+    });
+
+    test('a body condition score updates the animal', () async {
+      final repo = ProductionRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('production-bcs');
+
+      await repo.addProductionRecord(
+        uuid,
+        ProductionRecord(
+          date: DateTime(2026, 5, 1),
+          type: ProductionRecordType.bodyConditionScore,
+          score: 2,
+        ),
+      );
+
+      expect((await reloadAnimal(uuid)).bodyConditionScore, 2);
+    });
+
+    test('a weighing does not touch the body condition', () async {
+      final repo = ProductionRecordRepositoryIsar(db);
+      final uuid = await seedAnimal('production-weighing');
+
+      await repo.addProductionRecord(
+        uuid,
+        ProductionRecord(
+          date: DateTime(2026, 5, 1),
+          type: ProductionRecordType.weighing,
+          value: 430,
+        ),
+      );
+
+      expect((await reloadAnimal(uuid)).bodyConditionScore, isNull);
     });
   });
 
@@ -576,6 +700,7 @@ void main() {
     });
 
     test('calvingNotes keeps the legacy physical column name', () {
+      // Guard kept from the calving rename; see the note on IsarReproductionRecord.
       // `calvingNotes` is annotated @Name('calvingResult'). Isar keys columns
       // by that physical name, so dropping the annotation would register a new
       // empty column and silently discard every calving note captured before

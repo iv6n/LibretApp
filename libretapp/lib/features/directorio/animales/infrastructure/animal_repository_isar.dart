@@ -74,7 +74,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .map(
           (records) => records
               .map((e) => e.toEntity())
-              .where((animal) => animal.status != AnimalStatus.archived)
+              .where((animal) => animal.status.isInActiveHerd)
               .toList(growable: false),
         );
   }
@@ -85,7 +85,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
     final records = await isar.isarAnimals.where().findAll();
     return records
         .map((e) => e.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .toList(growable: false);
   }
 
@@ -114,7 +114,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .findAll();
     return records
         .map((e) => e.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .toList(growable: false);
   }
 
@@ -127,7 +127,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .findAll();
     return records
         .map((e) => e.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .toList(growable: false);
   }
 
@@ -189,7 +189,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .findAll();
     return records
         .map((e) => e.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .toList(growable: false);
   }
 
@@ -202,7 +202,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .findAll();
     return records
         .map((e) => e.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .toList(growable: false);
   }
 
@@ -347,7 +347,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
     final records = await isar.isarAnimals.where().findAll();
     return records
         .map((record) => record.toEntity())
-        .where((animal) => animal.status != AnimalStatus.archived)
+        .where((animal) => animal.status.isInActiveHerd)
         .skip(offset)
         .take(limit)
         .toList(growable: false);
