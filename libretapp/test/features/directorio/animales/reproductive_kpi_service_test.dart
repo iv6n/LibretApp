@@ -183,6 +183,65 @@ void main() {
     });
   });
 
+  group('cycle helpers', () {
+    test('pendingDiagnosisOf picks the latest undiagnosed service', () {
+      final records = [
+        _record(serviceDate: DateTime(2026, 1, 1)),
+        _record(serviceDate: DateTime(2026, 3, 1)),
+      ];
+
+      expect(
+        ReproductiveKpiService.pendingDiagnosisOf(records)!.serviceDate,
+        DateTime(2026, 3, 1),
+      );
+    });
+
+    test('an uncertain result still counts as pending', () {
+      // An inconclusive palpation is precisely the case that needs a repeat.
+      final records = [
+        _record(
+          serviceDate: DateTime(2026, 1, 1),
+          pregnancyResult: PregnancyCheckResult.uncertain,
+        ),
+      ];
+
+      expect(ReproductiveKpiService.pendingDiagnosisOf(records), isNotNull);
+    });
+
+    test('a diagnosed or calved service is not pending', () {
+      expect(
+        ReproductiveKpiService.pendingDiagnosisOf([
+          _record(
+            serviceDate: DateTime(2026, 1, 1),
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        ]),
+        isNull,
+      );
+      expect(
+        ReproductiveKpiService.pendingDiagnosisOf([
+          _record(
+            serviceDate: DateTime(2026, 1, 1),
+            actualCalvingDate: DateTime(2026, 10, 1),
+          ),
+        ]),
+        isNull,
+      );
+    });
+
+    test('openCycleOf ignores a cycle that already calved', () {
+      final records = [
+        _record(
+          serviceDate: DateTime(2026, 1, 1),
+          pregnancyResult: PregnancyCheckResult.positive,
+          actualCalvingDate: DateTime(2026, 10, 1),
+        ),
+      ];
+
+      expect(ReproductiveKpiService.openCycleOf(records), isNull);
+    });
+  });
+
   group('forHerd', () {
     test('aggregates pregnancy rate, calving months and worst intervals', () {
       final herd = service.forHerd(

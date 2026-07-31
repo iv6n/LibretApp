@@ -62,7 +62,11 @@ void main() {
     await db.initialize();
   });
 
-  Future<String> seedAnimal(String uuid) async {
+  Future<String> seedAnimal(
+    String uuid, {
+    String sex = 'female',
+    String reproductiveStatus = 'active',
+  }) async {
     final isar = await db.initialize();
     await isar.writeTxn(() async {
       await isar.isarAnimals.put(
@@ -72,7 +76,7 @@ void main() {
           ..species = 'cattle'
           ..category = 'cow'
           ..lifeStage = 'adult'
-          ..sex = 'female'
+          ..sex = sex
           ..breed = 'Holstein'
           ..birthDate = DateTime(2022, 1, 1)
           ..ageMonths = 30
@@ -82,7 +86,7 @@ void main() {
           ..dewormed = false
           ..hasVitamins = false
           ..hasChronicIssues = false
-          ..reproductiveStatus = 'active'
+          ..reproductiveStatus = reproductiveStatus
           ..underObservation = false
           ..requiresAttention = false
           ..riskLevel = 'none'
@@ -375,6 +379,200 @@ void main() {
       // Derived, never stored: 283 days between service and calving.
       expect(record.gestationDays, 283);
       expect(record.producedLiveOffspring, isTrue);
+    });
+
+    // Before these, the reproduction repo was the only record repo without an
+    // onSaved hook: registering a service stored the row and left the cow
+    // untouched, which is what made the whole cycle feel disconnected.
+    group('animal side effects', () {
+      test('a service marks the animal served and projects the calving',
+          () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-service');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.firstServiceDate, DateTime(2026, 1, 10));
+        expect(animal.lastServiceDate, DateTime(2026, 1, 10));
+        expect(animal.reproductiveStatus, 'active');
+        // 283 days of gestation projected from the service.
+        expect(
+          animal.expectedCalvingDate,
+          DateTime(2026, 1, 10).add(const Duration(days: 283)),
+        );
+        expect(animal.synced, isFalse);
+      });
+
+      test('the typed expected calving is respected over the projection',
+          () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-typed-date');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            expectedCalvingDate: DateTime(2026, 11, 1),
+          ),
+        );
+
+        expect(
+          (await reloadAnimal(uuid)).expectedCalvingDate,
+          DateTime(2026, 11, 1),
+        );
+      });
+
+      test('firstServiceDate is only set once', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-first-service');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+          ),
+        );
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 3, 1),
+            serviceType: ServiceType.naturalService,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.firstServiceDate, DateTime(2026, 1, 10));
+        expect(animal.lastServiceDate, DateTime(2026, 3, 1));
+      });
+
+      test('editing an older record does not move lastServiceDate back',
+          () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-no-rewind');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 3, 1),
+            serviceType: ServiceType.naturalService,
+          ),
+        );
+        // A correction to an older service must not rewrite history.
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2025, 8, 1),
+            serviceType: ServiceType.naturalService,
+          ),
+        );
+
+        expect((await reloadAnimal(uuid)).lastServiceDate, DateTime(2026, 3, 1));
+      });
+
+      test('a positive diagnosis makes her pregnant', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-positive');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.artificialInsemination,
+            pregnancyCheckDate: DateTime(2026, 2, 20),
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.reproductiveStatus, 'pregnant');
+        expect(animal.expectedCalvingDate, isNotNull);
+      });
+
+      test('a negative diagnosis clears the expected calving', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-negative');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.negative,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.reproductiveStatus, 'active');
+        expect(animal.expectedCalvingDate, isNull);
+      });
+
+      test('a calving leaves her lactating with no pending calving', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-calved');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2025, 6, 1),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.positive,
+            actualCalvingDate: DateTime(2026, 3, 11),
+            calvingOutcome: CalvingOutcome.liveBirth,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.reproductiveStatus, 'lactating');
+        expect(animal.expectedCalvingDate, isNull);
+      });
+
+      test('a neutered animal keeps its status', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal(
+          'repro-neutered',
+          reproductiveStatus: 'neutered',
+        );
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        );
+
+        expect((await reloadAnimal(uuid)).reproductiveStatus, 'neutered');
+      });
+
+      test('a male never becomes pregnant', () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final uuid = await seedAnimal('repro-male', sex: 'male');
+
+        await repo.addReproductionRecord(
+          uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2026, 1, 10),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        );
+
+        final animal = await reloadAnimal(uuid);
+        expect(animal.reproductiveStatus, 'active');
+        expect(animal.expectedCalvingDate, isNull);
+        // Dates are still recorded: the bull did serve on that day.
+        expect(animal.lastServiceDate, DateTime(2026, 1, 10));
+      });
     });
 
     test('calvingNotes keeps the legacy physical column name', () {

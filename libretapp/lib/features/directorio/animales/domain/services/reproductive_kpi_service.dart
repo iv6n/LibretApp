@@ -139,6 +139,28 @@ class ReproductiveKpiService {
     return open.isEmpty ? null : open.last;
   }
 
+  /// The latest service still waiting for a pregnancy diagnosis.
+  ///
+  /// A record counts as undiagnosed while its result is absent, explicitly
+  /// `notChecked`, or `uncertain` — an inconclusive palpation still needs a
+  /// follow-up. Records that already calved are done regardless of result.
+  static ReproductionRecord? pendingDiagnosisOf(
+    List<ReproductionRecord> records,
+  ) {
+    final pending = records
+        .where(
+          (record) =>
+              !record.hasCalved &&
+              (record.pregnancyResult == null ||
+                  record.pregnancyResult == PregnancyCheckResult.notChecked ||
+                  record.pregnancyResult == PregnancyCheckResult.uncertain),
+        )
+        .toList()
+      ..sort((a, b) => a.serviceDate.compareTo(b.serviceDate));
+
+    return pending.isEmpty ? null : pending.last;
+  }
+
   AnimalReproductiveKpis forAnimal({
     required List<ReproductionRecord> records,
     DateTime? birthDate,

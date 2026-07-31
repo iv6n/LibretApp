@@ -27,4 +27,5 @@ export 'services/animal_registration_normalizer.dart';
 export 'services/animal_taxonomy.dart';
 export 'services/animal_presentation.dart';
 export 'services/pedigree_service.dart';
+export 'services/reproduction_scheduler.dart';
 export 'services/reproductive_kpi_service.dart';

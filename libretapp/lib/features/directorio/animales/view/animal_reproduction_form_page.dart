@@ -39,7 +39,17 @@ class _AnimalReproductionFormPageState
     super.initState();
     _sireController = TextEditingController();
     _notesController = TextEditingController();
+    _projectExpectedCalving();
     _loadAnimal();
+  }
+
+  /// Derives the expected calving from the service date using the standard
+  /// gestation, so the field arrives filled instead of forcing the user to
+  /// count 283 days by hand. It stays editable.
+  void _projectExpectedCalving() {
+    _expectedCalvingDate = const ReproductionScheduler()
+        .estimate(serviceDate: _serviceDate)
+        .dueDate;
   }
 
   Future<void> _loadAnimal() async {
@@ -144,7 +154,10 @@ class _AnimalReproductionFormPageState
                     lastDate: DateTime(_serviceDate.year + 1),
                   );
                   if (picked == null) return;
-                  setState(() => _serviceDate = picked);
+                  setState(() {
+                    _serviceDate = picked;
+                    _projectExpectedCalving();
+                  });
                 },
               ),
             ),

@@ -13,7 +13,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -71,10 +70,20 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   /// The confirmed-pregnant cycle awaiting a calving, if the selected female
   /// has one. Its presence is what turns this page into a calving form.
   ReproductionRecord? _openCycle;
+
+  /// The latest service still waiting for a pregnancy diagnosis. Until this
+  /// existed there was no way to confirm a pregnancy after the animal was
+  /// created, which left the calving step unreachable.
+  ReproductionRecord? _pendingDiagnosis;
+
   var _calvingMode = false;
   var _calvingDate = DateTime.now();
   CalvingOutcome? _calvingOutcome;
   int? _calvingEase;
+
+  var _diagnosisMode = false;
+  var _diagnosisDate = DateTime.now();
+  var _diagnosisResult = PregnancyCheckResult.positive;
 
   @override
   void initState() {
@@ -82,15 +91,26 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     final isParicionPreset = widget.preset?.toLowerCase() == 'paricion';
     if (isParicionPreset) {
       _serviceType = ServiceType.naturalService;
-      _expectedCalvingDate = DateTime.now();
     }
+    _projectExpectedCalving();
+  }
+
+  /// Fills the expected calving from the service date using the standard
+  /// gestation, so the user gets a date without having to compute it. Manual
+  /// edits win: this only ever writes when the field is still untouched.
+  void _projectExpectedCalving() {
+    _expectedCalvingDate = const ReproductionScheduler()
+        .estimate(serviceDate: _serviceDate)
+        .dueDate;
   }
 
   Future<void> _onAnimalSelected(AnimalEntity? animal) async {
     setState(() {
       _selectedAnimal = animal;
       _openCycle = null;
+      _pendingDiagnosis = null;
       _calvingMode = false;
+      _diagnosisMode = false;
     });
     if (animal == null) return;
 
@@ -99,8 +119,10 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     if (!mounted) return;
 
     final open = ReproductiveKpiService.openCycleOf(records);
+    final pending = ReproductiveKpiService.pendingDiagnosisOf(records);
     setState(() {
       _openCycle = open;
+      _pendingDiagnosis = pending;
       // Landing here from the "parición" shortcut means the calving is the
       // reason the user opened the page.
       _calvingMode =
@@ -109,7 +131,48 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
         _calvingDate = DateTime.now();
         _calvingOutcome = CalvingOutcome.liveBirth;
       }
+      if (pending != null) {
+        _diagnosisDate = DateTime.now();
+        _diagnosisResult = PregnancyCheckResult.positive;
+      }
     });
+  }
+
+  String _cycleSubtitle(ReproductionRecord cycle) {
+    final expected = cycle.expectedCalvingDate;
+    return expected == null
+        ? 'Servicio del ${DateFormat('dd/MM/yyyy').format(cycle.serviceDate)}'
+        : 'Parto esperado el ${DateFormat('dd/MM/yyyy').format(expected)}';
+  }
+
+  void _saveDiagnosis(ScaffoldMessengerState messenger) {
+    final pending = _pendingDiagnosis!;
+
+    if (_diagnosisDate.isBefore(pending.serviceDate)) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('El diagnóstico no puede ser anterior al servicio.'),
+        ),
+      );
+      return;
+    }
+
+    // Keeps the id, so this updates the pending service instead of opening a
+    // second cycle for the same pregnancy.
+    context.read<RegistroBloc>().add(
+      RegistroReproduccionSubmitted(
+        animalUuid: _selectedAnimal!.uuid,
+        record: pending.copyWith(
+          pregnancyCheckDate: _diagnosisDate,
+          pregnancyResult: _diagnosisResult,
+          expectedCalvingDate:
+              pending.expectedCalvingDate ??
+              const ReproductionScheduler()
+                  .estimate(serviceDate: pending.serviceDate)
+                  .dueDate,
+        ),
+      ),
+    );
   }
 
   void _save() {
@@ -125,6 +188,11 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
 
     if (_calvingMode) {
       _saveCalving(messenger);
+      return;
+    }
+
+    if (_diagnosisMode) {
+      _saveDiagnosis(messenger);
       return;
     }
 
@@ -157,9 +225,9 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     final dam = _selectedAnimal!;
     final cycle = _openCycle!;
 
-    await _updateDamAfterCalving(dam);
-    if (!mounted) return;
-
+    // The dam's status is updated by the repository hook when the calving is
+    // saved. Doing it here as well would write back a copy of her loaded when
+    // she was selected, reverting anything changed since.
     final outcome = _calvingOutcome ?? CalvingOutcome.liveBirth;
     if (outcome != CalvingOutcome.liveBirth) {
       Navigator.of(context).pop();
@@ -214,18 +282,6 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     }
     if (!mounted) return;
     Navigator.of(context).pop();
-  }
-
-  Future<void> _updateDamAfterCalving(AnimalEntity dam) async {
-    final repository = locator<AnimalRepository>();
-    await repository.update(
-      dam.copyWith(
-        reproductiveStatus: ReproductiveStatus.lactating,
-        expectedCalvingDate: null,
-        lastUpdateDate: DateTime.now(),
-        synced: false,
-      ),
-    );
   }
 
   Future<void> _linkOffspring(
@@ -334,14 +390,42 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
               ),
               if (_openCycle != null) ...[
                 const SizedBox(height: 12),
-                _OpenCycleBanner(
-                  cycle: _openCycle!,
-                  calvingMode: _calvingMode,
-                  onChanged: (value) => setState(() => _calvingMode = value),
+                _CycleBanner(
+                  icon: Icons.child_friendly,
+                  title: 'Registrar el parto de este ciclo',
+                  subtitle: _cycleSubtitle(_openCycle!),
+                  value: _calvingMode,
+                  onChanged: (value) => setState(() {
+                    _calvingMode = value;
+                    if (value) _diagnosisMode = false;
+                  }),
+                ),
+              ] else if (_pendingDiagnosis != null) ...[
+                const SizedBox(height: 12),
+                _CycleBanner(
+                  icon: Icons.pregnant_woman,
+                  title: 'Registrar diagnóstico de preñez',
+                  subtitle:
+                      'Servicio del '
+                      '${DateFormat('dd/MM/yyyy').format(_pendingDiagnosis!.serviceDate)}'
+                      ' sin diagnosticar',
+                  value: _diagnosisMode,
+                  onChanged: (value) => setState(() => _diagnosisMode = value),
                 ),
               ],
               const SizedBox(height: 16),
-              if (_calvingMode) ...[
+              if (_diagnosisMode) ...[
+                _DiagnosisFields(
+                  checkDate: _diagnosisDate,
+                  result: _diagnosisResult,
+                  onDateChanged: (value) =>
+                      setState(() => _diagnosisDate = value),
+                  onResultChanged: (value) =>
+                      setState(() => _diagnosisResult = value),
+                ),
+                const SizedBox(height: 24),
+                _SaveButton(onPressed: _save, label: 'Guardar diagnóstico'),
+              ] else if (_calvingMode) ...[
                 _CalvingFields(
                   calvingDate: _calvingDate,
                   outcome: _calvingOutcome,
@@ -405,7 +489,10 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                           lastDate: DateTime(_serviceDate.year + 1),
                         );
                         if (picked != null) {
-                          setState(() => _serviceDate = picked);
+                          setState(() {
+                            _serviceDate = picked;
+                            _projectExpectedCalving();
+                          });
                         }
                       },
                     ),
@@ -500,37 +587,106 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// Announces that the selected female is carrying a confirmed pregnancy, and
-/// lets the user switch the form over to registering its calving.
-class _OpenCycleBanner extends StatelessWidget {
-  const _OpenCycleBanner({
-    required this.cycle,
-    required this.calvingMode,
+/// Announces what the selected female's cycle is waiting for, and switches the
+/// form over to that step. The page is one form with three modes — service,
+/// diagnosis, calving — chosen from her actual state rather than from a menu.
+class _CycleBanner extends StatelessWidget {
+  const _CycleBanner({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
     required this.onChanged,
   });
 
-  final ReproductionRecord cycle;
-  final bool calvingMode;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final expected = cycle.expectedCalvingDate;
-    final subtitle = expected == null
-        ? 'Servicio del ${DateFormat('dd/MM/yyyy').format(cycle.serviceDate)}'
-        : 'Parto esperado el ${DateFormat('dd/MM/yyyy').format(expected)}';
-
     return Card(
       margin: EdgeInsets.zero,
-      color: theme.colorScheme.secondaryContainer,
+      color: Theme.of(context).colorScheme.secondaryContainer,
       child: SwitchListTile(
-        value: calvingMode,
+        value: value,
         onChanged: onChanged,
-        title: const Text('Registrar el parto de este ciclo'),
+        title: Text(title),
         subtitle: Text(subtitle),
-        secondary: const Icon(Icons.child_friendly),
+        secondary: Icon(icon),
       ),
+    );
+  }
+}
+
+class _DiagnosisFields extends StatelessWidget {
+  const _DiagnosisFields({
+    required this.checkDate,
+    required this.result,
+    required this.onDateChanged,
+    required this.onResultChanged,
+  });
+
+  final DateTime checkDate;
+  final PregnancyCheckResult result;
+  final ValueChanged<DateTime> onDateChanged;
+  final ValueChanged<PregnancyCheckResult> onResultChanged;
+
+  static String _label(PregnancyCheckResult value) {
+    switch (value) {
+      case PregnancyCheckResult.positive:
+        return 'Preñada';
+      case PregnancyCheckResult.negative:
+        return 'Vacía';
+      case PregnancyCheckResult.uncertain:
+        return 'Dudoso — repetir chequeo';
+      case PregnancyCheckResult.notChecked:
+        return 'Sin revisar';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.event),
+          label: Text(
+            'Chequeo: ${DateFormat('dd/MM/yyyy').format(checkDate)}',
+          ),
+          onPressed: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: checkDate,
+              firstDate: DateTime(checkDate.year - 2),
+              lastDate: DateTime.now().add(const Duration(days: 1)),
+            );
+            if (picked != null) onDateChanged(picked);
+          },
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<PregnancyCheckResult>(
+          initialValue: result,
+          decoration: const InputDecoration(
+            labelText: 'Resultado',
+            border: OutlineInputBorder(),
+          ),
+          items: PregnancyCheckResult.values
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(_label(value)),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value != null) onResultChanged(value);
+          },
+        ),
+      ],
     );
   }
 }
