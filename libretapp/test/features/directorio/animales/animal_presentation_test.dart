@@ -42,7 +42,7 @@ void main() {
     test('uses a readable ear tag fallback', () {
       final animal = _animal(earTag: '');
 
-      expect(earTagDisplay(animal), 'Sin arete');
+      expect(earTagDisplay(animal), 'Arete pendiente');
       expect(primaryAnimalLabel(animal), Species.cattle.displayName);
     });
   });

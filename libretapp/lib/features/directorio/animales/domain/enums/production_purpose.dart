@@ -6,6 +6,10 @@ enum ProductionPurpose {
   dual,
   work,
   companion,
+  sport,
+  eggs,
+  fiber,
+  guard,
   undefined,
   other;
 
@@ -23,6 +27,14 @@ enum ProductionPurpose {
         return 'Trabajo';
       case ProductionPurpose.companion:
         return 'Compañía';
+      case ProductionPurpose.sport:
+        return 'Deporte';
+      case ProductionPurpose.eggs:
+        return 'Postura';
+      case ProductionPurpose.fiber:
+        return 'Fibra / Lana';
+      case ProductionPurpose.guard:
+        return 'Guardia';
       case ProductionPurpose.undefined:
         return 'Por Definir';
       case ProductionPurpose.other:

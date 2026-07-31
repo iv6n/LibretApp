@@ -224,6 +224,12 @@ abstract class AppLocalizations {
   /// **'Solo atención'**
   String get animalsOnlyAttention;
 
+  /// No description provided for @animalsOnlyPendingTag.
+  ///
+  /// In es, this message translates to:
+  /// **'Arete pendiente'**
+  String get animalsOnlyPendingTag;
+
   /// No description provided for @animalsCount.
   ///
   /// In es, this message translates to:
@@ -391,6 +397,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'En observación'**
   String get animalUnderObservation;
+
+  /// No description provided for @animalPendingTag.
+  ///
+  /// In es, this message translates to:
+  /// **'Arete pendiente'**
+  String get animalPendingTag;
+
+  /// No description provided for @animalAddTag.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar arete'**
+  String get animalAddTag;
+
+  /// No description provided for @animalPendingTagHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Agrega el número para completar la identificación.'**
+  String get animalPendingTagHelp;
 
   /// No description provided for @animalVaccinated.
   ///

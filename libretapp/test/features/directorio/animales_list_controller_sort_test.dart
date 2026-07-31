@@ -110,6 +110,35 @@ void main() {
         equals(['tie-a', 'tie-visual', 'tie-b']),
       );
     });
+
+    test('filters pending ear tags independently from health attention', () {
+      final pending = _buildAnimal(
+        uuid: 'pending',
+        earTagNumber: '',
+        species: Species.cattle,
+        requiresAttention: false,
+      );
+      final optionalIdentification = _buildAnimal(
+        uuid: 'canine-without-id',
+        earTagNumber: '',
+        species: Species.canine,
+        requiresAttention: true,
+      );
+      final tagged = _buildAnimal(
+        uuid: 'tagged',
+        earTagNumber: 'B-123',
+        species: Species.cattle,
+      );
+
+      controller.setOnlyPendingEarTag(true);
+      final filtered = controller.applyFilters([
+        pending,
+        optionalIdentification,
+        tagged,
+      ]);
+
+      expect(filtered.map((animal) => animal.uuid), ['pending']);
+    });
   });
 }
 
@@ -117,6 +146,7 @@ AnimalEntity _buildAnimal({
   required String uuid,
   required String earTagNumber,
   String? visualId,
+  Species species = Species.cattle,
   bool underObservation = false,
   bool requiresAttention = false,
   RiskLevel riskLevel = RiskLevel.low,
@@ -129,7 +159,7 @@ AnimalEntity _buildAnimal({
     uuid: uuid,
     earTagNumber: earTagNumber,
     visualId: visualId,
-    species: Species.cattle,
+    species: species,
     category: Category.cow,
     lifeStage: LifeStage.cow,
     sex: Sex.female,

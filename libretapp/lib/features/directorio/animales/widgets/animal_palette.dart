@@ -206,6 +206,10 @@ class AnimalPalette {
       case ProductionPurpose.dual:
         return const Color(0xFF8E5B5B);
       case ProductionPurpose.companion:
+      case ProductionPurpose.sport:
+      case ProductionPurpose.eggs:
+      case ProductionPurpose.fiber:
+      case ProductionPurpose.guard:
       case ProductionPurpose.undefined:
       case ProductionPurpose.other:
         return purposeChipFrame;

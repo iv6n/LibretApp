@@ -44,6 +44,9 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   bool _loading = true;
   bool _saving = false;
 
+  AnimalRegistrationPolicy get _policy =>
+      AnimalRegistrationPolicy.forSpecies(_species);
+
   @override
   void initState() {
     super.initState();
@@ -119,7 +122,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final earTag = _earTagCtrl.text.trim();
-    if (earTag.isEmpty) {
+    if (_policy.tracksPendingEarTag && earTag.isEmpty) {
       final confirmed = await _confirmMissingEarTag();
       if (!mounted || !confirmed) return;
     } else {
@@ -146,29 +149,31 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
 
     setState(() => _saving = true);
     try {
-      final updated = animal.copyWith(
-        earTagNumber: earTag,
-        customName: _nullableText(_nameCtrl.text),
-        visualId: _nullableText(_visualIdCtrl.text),
-        species: _species,
-        category: _category,
-        sex: _sex,
-        breed: _breedCtrl.text.trim(),
-        crossBreed: _nullableText(_crossBreedCtrl.text),
-        weight: weight,
-        coatColor: _nullableText(_coatColorCtrl.text),
-        notes: _nullableText(_notesCtrl.text),
-        crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
-        sireBreed: _nullableText(_sireBreedCtrl.text),
-        damBreed: _nullableText(_damBreedCtrl.text),
-        bloodPercentage: bloodPercentage,
-        status: _status,
-        healthStatus: _healthStatus,
-        riskLevel: _riskLevel,
-        underObservation: _underObservation,
-        requiresAttention: _requiresAttention,
-        synced: false,
-        lastUpdateDate: DateTime.now(),
+      final updated = AnimalRegistrationNormalizer.normalizeEntity(
+        animal.copyWith(
+          earTagNumber: earTag,
+          customName: _nullableText(_nameCtrl.text),
+          visualId: _nullableText(_visualIdCtrl.text),
+          species: _species,
+          category: _category,
+          sex: _sex,
+          breed: _breedCtrl.text.trim(),
+          crossBreed: _nullableText(_crossBreedCtrl.text),
+          weight: weight,
+          coatColor: _nullableText(_coatColorCtrl.text),
+          notes: _nullableText(_notesCtrl.text),
+          crossBreedType: _nullableText(_crossBreedTypeCtrl.text),
+          sireBreed: _nullableText(_sireBreedCtrl.text),
+          damBreed: _nullableText(_damBreedCtrl.text),
+          bloodPercentage: bloodPercentage,
+          status: _status,
+          healthStatus: _healthStatus,
+          riskLevel: _riskLevel,
+          underObservation: _underObservation,
+          requiresAttention: _requiresAttention,
+          synced: false,
+          lastUpdateDate: DateTime.now(),
+        ),
       );
 
       await _repository.update(updated);
@@ -183,13 +188,11 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   }
 
   Future<bool> _isEarTagDuplicated(String earTag) async {
-    final normalized = earTag.trim();
-    if (normalized.isEmpty) return false;
     final animals = await _repository.getAll();
-    return animals.any(
-      (animal) =>
-          animal.uuid != widget.animalUuid &&
-          animal.earTagNumber.trim() == normalized,
+    return AnimalRegistrationNormalizer.isDuplicateIdentification(
+      candidate: earTag,
+      animals: animals,
+      excludingUuid: widget.animalUuid,
     );
   }
 
@@ -229,11 +232,12 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
                   ),
                   TextFormField(
                     controller: _earTagCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Arete / Identificacion',
-                      helperText:
-                          'Recomendado para identificar y buscar al animal.',
-                      prefixIcon: Icon(Icons.sell_outlined),
+                    decoration: InputDecoration(
+                      labelText: _policy.identificationLabel,
+                      helperText: _policy.tracksPendingEarTag
+                          ? 'Recomendado. Puede quedar pendiente.'
+                          : 'Opcional',
+                      prefixIcon: const Icon(Icons.sell_outlined),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -286,11 +290,9 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
                     controller: _breedCtrl,
                     textCapitalization: TextCapitalization.words,
                     decoration: const InputDecoration(
-                      labelText: 'Raza',
+                      labelText: 'Raza — opcional',
                       prefixIcon: Icon(Icons.biotech_outlined),
                     ),
-                    validator: (value) =>
-                        (value ?? '').trim().isEmpty ? 'Ingresa la raza' : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -449,9 +451,10 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
       context: context,
       useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Arete recomendado'),
+        title: const Text('Dejar arete pendiente'),
         content: const Text(
-          'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
+          'El animal aparecerá en tus pendientes hasta que agregues el '
+          'número de arete.',
         ),
         actions: [
           TextButton(
@@ -460,7 +463,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Continuar sin arete'),
+            child: const Text('Guardar como pendiente'),
           ),
         ],
       ),
@@ -469,9 +472,9 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -492,9 +495,9 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -524,10 +527,8 @@ class _EnumField<T> extends StatelessWidget {
       decoration: InputDecoration(labelText: label),
       items: values
           .map(
-            (item) => DropdownMenuItem<T>(
-              value: item,
-              child: Text(labelFor(item)),
-            ),
+            (item) =>
+                DropdownMenuItem<T>(value: item, child: Text(labelFor(item))),
           )
           .toList(),
       onChanged: (item) {

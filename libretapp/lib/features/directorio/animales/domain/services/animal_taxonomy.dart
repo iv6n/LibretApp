@@ -29,6 +29,7 @@ class AnimalTaxonomy {
       species: species,
       sex: sex,
       ageMonths: ageMonths,
+      neutered: neutered,
     );
     if (species == Species.cattle) {
       if (ageMonths < 12) return Category.calf;
@@ -55,6 +56,7 @@ class AnimalTaxonomy {
     required Species species,
     required Sex sex,
     required int? ageMonths,
+    bool neutered = false,
   }) {
     final age = ageMonths ?? 24;
     switch (species) {
@@ -63,18 +65,20 @@ class AnimalTaxonomy {
           return const [Category.calf, Category.weaned, Category.other];
         }
         if (age < 24) {
-          return const [
-            Category.heifer,
-            Category.youngBull,
-            Category.steer,
+          if (sex == Sex.female) {
+            return const [Category.heifer, Category.weaned, Category.other];
+          }
+          return [
+            if (neutered) Category.steer else Category.youngBull,
             Category.weaned,
             Category.other,
           ];
         }
-        return const [
-          Category.cow,
-          Category.bull,
-          Category.oxen,
+        if (sex == Sex.female) {
+          return const [Category.cow, Category.other];
+        }
+        return [
+          if (neutered) Category.oxen else Category.bull,
           Category.other,
         ];
       case Species.equine:

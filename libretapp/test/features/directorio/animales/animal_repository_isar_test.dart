@@ -126,6 +126,39 @@ void main() {
   );
 
   test(
+    'round-trips adaptive production purposes through Isar',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPrefs = await SharedPreferences.getInstance();
+      final repository = AnimalRepositoryIsar(
+        IsarDatabase(),
+        SharedPrefsService(sharedPrefs),
+        _FakeAnimalRemoteDataSource(),
+      );
+
+      for (final purpose in [
+        ProductionPurpose.sport,
+        ProductionPurpose.eggs,
+        ProductionPurpose.fiber,
+        ProductionPurpose.guard,
+      ]) {
+        final uuid = 'purpose-${purpose.name}';
+        await repository.save(
+          _buildAnimal(
+            uuid: uuid,
+            earTag: 'TAG-${purpose.name}',
+            breed: 'Prueba',
+            productionPurpose: purpose,
+          ),
+        );
+        final restored = await repository.getByUuid(uuid);
+        expect(restored?.productionPurpose, purpose);
+      }
+    },
+    skip: !_canRunIsarNative(),
+  );
+
+  test(
     'watchAll reflects save update and delete operations',
     () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -427,6 +460,7 @@ AnimalEntity _buildAnimal({
   required String uuid,
   required String earTag,
   required String breed,
+  ProductionPurpose productionPurpose = ProductionPurpose.undefined,
 }) {
   final now = DateTime.now();
   return AnimalEntity(
@@ -447,7 +481,7 @@ AnimalEntity _buildAnimal({
     hasVitamins: false,
     hasChronicIssues: false,
     reproductiveStatus: ReproductiveStatus.unknown,
-    productionPurpose: ProductionPurpose.undefined,
+    productionPurpose: productionPurpose,
     productionStage: ProductionStage.unknown,
     productionSystem: ProductionSystem.unknown,
     underObservation: false,

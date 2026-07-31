@@ -86,7 +86,11 @@ final router = GoRouter(
                   name: AppRoutes.nameAnimalNuevo,
                   pageBuilder: (context, state) => _buildOverlayDetailPage(
                     state: state,
-                    child: const RegisterAnimalPage(),
+                    child: RegisterAnimalPage(
+                      initialSeed: state.extra is AnimalRegistrationSeed
+                          ? state.extra! as AnimalRegistrationSeed
+                          : null,
+                    ),
                   ),
                 ),
                 GoRoute(
@@ -127,6 +131,17 @@ final router = GoRouter(
                         ),
                         child: AnimalDetailPage(animalUuid: uuid),
                       ),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/completar',
+                  name: AppRoutes.nameAnimalCompletar,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: RegisterAnimalPage(animalUuid: uuid),
                     );
                   },
                 ),

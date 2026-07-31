@@ -2,6 +2,18 @@
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_registration_policy.dart';
+
+bool hasPendingEarTag(AnimalEntity animal) =>
+    AnimalRegistrationPolicy.forSpecies(
+      animal.species,
+    ).hasPendingEarTag(animal);
+
+String identificationDisplay(AnimalEntity animal) {
+  final identification = animal.earTagNumber.trim();
+  if (identification.isNotEmpty) return identification;
+  return hasPendingEarTag(animal) ? 'Arete pendiente' : 'Sin identificación';
+}
 
 String primaryAnimalLabel(AnimalEntity animal) {
   final customName = animal.customName?.trim();
@@ -17,8 +29,7 @@ String primaryAnimalLabel(AnimalEntity animal) {
 }
 
 String earTagDisplay(AnimalEntity animal) {
-  final earTag = animal.earTagNumber.trim();
-  return earTag.isEmpty ? 'Sin arete' : earTag;
+  return identificationDisplay(animal);
 }
 
 String breedSummary(AnimalEntity animal, {bool abbreviated = false}) {

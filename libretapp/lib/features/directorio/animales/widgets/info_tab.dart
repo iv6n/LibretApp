@@ -1,12 +1,14 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a info_tab \u2014 info tab on the animal detail page.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a info_tab \u2014 info tab on the animal detail page.
 library;
 
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -143,13 +145,50 @@ class _InfoTabState extends State<InfoTab> {
             weightLabel: weightLabel,
             locationLabel: locationDisplay,
           ),
+          if (hasPendingEarTag(widget.animal))
+            Card(
+              color: AppColors.amber.withValues(alpha: 0.12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.pending_actions_outlined,
+                      color: AppColors.amber,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.animalPendingTag,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          Text(l10n.animalPendingTagHelp),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.pushNamed(
+                        AppRoutes.nameAnimalEditar,
+                        pathParameters: {'uuid': widget.animal.uuid},
+                      ),
+                      child: Text(l10n.animalAddTag),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           InfoSection(
             title: l10n.sectionIdentification,
             icon: Icons.badge_outlined,
             accent: stageColor,
             children: [
               InfoRow(
-                label: l10n.labelEarTag,
+                label: AnimalRegistrationPolicy.forSpecies(
+                  widget.animal.species,
+                ).identificationLabel,
                 value: earTagDisplay(widget.animal),
                 icon: Icons.sell_outlined,
               ),
@@ -492,12 +531,18 @@ class _ProfileSummaryPanel extends StatelessWidget {
               children: [
                 _SummaryChip(label: shortGeneticsLabel, color: accent),
                 _SummaryChip(label: animal.sex.displayName, color: accent),
-                _SummaryChip(label: animal.lifeStage.displayName, color: accent),
+                _SummaryChip(
+                  label: animal.lifeStage.displayName,
+                  color: accent,
+                ),
                 _SummaryChip(
                   label: animal.healthStatus.displayName,
                   color: healthColor,
                 ),
-                _SummaryChip(label: animal.riskLevel.displayName, color: riskColor),
+                _SummaryChip(
+                  label: animal.riskLevel.displayName,
+                  color: riskColor,
+                ),
               ],
             ),
             const SizedBox(height: 14),

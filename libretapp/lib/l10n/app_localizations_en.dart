@@ -72,6 +72,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animalsOnlyAttention => 'Only attention';
 
   @override
+  String get animalsOnlyPendingTag => 'Pending tag';
+
+  @override
   String animalsCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -275,6 +278,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get animalUnderObservation => 'Under observation';
+
+  @override
+  String get animalPendingTag => 'Pending tag';
+
+  @override
+  String get animalAddTag => 'Add tag';
+
+  @override
+  String get animalPendingTagHelp =>
+      'Add the number to complete identification.';
 
   @override
   String get animalVaccinated => 'Vaccinated';

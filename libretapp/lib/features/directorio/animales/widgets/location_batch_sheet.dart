@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';

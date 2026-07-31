@@ -1,6 +1,4 @@
-/// features › directorio › animales › view › quick_register_animal_page —
-/// Field-optimised 4-field animal entry form.  Saves immediately; the full
-/// wizard is offered afterwards via a SnackBar action.
+/// Field-optimized animal entry that shares rules with the full wizard.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_bloc.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -17,6 +16,8 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class QuickRegisterAnimalPage extends StatefulWidget {
   const QuickRegisterAnimalPage({super.key});
@@ -27,449 +28,304 @@ class QuickRegisterAnimalPage extends StatefulWidget {
 }
 
 class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
-  final _earTagFocus = FocusNode();
-  final _earTagCtrl = TextEditingController();
+  final _identificationFocus = FocusNode();
+  final _identificationCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _breedCtrl = TextEditingController();
 
   Species _species = Species.cattle;
   Sex _sex = Sex.female;
-  int _ageMonths = 12;
+  ApproximateAge _age = const ApproximateAge(years: 1, months: 0);
   ProductionPurpose? _purpose;
   bool _saving = false;
 
-  static const _commonSpecies = [
-    Species.cattle,
-    Species.equine,
-    Species.sheep,
-    Species.goat,
-    Species.pig,
-    Species.poultry,
-    Species.canine,
-  ];
+  AnimalRegistrationPolicy get _policy =>
+      AnimalRegistrationPolicy.forSpecies(_species);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _earTagFocus.requestFocus();
+      if (mounted) _identificationFocus.requestFocus();
     });
   }
 
   @override
   void dispose() {
-    _earTagFocus.dispose();
-    _earTagCtrl.dispose();
+    _identificationFocus.dispose();
+    _identificationCtrl.dispose();
+    _nameCtrl.dispose();
     _weightCtrl.dispose();
     _breedCtrl.dispose();
     super.dispose();
   }
 
-  /// Optional production-purpose choices relevant to each species. Mirrors
-  /// the species-specific fields [AnimalEntity.validateSpeciesRequirements]
-  /// flags as worth completing, kept optional here to preserve quick entry.
-  List<ProductionPurpose> _purposeOptionsFor(Species species) {
-    switch (species) {
-      case Species.cattle:
-      case Species.goat:
-      case Species.sheep:
-      case Species.pig:
-        return const [
-          ProductionPurpose.dairy,
-          ProductionPurpose.meat,
-          ProductionPurpose.dual,
-          ProductionPurpose.breeding,
-        ];
-      case Species.equine:
-      case Species.canine:
-        return const [
-          ProductionPurpose.work,
-          ProductionPurpose.companion,
-          ProductionPurpose.breeding,
-        ];
-      case Species.poultry:
-        return const [
-          ProductionPurpose.meat,
-          ProductionPurpose.breeding,
-          ProductionPurpose.other,
-        ];
-      case Species.other:
-        return const [];
-    }
-  }
-
   void _onSpeciesSelected(Species species) {
     setState(() {
       _species = species;
-      if (!_purposeOptionsFor(species).contains(_purpose)) {
+      if (!_policy.purposeOptions.contains(_purpose)) {
         _purpose = null;
       }
     });
   }
 
-  Category _defaultCategory() {
-    return AnimalTaxonomy.defaultCategory(
-      species: _species,
-      sex: _sex,
-      ageMonths: _ageMonths,
-    );
+  AnimalRegistrationSeed _currentSeed() => AnimalRegistrationSeed(
+    species: _species,
+    sex: _sex,
+    ageMonths: _age.totalMonths,
+    identification: _nullableText(_identificationCtrl.text),
+    name: _nullableText(_nameCtrl.text),
+    breed: _nullableText(_breedCtrl.text),
+    weight: parseFormDouble(_weightCtrl.text),
+    productionPurpose: _purpose,
+  );
+
+  Future<void> _openFullRegistration() async {
+    await context.pushNamed(AppRoutes.nameAnimalNuevo, extra: _currentSeed());
   }
 
   Future<void> _save() async {
     if (_saving) return;
-    final earTag = _earTagCtrl.text.trim();
-    if (earTag.isEmpty) {
-      final shouldContinue = await _confirmMissingEarTag(context);
+    FocusScope.of(context).unfocus();
+    final identification = _identificationCtrl.text.trim();
+    final weight = parseFormDouble(_weightCtrl.text);
+    if (_weightCtrl.text.trim().isNotEmpty && weight == null) {
+      _showMessage('Ingresa un peso válido.');
+      return;
+    }
+
+    if (_policy.tracksPendingEarTag && identification.isEmpty) {
+      final shouldContinue = await _confirmPendingEarTag();
       if (!mounted || !shouldContinue) return;
     }
 
-    setState(() => _saving = true);
+    if (identification.isNotEmpty &&
+        await _isIdentificationDuplicated(identification)) {
+      if (mounted) {
+        _showMessage('Ya existe un animal con esa identificación.');
+      }
+      return;
+    }
 
+    setState(() => _saving = true);
     try {
       final now = DateTime.now();
-      final birthDate = DateTime(
-        now.year,
-        now.month - (_ageMonths % 12),
-        1,
-      ).subtract(Duration(days: 365 * (_ageMonths ~/ 12)));
-
+      final birthDate = _age.estimatedBirthDate(now);
       final lifecycle = AnimalLifecycleCalculator.calculate(
         birthDate: birthDate,
         species: _species,
         sex: _sex,
       );
-      final category = _defaultCategory();
+      final category = AnimalTaxonomy.defaultCategory(
+        species: _species,
+        sex: _sex,
+        ageMonths: _age.totalMonths,
+      );
       final lifeStage = AnimalTaxonomy.resolveLifeStage(
         species: _species,
         sex: _sex,
-        ageMonths: lifecycle.ageMonths,
+        ageMonths: _age.totalMonths,
         category: category,
         fallback: lifecycle.lifeStage,
       );
-
       final uuid = 'ani-${generateId()}';
-      final animal = AnimalEntity(
-        id: null,
-        uuid: uuid,
-        earTagNumber: earTag,
-        customName: null,
-        visualId: null,
-        brand: null,
-        rfidTag: null,
-        batchUuid: null,
-        species: _species,
-        category: category,
-        lifeStage: lifeStage,
-        sex: _sex,
-        breed: _breedCtrl.text.trim(),
-        crossBreed: null,
-        birthDate: birthDate,
-        ageMonths: lifecycle.ageMonths,
-        weight: double.tryParse(_weightCtrl.text.trim()),
-        sireUuid: null,
-        damUuid: null,
-        generation: 1,
-        healthStatus: HealthStatus.good,
-        bodyConditionScore: null,
-        vaccinated: false,
-        dewormed: false,
-        hasVitamins: false,
-        hasChronicIssues: false,
-        chronicNotes: null,
-        reproductiveStatus: ReproductiveStatus.unknown,
-        firstServiceDate: null,
-        lastServiceDate: null,
-        expectedCalvingDate: null,
-        productionPurpose: _purpose ?? ProductionPurpose.undefined,
-        productionStage: ProductionStage.unknown,
-        productionSystem: ProductionSystem.unknown,
-        feedType: null,
-        dailyGainEstimate: null,
-        coatColor: null,
-        distinguishingMarks: null,
-        notes: null,
-        originType: null,
-        provenance: null,
-        crossBreedType: null,
-        sireBreed: null,
-        damBreed: null,
-        bloodPercentage: null,
-        genealogicalRegistry: null,
-        originNotes: null,
-        housingType: null,
-        shadingAvailability: null,
-        animalWaterSource: null,
-        approximateDensity: null,
-        locationNotes: null,
-        feedFrequency: null,
-        feedSupplements: null,
-        feedNotes: null,
-        earTagColor: null,
-        currentLocationId: null,
-        initialLocationId: null,
-        lastMovementDate: now,
-        underObservation: false,
-        requiresAttention: false,
-        riskLevel: RiskLevel.low,
-        profilePhoto: null,
-        gallery: const [],
-        owner: null,
-        purchasePrice: null,
-        status: AnimalStatus.active,
-        synced: false,
-        remoteId: null,
-        syncDate: null,
-        contentHash: null,
-        creationDate: now,
-        lastUpdateDate: now,
+      final normalizedName = _nullableText(_nameCtrl.text);
+      final animal = AnimalRegistrationNormalizer.normalizeEntity(
+        AnimalEntity(
+          id: null,
+          uuid: uuid,
+          earTagNumber: identification,
+          customName: normalizedName,
+          visualId: normalizedName,
+          brand: null,
+          rfidTag: null,
+          batchUuid: null,
+          species: _species,
+          category: category,
+          lifeStage: lifeStage,
+          sex: _sex,
+          breed: _breedCtrl.text,
+          crossBreed: null,
+          birthDate: birthDate,
+          ageMonths: _age.totalMonths,
+          weight: weight,
+          sireUuid: null,
+          damUuid: null,
+          generation: 1,
+          healthStatus: HealthStatus.good,
+          bodyConditionScore: null,
+          vaccinated: false,
+          dewormed: false,
+          hasVitamins: false,
+          hasChronicIssues: false,
+          chronicNotes: null,
+          reproductiveStatus: ReproductiveStatus.unknown,
+          firstServiceDate: null,
+          lastServiceDate: null,
+          expectedCalvingDate: null,
+          productionPurpose: _purpose ?? ProductionPurpose.undefined,
+          productionStage: ProductionStage.unknown,
+          productionSystem: ProductionSystem.unknown,
+          feedType: null,
+          dailyGainEstimate: null,
+          coatColor: null,
+          distinguishingMarks: null,
+          notes: null,
+          originType: null,
+          provenance: null,
+          crossBreedType: null,
+          sireBreed: null,
+          damBreed: null,
+          bloodPercentage: null,
+          genealogicalRegistry: null,
+          originNotes: null,
+          housingType: null,
+          shadingAvailability: null,
+          animalWaterSource: null,
+          approximateDensity: null,
+          locationNotes: null,
+          feedFrequency: null,
+          feedSupplements: null,
+          feedNotes: null,
+          earTagColor: null,
+          currentLocationId: null,
+          initialLocationId: null,
+          lastMovementDate: now,
+          underObservation: false,
+          requiresAttention: false,
+          riskLevel: RiskLevel.low,
+          profilePhoto: null,
+          gallery: const [],
+          owner: null,
+          purchasePrice: null,
+          status: AnimalStatus.active,
+          synced: false,
+          remoteId: null,
+          syncDate: null,
+          contentHash: null,
+          creationDate: now,
+          lastUpdateDate: now,
+        ),
       );
 
       await locator<AnimalRepository>().save(animal);
-
       if (!mounted) return;
-      context.read<AnimalesBloc>().add(const LoadAnimales(forceRefresh: true));
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${primaryAnimalLabel(animal)} registrado'),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'Completar perfil',
-            onPressed: () => context.pushNamed(
-              AppRoutes.nameAnimalEditar,
-              pathParameters: {'uuid': uuid},
-            ),
-          ),
-        ),
-      );
-
-      context.pop();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo guardar. Intentá de nuevo.')),
-      );
+      try {
+        context.read<AnimalesBloc>().add(
+          const LoadAnimales(forceRefresh: true),
+        );
+      } catch (_) {
+        // The page can also be opened without the directory bloc in tests.
+      }
       setState(() => _saving = false);
+      final action = await _showSuccessActions(animal);
+      if (!mounted) return;
+      await _handleSuccessAction(action, uuid);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      _showMessage('No se pudo guardar. Intenta de nuevo.');
     }
   }
 
-  Future<bool> _confirmMissingEarTag(BuildContext context) async {
-    final result = await showDialog<bool>(
-      context: context,
-      useRootNavigator: true,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Arete recomendado'),
-        content: const Text(
-          'El arete es recomendado para identificar y buscar al animal. Puedes continuar sin arete y agregarlo despues.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Continuar sin arete'),
-          ),
-        ],
-      ),
+  Future<bool> _isIdentificationDuplicated(String identification) async {
+    final animals = await locator<AnimalRepository>().getAll();
+    return AnimalRegistrationNormalizer.isDuplicateIdentification(
+      candidate: identification,
+      animals: animals,
     );
-
-    return result ?? false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Registro Rápido'),
-        actions: [
-          TextButton(
-            onPressed: () => context.pushNamed(AppRoutes.nameAnimalNuevo),
-            child: const Text('Ficha completa'),
+  Future<bool> _confirmPendingEarTag() async {
+    return await showDialog<bool>(
+          context: context,
+          useRootNavigator: true,
+          builder: (dialogContext) => AlertDialog(
+            icon: const Icon(Icons.pending_actions_outlined),
+            title: const Text('Dejar arete pendiente'),
+            content: const Text(
+              'El animal quedará registrado y aparecerá en tus pendientes '
+              'hasta que agregues el número de arete.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Volver y agregar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Guardar como pendiente'),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: SafeArea(
+        ) ??
+        false;
+  }
+
+  Future<_QuickSaveAction?> _showSuccessActions(AnimalEntity animal) {
+    return showModalBottomSheet<_QuickSaveAction>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // — Ear tag ——————————————————————————————————————
-              TextField(
-                focusNode: _earTagFocus,
-                controller: _earTagCtrl,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'N° Caravana',
-                  hintText: 'Ej: 1042',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.tag),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                ),
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: const Icon(Icons.check, size: 30),
               ),
-              const SizedBox(height: 20),
-
-              // — Species ——————————————————————————————————————
-              Text('Especie', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    ..._commonSpecies.map((s) {
-                      final selected = _species == s;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(s.displayName),
-                          selected: selected,
-                          onSelected: (_) => _onSpeciesSelected(s),
-                          selectedColor: colorScheme.primaryContainer,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 10,
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Animal registrado',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 20),
-
-              // — Breed (optional) ————————————————————————————
-              TextField(
-                controller: _breedCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Raza — opcional',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.pets_outlined),
-                ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                primaryAnimalLabel(animal),
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
-              const SizedBox(height: 20),
-
-              // — Purpose (optional, species-dependent) ————————
-              if (_purposeOptionsFor(_species).isNotEmpty) ...[
-                Text('Propósito — opcional', style: theme.textTheme.labelLarge),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _purposeOptionsFor(_species).map((purpose) {
-                    final selected = _purpose == purpose;
-                    return ChoiceChip(
-                      label: Text(purpose.displayName),
-                      selected: selected,
-                      onSelected: (_) => setState(() {
-                        _purpose = selected ? null : purpose;
-                      }),
-                      selectedColor: colorScheme.primaryContainer,
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 20),
-              ],
-
-              // — Sex ——————————————————————————————————————————
-              Text('Sexo', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              SegmentedButton<Sex>(
-                segments: const [
-                  ButtonSegment(value: Sex.female, label: Text('♀  Hembra')),
-                  ButtonSegment(value: Sex.male, label: Text('♂  Macho')),
-                ],
-                selected: {_sex},
-                onSelectionChanged: (s) => setState(() => _sex = s.first),
-                expandedInsets: EdgeInsets.zero,
-              ),
-              const SizedBox(height: 20),
-
-              // — Age ———————————————————————————————————————————
-              Text('Edad aproximada', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _AgeStepButton(
-                    icon: Icons.remove,
-                    onPressed: _ageMonths > 0
-                        ? () => setState(() => _ageMonths--)
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        _ageLabel(_ageMonths),
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _AgeStepButton(
-                    icon: Icons.add,
-                    onPressed: _ageMonths < 360
-                        ? () => setState(() => _ageMonths++)
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // — Weight (optional) ————————————————————————————
-              TextField(
-                controller: _weightCtrl,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Peso (kg) — opcional',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.monitor_weight_outlined),
-                  suffixText: 'kg',
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // — Save button ———————————————————————————————————
+              const SizedBox(height: AppSpacing.lg),
               SizedBox(
                 width: double.infinity,
-                height: 56,
                 child: FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check, size: 22),
-                  label: Text(
-                    _saving ? 'Guardando…' : 'Guardar animal',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  onPressed: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_QuickSaveAction.registerAnother),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Registrar otro'),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.xs),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_QuickSaveAction.completeProfile),
+                  icon: const Icon(Icons.assignment_outlined),
+                  label: const Text('Completar ficha'),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(
+                  sheetContext,
+                ).pop(_QuickSaveAction.backToDirectory),
+                child: const Text('Volver al directorio'),
+              ),
             ],
           ),
         ),
@@ -477,37 +333,197 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     );
   }
 
-  String _ageLabel(int months) {
-    if (months == 0) return 'Recién nacido';
-    final years = months ~/ 12;
-    final rem = months % 12;
-    if (years == 0) return '$months mes${months == 1 ? '' : 'es'}';
-    if (rem == 0) return '$years año${years == 1 ? '' : 's'}';
-    return '$years año${years == 1 ? '' : 's'} $rem mes${rem == 1 ? '' : 'es'}';
+  Future<void> _handleSuccessAction(
+    _QuickSaveAction? action,
+    String uuid,
+  ) async {
+    switch (action) {
+      case _QuickSaveAction.registerAnother:
+        setState(() {
+          _identificationCtrl.clear();
+          _nameCtrl.clear();
+          _breedCtrl.clear();
+          _weightCtrl.clear();
+          _sex = Sex.female;
+          _age = const ApproximateAge(years: 1, months: 0);
+        });
+        _identificationFocus.requestFocus();
+      case _QuickSaveAction.completeProfile:
+        await context.pushNamed(
+          AppRoutes.nameAnimalCompletar,
+          pathParameters: {'uuid': uuid},
+        );
+        if (mounted) context.pop(true);
+      case _QuickSaveAction.backToDirectory:
+      case null:
+        context.pop(true);
+    }
   }
-}
-
-class _AgeStepButton extends StatelessWidget {
-  const _AgeStepButton({required this.icon, required this.onPressed});
-
-  final IconData icon;
-  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 52,
-      height: 52,
-      child: FilledButton.tonal(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+    final theme = Theme.of(context);
+    final policy = _policy;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Registro rápido'),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : _openFullRegistration,
+            child: const Text('Ficha completa'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.xxl,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Especie', style: theme.textTheme.labelLarge),
+              const SizedBox(height: AppSpacing.xs),
+              AnimalSpeciesSelector(
+                value: _species,
+                onChanged: _onSpeciesSelected,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              TextField(
+                focusNode: _identificationFocus,
+                controller: _identificationCtrl,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: policy.identificationLabel,
+                  hintText: policy.identificationHint,
+                  helperText: policy.tracksPendingEarTag
+                      ? 'Recomendado. Puedes guardarlo como pendiente.'
+                      : 'Opcional',
+                  prefixIcon: Icon(_identificationIcon(policy)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre o alias — opcional',
+                  prefixIcon: Icon(Icons.drive_file_rename_outline),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _breedCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Raza — opcional',
+                  prefixIcon: Icon(Icons.pets_outlined),
+                ),
+              ),
+              if (policy.purposeOptions.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Text('Propósito — opcional', style: theme.textTheme.labelLarge),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: policy.purposeOptions.map((purpose) {
+                    final selected = _purpose == purpose;
+                    return ChoiceChip(
+                      label: Text(purpose.displayName),
+                      selected: selected,
+                      onSelected: (_) => setState(() {
+                        _purpose = selected ? null : purpose;
+                      }),
+                    );
+                  }).toList(),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              Text('Sexo', style: theme.textTheme.labelLarge),
+              const SizedBox(height: AppSpacing.xs),
+              CompactSexSelector(
+                value: _sex,
+                onChanged: (sex) => setState(() => _sex = sex),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ApproximateAgeField(
+                value: _age,
+                onChanged: (age) => setState(() => _age = age),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _weightCtrl,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Peso (kg) — opcional',
+                  prefixIcon: Icon(Icons.monitor_weight_outlined),
+                  suffixText: 'kg',
+                ),
+              ),
+            ],
           ),
         ),
-        child: Icon(icon, size: 26),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xs,
+          AppSpacing.lg,
+          AppSpacing.sm,
+        ),
+        child: SizedBox(
+          height: 56,
+          child: FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: _saving
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            label: Text(_saving ? 'Guardando…' : 'Guardar animal'),
+          ),
+        ),
       ),
     );
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String? _nullableText(String raw) {
+    final value = raw.trim();
+    return value.isEmpty ? null : value;
+  }
+}
+
+enum _QuickSaveAction { registerAnother, completeProfile, backToDirectory }
+
+IconData _identificationIcon(AnimalRegistrationPolicy policy) {
+  switch (policy.identificationKind) {
+    case AnimalIdentificationKind.earTag:
+      return Icons.sell_outlined;
+    case AnimalIdentificationKind.microchipOrPassport:
+      return Icons.badge_outlined;
+    case AnimalIdentificationKind.legBand:
+      return Icons.radio_button_checked;
+    case AnimalIdentificationKind.microchipOrPlate:
+      return Icons.memory_outlined;
+    case AnimalIdentificationKind.generic:
+      return Icons.tag;
   }
 }
