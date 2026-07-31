@@ -2979,7 +2979,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       if (!mounted) return;
       await _clearDraft();
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      // Returns the uuid, not just a success flag: the calving flow needs it to
+      // link the newborn back to its dam's reproduction record.
+      Navigator.of(context).pop(uuid);
     } catch (e) {
       if (!mounted) return;
       _showMessage('No se pudo guardar el animal: $e');

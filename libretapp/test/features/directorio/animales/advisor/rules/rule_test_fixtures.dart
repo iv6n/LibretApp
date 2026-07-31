@@ -24,6 +24,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/species.dart
 final _referenceDate = DateTime(2024, 6, 1);
 
 AnimalEntity buildAnimal({
+  String uuid = 'animal-under-test',
   Species species = Species.cattle,
   Category category = Category.cow,
   LifeStage lifeStage = LifeStage.cow,
@@ -56,7 +57,7 @@ AnimalEntity buildAnimal({
   RiskLevel riskLevel = RiskLevel.none,
 }) {
   return AnimalEntity(
-    uuid: 'animal-under-test',
+    uuid: uuid,
     earTagNumber: '001',
     species: species,
     category: category,

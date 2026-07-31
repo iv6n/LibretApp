@@ -7,12 +7,19 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 import 'package:libretapp/features/directorio/animales/domain/enums/reproductive_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/pedigree_service.dart';
 
 /// Reglas de la biblia ganadera aplicables a eventos reproductivos.
+///
+/// [herd] permite a la regla de consanguinidad recorrer el pedigrí. Es
+/// opcional: sin hato, esa regla se limita a los casos que puede deducir de
+/// los campos del propio animal, que es el comportamiento histórico.
 List<LivestockTip> evaluateReproductionRules(
   AnimalEntity animal,
-  ReproductionRecord record,
-) {
+  ReproductionRecord record, {
+  Map<String, AnimalEntity> herd = const {},
+}) {
   return [
     _youngAnimalService(animal),
     _serviceIntervalCheck(animal, record),
@@ -20,7 +27,7 @@ List<LivestockTip> evaluateReproductionRules(
     _pregnancyCheckReminder(record),
     _calvingPreparation(animal),
     _postPartumRecovery(animal),
-    _consanguinityWarning(animal, record),
+    _consanguinityWarning(animal, record, herd),
     _seasonalBreedingTip(animal, record),
     _bodyConditionForService(animal),
     _repeatedServiceFailure(animal, record),
@@ -165,10 +172,16 @@ LivestockTip? _postPartumRecovery(AnimalEntity animal) {
   );
 }
 
-/// Consanguinidad: advertir si toro y vaca son del mismo hato sin registro.
+/// Consanguinidad: recorre el pedigrí buscando un ancestro compartido.
+///
+/// Sin [herd] sólo puede comparar el padre registrado de la hembra contra el
+/// semental elegido. Con el hato disponible, [PedigreeService] detecta además
+/// hermanos completos, medios hermanos y abuelos comunes hasta 3 generaciones,
+/// que es donde la consanguinidad deja de ser despreciable en la práctica.
 LivestockTip? _consanguinityWarning(
   AnimalEntity animal,
   ReproductionRecord record,
+  Map<String, AnimalEntity> herd,
 ) {
   if (record.serviceType != ServiceType.naturalService) return null;
   if (record.maleSireUuid == null || record.maleSireUuid!.isEmpty) {
@@ -186,7 +199,7 @@ LivestockTip? _consanguinityWarning(
     );
   }
 
-  // Si el toro está en el mismo hato, advertir sobre genealogía.
+  // Padre × hija: el caso más cerrado y el único detectable sin pedigrí.
   if (animal.sireUuid != null && animal.sireUuid == record.maleSireUuid) {
     return const LivestockTip(
       category: TipCategory.reproduction,
@@ -202,7 +215,45 @@ LivestockTip? _consanguinityWarning(
     );
   }
 
-  return null;
+  if (herd.isEmpty) return null;
+
+  const pedigree = PedigreeService();
+  final relatedness = pedigree.relatednessWarning(
+    sireUuid: record.maleSireUuid,
+    damUuid: animal.uuid,
+    herd: herd,
+  );
+  if (!relatedness.isRelated) return null;
+
+  final closeness = relatedness.closeness ?? 4;
+  final ancestor = herd[relatedness.commonAncestorUuid];
+  final ancestorLabel = ancestor == null
+      ? 'un ancestro común'
+      : 'el ancestro común ${primaryAnimalLabel(ancestor)}';
+
+  // closeness 2 son hermanos (25% de consanguinidad, igual que padre×hija);
+  // a partir de 3 el porcentaje cae y pasa a ser una advertencia.
+  final isTight = closeness <= 2;
+
+  return LivestockTip(
+    category: TipCategory.reproduction,
+    severity: isTight ? TipSeverity.critical : TipSeverity.warning,
+    title: isTight
+        ? 'Consanguinidad cercana detectada'
+        : 'Parentesco detectado en el pedigrí',
+    description: isTight
+        ? 'El semental y esta hembra comparten $ancestorLabel a una o dos '
+              'generaciones de distancia: son hermanos completos o medios '
+              'hermanos. El cruce genera alrededor de un 25% de '
+              'consanguinidad, con la misma depresión endogámica que un '
+              'cruce padre-hija. Elija un semental no emparentado.'
+        : 'El semental y esta hembra comparten $ancestorLabel dentro de las '
+              'últimas tres generaciones. El porcentaje de consanguinidad es '
+              'moderado, pero repetir el cruce concentra el parentesco en el '
+              'hato. Si busca fijar caracteres, lleve registro; si no, '
+              'prefiera un semental de otra línea.',
+    source: 'Genética Animal — Depresión Endogámica',
+  );
 }
 
 /// Temporada de monta: considerar estacionalidad.

@@ -44,11 +44,18 @@ class LivestockAdvisor {
   }
 
   /// Tips al registrar un evento reproductivo.
+  ///
+  /// Pasar [herd] (el hato indexado por uuid) habilita la detección de
+  /// parentesco por pedigrí; sin él sólo se detecta lo deducible de los
+  /// campos del propio animal.
   static List<LivestockTip> forReproduction(
     AnimalEntity animal,
-    ReproductionRecord record,
-  ) {
-    return _sortBySeverity(evaluateReproductionRules(animal, record));
+    ReproductionRecord record, {
+    Map<String, AnimalEntity> herd = const {},
+  }) {
+    return _sortBySeverity(
+      evaluateReproductionRules(animal, record, herd: herd),
+    );
   }
 
   /// Tips generales al consultar el perfil de un animal.

@@ -121,6 +121,24 @@ class HerdReproductiveKpis {
 class ReproductiveKpiService {
   const ReproductiveKpiService();
 
+  /// The cycle awaiting a calving: confirmed pregnant and not yet calved.
+  ///
+  /// Returns the most recent one, so a re-service after a failed pregnancy
+  /// wins over the older record. Shared with the calving flow so the
+  /// definition of "open cycle" lives in exactly one place.
+  static ReproductionRecord? openCycleOf(List<ReproductionRecord> records) {
+    final open = records
+        .where(
+          (record) =>
+              !record.hasCalved &&
+              record.pregnancyResult == PregnancyCheckResult.positive,
+        )
+        .toList()
+      ..sort((a, b) => a.serviceDate.compareTo(b.serviceDate));
+
+    return open.isEmpty ? null : open.last;
+  }
+
   AnimalReproductiveKpis forAnimal({
     required List<ReproductionRecord> records,
     DateTime? birthDate,
@@ -180,15 +198,7 @@ class ReproductiveKpiService {
       }
     }
 
-    // An open cycle is a service confirmed pregnant that has not calved yet.
-    // Take the most recent one, so a re-service after a failed pregnancy wins
-    // over the older record.
-    final openCycles = ordered.where(
-      (record) =>
-          !record.hasCalved &&
-          record.pregnancyResult == PregnancyCheckResult.positive,
-    );
-    final openCycle = openCycles.isEmpty ? null : openCycles.last;
+    final openCycle = openCycleOf(ordered);
 
     final currentGestationDays =
         openCycle != null && !reference.isBefore(openCycle.serviceDate)

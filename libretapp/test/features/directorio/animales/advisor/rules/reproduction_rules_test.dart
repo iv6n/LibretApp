@@ -254,6 +254,92 @@ void main() {
       );
     });
 
+    test('flags full siblings as critical once the herd is available', () {
+      // Neither animal has the other as a parent, so the pre-pedigree rule
+      // could not see this: they share both parents.
+      final dam = buildAnimal(
+        uuid: 'hembra',
+        sireUuid: 'padre',
+        damUuid: 'madre',
+      );
+      final herd = {
+        'padre': buildAnimal(uuid: 'padre', sex: Sex.male),
+        'madre': buildAnimal(uuid: 'madre'),
+        'hermano': buildAnimal(
+          uuid: 'hermano',
+          sex: Sex.male,
+          sireUuid: 'padre',
+          damUuid: 'madre',
+        ),
+        'hembra': dam,
+      };
+
+      final tips = evaluateReproductionRules(
+        dam,
+        buildReproductionRecord(
+          serviceType: ServiceType.naturalService,
+          maleSireUuid: 'hermano',
+        ),
+        herd: herd,
+      );
+
+      final tip = tips.firstWhere(
+        (t) => t.title == 'Consanguinidad cercana detectada',
+      );
+      expect(tip.severity, TipSeverity.critical);
+    });
+
+    test('a shared grandparent is a warning, not critical', () {
+      final dam = buildAnimal(uuid: 'hembra', sireUuid: 'p1');
+      final herd = {
+        'raiz': buildAnimal(uuid: 'raiz', sex: Sex.male),
+        'p1': buildAnimal(uuid: 'p1', sex: Sex.male, sireUuid: 'raiz'),
+        'p2': buildAnimal(uuid: 'p2', sex: Sex.male, sireUuid: 'raiz'),
+        'toro': buildAnimal(uuid: 'toro', sex: Sex.male, sireUuid: 'p2'),
+        'hembra': dam,
+      };
+
+      final tips = evaluateReproductionRules(
+        dam,
+        buildReproductionRecord(
+          serviceType: ServiceType.naturalService,
+          maleSireUuid: 'toro',
+        ),
+        herd: herd,
+      );
+
+      final tip = tips.firstWhere(
+        (t) => t.title == 'Parentesco detectado en el pedigrí',
+      );
+      expect(tip.severity, TipSeverity.warning);
+    });
+
+    test('stays silent when the pedigrees are disjoint', () {
+      final dam = buildAnimal(uuid: 'hembra', sireUuid: 'a', damUuid: 'b');
+      final herd = {
+        'hembra': dam,
+        'toro': buildAnimal(uuid: 'toro', sex: Sex.male, sireUuid: 'c'),
+      };
+
+      final tips = evaluateReproductionRules(
+        dam,
+        buildReproductionRecord(
+          serviceType: ServiceType.naturalService,
+          maleSireUuid: 'toro',
+        ),
+        herd: herd,
+      );
+
+      expect(
+        tips.map((t) => t.title),
+        isNot(contains('Parentesco detectado en el pedigrí')),
+      );
+      expect(
+        tips.map((t) => t.title),
+        isNot(contains('Consanguinidad cercana detectada')),
+      );
+    });
+
     test('does not fire for artificial insemination', () {
       final tips = evaluateReproductionRules(
         buildAnimal(),
