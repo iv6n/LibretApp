@@ -92,6 +92,9 @@ class _FakeAnimalRepository implements AnimalRepository {
   Future<List<AnimalEntity>> getByBatchUuid(String batchUuid) =>
       throw UnimplementedError();
   @override
+  Future<List<AnimalEntity>> getByParentUuid(String parentUuid) =>
+      throw UnimplementedError();
+  @override
   Future<List<AnimalEntity>> getAnimalsRequiringAttention() =>
       throw UnimplementedError();
   @override

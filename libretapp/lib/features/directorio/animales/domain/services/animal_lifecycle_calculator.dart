@@ -33,16 +33,22 @@ class AnimalLifecycleCalculator {
     );
   }
 
-  static int _calculateAgeInMonths(DateTime birthDate, DateTime referenceDate) {
-    var months =
-        (referenceDate.year - birthDate.year) * 12 +
-        (referenceDate.month - birthDate.month);
+  /// Whole months elapsed between two dates, clamped at zero.
+  ///
+  /// Shared so every age-like figure in the app (animal age, age at first
+  /// calving, months since an event) is counted the same way.
+  static int monthsBetween(DateTime from, DateTime to) {
+    var months = (to.year - from.year) * 12 + (to.month - from.month);
 
-    if (referenceDate.day < birthDate.day) {
+    if (to.day < from.day) {
       months -= 1;
     }
 
     return months < 0 ? 0 : months;
+  }
+
+  static int _calculateAgeInMonths(DateTime birthDate, DateTime referenceDate) {
+    return monthsBetween(birthDate, referenceDate);
   }
 
   static LifeStage _resolveLifeStage({

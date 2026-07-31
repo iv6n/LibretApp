@@ -14,6 +14,12 @@ abstract class AnimalRepository {
   Future<List<AnimalEntity>> getBySpecies(String speciesName);
   Future<List<AnimalEntity>> getByPaddock(String paddockId);
   Future<List<AnimalEntity>> getByBatchUuid(String batchUuid);
+
+  /// Direct offspring of [parentUuid], matched against either parent. Backed
+  /// by the `sireUuid`/`damUuid` indexes so walking a pedigree does not scan
+  /// the whole collection at every node.
+  Future<List<AnimalEntity>> getByParentUuid(String parentUuid);
+
   Future<List<AnimalEntity>> getAnimalsRequiringAttention();
   Future<List<AnimalEntity>> getUnsynchronized();
   Future<AnimalEntity> save(AnimalEntity animal);

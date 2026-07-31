@@ -138,6 +138,38 @@ class AnimalRepositoryIsar implements AnimalRepository {
   }
 
   @override
+  Future<List<AnimalEntity>> getByParentUuid(String parentUuid) async {
+    final isar = await _isar;
+
+    // Two index-backed lookups instead of one filter scan: `sireUuid` and
+    // `damUuid` are separate indexes, so an OR across them cannot be a single
+    // where clause.
+    final bySire = await isar.isarAnimals
+        .where()
+        .sireUuidEqualTo(parentUuid)
+        .findAll();
+    final byDam = await isar.isarAnimals
+        .where()
+        .damUuidEqualTo(parentUuid)
+        .findAll();
+
+    // An animal can appear in both lists only through corrupt data (same
+    // parent recorded as sire and dam), but de-duplicate anyway.
+    final merged = <String, AnimalEntity>{};
+    for (final record in [...bySire, ...byDam]) {
+      final entity = record.toEntity();
+      merged[entity.uuid] = entity;
+    }
+
+    // Archived offspring are kept on purpose: a calf that was sold or died is
+    // still part of its dam's production history, which is the whole point of
+    // looking at her progeny.
+    final offspring = merged.values.toList()
+      ..sort((a, b) => b.birthDate.compareTo(a.birthDate));
+    return List<AnimalEntity>.unmodifiable(offspring);
+  }
+
+  @override
   Future<List<AnimalEntity>> getAnimalsRequiringAttention() async {
     final isar = await _isar;
     final records = await isar.isarAnimals
