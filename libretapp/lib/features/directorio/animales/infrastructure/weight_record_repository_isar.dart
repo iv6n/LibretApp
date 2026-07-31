@@ -54,6 +54,28 @@ class WeightRecordRepositoryIsar
   );
 
   @override
+  Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
+    Set<String> animalUuids,
+  ) async {
+    if (animalUuids.isEmpty) return const {};
+
+    final db = await isar;
+    final records = await db.isarWeightRecords
+        .filter()
+        .anyOf(animalUuids, (q, uuid) => q.animalUuidEqualTo(uuid))
+        .sortByDateDesc()
+        .findAll();
+
+    final grouped = <String, List<WeightRecord>>{};
+    for (final record in records) {
+      grouped
+          .putIfAbsent(record.animalUuid, () => <WeightRecord>[])
+          .add(record.toEntity());
+    }
+    return grouped;
+  }
+
+  @override
   Future<void> deleteWeightRecord(String recordId) => deleteRecordById(recordId);
 
   Future<void> _applyWeightEffect(

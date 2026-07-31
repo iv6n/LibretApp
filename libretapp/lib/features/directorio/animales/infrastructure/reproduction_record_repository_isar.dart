@@ -43,6 +43,27 @@ class ReproductionRecordRepositoryIsar
       getRecordsFor(animalUuid);
 
   @override
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids) async {
+    if (animalUuids.isEmpty) return const {};
+
+    final db = await isar;
+    final records = await db.isarReproductionRecords
+        .filter()
+        .anyOf(animalUuids, (q, uuid) => q.animalUuidEqualTo(uuid))
+        .sortByServiceDateDesc()
+        .findAll();
+
+    final grouped = <String, List<ReproductionRecord>>{};
+    for (final record in records) {
+      grouped
+          .putIfAbsent(record.animalUuid, () => <ReproductionRecord>[])
+          .add(record.toEntity());
+    }
+    return grouped;
+  }
+
+  @override
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,
     ReproductionRecord record,

@@ -5,6 +5,14 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 
 abstract class ReproductionRecordRepository {
   Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid);
+
+  /// Records for several animals in one query, keyed by animal uuid.
+  ///
+  /// Exists so building the indicators for a page of cards costs one round
+  /// trip instead of one per card. Animals with no records are omitted.
+  Future<Map<String, List<ReproductionRecord>>> getReproductionRecordsForAnimals(
+    Set<String> animalUuids,
+  );
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,
     ReproductionRecord record,

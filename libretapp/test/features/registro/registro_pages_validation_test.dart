@@ -333,6 +333,10 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) async =>
       const [];
   @override
+  Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
+    Set<String> animalUuids,
+  ) async => const {};
+  @override
   Future<WeightRecord> addWeightRecord(
     String animalUuid,
     WeightRecord record,
@@ -345,6 +349,11 @@ class _FakeHealthRecordRepository implements HealthRecordRepository {
   @override
   Future<List<HealthRecord>> getHealthRecords(String animalUuid) async =>
       const [];
+  @override
+  Future<Map<String, DateTime>> getActiveWithdrawals(
+    Set<String> animalUuids, {
+    DateTime? asOf,
+  }) async => const {};
   @override
   Future<HealthRecord> addHealthRecord(
     String animalUuid,
@@ -379,6 +388,9 @@ class _FakeReproductionRecordRepository
   Future<List<ReproductionRecord>> getReproductionRecords(
     String animalUuid,
   ) async => const [];
+  @override
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids) async => const {};
   @override
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,

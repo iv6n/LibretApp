@@ -19,6 +19,11 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) async => [];
 
   @override
+  Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
+    Set<String> animalUuids,
+  ) async => const {};
+
+  @override
   Future<WeightRecord> addWeightRecord(
     String animalUuid,
     WeightRecord record,

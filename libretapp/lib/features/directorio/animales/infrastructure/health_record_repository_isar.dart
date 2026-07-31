@@ -87,6 +87,35 @@ class HealthRecordRepositoryIsar
   }
 
   @override
+  Future<Map<String, DateTime>> getActiveWithdrawals(
+    Set<String> animalUuids, {
+    DateTime? asOf,
+  }) async {
+    if (animalUuids.isEmpty) return const {};
+
+    final reference = asOf ?? DateTime.now();
+    final db = await isar;
+    final records = await db.isarHealthRecords
+        .filter()
+        .anyOf(animalUuids, (q, uuid) => q.animalUuidEqualTo(uuid))
+        .withdrawalEndDateGreaterThan(reference)
+        .findAll();
+
+    // An animal can be under several treatments at once; the one that clears
+    // last is the one that governs when its milk or meat may be sold.
+    final latest = <String, DateTime>{};
+    for (final record in records) {
+      final endsOn = record.withdrawalEndDate;
+      if (endsOn == null) continue;
+      final current = latest[record.animalUuid];
+      if (current == null || endsOn.isAfter(current)) {
+        latest[record.animalUuid] = endsOn;
+      }
+    }
+    return latest;
+  }
+
+  @override
   Future<void> deleteHealthRecord(String recordId) =>
       deleteRecordById(recordId);
 

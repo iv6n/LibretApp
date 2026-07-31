@@ -1,6 +1,7 @@
 /// features \u203a directorio \u203a animales \u203a view \u203a animales_list_view \u2014 stateless list layout for animals.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,9 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
@@ -36,6 +40,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
   static const double _nearListEndThreshold = 96;
   static const double _estimatedQuickMenuHeight = 288;
   static const double _quickMenuGap = 2;
+  // Se conserva el control y toda su lógica para reubicarlo posteriormente
+  // en una superficie de filtros más compacta.
+  static const bool _showPendingEarTagFilterChip = false;
   late final AnimalesListController _animalController;
   late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
@@ -55,7 +62,23 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
       locationRepository: locator<LocationRepository>(),
-    )..loadInitial();
+      reproductionRepository: locator<ReproductionRecordRepository>(),
+      healthRepository: _healthRepo,
+      weightRepository: locator<WeightRecordRepository>(),
+      milkingRepository: locator<MilkingRepository>(),
+    );
+    try {
+      final query = GoRouterState.of(context).uri.queryParameters;
+      if (query['pendingEarTag'] == 'true') {
+        _animalController.setOnlyPendingEarTag(true);
+      }
+      if (query['attention'] == 'true') {
+        _animalController.setOnlyAttention(true);
+      }
+    } catch (_) {
+      // The list can also be hosted without GoRouter in focused widget tests.
+    }
+    _animalController.loadInitial();
     context.read<LotesTabBloc>().add(const LoadLotesTab());
   }
 
@@ -282,6 +305,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
         final filtered = _animalController.applyFilters(state.visibleAnimals);
         final stageCounts = _countByStage(state.allAnimals);
+
+        // Load the record-derived indicators for the rows on screen after the
+        // frame settles: the controller notifies listeners when they arrive,
+        // which must not happen mid-build. Already-loaded animals are skipped,
+        // so repeating this on every build costs nothing.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          unawaited(_animalController.loadIndicatorSnapshots(filtered));
+        });
         final selectedVisibleCount = filtered
             .where((animal) => state.selectedAnimalUuids.contains(animal.uuid))
             .length;
@@ -314,7 +346,13 @@ class _AnimalesListViewState extends State<AnimalesListView>
                             .toSet(),
                         stageCounts: stageCounts,
                         onStagesChanged: _animalController.setStages,
+                        onlyPendingEarTag:
+                            _animalController.state.onlyPendingEarTag,
+                        onPendingEarTagChanged:
+                            _animalController.setOnlyPendingEarTag,
                         locationResolver: _animalController.locationForAnimal,
+                        snapshotResolver: (animal) =>
+                            _animalController.snapshotFor(animal.uuid),
                         onOpenDetail: _openAnimalDetail,
                         hideStageChips: state.isSearching,
                       ),
@@ -490,7 +528,10 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required Set<LifeStage> availableStages,
     required Map<LifeStage, int> stageCounts,
     required ValueChanged<Set<LifeStage>> onStagesChanged,
+    required bool onlyPendingEarTag,
+    required ValueChanged<bool> onPendingEarTagChanged,
     required LocationEntity? Function(AnimalEntity) locationResolver,
+    required AnimalIndicatorSnapshot? Function(AnimalEntity) snapshotResolver,
     required void Function(AnimalEntity) onOpenDetail,
     bool hideStageChips = false,
   }) {
@@ -527,6 +568,21 @@ class _AnimalesListViewState extends State<AnimalesListView>
                   theme: theme,
                   onStagesChanged: onStagesChanged,
                 ),
+              if (!hideStageChips && _showPendingEarTagFilterChip) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    avatar: const Icon(
+                      Icons.pending_actions_outlined,
+                      size: 18,
+                    ),
+                    label: Text(l10n.animalsOnlyPendingTag),
+                    selected: onlyPendingEarTag,
+                    onSelected: onPendingEarTagChanged,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               Text(
                 l10n.animalsEmptyTitle,
@@ -565,6 +621,22 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 stageCounts: stageCounts,
                 theme: theme,
                 onStagesChanged: onStagesChanged,
+              ),
+            if (!hideStageChips && _showPendingEarTagFilterChip)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(6, 4, 6, 2),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilterChip(
+                    avatar: const Icon(
+                      Icons.pending_actions_outlined,
+                      size: 18,
+                    ),
+                    label: Text(l10n.animalsOnlyPendingTag),
+                    selected: onlyPendingEarTag,
+                    onSelected: onPendingEarTagChanged,
+                  ),
+                ),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -637,6 +709,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
               key: ValueKey('card_${animal.uuid}'),
               animal: animal,
               location: locationResolver(animal),
+              indicatorSnapshot: snapshotResolver(animal),
               isSelected: state.selectedAnimalUuids.contains(animal.uuid),
               selectionEnabled: state.isSelectionMode,
               onMenuAction: (action) => _handleAnimalCardMenuAction(

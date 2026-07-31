@@ -7,6 +7,7 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 
 enum AnimalCardMenuAction {
   viewDetail,
@@ -21,6 +22,7 @@ class AnimalCard extends StatelessWidget {
     super.key,
     required this.animal,
     this.location,
+    this.indicatorSnapshot,
     this.onTap,
     this.onLongPress,
     this.onMenuAction,
@@ -32,6 +34,10 @@ class AnimalCard extends StatelessWidget {
 
   final AnimalEntity animal;
   final LocationEntity? location;
+
+  /// Record-derived figures for this animal. When null the card falls back to
+  /// the denormalized fields on the entity.
+  final AnimalIndicatorSnapshot? indicatorSnapshot;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final ValueChanged<AnimalCardMenuAction>? onMenuAction;
@@ -42,13 +48,14 @@ class AnimalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final stageColor = AnimalPalette.categoryColor(animal.category);
     final speciesColor = AnimalPalette.speciesColor(animal.species);
     final profile = profileVisualFor(animal, speciesColor);
     final stageLabel = animal.lifeStage.displayName;
     final purposeLabel = _purposeShortLabel(animal.productionPurpose);
     final showPurpose = animal.productionPurpose != ProductionPurpose.undefined;
-    final purposeKpiLabel = _purposeKpiLabel(animal);
+    final indicators = indicatorsFor(animal, snapshot: indicatorSnapshot);
 
     final stageAsset = profile.asset;
     final avatarBorderColor = _avatarBorderColor(animal, context);
@@ -60,6 +67,7 @@ class AnimalCard extends StatelessWidget {
         : colorFromHex(animal.riskLevel.hexColor);
     final locationLabel = location?.name ?? 'Sin ubicación';
     final hasEarTag = animal.earTagNumber.trim().isNotEmpty;
+    final pendingEarTag = hasPendingEarTag(animal);
     final breedLabel = breedSummary(animal, abbreviated: true);
     final headerLabel = primaryAnimalLabel(animal);
     final secondaryLabel = hasEarTag
@@ -174,13 +182,12 @@ class AnimalCard extends StatelessWidget {
                                         )
                                       : Text(
                                           headerLabel,
-                                          style: textTheme.titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 18,
-                                                color: headerPrimaryTextColor,
-                                                height: 1.05,
-                                              ),
+                                          style: textTheme.titleLarge?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 18,
+                                            color: headerPrimaryTextColor,
+                                            height: 1.05,
+                                          ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -298,20 +305,38 @@ class AnimalCard extends StatelessWidget {
                                     tintOpacity: 0.10,
                                     borderOpacity: 0.28,
                                   ),
-                                if (showPurpose && purposeKpiLabel != null)
+                                if (pendingEarTag)
                                   TagChip(
                                     fontSize: 11,
-                                    label: purposeKpiLabel.toUpperCase(),
-                                    accentColor:
-                                        AnimalPalette.summaryChipAccent(
-                                          context,
-                                        ),
-                                    textColor:
-                                        AnimalPalette.purposeSummaryTextColor(
-                                          animal.productionPurpose,
-                                        ),
-                                    tintOpacity: 0.10,
-                                    borderOpacity: 0.28,
+                                    label: l10n.animalPendingTag.toUpperCase(),
+                                    accentColor: const Color(0xFFC58B2A),
+                                    textColor: const Color(0xFF704A00),
+                                    tintOpacity: 0.16,
+                                    borderOpacity: 0.55,
+                                  ),
+                                for (final indicator in indicators)
+                                  TagChip(
+                                    fontSize: 11,
+                                    label: indicator.label.toUpperCase(),
+                                    accentColor: _indicatorAccentColor(
+                                      context,
+                                      indicator,
+                                    ),
+                                    textColor: _indicatorTextColor(
+                                      context,
+                                      indicator,
+                                      animal.productionPurpose,
+                                    ),
+                                    tintOpacity:
+                                        indicator.severity ==
+                                            IndicatorSeverity.neutral
+                                        ? 0.10
+                                        : 0.16,
+                                    borderOpacity:
+                                        indicator.severity ==
+                                            IndicatorSeverity.neutral
+                                        ? 0.28
+                                        : 0.55,
                                   ),
                               ],
                             ),
@@ -399,11 +424,15 @@ class _AnimalCardQuickMenu extends StatelessWidget {
       final button = context.findRenderObject() as RenderBox?;
       if (button == null) return;
 
-      final overlay =
-          Overlay.of(context).context.findRenderObject() as RenderBox;
+      // The preparation callback may scroll this card; the context is checked
+      // immediately above before resolving its new overlay position.
+      // ignore: use_build_context_synchronously
+      final overlayContext = Overlay.of(context).context;
+      final overlay = overlayContext.findRenderObject() as RenderBox;
       final origin = button.localToGlobal(Offset.zero, ancestor: overlay);
       final menuTop = origin.dy + button.size.height + 2;
 
+      // ignore: use_build_context_synchronously
       final selected = await showMenu<AnimalCardMenuAction>(
         context: context,
         useRootNavigator: true,
@@ -935,6 +964,35 @@ class FormattedEarTag extends StatelessWidget {
   }
 }
 
+/// Severity drives the chip colour so a withdrawal period or an overdue
+/// calving reads differently from a plain statistic, reusing the same warning
+/// palette the pending-ear-tag chip and the avatar border already use.
+Color _indicatorAccentColor(BuildContext context, PurposeIndicator indicator) {
+  switch (indicator.severity) {
+    case IndicatorSeverity.critical:
+      return const Color(0xFFD93A2F);
+    case IndicatorSeverity.attention:
+      return const Color(0xFFC58B2A);
+    case IndicatorSeverity.neutral:
+      return AnimalPalette.summaryChipAccent(context);
+  }
+}
+
+Color _indicatorTextColor(
+  BuildContext context,
+  PurposeIndicator indicator,
+  ProductionPurpose purpose,
+) {
+  switch (indicator.severity) {
+    case IndicatorSeverity.critical:
+      return const Color(0xFF7A1B14);
+    case IndicatorSeverity.attention:
+      return const Color(0xFF704A00);
+    case IndicatorSeverity.neutral:
+      return AnimalPalette.purposeSummaryTextColor(purpose);
+  }
+}
+
 String _purposeShortLabel(ProductionPurpose purpose) {
   switch (purpose) {
     case ProductionPurpose.meat:
@@ -949,6 +1007,14 @@ String _purposeShortLabel(ProductionPurpose purpose) {
       return 'Trabajo';
     case ProductionPurpose.companion:
       return 'Compañía';
+    case ProductionPurpose.sport:
+      return 'Deporte';
+    case ProductionPurpose.eggs:
+      return 'Postura';
+    case ProductionPurpose.fiber:
+      return 'Fibra';
+    case ProductionPurpose.guard:
+      return 'Guardia';
     case ProductionPurpose.undefined:
       return 'Por definir';
     case ProductionPurpose.other:
@@ -956,106 +1022,3 @@ String _purposeShortLabel(ProductionPurpose purpose) {
   }
 }
 
-/// Contextual KPI shown next to the purpose chip. Returns null when there is
-/// no meaningful data for the animal's purpose.
-String? _purposeKpiLabel(AnimalEntity animal) {
-  switch (animal.productionPurpose) {
-    case ProductionPurpose.meat:
-      final weight = animal.weight;
-      if (weight == null || weight <= 0) return null;
-      final weightText = _formatKg(weight);
-      final gain = animal.dailyGainEstimate;
-      if (gain != null && gain > 0) {
-        return '$weightText +${_formatKg(gain)}/día';
-      }
-      return weightText;
-    case ProductionPurpose.dual:
-    case ProductionPurpose.breeding:
-      if (animal.reproductiveStatus == ReproductiveStatus.pregnant) {
-        final months = _pregnancyMonths(animal);
-        if (months != null) {
-          return '$months ${months == 1 ? 'mes' : 'meses'} preñez';
-        }
-        return 'Gestante';
-      }
-      return _reproductiveShortLabel(animal.reproductiveStatus);
-    case ProductionPurpose.dairy:
-      switch (animal.reproductiveStatus) {
-        case ReproductiveStatus.lactating:
-          return 'Lactante';
-        case ReproductiveStatus.dry:
-          return 'Seca';
-        case ReproductiveStatus.pregnant:
-          final months = _pregnancyMonths(animal);
-          if (months != null) {
-            return '$months ${months == 1 ? 'mes' : 'meses'} preñez';
-          }
-          return 'Gestante';
-        case ReproductiveStatus.virgin:
-        case ReproductiveStatus.active:
-        case ReproductiveStatus.neutered:
-        case ReproductiveStatus.retired:
-        case ReproductiveStatus.unknown:
-          return null;
-      }
-    case ProductionPurpose.work:
-      final years = animal.ageMonths ~/ 12;
-      if (years > 0) {
-        return '$years año${years == 1 ? '' : 's'}';
-      }
-      final months = animal.ageMonths;
-      if (months <= 0) return null;
-      return '$months ${months == 1 ? 'mes' : 'meses'}';
-    case ProductionPurpose.companion:
-    case ProductionPurpose.undefined:
-    case ProductionPurpose.other:
-      return null;
-  }
-}
-
-String? _reproductiveShortLabel(ReproductiveStatus status) {
-  switch (status) {
-    case ReproductiveStatus.virgin:
-      return 'Virgen';
-    case ReproductiveStatus.active:
-      return 'Activa';
-    case ReproductiveStatus.lactating:
-      return 'Lactante';
-    case ReproductiveStatus.dry:
-      return 'Seca';
-    case ReproductiveStatus.pregnant:
-      return 'Gestante';
-    case ReproductiveStatus.neutered:
-    case ReproductiveStatus.retired:
-    case ReproductiveStatus.unknown:
-      return null;
-  }
-}
-
-/// Standard bovine gestation length in days (see reproduction_scheduler).
-const int _gestationDays = 283;
-
-int? _pregnancyMonths(AnimalEntity animal) {
-  final now = DateTime.now();
-  DateTime? serviceDate = animal.lastServiceDate ?? animal.firstServiceDate;
-  if (serviceDate == null && animal.expectedCalvingDate != null) {
-    serviceDate = animal.expectedCalvingDate!.subtract(
-      const Duration(days: _gestationDays),
-    );
-  }
-  if (serviceDate == null) return null;
-  if (serviceDate.isAfter(now)) return 0;
-
-  final days = now.difference(serviceDate).inDays;
-  var months = (days / 30.44).floor();
-  if (months < 0) months = 0;
-  if (months > 9) months = 9;
-  return months;
-}
-
-String _formatKg(double value) {
-  final rounded = value % 1 == 0
-      ? value.toStringAsFixed(0)
-      : value.toStringAsFixed(1);
-  return '$rounded kg';
-}

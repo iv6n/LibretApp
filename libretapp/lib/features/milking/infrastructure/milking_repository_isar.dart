@@ -104,6 +104,44 @@ class MilkingRepositoryIsar implements MilkingRepository {
   }
 
   @override
+  Future<Map<String, List<MilkingRecord>>> getRecordsForAnimals(
+    Set<String> animalUuids, {
+    DateTime? since,
+  }) async {
+    if (animalUuids.isEmpty) return const {};
+
+    final isar = await _isar;
+    final storedEntries = await isar.isarMilkingEntrys
+        .filter()
+        .anyOf(animalUuids, (q, uuid) => q.animalUuidEqualTo(uuid))
+        .findAll();
+    if (storedEntries.isEmpty) return const {};
+
+    final sessions = await getAllSessions();
+    final byUuid = {for (final session in sessions) session.uuid: session};
+
+    final grouped = <String, List<MilkingRecord>>{};
+    for (final stored in storedEntries) {
+      final entry = stored.toEntity();
+      final session = byUuid[entry.sessionUuid];
+      // An entry whose session vanished is unusable: without the session there
+      // is no date to place the volume on.
+      if (session == null) continue;
+      if (since != null && session.occurredAt.isBefore(since)) continue;
+      grouped
+          .putIfAbsent(entry.animalUuid, () => <MilkingRecord>[])
+          .add(MilkingRecord(session: session, entry: entry));
+    }
+
+    for (final records in grouped.values) {
+      records.sort(
+        (a, b) => b.session.occurredAt.compareTo(a.session.occurredAt),
+      );
+    }
+    return grouped;
+  }
+
+  @override
   Future<void> upsertSession(MilkingSession session) async {
     final isar = await _isar;
     await isar.writeTxn(() async {
