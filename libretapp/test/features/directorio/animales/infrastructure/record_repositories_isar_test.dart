@@ -15,6 +15,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/commercial
 import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/production_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/reproduction_record_repository_isar.dart';
@@ -344,6 +345,48 @@ void main() {
       expect(upcoming, hasLength(1));
       expect(upcoming.single.animalUuid, animalUuid);
       expect(upcoming.single.expectedCalvingDate, DateTime(2026, 3, 15));
+    });
+
+    test('calving details survive a round trip through Isar', () async {
+      final repo = ReproductionRecordRepositoryIsar(db);
+      const animalUuid = 'reproduction-calving-detail';
+
+      await repo.addReproductionRecord(
+        animalUuid,
+        ReproductionRecord(
+          serviceDate: DateTime(2025, 6, 1),
+          serviceType: ServiceType.artificialInsemination,
+          actualCalvingDate: DateTime(2026, 3, 11),
+          calvingOutcome: CalvingOutcome.liveBirth,
+          calvingEase: 2,
+          offspringUuids: const ['cria-a', 'cria-b'],
+          calvingNotes: 'Mellizos, sin complicaciones.',
+        ),
+      );
+
+      final stored = await repo.getReproductionRecords(animalUuid);
+
+      expect(stored, hasLength(1));
+      final record = stored.single;
+      expect(record.calvingOutcome, CalvingOutcome.liveBirth);
+      expect(record.calvingEase, 2);
+      expect(record.offspringUuids, ['cria-a', 'cria-b']);
+      expect(record.calvingNotes, 'Mellizos, sin complicaciones.');
+      // Derived, never stored: 283 days between service and calving.
+      expect(record.gestationDays, 283);
+      expect(record.producedLiveOffspring, isTrue);
+    });
+
+    test('calvingNotes keeps the legacy physical column name', () {
+      // `calvingNotes` is annotated @Name('calvingResult'). Isar keys columns
+      // by that physical name, so dropping the annotation would register a new
+      // empty column and silently discard every calving note captured before
+      // CalvingOutcome existed. Guard the name itself, not a round trip —
+      // a round trip passes either way.
+      final properties = IsarReproductionRecordSchema.properties.keys;
+
+      expect(properties, contains('calvingResult'));
+      expect(properties, isNot(contains('calvingNotes')));
     });
   });
 }

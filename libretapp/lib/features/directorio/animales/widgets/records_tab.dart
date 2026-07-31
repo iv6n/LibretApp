@@ -165,7 +165,14 @@ class RecordsTab extends StatelessWidget {
                         'Parto esperado: ${fmtDate(r.expectedCalvingDate!)}',
                       if (r.actualCalvingDate != null)
                         'Parto real: ${fmtDate(r.actualCalvingDate!)}',
-                      if (r.calvingResult != null) r.calvingResult!,
+                      if (r.calvingOutcome != null)
+                        r.calvingOutcome!.displayName,
+                      if (r.calvingEase != null)
+                        'Dificultad: ${r.calvingEase}/5',
+                      if (r.offspringUuids.isNotEmpty)
+                        '${r.offspringUuids.length} '
+                            '${r.offspringUuids.length == 1 ? 'cría' : 'crías'}',
+                      if (r.calvingNotes != null) r.calvingNotes!,
                       if (r.notes != null) r.notes!,
                     ].where((e) => e.isNotEmpty).join(' · '),
                   ),

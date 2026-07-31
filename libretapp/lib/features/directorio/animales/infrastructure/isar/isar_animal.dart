@@ -7,6 +7,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/animal_statu
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/health_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/origin_type.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -63,8 +64,15 @@ class IsarAnimal {
   late String sex;
   late String breed;
   String? crossBreed;
+
+  /// Indexed so the pedigree tree can resolve offspring by parent without a
+  /// full collection scan at every node.
+  @Index()
   String? sireUuid;
+
+  @Index()
   String? damUuid;
+
   int? generation;
 
   // ─── VITAL ─────────────────────────────────────────────────────────
@@ -199,7 +207,7 @@ extension IsarAnimalMapper on IsarAnimal {
       coatColor: coatColor,
       distinguishingMarks: distinguishingMarks,
       notes: notes,
-      originType: originType,
+      originType: OriginType.fromStored(originType),
       provenance: provenance,
       crossBreedType: crossBreedType,
       sireBreed: sireBreed,
@@ -290,7 +298,7 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..coatColor = coatColor
       ..distinguishingMarks = distinguishingMarks
       ..notes = notes
-      ..originType = originType
+      ..originType = originType?.name
       ..provenance = provenance
       ..crossBreedType = crossBreedType
       ..sireBreed = sireBreed

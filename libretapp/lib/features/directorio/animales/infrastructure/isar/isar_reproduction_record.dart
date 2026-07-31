@@ -27,7 +27,17 @@ class IsarReproductionRecord implements StableRecordModel {
   String? pregnancyResult;
   DateTime? expectedCalvingDate;
   DateTime? actualCalvingDate;
-  String? calvingResult;
+  String? calvingOutcome;
+  int? calvingEase;
+  List<String> offspringUuids = [];
+
+  /// Free-text calving notes. Kept under the legacy physical column name
+  /// `calvingResult`, which was the only calving field before
+  /// [calvingOutcome] existed — renaming it would make Isar drop the column
+  /// and silently discard every note captured so far.
+  @Name('calvingResult')
+  String? calvingNotes;
+
   String? notes;
   String? servicedBy;
 }
@@ -46,7 +56,12 @@ extension IsarReproductionRecordMapper on IsarReproductionRecord {
           : null,
       expectedCalvingDate: expectedCalvingDate,
       actualCalvingDate: actualCalvingDate,
-      calvingResult: calvingResult,
+      calvingOutcome: calvingOutcome != null
+          ? CalvingOutcome.values.byName(calvingOutcome!)
+          : null,
+      calvingEase: calvingEase,
+      offspringUuids: List<String>.from(offspringUuids),
+      calvingNotes: calvingNotes,
       notes: notes,
       servicedBy: servicedBy,
     );
@@ -65,7 +80,10 @@ extension ReproductionRecordToIsar on ReproductionRecord {
       ..pregnancyResult = pregnancyResult?.name
       ..expectedCalvingDate = expectedCalvingDate
       ..actualCalvingDate = actualCalvingDate
-      ..calvingResult = calvingResult
+      ..calvingOutcome = calvingOutcome?.name
+      ..calvingEase = calvingEase
+      ..offspringUuids = List<String>.from(offspringUuids)
+      ..calvingNotes = calvingNotes
       ..notes = notes
       ..servicedBy = servicedBy;
 

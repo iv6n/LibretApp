@@ -401,6 +401,32 @@ const IsarAnimalSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'sireUuid': IndexSchema(
+      id: 8214556823682183894,
+      name: r'sireUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'sireUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'damUuid': IndexSchema(
+      id: 5839363338725654591,
+      name: r'damUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'damUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -1161,6 +1187,136 @@ extension IsarAnimalQueryWhere
               indexName: r'uuid',
               lower: [],
               upper: [uuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> sireUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'sireUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> sireUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'sireUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> sireUuidEqualTo(
+      String? sireUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'sireUuid',
+        value: [sireUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> sireUuidNotEqualTo(
+      String? sireUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'sireUuid',
+              lower: [],
+              upper: [sireUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'sireUuid',
+              lower: [sireUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'sireUuid',
+              lower: [sireUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'sireUuid',
+              lower: [],
+              upper: [sireUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> damUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'damUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> damUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'damUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> damUuidEqualTo(
+      String? damUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'damUuid',
+        value: [damUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAnimal, IsarAnimal, QAfterWhereClause> damUuidNotEqualTo(
+      String? damUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'damUuid',
+              lower: [],
+              upper: [damUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'damUuid',
+              lower: [damUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'damUuid',
+              lower: [damUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'damUuid',
+              lower: [],
+              upper: [damUuid],
               includeUpper: false,
             ));
       }

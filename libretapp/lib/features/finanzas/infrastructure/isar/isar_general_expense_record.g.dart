@@ -18,20 +18,36 @@ const IsarGeneralExpenseRecordSchema = CollectionSchema(
   name: r'IsarGeneralExpenseRecord',
   id: 9039310200640506358,
   properties: {
-    r'amount': PropertySchema(id: 0, name: r'amount', type: IsarType.double),
+    r'amount': PropertySchema(
+      id: 0,
+      name: r'amount',
+      type: IsarType.double,
+    ),
     r'currency': PropertySchema(
       id: 1,
       name: r'currency',
       type: IsarType.string,
     ),
-    r'date': PropertySchema(id: 2, name: r'date', type: IsarType.dateTime),
-    r'notes': PropertySchema(id: 3, name: r'notes', type: IsarType.string),
+    r'date': PropertySchema(
+      id: 2,
+      name: r'date',
+      type: IsarType.dateTime,
+    ),
+    r'notes': PropertySchema(
+      id: 3,
+      name: r'notes',
+      type: IsarType.string,
+    ),
     r'recordUuid': PropertySchema(
       id: 4,
       name: r'recordUuid',
       type: IsarType.string,
     ),
-    r'type': PropertySchema(id: 5, name: r'type', type: IsarType.string),
+    r'type': PropertySchema(
+      id: 5,
+      name: r'type',
+      type: IsarType.string,
+    )
   },
   estimateSize: _isarGeneralExpenseRecordEstimateSize,
   serialize: _isarGeneralExpenseRecordSerialize,
@@ -49,7 +65,7 @@ const IsarGeneralExpenseRecordSchema = CollectionSchema(
           name: r'recordUuid',
           type: IndexType.hash,
           caseSensitive: true,
-        ),
+        )
       ],
     ),
     r'date': IndexSchema(
@@ -62,9 +78,9 @@ const IsarGeneralExpenseRecordSchema = CollectionSchema(
           name: r'date',
           type: IndexType.value,
           caseSensitive: false,
-        ),
+        )
       ],
-    ),
+    )
   },
   links: {},
   embeddedSchemas: {},
@@ -157,16 +173,12 @@ Id _isarGeneralExpenseRecordGetId(IsarGeneralExpenseRecord object) {
 }
 
 List<IsarLinkBase<dynamic>> _isarGeneralExpenseRecordGetLinks(
-  IsarGeneralExpenseRecord object,
-) {
+    IsarGeneralExpenseRecord object) {
   return [];
 }
 
 void _isarGeneralExpenseRecordAttach(
-  IsarCollection<dynamic> col,
-  Id id,
-  IsarGeneralExpenseRecord object,
-) {
+    IsarCollection<dynamic> col, Id id, IsarGeneralExpenseRecord object) {
   object.id = id;
 }
 
@@ -189,15 +201,13 @@ extension IsarGeneralExpenseRecordByIndex
   }
 
   Future<List<IsarGeneralExpenseRecord?>> getAllByRecordUuid(
-    List<String> recordUuidValues,
-  ) {
+      List<String> recordUuidValues) {
     final values = recordUuidValues.map((e) => [e]).toList();
     return getAllByIndex(r'recordUuid', values);
   }
 
   List<IsarGeneralExpenseRecord?> getAllByRecordUuidSync(
-    List<String> recordUuidValues,
-  ) {
+      List<String> recordUuidValues) {
     final values = recordUuidValues.map((e) => [e]).toList();
     return getAllByIndexSync(r'recordUuid', values);
   }
@@ -216,10 +226,8 @@ extension IsarGeneralExpenseRecordByIndex
     return putByIndex(r'recordUuid', object);
   }
 
-  Id putByRecordUuidSync(
-    IsarGeneralExpenseRecord object, {
-    bool saveLinks = true,
-  }) {
+  Id putByRecordUuidSync(IsarGeneralExpenseRecord object,
+      {bool saveLinks = true}) {
     return putByIndexSync(r'recordUuid', object, saveLinks: saveLinks);
   }
 
@@ -227,30 +235,23 @@ extension IsarGeneralExpenseRecordByIndex
     return putAllByIndex(r'recordUuid', objects);
   }
 
-  List<Id> putAllByRecordUuidSync(
-    List<IsarGeneralExpenseRecord> objects, {
-    bool saveLinks = true,
-  }) {
+  List<Id> putAllByRecordUuidSync(List<IsarGeneralExpenseRecord> objects,
+      {bool saveLinks = true}) {
     return putAllByIndexSync(r'recordUuid', objects, saveLinks: saveLinks);
   }
 }
 
-extension IsarGeneralExpenseRecordQueryWhereSort
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QWhere
-        > {
+extension IsarGeneralExpenseRecordQueryWhereSort on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QWhere> {
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterWhere>
-  anyId() {
+      anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterWhere>
-  anyDate() {
+      anyDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'date'),
@@ -259,30 +260,20 @@ extension IsarGeneralExpenseRecordQueryWhereSort
   }
 }
 
-extension IsarGeneralExpenseRecordQueryWhere
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QWhereClause
-        > {
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  idEqualTo(Id id) {
+extension IsarGeneralExpenseRecordQueryWhere on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QWhereClause> {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  idNotEqualTo(Id id) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -304,12 +295,8 @@ extension IsarGeneralExpenseRecordQueryWhere
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  idGreaterThan(Id id, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -317,12 +304,8 @@ extension IsarGeneralExpenseRecordQueryWhere
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  idLessThan(Id id, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -330,284 +313,212 @@ extension IsarGeneralExpenseRecordQueryWhere
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  idBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.between(
-          lower: lowerId,
-          includeLower: includeLower,
-          upper: upperId,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  recordUuidEqualTo(String recordUuid) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> recordUuidEqualTo(String recordUuid) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.equalTo(indexName: r'recordUuid', value: [recordUuid]),
-      );
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'recordUuid',
+        value: [recordUuid],
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  recordUuidNotEqualTo(String recordUuid) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> recordUuidNotEqualTo(String recordUuid) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'recordUuid',
-                lower: [],
-                upper: [recordUuid],
-                includeUpper: false,
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'recordUuid',
-                lower: [recordUuid],
-                includeLower: false,
-                upper: [],
-              ),
-            );
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'recordUuid',
+              lower: [],
+              upper: [recordUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'recordUuid',
+              lower: [recordUuid],
+              includeLower: false,
+              upper: [],
+            ));
       } else {
         return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'recordUuid',
-                lower: [recordUuid],
-                includeLower: false,
-                upper: [],
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'recordUuid',
-                lower: [],
-                upper: [recordUuid],
-                includeUpper: false,
-              ),
-            );
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'recordUuid',
+              lower: [recordUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'recordUuid',
+              lower: [],
+              upper: [recordUuid],
+              includeUpper: false,
+            ));
       }
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  dateEqualTo(DateTime date) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> dateEqualTo(DateTime date) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.equalTo(indexName: r'date', value: [date]),
-      );
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'date',
+        value: [date],
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  dateNotEqualTo(DateTime date) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> dateNotEqualTo(DateTime date) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'date',
-                lower: [],
-                upper: [date],
-                includeUpper: false,
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'date',
-                lower: [date],
-                includeLower: false,
-                upper: [],
-              ),
-            );
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'date',
+              lower: [],
+              upper: [date],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'date',
+              lower: [date],
+              includeLower: false,
+              upper: [],
+            ));
       } else {
         return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'date',
-                lower: [date],
-                includeLower: false,
-                upper: [],
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'date',
-                lower: [],
-                upper: [date],
-                includeUpper: false,
-              ),
-            );
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'date',
+              lower: [date],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'date',
+              lower: [],
+              upper: [date],
+              includeUpper: false,
+            ));
       }
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  dateGreaterThan(DateTime date, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> dateGreaterThan(
+    DateTime date, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'date',
-          lower: [date],
-          includeLower: include,
-          upper: [],
-        ),
-      );
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'date',
+        lower: [date],
+        includeLower: include,
+        upper: [],
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  dateLessThan(DateTime date, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> dateLessThan(
+    DateTime date, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'date',
-          lower: [],
-          upper: [date],
-          includeUpper: include,
-        ),
-      );
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'date',
+        lower: [],
+        upper: [date],
+        includeUpper: include,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterWhereClause
-  >
-  dateBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterWhereClause> dateBetween(
     DateTime lowerDate,
     DateTime upperDate, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'date',
-          lower: [lowerDate],
-          includeLower: includeLower,
-          upper: [upperDate],
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'date',
+        lower: [lowerDate],
+        includeLower: includeLower,
+        upper: [upperDate],
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
 
-extension IsarGeneralExpenseRecordQueryFilter
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QFilterCondition
-        > {
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  amountEqualTo(double value, {double epsilon = Query.epsilon}) {
+extension IsarGeneralExpenseRecordQueryFilter on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QFilterCondition> {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> amountEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'amount',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  amountGreaterThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> amountGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'amount',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  amountLessThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> amountLessThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'amount',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  amountBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> amountBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -615,112 +526,83 @@ extension IsarGeneralExpenseRecordQueryFilter
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'amount',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'amount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyIsNull() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'currency'),
-      );
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'currency',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyIsNotNull() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'currency'),
-      );
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'currency',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyEqualTo(String? value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyGreaterThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyLessThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -728,348 +610,267 @@ extension IsarGeneralExpenseRecordQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'currency',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'currency',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyStartsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyEndsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyContains(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      currencyContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'currency',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'currency',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyMatches(String pattern, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      currencyMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'currency',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'currency',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyIsEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'currency', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'currency',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  currencyIsNotEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> currencyIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'currency', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'currency',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  dateEqualTo(DateTime value) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> dateEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'date', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'date',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  dateGreaterThan(DateTime value, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> dateGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'date',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  dateLessThan(DateTime value, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> dateLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'date',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'date',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  dateBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> dateBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'date',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'date',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  idEqualTo(Id value) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'id', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  idGreaterThan(Id value, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  idLessThan(Id value, {bool include = false}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  idBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'id',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesIsNull() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'notes'),
-      );
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'notes',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesIsNotNull() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'notes'),
-      );
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'notes',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesEqualTo(String? value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesGreaterThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesLessThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -1077,180 +878,137 @@ extension IsarGeneralExpenseRecordQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'notes',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'notes',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesStartsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesEndsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesContains(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      notesContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'notes',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'notes',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesMatches(String pattern, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      notesMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'notes',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'notes',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesIsEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'notes', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'notes',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  notesIsNotEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> notesIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'notes', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'notes',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidEqualTo(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidGreaterThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidLessThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1258,180 +1016,137 @@ extension IsarGeneralExpenseRecordQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'recordUuid',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'recordUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidStartsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidEndsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidContains(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      recordUuidContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'recordUuid',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'recordUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidMatches(String pattern, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      recordUuidMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'recordUuid',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'recordUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidIsEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'recordUuid', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'recordUuid',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  recordUuidIsNotEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> recordUuidIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'recordUuid', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'recordUuid',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeEqualTo(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeGreaterThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeLessThan(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeBetween(
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1439,385 +1154,331 @@ extension IsarGeneralExpenseRecordQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'type',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'type',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeStartsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeEndsWith(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeContains(String value, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      typeContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'type',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'type',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeMatches(String pattern, {bool caseSensitive = true}) {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+          QAfterFilterCondition>
+      typeMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'type',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'type',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeIsEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'type', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'type',
+        value: '',
+      ));
     });
   }
 
-  QueryBuilder<
-    IsarGeneralExpenseRecord,
-    IsarGeneralExpenseRecord,
-    QAfterFilterCondition
-  >
-  typeIsNotEmpty() {
+  QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord,
+      QAfterFilterCondition> typeIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'type', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'type',
+        value: '',
+      ));
     });
   }
 }
 
-extension IsarGeneralExpenseRecordQueryObject
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QFilterCondition
-        > {}
+extension IsarGeneralExpenseRecordQueryObject on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QFilterCondition> {}
 
-extension IsarGeneralExpenseRecordQueryLinks
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QFilterCondition
-        > {}
+extension IsarGeneralExpenseRecordQueryLinks on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QFilterCondition> {}
 
-extension IsarGeneralExpenseRecordQuerySortBy
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QSortBy
-        > {
+extension IsarGeneralExpenseRecordQuerySortBy on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QSortBy> {
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByAmount() {
+      sortByAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByAmountDesc() {
+      sortByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByCurrency() {
+      sortByCurrency() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currency', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByCurrencyDesc() {
+      sortByCurrencyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currency', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByDate() {
+      sortByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByDateDesc() {
+      sortByDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByNotes() {
+      sortByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByNotesDesc() {
+      sortByNotesDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByRecordUuid() {
+      sortByRecordUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'recordUuid', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByRecordUuidDesc() {
+      sortByRecordUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'recordUuid', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByType() {
+      sortByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  sortByTypeDesc() {
+      sortByTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.desc);
     });
   }
 }
 
-extension IsarGeneralExpenseRecordQuerySortThenBy
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QSortThenBy
-        > {
+extension IsarGeneralExpenseRecordQuerySortThenBy on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QSortThenBy> {
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByAmount() {
+      thenByAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByAmountDesc() {
+      thenByAmountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'amount', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByCurrency() {
+      thenByCurrency() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currency', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByCurrencyDesc() {
+      thenByCurrencyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'currency', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByDate() {
+      thenByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByDateDesc() {
+      thenByDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenById() {
+      thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByIdDesc() {
+      thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByNotes() {
+      thenByNotes() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByNotesDesc() {
+      thenByNotesDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'notes', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByRecordUuid() {
+      thenByRecordUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'recordUuid', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByRecordUuidDesc() {
+      thenByRecordUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'recordUuid', Sort.desc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByType() {
+      thenByType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.asc);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QAfterSortBy>
-  thenByTypeDesc() {
+      thenByTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'type', Sort.desc);
     });
   }
 }
 
-extension IsarGeneralExpenseRecordQueryWhereDistinct
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QDistinct
-        > {
+extension IsarGeneralExpenseRecordQueryWhereDistinct on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct> {
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByAmount() {
+      distinctByAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'amount');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByCurrency({bool caseSensitive = true}) {
+      distinctByCurrency({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'currency', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByDate() {
+      distinctByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'date');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByNotes({bool caseSensitive = true}) {
+      distinctByNotes({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'notes', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByRecordUuid({bool caseSensitive = true}) {
+      distinctByRecordUuid({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'recordUuid', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QDistinct>
-  distinctByType({bool caseSensitive = true}) {
+      distinctByType({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'type', caseSensitive: caseSensitive);
     });
   }
 }
 
-extension IsarGeneralExpenseRecordQueryProperty
-    on
-        QueryBuilder<
-          IsarGeneralExpenseRecord,
-          IsarGeneralExpenseRecord,
-          QQueryProperty
-        > {
+extension IsarGeneralExpenseRecordQueryProperty on QueryBuilder<
+    IsarGeneralExpenseRecord, IsarGeneralExpenseRecord, QQueryProperty> {
   QueryBuilder<IsarGeneralExpenseRecord, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
@@ -1825,42 +1486,42 @@ extension IsarGeneralExpenseRecordQueryProperty
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, double, QQueryOperations>
-  amountProperty() {
+      amountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amount');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, String?, QQueryOperations>
-  currencyProperty() {
+      currencyProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'currency');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, DateTime, QQueryOperations>
-  dateProperty() {
+      dateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'date');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, String?, QQueryOperations>
-  notesProperty() {
+      notesProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notes');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, String, QQueryOperations>
-  recordUuidProperty() {
+      recordUuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'recordUuid');
     });
   }
 
   QueryBuilder<IsarGeneralExpenseRecord, String, QQueryOperations>
-  typeProperty() {
+      typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
     });
