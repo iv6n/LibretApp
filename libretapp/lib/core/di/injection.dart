@@ -65,6 +65,7 @@ import 'package:libretapp/features/ubicaciones/domain/repositories/location_repo
 import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -73,6 +74,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/care_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/production_record_repository_isar.dart';
@@ -233,6 +235,9 @@ void _registerDirectorioAnimales() {
     )
     ..registerLazySingleton<CostRecordRepository>(
       () => CostRecordRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<CareRepository>(
+      () => CareRepositoryIsar(locator<IsarDatabase>()),
     );
 }
 

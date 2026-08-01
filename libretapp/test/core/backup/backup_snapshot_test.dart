@@ -153,7 +153,7 @@ class _FakeCloudRepository implements CloudBackupRepository {
 }
 
 void main() {
-  test('v4 archive contains all collections and manifest', () async {
+  test('archive stamps the current schema version and all collections', () async {
     final store = _FakeBackupStore(
       _envelope(
         overrides: {
@@ -171,7 +171,9 @@ void main() {
     final manifest =
         jsonDecode(utf8.decode(List<int>.from(manifestFile!.content as List)))
             as Map<String, dynamic>;
-    expect(manifest['schemaVersion'], 4);
+    // Read from the constant instead of a literal: the version moves whenever
+    // collections are added, and pinning it here just makes the test a chore.
+    expect(manifest['schemaVersion'], BackupEnvelope.currentSchemaVersion);
     expect(
       (manifest['collections'] as Map).keys.toSet(),
       containsAll(_collectionNames),

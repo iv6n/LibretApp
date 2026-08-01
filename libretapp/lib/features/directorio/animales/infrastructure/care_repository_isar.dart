@@ -1,0 +1,157 @@
+/// features › directorio › animales › infrastructure › care_repository_isar
+library;
+
+import 'package:isar/isar.dart';
+import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
+
+class CareRepositoryIsar implements CareRepository {
+  CareRepositoryIsar(this._database);
+
+  final IsarDatabase _database;
+
+  Future<Isar> get _isar async => _database.initialize();
+
+  @override
+  Future<List<CareRule>> getRules() async {
+    final isar = await _isar;
+    final rules = await isar.isarCareRules
+        .filter()
+        .activeEqualTo(true)
+        .findAll();
+    return rules.map((rule) => rule.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<Set<String>> getAllRuleIds() async {
+    final isar = await _isar;
+    final rules = await isar.isarCareRules.where().findAll();
+    return rules.map((rule) => rule.recordUuid).toSet();
+  }
+
+  @override
+  Future<void> saveRule(CareRule rule) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      // recordUuid is the rule id and is a replacing unique index, so this
+      // updates in place rather than piling up duplicates.
+      await isar.isarCareRules.put(rule.toIsar());
+    });
+  }
+
+  @override
+  Future<void> retireRule(String ruleId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final stored = await isar.isarCareRules
+          .filter()
+          .recordUuidEqualTo(ruleId)
+          .findFirst();
+      if (stored == null) return;
+      stored.active = false;
+      await isar.isarCareRules.put(stored);
+    });
+  }
+
+  @override
+  Future<List<CareRecord>> getRecordsForAnimal(String animalUuid) async {
+    final isar = await _isar;
+    final records = await isar.isarCareRecords
+        .filter()
+        .animalUuidEqualTo(animalUuid)
+        .sortByPerformedAtDesc()
+        .findAll();
+    return records.map((record) => record.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<Map<String, CareRecord>> getLatestRecordsByRule(
+    String animalUuid,
+  ) async {
+    // Sorted newest first, so the first hit per rule is the latest one.
+    final records = await getRecordsForAnimal(animalUuid);
+    final latest = <String, CareRecord>{};
+    for (final record in records) {
+      latest.putIfAbsent(record.ruleId, () => record);
+    }
+    return latest;
+  }
+
+  @override
+  Future<void> saveRecord(CareRecord record) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      await isar.isarCareRecords.put(record.toIsar());
+    });
+  }
+
+  @override
+  Future<List<ScheduledCare>> getPending({DateTime? until}) async {
+    final isar = await _isar;
+    var query = isar.isarScheduledCares.filter().doneEqualTo(false);
+    if (until != null) {
+      query = query.and().dueAtLessThan(until, include: true);
+    }
+    final pending = await query.sortByDueAt().findAll();
+    return pending.map((task) => task.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<List<ScheduledCare>> getPendingForAnimal(String animalUuid) async {
+    final isar = await _isar;
+    final pending = await isar.isarScheduledCares
+        .filter()
+        .animalUuidEqualTo(animalUuid)
+        .and()
+        .doneEqualTo(false)
+        .sortByDueAt()
+        .findAll();
+    return pending.map((task) => task.toEntity()).toList(growable: false);
+  }
+
+  @override
+  Future<void> saveSchedules(List<ScheduledCare> schedules) async {
+    if (schedules.isEmpty) return;
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      await isar.isarScheduledCares.putAll(
+        schedules.map((task) => task.toIsar()).toList(growable: false),
+      );
+    });
+  }
+
+  @override
+  Future<void> markDone(String scheduleId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final stored = await isar.isarScheduledCares
+          .filter()
+          .recordUuidEqualTo(scheduleId)
+          .findFirst();
+      if (stored == null) return;
+      stored.done = true;
+      await isar.isarScheduledCares.put(stored);
+    });
+  }
+
+  @override
+  Future<void> clearGeneratedFor(String animalUuid) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      // Only the auto-generated, still-pending ones: a task the breeder added
+      // by hand, or one already marked done, is history and stays.
+      await isar.isarScheduledCares
+          .filter()
+          .animalUuidEqualTo(animalUuid)
+          .and()
+          .autoGeneratedEqualTo(true)
+          .and()
+          .doneEqualTo(false)
+          .deleteAll();
+    });
+  }
+}

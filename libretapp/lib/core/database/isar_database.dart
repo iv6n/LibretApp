@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_workforce.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';
@@ -57,6 +58,9 @@ class IsarDatabase {
         IsarAgendaEntrySchema,
         IsarWorkerProfileSchema,
         IsarWorkTeamSchema,
+        IsarCareRuleSchema,
+        IsarCareRecordSchema,
+        IsarScheduledCareSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode,

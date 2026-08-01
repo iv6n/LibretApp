@@ -12,7 +12,10 @@ class BackupEnvelope {
     required this.profile,
   });
 
-  static const currentSchemaVersion = 4;
+  /// 5 adds the care-calendar collections. Restore iterates the collections
+  /// present in the archive, so older backups keep working — they simply leave
+  /// the new ones empty.
+  static const currentSchemaVersion = 5;
 
   /// Stamped into every archive and cloud snapshot. Kept here so a version bump
   /// is a single edit — must stay in step with `version:` in pubspec.yaml.
