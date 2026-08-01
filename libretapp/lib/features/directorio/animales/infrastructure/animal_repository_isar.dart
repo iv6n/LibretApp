@@ -316,22 +316,42 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<int> count() async {
     final isar = await _isar;
-    return isar.isarAnimals.count();
+    return isar.isarAnimals
+        .filter()
+        .statusEqualTo(AnimalStatus.active.name)
+        .count();
   }
 
   @override
   Future<Map<String, dynamic>> getStatistics() async {
     final isar = await _isar;
-    final total = await isar.isarAnimals.count();
+    final activeName = AnimalStatus.active.name;
+
+    // These counts feed the dashboard, so they have to mean "the herd you
+    // manage". A raw collection count included archived animals — the ones
+    // already deleted from the directory — and later sold and dead ones too.
+    final total = await isar.isarAnimals
+        .filter()
+        .statusEqualTo(activeName)
+        .count();
     final unsynced = await isar.isarAnimals
         .filter()
+        .statusEqualTo(activeName)
+        .and()
         .syncedEqualTo(false)
         .count();
+    // The OR pair needs its own group, or the status condition binds to just
+    // the first branch and animals that left the herd leak back in.
     final attention = await isar.isarAnimals
         .filter()
-        .requiresAttentionEqualTo(true)
-        .or()
-        .underObservationEqualTo(true)
+        .statusEqualTo(activeName)
+        .and()
+        .group(
+          (q) => q
+              .requiresAttentionEqualTo(true)
+              .or()
+              .underObservationEqualTo(true),
+        )
         .count();
 
     return {'total': total, 'unsynced': unsynced, 'attention': attention};

@@ -208,6 +208,13 @@ void main() {
         everything.map((a) => a.uuid),
         containsAll(<String>['madre', 'activa', 'vendida', 'muerta']),
       );
+
+      // The dashboard reads these. They used to be raw collection counts, so
+      // the herd total included animals that had been sold, had died, or were
+      // archived — deleted from the directory but still adding to the tally.
+      await repository.delete('activa');
+      expect(await repository.count(), 1);
+      expect((await repository.getStatistics())['total'], 1);
     },
     skip: !_canRunIsarNative(),
   );
