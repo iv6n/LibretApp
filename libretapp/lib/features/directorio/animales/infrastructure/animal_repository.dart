@@ -8,7 +8,15 @@ abstract class AnimalRepository {
   Stream<List<AnimalEntity>> watchAll();
   Stream<void> watchChanges();
   Future<bool> refreshFromRemote({bool force = false});
+  /// The active herd: excludes sold, dead and archived animals.
   Future<List<AnimalEntity>> getAll();
+
+  /// Every animal ever recorded, whatever its status.
+  ///
+  /// Finance and history need this: the month you sell an animal is exactly
+  /// the month its sale must appear, and filtering it out of the herd must not
+  /// erase it from the books.
+  Future<List<AnimalEntity>> getAllIncludingInactive();
   Future<List<AnimalEntity>> getPage({required int offset, required int limit});
   Future<AnimalEntity?> getByUuid(String uuid);
   Future<List<AnimalEntity>> getBySpecies(String speciesName);

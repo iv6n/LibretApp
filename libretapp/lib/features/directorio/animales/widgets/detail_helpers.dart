@@ -20,6 +20,7 @@ class DetailData {
     required this.milkingRecords,
     this.ancestors = const <String, AnimalEntity>{},
     this.offspring = const <AnimalEntity>[],
+    this.sireRecords = const <ReproductionRecord>[],
   });
 
   final AnimalEntity animal;
@@ -40,6 +41,10 @@ class DetailData {
   /// Direct offspring, newest first. For a breeding female this list is her
   /// production history.
   final List<AnimalEntity> offspring;
+
+  /// Services this animal performed as a sire, derived from the females'
+  /// records. Empty for females.
+  final List<ReproductionRecord> sireRecords;
 }
 
 Color detailStageColor(LifeStage stage) {

@@ -66,6 +66,9 @@ class _FakeAnimalRepository implements AnimalRepository {
   Future<List<AnimalEntity>> getAll() async => _animals;
 
   @override
+  Future<List<AnimalEntity>> getAllIncludingInactive() async => _animals;
+
+  @override
   Stream<List<AnimalEntity>> watchAll() => const Stream.empty();
 
   @override

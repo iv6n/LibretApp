@@ -32,7 +32,13 @@ class PedigreeTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        _LineageSummary(kpis: kpis, offspringCount: data.offspring.length),
+        if (animal.sex == Sex.male && data.sireRecords.isNotEmpty)
+          _SireSummary(
+            kpis: kpiService.forSire(records: data.sireRecords),
+            offspringCount: data.offspring.length,
+          )
+        else
+          _LineageSummary(kpis: kpis, offspringCount: data.offspring.length),
         const SizedBox(height: 20),
         const _SectionTitle(
           icon: Icons.account_tree_outlined,
@@ -58,6 +64,32 @@ class PedigreeTab extends StatelessWidget {
   }
 }
 
+/// What a sire has produced. Evaluating a bull is one of the expensive calls a
+/// breeder makes, and these figures are derived from the females' records, so
+/// they move on their own as those pregnancies are confirmed and calve.
+class _SireSummary extends StatelessWidget {
+  const _SireSummary({required this.kpis, required this.offspringCount});
+
+  final SireReproductiveKpis kpis;
+  final int offspringCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final rate = kpis.conceptionRate;
+    return _SummaryChips(
+      chips: [
+        (label: 'Servicios', value: '${kpis.serviceCount}'),
+        (label: 'Hembras', value: '${kpis.femalesServed}'),
+        if (rate != null)
+          (label: 'Concepción', value: '${(rate * 100).round()}%')
+        else
+          (label: 'Concepción', value: 'sin diagnósticos'),
+        (label: 'Crías', value: '$offspringCount'),
+      ],
+    );
+  }
+}
+
 class _LineageSummary extends StatelessWidget {
   const _LineageSummary({required this.kpis, required this.offspringCount});
 
@@ -66,21 +98,30 @@ class _LineageSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = <({String label, String value})>[
-      (label: 'Crías', value: '$offspringCount'),
-      if (kpis.calvingCount > 0) (label: 'Partos', value: '${kpis.calvingCount}'),
-      if (kpis.ageAtFirstCalvingMonths != null)
-        (
-          label: 'Edad 1er parto',
-          value: '${kpis.ageAtFirstCalvingMonths} meses',
-        ),
-      if (kpis.averageCalvingIntervalDays != null)
-        (
-          label: 'IEP',
-          value: '${kpis.averageCalvingIntervalDays!.round()} d',
-        ),
-    ];
+    return _SummaryChips(
+      chips: [
+        (label: 'Crías', value: '$offspringCount'),
+        if (kpis.calvingCount > 0)
+          (label: 'Partos', value: '${kpis.calvingCount}'),
+        if (kpis.ageAtFirstCalvingMonths != null)
+          (
+            label: 'Edad 1er parto',
+            value: '${kpis.ageAtFirstCalvingMonths} meses',
+          ),
+        if (kpis.averageCalvingIntervalDays != null)
+          (label: 'IEP', value: '${kpis.averageCalvingIntervalDays!.round()} d'),
+      ],
+    );
+  }
+}
 
+class _SummaryChips extends StatelessWidget {
+  const _SummaryChips({required this.chips});
+
+  final List<({String label, String value})> chips;
+
+  @override
+  Widget build(BuildContext context) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,

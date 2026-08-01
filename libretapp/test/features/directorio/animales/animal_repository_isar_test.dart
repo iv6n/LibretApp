@@ -200,6 +200,14 @@ void main() {
         offspring.map((a) => a.uuid),
         containsAll(<String>['activa', 'vendida', 'muerta']),
       );
+
+      // Finance iterates this one. Filtering sold animals out of it would hide
+      // a sale from the books in the very month it happened.
+      final everything = await repository.getAllIncludingInactive();
+      expect(
+        everything.map((a) => a.uuid),
+        containsAll(<String>['madre', 'activa', 'vendida', 'muerta']),
+      );
     },
     skip: !_canRunIsarNative(),
   );

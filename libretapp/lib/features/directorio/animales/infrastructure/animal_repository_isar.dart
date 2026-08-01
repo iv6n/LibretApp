@@ -89,11 +89,16 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .toList(growable: false);
   }
 
-  Future<List<AnimalEntity>> getAllIncludingArchived() async {
+  @override
+  Future<List<AnimalEntity>> getAllIncludingInactive() async {
     final isar = await _isar;
     final records = await isar.isarAnimals.where().findAll();
     return records.map((e) => e.toEntity()).toList(growable: false);
   }
+
+  /// Kept as the name the backup path already calls.
+  Future<List<AnimalEntity>> getAllIncludingArchived() =>
+      getAllIncludingInactive();
 
   @override
   Future<AnimalEntity?> getByUuid(String uuid) async {

@@ -103,7 +103,9 @@ class FinanceSummaryService {
     final topResults = await Future.wait([
       _finanzasRepository.getIncomes(period),
       _finanzasRepository.getExpenses(period),
-      _animalRepository.getAll(),
+      // Includes sold and dead animals on purpose: the month an animal is
+      // sold is precisely the month its sale has to show up in the books.
+      _animalRepository.getAllIncludingInactive(),
     ]);
 
     final incomes = topResults[0] as List<IncomeRecord>;

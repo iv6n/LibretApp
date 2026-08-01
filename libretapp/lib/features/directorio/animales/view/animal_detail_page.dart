@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -15,7 +14,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/services/pedigree_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
@@ -121,6 +120,11 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final milkingRecords = await milkingFuture;
     final offspring = await offspringFuture;
     final ancestors = await _loadAncestors(animal);
+    // Only males have a sire history, and it is derived from the females'
+    // records rather than stored on him.
+    final sireRecords = animal.sex == Sex.male
+        ? await widget.reproductionRepo.getRecordsBySire(uuid)
+        : const <ReproductionRecord>[];
 
     return DetailData(
       animal: animal,
@@ -134,6 +138,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       milkingRecords: milkingRecords,
       ancestors: ancestors,
       offspring: offspring,
+      sireRecords: sireRecords,
     );
   }
 
