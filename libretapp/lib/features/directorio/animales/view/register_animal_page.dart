@@ -12,6 +12,7 @@ import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
@@ -48,6 +49,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   final _step1FormKey = GlobalKey<FormState>();
 
   late final AnimalRepository _animalRepository;
+  late final AnimalEditService _animalEditService;
   late final HealthRecordRepository _healthRepo;
   late final MovementRecordRepository _movementRepo;
   late final ReproductionRecordRepository _reproductionRepo;
@@ -155,6 +157,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   void initState() {
     super.initState();
     _animalRepository = locator<AnimalRepository>();
+    _animalEditService = locator<AnimalEditService>();
     _healthRepo = locator<HealthRecordRepository>();
     _movementRepo = locator<MovementRecordRepository>();
     _reproductionRepo = locator<ReproductionRecordRepository>();
@@ -2920,35 +2923,40 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
     try {
       if (widget.isEdit) {
-        await _animalRepository.update(animal);
+        // The canonical edit path: diffs lote/ubicación against what is
+        // actually persisted, creates the MovementRecord if the location
+        // changed, and refreshes the care calendar/agenda — see
+        // AnimalEditService for why this replaced a direct `update` call.
+        await _animalEditService.applyEdit(
+          original: _editingAnimal!,
+          draft: animal,
+        );
       } else {
         await _animalRepository.save(animal);
-      }
 
-      // Registrar movimiento inicial si se asignó una ubicación
-      final initialLocation = _selectedPaddockUuid ?? _selectedRanchUuid;
-      if (initialLocation != null && !widget.isEdit) {
-        await _movementRepo.addMovementRecord(
-          uuid,
-          MovementRecord(
-            toLocation: _locationNameByUuid(initialLocation),
-            date: _registrationDate,
-            reason: MovementReason.relocation,
-            notes: 'Ubicación inicial al momento del registro',
-          ),
-        );
-      }
+        // Registrar movimiento inicial si se asignó una ubicación
+        final initialLocation = _selectedPaddockUuid ?? _selectedRanchUuid;
+        if (initialLocation != null) {
+          await _movementRepo.addMovementRecord(
+            uuid,
+            MovementRecord(
+              toLocation: _locationNameByUuid(initialLocation),
+              date: _registrationDate,
+              reason: MovementReason.relocation,
+              notes: 'Ubicación inicial al momento del registro',
+            ),
+          );
+        }
 
-      // Sincronizar lote: agregar el animal al lote seleccionado
-      final batchUuid = _selectedBatchUuid;
-      if (batchUuid != null && !widget.isEdit) {
-        await _lotesRepository.addAnimalToLote(
-          loteUuid: batchUuid,
-          animalUuid: uuid,
-        );
-      }
+        // Sincronizar lote: agregar el animal al lote seleccionado
+        final batchUuid = _selectedBatchUuid;
+        if (batchUuid != null) {
+          await _lotesRepository.addAnimalToLote(
+            loteUuid: batchUuid,
+            animalUuid: uuid,
+          );
+        }
 
-      if (!widget.isEdit) {
         for (final record in [..._treatments, ..._vaccinations, ..._exams]) {
           await _healthRepo.addHealthRecord(
             uuid,
@@ -2984,7 +2992,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       Navigator.of(context).pop(uuid);
     } catch (e) {
       if (!mounted) return;
-      _showMessage('No se pudo guardar el animal: $e');
+      final message = e is AnimalEditValidationException
+          ? e.message
+          : 'No se pudo guardar el animal: $e';
+      _showMessage(message);
     } finally {
       if (mounted) {
         setState(() {
@@ -3058,7 +3069,8 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           );
 
     final result = allowed.toList();
-    if (widget.isEdit && alreadySelectedUuid != null &&
+    if (widget.isEdit &&
+        alreadySelectedUuid != null &&
         !result.any((animal) => animal.uuid == alreadySelectedUuid)) {
       final selected = _animals
           .where((animal) => animal.uuid == alreadySelectedUuid)

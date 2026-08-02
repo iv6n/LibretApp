@@ -1,11 +1,14 @@
-﻿/// features › agenda › data › agenda_reminder_sync_service — syncs agenda with auto-generated reminders.
+/// features › agenda › data › agenda_reminder_sync_service — syncs agenda with auto-generated reminders.
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -17,11 +20,15 @@ class AgendaReminderSyncService {
     required AgendaRepository agendaRepository,
     required HealthRecordRepository healthRepo,
     required ReproductionRecordRepository reproductionRepo,
+    required CareRepository careRepo,
+    required CareCalendarService careCalendarService,
     ReproductionScheduler? reproductionScheduler,
   }) : _animalRepository = animalRepository,
        _agendaRepository = agendaRepository,
        _healthRepo = healthRepo,
        _reproductionRepo = reproductionRepo,
+       _careRepo = careRepo,
+       _careCalendarService = careCalendarService,
        _reproductionScheduler =
            reproductionScheduler ?? const ReproductionScheduler();
 
@@ -29,6 +36,8 @@ class AgendaReminderSyncService {
   final AgendaRepository _agendaRepository;
   final HealthRecordRepository _healthRepo;
   final ReproductionRecordRepository _reproductionRepo;
+  final CareRepository _careRepo;
+  final CareCalendarService _careCalendarService;
   final ReproductionScheduler _reproductionScheduler;
 
   Future<int> sync() async {
@@ -44,29 +53,31 @@ class AgendaReminderSyncService {
 
     final desiredAuto = await _buildAutoEntries();
 
-    final mergedAuto = desiredAuto.map((desired) {
-      final previous = existingAuto[desired.id];
-      if (previous == null) return desired;
+    final mergedAuto = desiredAuto
+        .map((desired) {
+          final previous = existingAuto[desired.id];
+          if (previous == null) return desired;
 
-      // Refresh source-derived fields without erasing execution history.
-      return desired.copyWith(
-        estado: previous.estado,
-        completedAnimalIds: previous.completedAnimalIds,
-        notas: previous.notas,
-        fechaCompletado: previous.fechaCompletado,
-        prioridad: previous.prioridad,
-        assigneeId: previous.assigneeId,
-        collaboratorIds: previous.collaboratorIds,
-        workTeamId: previous.workTeamId,
-        createdById: previous.createdById,
-        createdAt: previous.createdAt,
-        updatedAt: previous.updatedAt,
-        blockedReason: previous.blockedReason,
-        checklist: previous.checklist,
-        activities: previous.activities,
-        evidence: previous.evidence,
-      );
-    }).toList(growable: false);
+          // Refresh source-derived fields without erasing execution history.
+          return desired.copyWith(
+            estado: previous.estado,
+            completedAnimalIds: previous.completedAnimalIds,
+            notas: previous.notas,
+            fechaCompletado: previous.fechaCompletado,
+            prioridad: previous.prioridad,
+            assigneeId: previous.assigneeId,
+            collaboratorIds: previous.collaboratorIds,
+            workTeamId: previous.workTeamId,
+            createdById: previous.createdById,
+            createdAt: previous.createdAt,
+            updatedAt: previous.updatedAt,
+            blockedReason: previous.blockedReason,
+            checklist: previous.checklist,
+            activities: previous.activities,
+            evidence: previous.evidence,
+          );
+        })
+        .toList(growable: false);
 
     final merged = <AgendaEntry>[...manual, ...mergedAuto];
 
@@ -79,8 +90,32 @@ class AgendaReminderSyncService {
   Future<List<AgendaEntry>> _buildAutoEntries() async {
     final animals = await _animalRepository.getAll();
     final desired = <String, AgendaEntry>{};
+    final careRules = {
+      for (final rule in await _careRepo.getRules()) rule.id: rule,
+    };
 
     for (final animal in animals) {
+      final pendingCare = await _careCalendarService.regenerateFor(animal);
+      for (final task in pendingCare) {
+        if (task.done) continue;
+        final label = careRules[task.ruleId]?.name ?? _careTypeLabel(task.type);
+        final date = _startOfDay(task.dueAt);
+        final id = 'auto:care:${animal.uuid}:${task.ruleId}:${_dateKey(date)}';
+        desired[id] = AgendaEntry(
+          id: id,
+          titulo: '$label - ${_animalLabel(animal)}',
+          descripcion: 'Tarea de cuidado programada automáticamente.',
+          fecha: date,
+          tipo: 'Cuidado sanitario',
+          animalIds: [animal.uuid],
+          loteIds: const [],
+          ubicacion: animal.currentLocationId ?? 'Sin ubicación',
+          estado: AgendaEstado.pendiente,
+          completedAnimalIds: const [],
+          notas: '',
+        );
+      }
+
       final healthRecords = await _healthRepo.getHealthRecords(animal.uuid);
       for (final record in healthRecords) {
         final date = record.nextDueDate;
@@ -217,6 +252,16 @@ class AgendaReminderSyncService {
         return 'Salud';
     }
   }
+
+  String _careTypeLabel(CareType type) => switch (type) {
+    CareType.vaccination => 'Vacunación',
+    CareType.deworming => 'Desparasitación',
+    CareType.tickBath => 'Baño garrapaticida',
+    CareType.supplement => 'Suplemento/Vitaminas',
+    CareType.hoofCare => 'Revisión de casco',
+    CareType.reproductionCheck => 'Chequeo reproductivo',
+    CareType.custom => 'Cuidado',
+  };
 
   String _animalLabel(AnimalEntity animal) {
     if (animal.customName != null && animal.customName!.trim().isNotEmpty) {

@@ -3,6 +3,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
 
@@ -21,6 +24,9 @@ class DetailData {
     this.ancestors = const <String, AnimalEntity>{},
     this.offspring = const <AnimalEntity>[],
     this.sireRecords = const <ReproductionRecord>[],
+    this.carePending = const <ScheduledCare>[],
+    this.careRules = const <String, CareRule>{},
+    this.careRecords = const <CareRecord>[],
   });
 
   final AnimalEntity animal;
@@ -32,6 +38,15 @@ class DetailData {
   final List<MovementRecord> movements;
   final List<CostRecord> costs;
   final List<MilkingRecord> milkingRecords;
+
+  /// Pending care tasks for this animal, soonest due first.
+  final List<ScheduledCare> carePending;
+
+  /// Active care rules keyed by id, used to label pending/past tasks.
+  final Map<String, CareRule> careRules;
+
+  /// Care completed so far, newest first.
+  final List<CareRecord> careRecords;
 
   /// Every ancestor resolved for the pedigree tree, keyed by uuid. Parents
   /// recorded but missing from the herd (an outside sire) are simply absent,
@@ -144,6 +159,18 @@ extension ServiceTypeDisplay on ServiceType {
     ServiceType.naturalService => 'Monta natural',
     ServiceType.artificialInsemination => 'Inseminación artificial',
     ServiceType.ivf => 'Fecundación in vitro',
+  };
+}
+
+extension CareTypeDisplay on CareType {
+  String get displayName => switch (this) {
+    CareType.vaccination => 'Vacunación',
+    CareType.deworming => 'Desparasitación',
+    CareType.tickBath => 'Baño garrapaticida',
+    CareType.supplement => 'Suplemento/Vitaminas',
+    CareType.hoofCare => 'Revisión de casco',
+    CareType.reproductionCheck => 'Chequeo reproductivo',
+    CareType.custom => 'Cuidado',
   };
 }
 

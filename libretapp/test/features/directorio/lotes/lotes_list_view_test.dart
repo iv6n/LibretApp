@@ -77,6 +77,12 @@ class _FakeLotesRepository implements LotesRepository {
   }
 
   @override
+  Future<void> purge(String uuid) async {
+    deletedUuids.add(uuid);
+    _lotes.removeWhere((lote) => lote.uuid == uuid);
+  }
+
+  @override
   Future<void> addAnimalToLote({
     required String loteUuid,
     required String animalUuid,

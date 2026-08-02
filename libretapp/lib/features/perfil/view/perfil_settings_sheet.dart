@@ -1,11 +1,13 @@
 /// Settings sheet: theme, backup, export, edit profile.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/app/widgets/shell_insets.dart';
+import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
@@ -154,6 +156,26 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               ),
               onTap: () => _importAnimalsFromExcel(context),
             ),
+            if (kDebugMode) ...[
+              ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: const Text('Cargar/restablecer escenario demo'),
+                subtitle: const Text(
+                  'Rancho El Mezquite — DEMO. Solo depuración; tus datos '
+                  'reales nunca se tocan.',
+                ),
+                onTap: () => _loadDemoScenario(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_sweep_outlined),
+                title: const Text('Quitar escenario demo'),
+                subtitle: const Text(
+                  'Borra únicamente los registros del escenario demo. '
+                  'Tus datos reales se conservan.',
+                ),
+                onTap: () => _removeDemoScenario(context),
+              ),
+            ],
             const Divider(),
             BlocProvider(
               create: (_) => ExportCubit(locator<ExportService>()),
@@ -188,6 +210,108 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
     } catch (e) {
       if (context.mounted) {
         messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _loadDemoScenario(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Escenario demo'),
+        content: const Text(
+          'Esto instala o restablece "Rancho El Mezquite — DEMO". Si ya '
+          'estaba instalado, sus registros vuelven a sus valores originales '
+          '(cualquier cambio que hayas hecho a un animal demo se pierde). '
+          'Tus datos reales nunca se tocan ni se borran.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final result = await locator<DemoScenarioService>().install(reset: true);
+      if (!context.mounted) return;
+      context.read<PerfilBloc>().add(const LoadPerfil());
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Escenario demo listo: ${result.counts['animals'] ?? 0} animales, '
+            '${result.counts['locations'] ?? 0} ubicaciones, '
+            '${result.counts['lotes'] ?? 0} lotes.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error al instalar el escenario demo: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeDemoScenario(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Quitar escenario demo'),
+        content: const Text(
+          'Se eliminarán los animales, ubicaciones, lotes, ordeñas, '
+          'movimientos financieros y tareas que pertenecen a "Rancho El '
+          'Mezquite — DEMO".\n\n'
+          'Tus datos reales se conservan. Si algún registro tuyo estaba '
+          'asignado a un lote o una ubicación del demo, sólo se le quita esa '
+          'asignación.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Quitar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final result = await locator<DemoScenarioService>().uninstall();
+      if (!context.mounted) return;
+      context.read<PerfilBloc>().add(const LoadPerfil());
+
+      final detached = result.detachedReferences;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Escenario demo eliminado: '
+            '${result.counts['animals'] ?? 0} animales, '
+            '${result.counts['locations'] ?? 0} ubicaciones, '
+            '${result.counts['lotes'] ?? 0} lotes.'
+            '${detached > 0 ? ' Se desvincularon $detached registro(s) tuyo(s).' : ''}',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Error al quitar el escenario demo: $e')),
+        );
       }
     }
   }

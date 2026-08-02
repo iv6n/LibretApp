@@ -30,8 +30,17 @@ abstract class LotesRepository {
   /// Actualizar un lote existente
   Future<void> updateLote(LoteEntity lote);
 
-  /// Eliminar un lote
+  /// Cierra el lote (baja lógica): se conserva la fila, marcada `active:
+  /// false`, y sigue apareciendo en [getAll]/[getInactiveLotes].
   Future<void> deleteLote(String uuid);
+
+  /// Borra la fila del lote definitivamente, sin dejar copia archivada.
+  ///
+  /// Distinto de [deleteLote] a propósito: para un lote real, "cerrado" es lo
+  /// correcto — su historial sigue siendo consultable. Esto existe para filas
+  /// que la propia app es dueña y puede reclamar de vuelta, como al
+  /// desinstalar el escenario demo.
+  Future<void> purge(String uuid);
 
   /// Agregar un animal a un lote
   Future<void> addAnimalToLote({

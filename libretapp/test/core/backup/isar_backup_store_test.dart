@@ -172,7 +172,10 @@ void main() {
     }
 
     test('keeps the local row when it is newer than the snapshot', () async {
-      await putLote(name: 'Del respaldo', lastUpdateDate: DateTime.utc(2026, 5));
+      await putLote(
+        name: 'Del respaldo',
+        lastUpdateDate: DateTime.utc(2026, 5),
+      );
       final captured = await store.capture();
 
       // Simulate a local edit made after the snapshot was taken.
@@ -189,11 +192,17 @@ void main() {
     });
 
     test('overwrites the local row when the snapshot is newer', () async {
-      await putLote(name: 'Del respaldo', lastUpdateDate: DateTime.utc(2026, 9));
+      await putLote(
+        name: 'Del respaldo',
+        lastUpdateDate: DateTime.utc(2026, 9),
+      );
       final captured = await store.capture();
 
       // Local copy is older than the snapshot this time.
-      await putLote(name: 'Versión vieja', lastUpdateDate: DateTime.utc(2026, 5));
+      await putLote(
+        name: 'Versión vieja',
+        lastUpdateDate: DateTime.utc(2026, 5),
+      );
 
       final result = await store.restore(
         captured,

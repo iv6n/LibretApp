@@ -304,7 +304,10 @@ class _AnimalesListViewState extends State<AnimalesListView>
         }
 
         final filtered = _animalController.applyFilters(state.visibleAnimals);
-        final stageCounts = _countByStage(state.allAnimals);
+        // Counted across the whole herd by the bloc, not over the pages
+        // loaded so far — otherwise every chip would read low and climb as
+        // the user scrolled.
+        final stageCounts = state.herdStageCounts;
 
         // Load the record-derived indicators for the rows on screen after the
         // frame settles: the controller notifies listeners when they arrive,
@@ -341,9 +344,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                         listBottomPadding: listBottomPadding,
                         l10n: l10n,
                         selectedStages: _animalController.state.selectedStages,
-                        availableStages: state.allAnimals
-                            .map((a) => a.lifeStage)
-                            .toSet(),
+                        availableStages: stageCounts.keys.toSet(),
                         stageCounts: stageCounts,
                         onStagesChanged: _animalController.setStages,
                         onlyPendingEarTag:
@@ -536,6 +537,19 @@ class _AnimalesListViewState extends State<AnimalesListView>
     bool hideStageChips = false,
   }) {
     final theme = Theme.of(context);
+
+    // `filtered` only ever holds the pages loaded so far, so counting it
+    // would show "20 animales" and climb as the user scrolls. While nothing
+    // is narrowing the list the honest figure is the whole herd's, which the
+    // bloc counts in the database. Once a filter or a search is applied only
+    // the loaded matches can be counted, so the label follows those instead.
+    final isNarrowed =
+        state.searchQuery.trim().isNotEmpty ||
+        state.searchFilterStages.isNotEmpty ||
+        state.searchFilterSexes.isNotEmpty ||
+        _animalController.state.hasFilters;
+    final headerCount = isNarrowed ? filtered.length : state.herdTotal;
+
     const calfStages = {
       LifeStage.calf,
       LifeStage.calfMale,
@@ -643,7 +657,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
               child: Row(
                 children: [
                   Text(
-                    l10n.animalsCount(filtered.length),
+                    l10n.animalsCount(headerCount),
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -1148,14 +1162,6 @@ class _CenteredSection extends StatelessWidget {
       child: Padding(padding: padding, child: child),
     );
   }
-}
-
-Map<LifeStage, int> _countByStage(List<AnimalEntity> animals) {
-  final counts = <LifeStage, int>{};
-  for (final animal in animals) {
-    counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
-  }
-  return counts;
 }
 
 String _animalCardLabel(AnimalEntity animal) {

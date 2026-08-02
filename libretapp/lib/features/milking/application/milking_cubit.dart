@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -25,6 +26,7 @@ class MilkingState extends Equatable {
     this.entries = const [],
     this.presetAnimalUuid,
     this.errorMessage,
+    this.withdrawnAnimals = const [],
   });
 
   final MilkingLoadStatus status;
@@ -35,6 +37,12 @@ class MilkingState extends Equatable {
   final List<MilkingEntry> entries;
   final String? presetAnimalUuid;
   final String? errorMessage;
+
+  /// Cows that would otherwise be eligible for milking but are excluded
+  /// because they are under an active health withdrawal — selling their
+  /// milk during that window is a food-safety breach, so they never make it
+  /// into [animals].
+  final List<AnimalEntity> withdrawnAnimals;
 
   int get totalMilliliters =>
       entries.fold(0, (total, entry) => total + entry.volumeMilliliters);
@@ -80,6 +88,7 @@ class MilkingState extends Equatable {
     List<MilkingEntry>? entries,
     Object? presetAnimalUuid = _unset,
     Object? errorMessage = _unset,
+    List<AnimalEntity>? withdrawnAnimals,
   }) {
     return MilkingState(
       status: status ?? this.status,
@@ -94,6 +103,7 @@ class MilkingState extends Equatable {
       errorMessage: errorMessage == _unset
           ? this.errorMessage
           : errorMessage as String?,
+      withdrawnAnimals: withdrawnAnimals ?? this.withdrawnAnimals,
     );
   }
 
@@ -107,6 +117,7 @@ class MilkingState extends Equatable {
     entries,
     presetAnimalUuid,
     errorMessage,
+    withdrawnAnimals,
   ];
 }
 
@@ -115,14 +126,17 @@ class MilkingCubit extends Cubit<MilkingState> {
     required MilkingRepository repository,
     required AnimalRepository animalRepository,
     required LotesRepository lotesRepository,
+    HealthRecordRepository? healthRecordRepository,
   }) : _repository = repository,
        _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
+       _healthRecordRepository = healthRecordRepository,
        super(const MilkingState());
 
   final MilkingRepository _repository;
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
+  final HealthRecordRepository? _healthRecordRepository;
 
   Future<void> load({String? presetAnimalUuid}) async {
     emit(state.copyWith(status: MilkingLoadStatus.loading));
@@ -133,8 +147,24 @@ class MilkingCubit extends Cubit<MilkingState> {
         _repository.getOpenDraft(),
       ]);
       final allAnimals = results[0] as List<AnimalEntity>;
-      final eligible = allAnimals.where(_isEligibleCow).toList()
-        ..sort((a, b) => a.earTagNumber.compareTo(b.earTagNumber));
+      final candidates = allAnimals.where(_isEligibleCow).toList();
+
+      // Selling milk from a cow under an active health withdrawal is a
+      // food-safety breach, so she is held out of the eligible list even
+      // though she otherwise qualifies (cattle, female, active).
+      final withdrawals =
+          await _healthRecordRepository?.getActiveWithdrawals(
+            candidates.map((a) => a.uuid).toSet(),
+          ) ??
+          const <String, DateTime>{};
+
+      final eligible =
+          candidates.where((a) => !withdrawals.containsKey(a.uuid)).toList()
+            ..sort((a, b) => a.earTagNumber.compareTo(b.earTagNumber));
+      final withdrawn =
+          candidates.where((a) => withdrawals.containsKey(a.uuid)).toList()
+            ..sort((a, b) => a.earTagNumber.compareTo(b.earTagNumber));
+
       final lotes = results[1] as List<LoteEntity>;
       var session = results[2] as MilkingSession?;
       if (session == null) {
@@ -162,6 +192,7 @@ class MilkingCubit extends Cubit<MilkingState> {
               ? MilkingCaptureMode.individual
               : MilkingCaptureMode.group,
           errorMessage: null,
+          withdrawnAnimals: withdrawn,
         ),
       );
     } catch (error) {

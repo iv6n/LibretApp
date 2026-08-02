@@ -1,18 +1,86 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_bloc.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart';
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+
+/// None of the events under test here (`AddAnimal`/`UpdateAnimal`/
+/// `DeleteAnimal`/`RenameBatch`) actually invoke `AnimalEditService` — only
+/// `ApplyAnimalEdit`/`AssignAnimalToBatch` do, and those are covered
+/// elsewhere. `AnimalesBloc` still resolves it from GetIt at construction
+/// time when not passed explicitly, so this builds a throwaway instance
+/// purely to satisfy that constructor requirement without pulling in GetIt.
+AnimalEditService _buildUnusedAnimalEditService(
+  AnimalRepository animalRepository,
+) {
+  final careRepository = _NoopCareRepository();
+  return AnimalEditService(
+    animalRepository: animalRepository,
+    lotesRepository: _NoopLotesRepository(),
+    movementRepository: _NoopMovementRepository(),
+    careRepository: careRepository,
+    agendaReminderSyncService: AgendaReminderSyncService(
+      animalRepository: animalRepository,
+      agendaRepository: _NoopAgendaRepository(),
+      healthRepo: _NoopHealthRepository(),
+      reproductionRepo: _NoopReproductionRepository(),
+      careRepo: careRepository,
+      careCalendarService: CareCalendarService(careRepository),
+    ),
+  );
+}
+
+class _NoopLotesRepository implements LotesRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoopMovementRepository implements MovementRecordRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoopCareRepository implements CareRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoopAgendaRepository implements AgendaRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoopHealthRepository implements HealthRecordRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _NoopReproductionRepository implements ReproductionRecordRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
 
 void main() {
   group('AnimalesBloc AddAnimal', () {
     test('persists animal and emits loaded state', () async {
       final repository = _FakeAnimalRepository(initialAnimals: const []);
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -37,7 +105,10 @@ void main() {
           initialAnimals: const [],
           emitOnMutations: false,
         );
-        final bloc = AnimalesBloc(repository);
+        final bloc = AnimalesBloc(
+          repository,
+          animalEditService: _buildUnusedAnimalEditService(repository),
+        );
         addTearDown(bloc.close);
 
         bloc.add(const LoadAnimales());
@@ -58,7 +129,10 @@ void main() {
     test('updates animal and keeps loaded state', () async {
       final initialAnimal = _buildAnimal(uuid: 'ani-upd', earTag: 'TAG-OLD');
       final repository = _FakeAnimalRepository(initialAnimals: [initialAnimal]);
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -85,7 +159,10 @@ void main() {
           _buildAnimal(uuid: 'ani-del-2', earTag: 'TAG-DEL-2'),
         ],
       );
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -110,7 +187,10 @@ void main() {
         initialAnimals: const [],
         throwOnSave: true,
       );
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -128,7 +208,10 @@ void main() {
         initialAnimals: [_buildAnimal(uuid: 'ani-err-upd', earTag: 'TAG-1')],
         throwOnUpdate: true,
       );
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -146,7 +229,10 @@ void main() {
       final repository = _FakeAnimalRepository(
         initialAnimals: [_buildAnimal(uuid: 'ani-batch', earTag: 'TAG-BATCH')],
       );
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());
@@ -171,7 +257,10 @@ void main() {
         initialAnimals: [_buildAnimal(uuid: 'ani-err-del', earTag: 'TAG-DEL')],
         throwOnDelete: true,
       );
-      final bloc = AnimalesBloc(repository);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _buildUnusedAnimalEditService(repository),
+      );
       addTearDown(bloc.close);
 
       bloc.add(const LoadAnimales());

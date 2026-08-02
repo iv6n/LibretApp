@@ -108,8 +108,9 @@ class _FakeWorkforceRepository implements WorkforceRepository {
   final List<WorkTeam> teams = [];
 
   @override
-  Future<List<WorkerProfile>> fetchWorkers({bool includeInactive = false}) async =>
-      List.of(workers);
+  Future<List<WorkerProfile>> fetchWorkers({
+    bool includeInactive = false,
+  }) async => List.of(workers);
 
   @override
   Future<List<WorkTeam>> fetchTeams({bool includeInactive = false}) async =>
@@ -309,26 +310,29 @@ void main() {
       );
     });
 
-    test('rejects a milking entry pointing at a non-existent session', () async {
-      final raw = _validBackupJson(
-        extraData: {
-          'milkingEntries': [
-            {
-              'uuid': 'entry-1',
-              'sessionUuid': 'missing-session',
-              'animalUuid': 'a1',
-              'volumeMilliliters': 500,
-              'createdAt': _fixedDate.toIso8601String(),
-              'updatedAt': _fixedDate.toIso8601String(),
-            },
-          ],
-        },
-      );
-      await expectLater(
-        () => service.importFromJsonString(raw, mode: BackupImportMode.merge),
-        throwsA(isA<FormatException>()),
-      );
-    });
+    test(
+      'rejects a milking entry pointing at a non-existent session',
+      () async {
+        final raw = _validBackupJson(
+          extraData: {
+            'milkingEntries': [
+              {
+                'uuid': 'entry-1',
+                'sessionUuid': 'missing-session',
+                'animalUuid': 'a1',
+                'volumeMilliliters': 500,
+                'createdAt': _fixedDate.toIso8601String(),
+                'updatedAt': _fixedDate.toIso8601String(),
+              },
+            ],
+          },
+        );
+        await expectLater(
+          () => service.importFromJsonString(raw, mode: BackupImportMode.merge),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
   });
 
   group('importFromJsonString — merge', () {
@@ -372,7 +376,10 @@ void main() {
       final service = repos.service();
 
       final raw = _validBackupJson(animals: [_animalDtoJson('fresh')]);
-      await service.importFromJsonString(raw, mode: BackupImportMode.replaceAll);
+      await service.importFromJsonString(
+        raw,
+        mode: BackupImportMode.replaceAll,
+      );
 
       expect(repos.animals.cleared, isTrue);
       expect(repos.lotes.cleared, isTrue);

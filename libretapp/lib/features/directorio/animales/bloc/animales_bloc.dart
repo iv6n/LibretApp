@@ -8,13 +8,17 @@ import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/core/constants/ui_constants.dart';
+import 'package:libretapp/core/di/injection.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
-  AnimalesBloc(this.repository) : super(const AnimalesInitial()) {
+  AnimalesBloc(this.repository, {AnimalEditService? animalEditService})
+    : _animalEditService = animalEditService ?? locator<AnimalEditService>(),
+      super(const AnimalesInitial()) {
     on<LoadAnimales>(_onLoadAnimales);
     on<AnimalesLoadMore>(_onLoadMoreAnimals);
     on<AnimalesStreamUpdated>(_onStreamUpdated);
@@ -36,6 +40,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     on<ClearAnimalSelection>(_onClearAnimalSelection);
   }
   final AnimalRepository repository;
+  final AnimalEditService _animalEditService;
 
   StreamSubscription<void>? _changesSubscription;
   List<AnimalEntity> _latest = const [];
@@ -46,6 +51,8 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   Set<String> _selectedAnimalUuids = const <String>{};
   int _currentOffset = 0;
   bool _hasMore = false;
+  int _herdTotal = 0;
+  Map<LifeStage, int> _herdStageCounts = const {};
 
   Future<void> _onLoadAnimales(
     LoadAnimales event,
@@ -61,6 +68,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     _latest = page;
     _currentOffset = page.length;
     _hasMore = page.length == AnimalesLoaded.pageSize;
+    await _refreshHerdTotals();
     emit(_buildLoadedState());
 
     // Watch for any DB changes and reload from offset 0 to keep list fresh.
@@ -103,16 +111,19 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     }
   }
 
-  void _onStreamUpdated(
+  Future<void> _onStreamUpdated(
     AnimalesStreamUpdated event,
     Emitter<AnimalesState> emit,
-  ) {
+  ) async {
     _latest = event.animales;
     _currentOffset = _latest.length;
     final existingUuids = _latest.map((a) => a.uuid).toSet();
     _selectedAnimalUuids = _selectedAnimalUuids
         .where(existingUuids.contains)
         .toSet();
+    // The herd changed, so its size did too: an animal was added, deleted, or
+    // left the herd via sale/death/archival.
+    await _refreshHerdTotals();
     emit(_buildLoadedState());
   }
 
@@ -249,21 +260,16 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
         return;
       }
 
-      final now = DateTime.now();
-      final updated = current.copyWith(
+      // Routed through AnimalEditService so a location change from the list
+      // view creates a MovementRecord too, instead of silently updating
+      // only the animal's currentLocationId (the third divergent save path
+      // this bloc used to have).
+      final draft = current.copyWith(
         currentLocationId: event.locationId,
-        initialLocationId:
-            current.initialLocationId ??
-            event.locationId ??
-            current.initialLocationId,
-        lastMovementDate: event.locationId != null
-            ? now
-            : current.lastMovementDate,
-        lastUpdateDate: now,
-        synced: false,
+        batchUuid: event.batchId ?? current.batchUuid,
       );
 
-      await repository.update(updated);
+      await _animalEditService.applyEdit(original: current, draft: draft);
       await _refreshLoadedState(emit);
     } catch (e) {
       emit(AnimalesError(e.toString()));
@@ -364,7 +370,26 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       hasMore: _hasMore,
       isLoadingMore: false,
       currentOffset: _currentOffset,
+      herdTotal: _herdTotal,
+      herdStageCounts: _herdStageCounts,
     );
+  }
+
+  /// Re-reads the whole-herd figures the list labels show.
+  ///
+  /// Counted in the database rather than over `_latest`, which only ever holds
+  /// the pages loaded so far — that is the difference between the label
+  /// reading "40 animales" immediately and it reading "20" until the user
+  /// scrolls. Failing to count must not take the list down with it, so a
+  /// failure leaves the previous figures in place.
+  Future<void> _refreshHerdTotals() async {
+    try {
+      final stageCounts = await repository.getActiveStageCounts();
+      _herdStageCounts = stageCounts;
+      _herdTotal = await repository.count();
+    } catch (_) {
+      // Keep whatever was last known good.
+    }
   }
 
   Future<void> _refreshLoadedState(Emitter<AnimalesState> emit) async {
@@ -377,6 +402,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     _selectedAnimalUuids = _selectedAnimalUuids
         .where(existingUuids.contains)
         .toSet();
+    await _refreshHerdTotals();
     emit(_buildLoadedState());
   }
 

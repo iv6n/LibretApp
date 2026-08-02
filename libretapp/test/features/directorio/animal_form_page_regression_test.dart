@@ -6,12 +6,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_edit_page.dart';
 import 'package:libretapp/features/directorio/animales/view/register_animal_page.dart';
@@ -39,6 +48,34 @@ void main() {
     );
     locator.registerSingleton<ReproductionRecordRepository>(
       _FakeReproductionRecordRepository(),
+    );
+    locator.registerSingleton<CareRepository>(_FakeCareRepository());
+    locator.registerSingleton<AgendaRepository>(_FakeAgendaRepository());
+    locator.registerLazySingleton<CareCalendarService>(
+      () => CareCalendarService(locator<CareRepository>()),
+    );
+    locator.registerLazySingleton<AgendaReminderSyncService>(
+      () => AgendaReminderSyncService(
+        animalRepository: locator<AnimalRepository>(),
+        agendaRepository: locator<AgendaRepository>(),
+        healthRepo: locator<HealthRecordRepository>(),
+        reproductionRepo: locator<ReproductionRecordRepository>(),
+        careRepo: locator<CareRepository>(),
+        careCalendarService: locator<CareCalendarService>(),
+      ),
+    );
+    // Registered lazily: RegisterAnimalPage/AnimalEditPage resolve this
+    // during initState, by which point each test has already registered its
+    // own AnimalRepository/LotesRepository/LocationRepository fakes below.
+    locator.registerLazySingleton<AnimalEditService>(
+      () => AnimalEditService(
+        animalRepository: locator<AnimalRepository>(),
+        lotesRepository: locator<LotesRepository>(),
+        movementRepository: locator<MovementRecordRepository>(),
+        careRepository: locator<CareRepository>(),
+        agendaReminderSyncService: locator<AgendaReminderSyncService>(),
+        careCalendarService: locator<CareCalendarService>(),
+      ),
     );
   });
 
@@ -593,7 +630,11 @@ void main() {
         byUuid: {'edit-direct': editingAnimal},
       );
 
-      locator.registerSingleton<AnimalRepository>(animalRepo);
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(
+          _FakeLotesRepository(activeLotes: const []),
+        );
 
       await tester.pumpWidget(
         _testApp(const AnimalEditPage(animalUuid: 'edit-direct')),
@@ -879,7 +920,128 @@ class _FakeLotesRepository implements LotesRepository {
   Future<List<LoteEntity>> getAll() async => _activeLotes;
 
   @override
+  Future<LoteEntity?> getByUuid(String uuid) async {
+    for (final lote in _activeLotes) {
+      if (lote.uuid == uuid) return lote;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> addAnimalToLote({
+    required String loteUuid,
+    required String animalUuid,
+  }) async {}
+
+  @override
+  Future<void> removeAnimalFromLote({
+    required String loteUuid,
+    required String animalUuid,
+  }) async {}
+
+  @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Functional, not throwing: `AnimalEditService`/`AgendaReminderSyncService`
+/// actually call these during a real save, unlike the throwaway
+/// GetIt-satisfying fakes used where the save path is never exercised.
+class _FakeCareRepository implements CareRepository {
+  final _rules = <String, CareRule>{};
+  final _records = <CareRecord>[];
+  final _schedules = <String, ScheduledCare>{};
+
+  @override
+  Future<List<CareRule>> getRules() async => _rules.values.toList();
+
+  @override
+  Future<Set<String>> getAllRuleIds() async => _rules.keys.toSet();
+
+  @override
+  Future<void> saveRule(CareRule rule) async => _rules[rule.id] = rule;
+
+  @override
+  Future<void> retireRule(String ruleId) async => _rules.remove(ruleId);
+
+  @override
+  Future<List<CareRecord>> getRecordsForAnimal(String animalUuid) async =>
+      _records.where((r) => r.animalId == animalUuid).toList();
+
+  @override
+  Future<Map<String, CareRecord>> getLatestRecordsByRule(
+    String animalUuid,
+  ) async => const {};
+
+  @override
+  Future<void> saveRecord(CareRecord record) async => _records.add(record);
+
+  @override
+  Future<List<ScheduledCare>> getPending({DateTime? until}) async =>
+      _schedules.values.where((s) => !s.done).toList();
+
+  @override
+  Future<List<ScheduledCare>> getPendingForAnimal(String animalUuid) async =>
+      _schedules.values
+          .where((s) => s.animalId == animalUuid && !s.done)
+          .toList();
+
+  @override
+  Future<void> saveSchedules(List<ScheduledCare> schedules) async {
+    for (final s in schedules) {
+      _schedules[s.id] = s;
+    }
+  }
+
+  @override
+  Future<void> markDone(String scheduleId) async {
+    final current = _schedules[scheduleId];
+    if (current != null) _schedules[scheduleId] = current.copyWith(done: true);
+  }
+
+  @override
+  Future<void> clearGeneratedFor(String animalUuid) async {
+    _schedules.removeWhere(
+      (_, s) => s.animalId == animalUuid && s.autoGenerated,
+    );
+  }
+
+  @override
+  Future<void> deleteAllForAnimal(String animalUuid) async {
+    _records.removeWhere((r) => r.animalId == animalUuid);
+    _schedules.removeWhere((_, s) => s.animalId == animalUuid);
+  }
+}
+
+class _FakeAgendaRepository implements AgendaRepository {
+  List<AgendaEntry> _entries = [];
+
+  @override
+  Future<List<AgendaEntry>> fetchEntries() async => List.of(_entries);
+
+  @override
+  Future<AgendaEntry> getEntry(String id) async =>
+      _entries.firstWhere((e) => e.id == id);
+
+  @override
+  Future<void> saveEntry(AgendaEntry entry) async {
+    _entries = [..._entries.where((e) => e.id != entry.id), entry];
+  }
+
+  @override
+  Future<void> deleteEntry(String id) async {
+    _entries = _entries.where((e) => e.id != id).toList();
+  }
+
+  @override
+  Future<void> updateEntry(AgendaEntry entry) async => saveEntry(entry);
+
+  @override
+  Future<void> replaceAll(List<AgendaEntry> entries) async {
+    _entries = List.of(entries);
+  }
+
+  @override
+  Future<void> clearAll() async => _entries = [];
 }
 
 class _FakeLocationRepository implements LocationRepository {

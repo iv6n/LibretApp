@@ -22,10 +22,7 @@ void main() {
     final versionLine = pubspec
         .readAsLinesSync()
         .map((line) => line.trim())
-        .firstWhere(
-          (line) => line.startsWith('version:'),
-          orElse: () => '',
-        );
+        .firstWhere((line) => line.startsWith('version:'), orElse: () => '');
 
     expect(
       versionLine,

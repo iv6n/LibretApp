@@ -13,6 +13,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
@@ -32,6 +33,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     required MovementRecordRepository movementRepo,
     required CostRecordRepository costRepo,
     SensitiveLoggerPort? sensitiveLogger,
+    AnimalEditService? animalEditService,
   }) : _weightRepo = weightRepo,
        _healthRepo = healthRepo,
        _productionRepo = productionRepo,
@@ -44,6 +46,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
            (locator.isRegistered<SensitiveLoggerPort>()
                ? locator<SensitiveLoggerPort>()
                : SecureLoggerService()),
+       _animalEditService = animalEditService ?? locator<AnimalEditService>(),
        super(AnimalState.initial()) {
     on<LoadAnimals>(_onLoadAnimals);
     on<AddAnimal>(_onAddAnimal);
@@ -60,6 +63,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
     on<AddMovementRecord>(_onAddMovementRecord);
     on<AddCostRecord>(_onAddCostRecord);
     on<AssignAnimalToBatch>(_onAssignAnimalToBatch);
+    on<ApplyAnimalEdit>(_onApplyAnimalEdit);
   }
   final AnimalRepository animalRepository;
   final LotesRepository lotesRepository;
@@ -71,6 +75,7 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
   final MovementRecordRepository _movementRepo;
   final CostRecordRepository _costRepo;
   final SensitiveLoggerPort _sensitiveLogger;
+  final AnimalEditService _animalEditService;
   static const _logTag = 'AnimalBloc';
 
   Future<void> _onLoadAnimals(
@@ -394,25 +399,12 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
         throw Exception('Animal no encontrado: ${event.animalUuid}');
       }
 
-      // Si el animal ya estaba en un lote, removerlo
-      if (animal.batchUuid != null && animal.batchUuid != event.batchUuid) {
-        await lotesRepository.removeAnimalFromLote(
-          loteUuid: animal.batchUuid!,
-          animalUuid: event.animalUuid,
-        );
-      }
-
-      // Actualizar el animal con la nueva asignación
-      final updatedAnimal = animal.copyWith(batchUuid: event.batchUuid);
-      await animalRepository.update(updatedAnimal);
-
-      // Si se está asignando a un nuevo lote, agregarlo
-      if (event.batchUuid != null) {
-        await lotesRepository.addAnimalToLote(
-          loteUuid: event.batchUuid!,
-          animalUuid: event.animalUuid,
-        );
-      }
+      // Delegated to AnimalEditService so the lote diff always runs through
+      // the same code path as every other edit entry point.
+      final updatedAnimal = await _animalEditService.applyEdit(
+        original: animal,
+        draft: animal.copyWith(batchUuid: event.batchUuid),
+      );
 
       // Recargar todos los animales
       final updated = await animalRepository.getAll();
@@ -433,7 +425,53 @@ class AnimalBloc extends Bloc<AnimalEvent, AnimalState> {
       );
       emit(
         AnimalState.failure(
-          message: 'Error al asignar animal: ${e.toString()}',
+          message: e is AnimalEditValidationException
+              ? e.message
+              : 'Error al asignar animal: ${e.toString()}',
+          animals: state.animals,
+          selectedAnimal: state.selectedAnimal,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onApplyAnimalEdit(
+    ApplyAnimalEdit event,
+    Emitter<AnimalState> emit,
+  ) async {
+    LoggerService.d(
+      'Aplicar edición de animal ${event.original.uuid}',
+      tag: _logTag,
+    );
+    try {
+      emit(AnimalState.loading());
+
+      final updatedAnimal = await _animalEditService.applyEdit(
+        original: event.original,
+        draft: event.draft,
+      );
+
+      final updated = await animalRepository.getAll();
+      final selected = state.selectedAnimal?.uuid == updatedAnimal.uuid
+          ? updatedAnimal
+          : state.selectedAnimal;
+
+      emit(AnimalState.success(animals: updated, selectedAnimal: selected));
+      LoggerService.i(
+        'Edición aplicada para animal ${updatedAnimal.uuid}',
+        tag: _logTag,
+      );
+    } catch (e, st) {
+      LoggerService.e(
+        'Error al aplicar edición de animal: $e',
+        tag: _logTag,
+        stackTrace: st,
+      );
+      emit(
+        AnimalState.failure(
+          message: e is AnimalEditValidationException
+              ? e.message
+              : 'Error al editar animal: ${e.toString()}',
           animals: state.animals,
           selectedAnimal: state.selectedAnimal,
         ),

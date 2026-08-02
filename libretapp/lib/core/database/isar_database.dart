@@ -105,6 +105,9 @@ class IsarDatabase {
       await db.isarAgendaEntrys.clear();
       await db.isarWorkerProfiles.clear();
       await db.isarWorkTeams.clear();
+      await db.isarCareRules.clear();
+      await db.isarCareRecords.clear();
+      await db.isarScheduledCares.clear();
     });
     LoggerService.w(
       'Todas las colecciones Isar fueron limpiadas',

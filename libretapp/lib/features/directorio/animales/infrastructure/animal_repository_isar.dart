@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
+/// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
 library;
 
 import 'package:isar/isar.dart';
@@ -9,6 +9,7 @@ import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/health_status.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/risk_level.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -307,6 +308,15 @@ class AnimalRepositoryIsar implements AnimalRepository {
   }
 
   @override
+  Future<void> purge(String uuid) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      await isar.isarAnimals.filter().uuidEqualTo(uuid).deleteAll();
+    });
+    LoggerService.w('Animal eliminado definitivamente $uuid', tag: _logTag);
+  }
+
+  @override
   Future<void> clearAll() async {
     final isar = await _isar;
     await isar.writeTxn(() => isar.isarAnimals.clear());
@@ -320,6 +330,30 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .filter()
         .statusEqualTo(AnimalStatus.active.name)
         .count();
+  }
+
+  @override
+  Future<Map<LifeStage, int>> getActiveStageCounts() async {
+    final isar = await _isar;
+    final records = await isar.isarAnimals
+        .filter()
+        .statusEqualTo(AnimalStatus.active.name)
+        .findAll();
+
+    final counts = <LifeStage, int>{};
+    for (final record in records) {
+      // An unrecognised stage string (written by an older build, or by a
+      // restore from a newer one) is skipped rather than bucketed into an
+      // arbitrary stage: leaving it out of the chips is honest, inflating
+      // "Vacas" is not. It still counts in the herd total, which is taken
+      // from `count()` rather than from this map.
+      final stage = LifeStage.values
+          .where((value) => value.name == record.lifeStage)
+          .firstOrNull;
+      if (stage == null) continue;
+      counts.update(stage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
   }
 
   @override
@@ -377,5 +411,4 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .take(limit)
         .toList(growable: false);
   }
-
 }

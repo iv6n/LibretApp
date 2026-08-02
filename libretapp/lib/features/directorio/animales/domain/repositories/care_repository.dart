@@ -44,4 +44,13 @@ abstract class CareRepository {
   /// Drops the auto-generated tasks of an animal before regenerating them, so
   /// stale due dates do not pile up. Tasks the breeder created by hand stay.
   Future<void> clearGeneratedFor(String animalUuid);
+
+  /// Erases every care row belonging to an animal — the history as well as
+  /// each scheduled task, hand-made and auto-generated alike.
+  ///
+  /// Unlike [clearGeneratedFor], which prunes what is about to be recomputed,
+  /// this is for when the animal itself stops existing: nothing is coming back
+  /// to own these rows, so leaving them would strand them behind a uuid that
+  /// no longer resolves.
+  Future<void> deleteAllForAnimal(String animalUuid);
 }

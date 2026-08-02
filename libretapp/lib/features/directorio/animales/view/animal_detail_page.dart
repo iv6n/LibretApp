@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -15,6 +16,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/widgets.dart';
@@ -43,6 +45,7 @@ class AnimalDetailPage extends StatefulWidget {
     MovementRecordRepository? movementRepo,
     CostRecordRepository? costRepo,
     MilkingRepository? milkingRepo,
+    CareRepository? careRepo,
     super.key,
   }) : repository = repository ?? locator<AnimalRepository>(),
        lotesRepository = lotesRepository ?? locator<LotesRepository>(),
@@ -54,7 +57,8 @@ class AnimalDetailPage extends StatefulWidget {
        commercialRepo = commercialRepo ?? locator<CommercialRecordRepository>(),
        movementRepo = movementRepo ?? locator<MovementRecordRepository>(),
        costRepo = costRepo ?? locator<CostRecordRepository>(),
-       milkingRepo = milkingRepo ?? locator<MilkingRepository>();
+       milkingRepo = milkingRepo ?? locator<MilkingRepository>(),
+       careRepo = careRepo ?? locator<CareRepository>();
 
   final String animalUuid;
   final AnimalRepository repository;
@@ -67,6 +71,7 @@ class AnimalDetailPage extends StatefulWidget {
   final MovementRecordRepository movementRepo;
   final CostRecordRepository costRepo;
   final MilkingRepository milkingRepo;
+  final CareRepository careRepo;
   final bool showQuickActions;
 
   @override
@@ -81,7 +86,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _future = _loadData();
   }
 
@@ -126,6 +131,16 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
         ? await widget.reproductionRepo.getRecordsBySire(uuid)
         : const <ReproductionRecord>[];
 
+    // A sold or dead animal is not due for anything new — its calendar is
+    // whatever was already recorded, not regenerated.
+    final carePending = animal.status.isInActiveHerd
+        ? await CareCalendarService(widget.careRepo).regenerateFor(animal)
+        : await widget.careRepo.getPendingForAnimal(uuid);
+    final careRecords = await widget.careRepo.getRecordsForAnimal(uuid);
+    final careRules = {
+      for (final rule in await widget.careRepo.getRules()) rule.id: rule,
+    };
+
     return DetailData(
       animal: animal,
       weights: weights,
@@ -139,6 +154,9 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       ancestors: ancestors,
       offspring: offspring,
       sireRecords: sireRecords,
+      carePending: carePending,
+      careRecords: careRecords,
+      careRules: careRules,
     );
   }
 
@@ -147,9 +165,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
   /// ancestors, so this stays far cheaper than loading the herd.
   Future<Map<String, AnimalEntity>> _loadAncestors(AnimalEntity animal) async {
     final resolved = <String, AnimalEntity>{animal.uuid: animal};
-    var frontier = <String>{
-      ...?_parentUuids(animal),
-    };
+    var frontier = <String>{...?_parentUuids(animal)};
 
     for (var depth = 1; depth < PedigreeService.defaultDepth; depth++) {
       final pending = frontier.difference(resolved.keys.toSet());
@@ -378,6 +394,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
                 Tab(text: l10n.tabHistory),
                 Tab(text: l10n.tabRecords),
                 const Tab(text: 'Genealogía'),
+                const Tab(text: 'Cuidados'),
               ],
             ),
             height: tabBarHeight,
@@ -402,6 +419,12 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
           ),
           RecordsTab(key: const PageStorageKey('records_tab'), data: data),
           PedigreeTab(key: const PageStorageKey('pedigree_tab'), data: data),
+          CareTab(
+            key: const PageStorageKey('care_tab'),
+            data: data,
+            careRepo: widget.careRepo,
+            onChanged: _reload,
+          ),
         ],
       ),
     );

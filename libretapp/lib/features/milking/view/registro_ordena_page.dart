@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -27,6 +28,7 @@ class RegistroOrdenaPage extends StatelessWidget {
         repository: locator<MilkingRepository>(),
         animalRepository: locator<AnimalRepository>(),
         lotesRepository: locator<LotesRepository>(),
+        healthRecordRepository: locator<HealthRecordRepository>(),
       )..load(presetAnimalUuid: initialAnimalUuid),
       child: const _RegistroOrdenaView(),
     );
@@ -117,7 +119,9 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     if (milliliters == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context).detailFormMilkingInvalidVolume),
+          content: Text(
+            AppLocalizations.of(context).detailFormMilkingInvalidVolume,
+          ),
         ),
       );
       return false;
@@ -442,6 +446,10 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
           _buildGroupCapture(state),
         const SizedBox(height: 18),
         _buildSummary(state),
+        if (state.withdrawnAnimals.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          _buildWithdrawnNotice(state),
+        ],
         if (state.entries.isNotEmpty) ...[
           const SizedBox(height: 18),
           Text(
@@ -454,6 +462,53 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         const SizedBox(height: 20),
         _buildSaveButton(state),
       ],
+    );
+  }
+
+  /// Cows held out of the eligible list because of an active health
+  /// withdrawal — shown so a breeder does not read a missing cow as a bug.
+  Widget _buildWithdrawnNotice(MilkingState state) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: theme.colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Excluidas por retiro (${state.withdrawnAnimals.length})',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'No aparecen en la lista porque están en periodo de retiro '
+              'sanitario: su leche no debe venderse hasta que termine.',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              state.withdrawnAnimals.map(_animalLabel).join(' · '),
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

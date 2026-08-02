@@ -139,6 +139,21 @@ class CareRepositoryIsar implements CareRepository {
   }
 
   @override
+  Future<void> deleteAllForAnimal(String animalUuid) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      await isar.isarCareRecords
+          .filter()
+          .animalUuidEqualTo(animalUuid)
+          .deleteAll();
+      await isar.isarScheduledCares
+          .filter()
+          .animalUuidEqualTo(animalUuid)
+          .deleteAll();
+    });
+  }
+
+  @override
   Future<void> clearGeneratedFor(String animalUuid) async {
     final isar = await _isar;
     await isar.writeTxn(() async {

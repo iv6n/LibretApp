@@ -35,12 +35,41 @@ flutter run --dart-define-from-file=dart_define.local.json
 Copy `dart_define.example.json` to `dart_define.local.json` and fill in local
 values. The local file is ignored by Git.
 
+## Demo scenario
+
+`DemoScenarioService` (`lib/core/demo/`) seeds a complete, deterministic
+fictional ranch — "Rancho El Mezquite — DEMO" — that exercises every module:
+animals (40, across 7 species, with genealogy, weights, health, care
+calendar, reproduction and history), lotes, locations, movements, commercial
+records, costs, milking, finanzas, agenda/workforce, and the farm profile.
+Every record it writes is namespaced with a deterministic `demo-` uuid (or,
+for the two insert-only finanzas collections, a `[DEMO]` note prefix), so it
+is always possible to tell scenario-owned data apart from anything a real
+breeder typed.
+
+It is opt-in and never runs silently in a release build:
+
+```powershell
+flutter run --dart-define=LIBRET_ENABLE_DEMO_DATA=true
+```
+
+In any debug build, it can also be installed or reset without a rebuild from
+**Perfil → Ajustes → "Cargar/restablecer escenario demo"**. A plain repeat
+install (no reset) is a no-op once the scenario is already installed, so
+editing a demo animal is safe — nothing overwrites it until "restablecer" is
+requested explicitly, which reseeds every demo-owned record back to its
+canonical value without ever touching real data. `DemoDataIntegrityValidator`
+(same directory) can be run against any loaded database — demo, real, or
+both — to check referential integrity and return a readable report instead
+of a bare pass/fail.
+
 ## Backup and recovery
 
 Local and cloud backups use the same `.libretbackup` format:
 
-- schema version 4;
-- all 17 Isar collections;
+- schema version 5;
+- all 20 Isar collections, including the care calendar (rules, records, and
+  scheduled tasks);
 - persisted farm profile;
 - referenced local media, stored by content hash;
 - no authentication tokens, encryption keys, theme, language, or other
@@ -63,8 +92,9 @@ Restoring a snapshot offers two modes:
   records that have no business key) and keeps whichever copy was modified
   last, so restoring another device's snapshot cannot discard newer local
   edits. Collections with no modification timestamp — the insert-only animal
-  child records and both finanzas collections — let the snapshot win, because
-  no local edit path exists for them.
+  child records, both finanzas collections, and the three care-calendar
+  collections — let the snapshot win, because no local edit path exists for
+  them.
 
 Merge makes a restore usable across devices, but it is still a manual,
 user-initiated operation. Background and bidirectional synchronization remain

@@ -145,56 +145,24 @@ Future<void> showLocationBatchSheet(
                       icon: const Icon(Icons.save_as_outlined),
                       label: const Text('Guardar'),
                       onPressed: () async {
-                        final oldPaddockId = animal.currentLocationId;
-                        final locationChanged =
-                            animal.currentLocationId != selectedLocation;
+                        // A single ApplyAnimalEdit dispatch replaces what
+                        // used to be three separate events (UpdateAnimal,
+                        // AddMovementRecord, AssignAnimalToBatch):
+                        // AnimalEditService diffs location/lote against what
+                        // is actually persisted, so a MovementRecord is only
+                        // created when the location really changed, and
+                        // lastMovementDate is never stamped for a
+                        // lote-only change.
+                        final draft = animal.copyWith(
+                          currentLocationId: selectedLocation,
+                          batchUuid: selectedBatchUuid,
+                        );
 
-                        // Update location first if changed
-                        if (locationChanged ||
-                            animal.batchUuid != selectedBatchUuid) {
-                          final updatedAnimal = animal.copyWith(
-                            currentLocationId: selectedLocation,
-                            initialLocationId:
-                                animal.initialLocationId ?? selectedLocation,
-                            lastMovementDate: DateTime.now(),
-                            lastUpdateDate: DateTime.now(),
-                            synced: false,
-                          );
-
-                          final ok = await dispatchAndAwait(
-                            UpdateAnimal(updatedAnimal),
-                          );
-                          if (!context.mounted) return;
-                          if (!ok) return;
-                        }
-
-                        // Create a MovementRecord with real FK UUIDs.
-                        if (locationChanged && selectedLocation != null) {
-                          await dispatchAndAwait(
-                            AddMovementRecord(
-                              animalUuid: animal.uuid,
-                              record: MovementRecord(
-                                fromLocation: oldPaddockId,
-                                toLocation: selectedLocation!,
-                                date: DateTime.now(),
-                                reason: MovementReason.paddockRotation,
-                              ),
-                            ),
-                          );
-                          if (!context.mounted) return;
-                        }
-
-                        // Assign to batch if batch selection changed
-                        if (animal.batchUuid != selectedBatchUuid) {
-                          final ok = await dispatchAndAwait(
-                            AssignAnimalToBatch(
-                              animalUuid: animal.uuid,
-                              batchUuid: selectedBatchUuid,
-                            ),
-                          );
-                          if (!context.mounted) return;
-                          if (!ok) return;
-                        }
+                        final ok = await dispatchAndAwait(
+                          ApplyAnimalEdit(original: animal, draft: draft),
+                        );
+                        if (!context.mounted) return;
+                        if (!ok) return;
 
                         if (context.mounted) {
                           Navigator.of(context).pop(true);

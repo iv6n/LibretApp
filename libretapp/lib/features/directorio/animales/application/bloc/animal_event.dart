@@ -146,3 +146,20 @@ class AssignAnimalToBatch extends AnimalEvent {
   @override
   List<Object?> get props => [animalUuid, batchUuid];
 }
+
+/// Applies a full edit through `AnimalEditService.applyEdit`, diffing
+/// [draft] against whatever is actually persisted for [original]'s uuid.
+///
+/// This is the single dispatch the location/batch bottom sheet uses instead
+/// of separately dispatching `UpdateAnimal`, `AddMovementRecord` and
+/// `AssignAnimalToBatch` — three calls that used to touch `lastMovementDate`
+/// even when only the lote changed, and could partially apply if one of the
+/// three failed.
+class ApplyAnimalEdit extends AnimalEvent {
+  const ApplyAnimalEdit({required this.original, required this.draft});
+  final AnimalEntity original;
+  final AnimalEntity draft;
+
+  @override
+  List<Object?> get props => [original, draft];
+}

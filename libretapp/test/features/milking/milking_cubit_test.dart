@@ -4,6 +4,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -62,20 +63,53 @@ void main() {
       await cubit.close();
     });
 
-    test('emits a failure state instead of throwing for a non-positive volume', () async {
+    test(
+      'emits a failure state instead of throwing for a non-positive volume',
+      () async {
+        final cow = _animal(uuid: 'cow-1');
+        final cubit = MilkingCubit(
+          repository: _FakeMilkingRepository(),
+          animalRepository: _FakeAnimalRepository([cow]),
+          lotesRepository: _FakeLotesRepository(const []),
+        );
+        await cubit.load();
+
+        await cubit.upsertAnimalVolume(
+          animalUuid: cow.uuid,
+          volumeMilliliters: 0,
+        );
+
+        expect(cubit.state.status, MilkingLoadStatus.failure);
+        expect(cubit.state.errorMessage, contains('mayores que cero'));
+        expect(cubit.state.entries, isEmpty);
+        await cubit.close();
+      },
+    );
+
+    test('excludes cows under an active health withdrawal', () async {
       final cow = _animal(uuid: 'cow-1');
+      final withdrawnCow = _animal(uuid: 'cow-withdrawn');
+      final repository = _FakeMilkingRepository();
       final cubit = MilkingCubit(
-        repository: _FakeMilkingRepository(),
-        animalRepository: _FakeAnimalRepository([cow]),
+        repository: repository,
+        animalRepository: _FakeAnimalRepository([cow, withdrawnCow]),
         lotesRepository: _FakeLotesRepository(const []),
+        healthRecordRepository: _FakeHealthRecordRepository({
+          'cow-withdrawn': DateTime.now().add(const Duration(days: 3)),
+        }),
       );
+
       await cubit.load();
 
-      await cubit.upsertAnimalVolume(animalUuid: cow.uuid, volumeMilliliters: 0);
-
-      expect(cubit.state.status, MilkingLoadStatus.failure);
-      expect(cubit.state.errorMessage, contains('mayores que cero'));
-      expect(cubit.state.entries, isEmpty);
+      expect(cubit.state.animals, [cow]);
+      expect(
+        cubit.state.withdrawnAnimals.map((a) => a.uuid),
+        ['cow-withdrawn'],
+        reason:
+            'selling milk from a cow under withdrawal is a food-safety '
+            'breach, so she must not be eligible even though she is '
+            'otherwise an active female dairy cow',
+      );
       await cubit.close();
     });
 
@@ -117,7 +151,10 @@ void main() {
     locator
       ..registerSingleton<AnimalRepository>(_FakeAnimalRepository([cow]))
       ..registerSingleton<LotesRepository>(_FakeLotesRepository([lote]))
-      ..registerSingleton<MilkingRepository>(_FakeMilkingRepository());
+      ..registerSingleton<MilkingRepository>(_FakeMilkingRepository())
+      ..registerSingleton<HealthRecordRepository>(
+        _FakeHealthRecordRepository(const {}),
+      );
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -212,6 +249,27 @@ class _FakeLotesRepository implements LotesRepository {
 
   @override
   Future<List<LoteEntity>> getActiveLotes() async => lotes;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeHealthRecordRepository implements HealthRecordRepository {
+  _FakeHealthRecordRepository(this._activeWithdrawals);
+
+  final Map<String, DateTime> _activeWithdrawals;
+
+  @override
+  Future<Map<String, DateTime>> getActiveWithdrawals(
+    Set<String> animalUuids, {
+    DateTime? asOf,
+  }) async {
+    return {
+      for (final uuid in animalUuids)
+        if (_activeWithdrawals.containsKey(uuid))
+          uuid: _activeWithdrawals[uuid]!,
+    };
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

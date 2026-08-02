@@ -57,7 +57,6 @@ class _FakeFinanzasRepository implements FinanzasRepository {
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
-
   _FakeAnimalRepository({List<AnimalEntity>? animals})
     : _animals = animals ?? [];
   final List<AnimalEntity> _animals;
@@ -79,6 +78,15 @@ class _FakeAnimalRepository implements AnimalRepository {
     required int offset,
     required int limit,
   }) async => _animals.skip(offset).take(limit).toList();
+
+  @override
+  Future<Map<LifeStage, int>> getActiveStageCounts() async {
+    final counts = <LifeStage, int>{};
+    for (final animal in _animals) {
+      counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
 
   @override
   Future<bool> refreshFromRemote({bool force = false}) =>
@@ -115,6 +123,8 @@ class _FakeAnimalRepository implements AnimalRepository {
   @override
   Future<void> delete(String uuid) => throw UnimplementedError();
   @override
+  Future<void> purge(String uuid) => throw UnimplementedError();
+  @override
   Future<void> clearAll() => throw UnimplementedError();
   @override
   Future<int> count() => throw UnimplementedError();
@@ -123,7 +133,6 @@ class _FakeAnimalRepository implements AnimalRepository {
 }
 
 class _FakeCostRecordRepository implements CostRecordRepository {
-
   _FakeCostRecordRepository({Map<String, List<CostRecord>>? costs})
     : _costs = costs ?? {};
   final Map<String, List<CostRecord>> _costs;
@@ -140,7 +149,6 @@ class _FakeCostRecordRepository implements CostRecordRepository {
 }
 
 class _FakeCommercialRecordRepository implements CommercialRecordRepository {
-
   _FakeCommercialRecordRepository({
     Map<String, List<CommercialRecord>>? commercials,
   }) : _commercials = commercials ?? {};

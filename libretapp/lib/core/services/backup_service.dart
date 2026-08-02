@@ -323,6 +323,9 @@ class BackupService {
       'agendaEntries',
       'workerProfiles',
       'workTeams',
+      'careRules',
+      'careRecords',
+      'scheduledCares',
     };
     final missing = requiredCollections.difference(
       envelope.collections.keys.toSet(),
@@ -350,6 +353,9 @@ class BackupService {
       'agendaEntries': 'uuid',
       'workerProfiles': 'uuid',
       'workTeams': 'uuid',
+      'careRules': 'recordUuid',
+      'careRecords': 'recordUuid',
+      'scheduledCares': 'recordUuid',
     };
     for (final entry in stableFields.entries) {
       _validateUniqueRows(
@@ -368,6 +374,8 @@ class BackupService {
       'costRecords',
       'commercialRecords',
       'movementRecords',
+      'careRecords',
+      'scheduledCares',
     ]) {
       for (final row in envelope.collections[name]!) {
         final animalUuid = row['animalUuid'];
@@ -375,6 +383,18 @@ class BackupService {
           throw FormatException(
             '$name contiene un registro sin animal válido.',
           );
+        }
+      }
+    }
+    final careRuleIds = _stringValues(
+      envelope.collections['careRules']!,
+      'recordUuid',
+    );
+    for (final name in const ['careRecords', 'scheduledCares']) {
+      for (final row in envelope.collections[name]!) {
+        final ruleId = row['ruleId'];
+        if (ruleId is! String || !careRuleIds.contains(ruleId)) {
+          throw FormatException('$name contiene un registro sin regla válida.');
         }
       }
     }

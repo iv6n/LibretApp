@@ -34,6 +34,9 @@ const _collectionNames = <String>{
   'agendaEntries',
   'workerProfiles',
   'workTeams',
+  'careRules',
+  'careRecords',
+  'scheduledCares',
 };
 
 BackupEnvelope _envelope({
@@ -153,32 +156,35 @@ class _FakeCloudRepository implements CloudBackupRepository {
 }
 
 void main() {
-  test('archive stamps the current schema version and all collections', () async {
-    final store = _FakeBackupStore(
-      _envelope(
-        overrides: {
-          'animals': [
-            {'id': 1, 'uuid': 'animal-1'},
-          ],
-        },
-      ),
-    );
-    final bytes = await _backupService(store).createArchiveBytes();
-    final archive = ZipDecoder().decodeBytes(bytes, verify: true);
-    final manifestFile = archive.findFile('manifest.json');
+  test(
+    'archive stamps the current schema version and all collections',
+    () async {
+      final store = _FakeBackupStore(
+        _envelope(
+          overrides: {
+            'animals': [
+              {'id': 1, 'uuid': 'animal-1'},
+            ],
+          },
+        ),
+      );
+      final bytes = await _backupService(store).createArchiveBytes();
+      final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+      final manifestFile = archive.findFile('manifest.json');
 
-    expect(manifestFile, isNotNull);
-    final manifest =
-        jsonDecode(utf8.decode(List<int>.from(manifestFile!.content as List)))
-            as Map<String, dynamic>;
-    // Read from the constant instead of a literal: the version moves whenever
-    // collections are added, and pinning it here just makes the test a chore.
-    expect(manifest['schemaVersion'], BackupEnvelope.currentSchemaVersion);
-    expect(
-      (manifest['collections'] as Map).keys.toSet(),
-      containsAll(_collectionNames),
-    );
-  });
+      expect(manifestFile, isNotNull);
+      final manifest =
+          jsonDecode(utf8.decode(List<int>.from(manifestFile!.content as List)))
+              as Map<String, dynamic>;
+      // Read from the constant instead of a literal: the version moves whenever
+      // collections are added, and pinning it here just makes the test a chore.
+      expect(manifest['schemaVersion'], BackupEnvelope.currentSchemaVersion);
+      expect(
+        (manifest['collections'] as Map).keys.toSet(),
+        containsAll(_collectionNames),
+      );
+    },
+  );
 
   test('archive captures referenced local media by content hash', () async {
     final directory = await Directory.systemTemp.createTemp('libret-media-');

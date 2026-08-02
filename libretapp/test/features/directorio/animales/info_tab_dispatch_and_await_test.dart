@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -13,6 +18,8 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/info_tab.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
@@ -45,8 +52,25 @@ void main() {
   testWidgets(
     'changing location does not report success when the update fails',
     (tester) async {
-      animalRepository.throwOnUpdate = true;
       final animal = _animal(uuid: 'ani-1', currentLocationId: 'loc-a');
+      animalRepository.seed(animal);
+      animalRepository.throwOnUpdate = true;
+
+      final careRepository = _FakeCareRepository();
+      final animalEditService = AnimalEditService(
+        animalRepository: animalRepository,
+        lotesRepository: lotesRepository,
+        movementRepository: _FakeMovementRecordRepository(),
+        careRepository: careRepository,
+        agendaReminderSyncService: AgendaReminderSyncService(
+          animalRepository: animalRepository,
+          agendaRepository: _FakeAgendaRepository(),
+          healthRepo: _FakeHealthRecordRepository(),
+          reproductionRepo: _FakeReproductionRecordRepository(),
+          careRepo: careRepository,
+          careCalendarService: CareCalendarService(careRepository),
+        ),
+      );
 
       final bloc = AnimalBloc(
         animalRepository: animalRepository,
@@ -58,6 +82,7 @@ void main() {
         commercialRepo: _FakeCommercialRecordRepository(),
         movementRepo: _FakeMovementRecordRepository(),
         costRepo: _FakeCostRecordRepository(),
+        animalEditService: animalEditService,
       );
       addTearDown(bloc.close);
 
@@ -180,12 +205,18 @@ class _FakeLotesRepository implements LotesRepository {
 class _FakeAnimalRepository implements AnimalRepository {
   bool throwOnUpdate = false;
   int updateCallCount = 0;
+  final Map<String, AnimalEntity> _animals = {};
+
+  /// Registers [animal] so `getByUuid`/`getAll` can see it — AnimalEditService
+  /// reads the persisted state before diffing, so the fake needs to actually
+  /// hold one.
+  void seed(AnimalEntity animal) => _animals[animal.uuid] = animal;
 
   @override
-  Future<AnimalEntity?> getByUuid(String uuid) async => null;
+  Future<AnimalEntity?> getByUuid(String uuid) async => _animals[uuid];
 
   @override
-  Future<List<AnimalEntity>> getAll() async => const [];
+  Future<List<AnimalEntity>> getAll() async => _animals.values.toList();
 
   @override
   Future<AnimalEntity> update(AnimalEntity animal) async {
@@ -193,6 +224,7 @@ class _FakeAnimalRepository implements AnimalRepository {
     if (throwOnUpdate) {
       throw Exception('update failed');
     }
+    _animals[animal.uuid] = animal;
     return animal;
   }
 
@@ -246,10 +278,38 @@ class _FakeCommercialRecordRepository implements CommercialRecordRepository {
 
 class _FakeMovementRecordRepository implements MovementRecordRepository {
   @override
+  Future<MovementRecord> addMovementRecord(
+    String animalUuid,
+    MovementRecord record,
+  ) async => record;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeCostRecordRepository implements CostRecordRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeCareRepository implements CareRepository {
+  @override
+  Future<List<CareRule>> getRules() async => const [];
+
+  @override
+  Future<void> clearGeneratedFor(String animalUuid) async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeAgendaRepository implements AgendaRepository {
+  @override
+  Future<List<AgendaEntry>> fetchEntries() async => const [];
+
+  @override
+  Future<void> replaceAll(List<AgendaEntry> entries) async {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

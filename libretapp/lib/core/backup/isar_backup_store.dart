@@ -9,6 +9,7 @@ import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_workforce.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
@@ -50,6 +51,9 @@ class IsarBackupStore implements BackupStore {
     'agendaEntries',
     'workerProfiles',
     'workTeams',
+    'careRules',
+    'careRecords',
+    'scheduledCares',
   };
 
   final IsarDatabase _database;
@@ -87,6 +91,9 @@ class IsarBackupStore implements BackupStore {
         'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
         'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
         'workTeams': await isar.isarWorkTeams.where().exportJson(),
+        'careRules': await isar.isarCareRules.where().exportJson(),
+        'careRecords': await isar.isarCareRecords.where().exportJson(),
+        'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
       };
     });
     return BackupEnvelope(
@@ -137,6 +144,9 @@ class IsarBackupStore implements BackupStore {
       await isar.isarAgendaEntrys.importJson(prepared['agendaEntries']!);
       await isar.isarWorkerProfiles.importJson(prepared['workerProfiles']!);
       await isar.isarWorkTeams.importJson(prepared['workTeams']!);
+      await isar.isarCareRules.importJson(prepared['careRules']!);
+      await isar.isarCareRecords.importJson(prepared['careRecords']!);
+      await isar.isarScheduledCares.importJson(prepared['scheduledCares']!);
     });
     if (envelope.profile.isNotEmpty) {
       final current = await _perfilRepository.fetchPerfil();
@@ -246,6 +256,9 @@ class IsarBackupStore implements BackupStore {
         'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
         'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
         'workTeams': await isar.isarWorkTeams.where().exportJson(),
+        'careRules': await isar.isarCareRules.where().exportJson(),
+        'careRecords': await isar.isarCareRecords.where().exportJson(),
+        'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
       };
     });
     const stableFields = <String, String>{
@@ -266,6 +279,9 @@ class IsarBackupStore implements BackupStore {
       'agendaEntries': 'uuid',
       'workerProfiles': 'uuid',
       'workTeams': 'uuid',
+      'careRules': 'recordUuid',
+      'careRecords': 'recordUuid',
+      'scheduledCares': 'recordUuid',
     };
     const idFields = <String, String>{
       'agendaEntries': 'isarId',
@@ -287,10 +303,12 @@ class IsarBackupStore implements BackupStore {
   /// Modification timestamp per collection, used by [BackupImportMode.merge] to
   /// decide whether an incoming row may overwrite the local one.
   ///
-  /// The animal child records and both finanzas collections are absent on
-  /// purpose: they are insert/delete-only (no repository exposes an update for
-  /// them), so they carry no modification timestamp and fall back to the
-  /// original merge behaviour of letting the snapshot win.
+  /// The animal child records, both finanzas collections, and the three
+  /// care-calendar collections are absent on purpose: they are insert/
+  /// delete-only (no repository exposes an update for them — see
+  /// `isar_care.dart`, whose models carry no `updatedAt` field), so they
+  /// carry no modification timestamp and fall back to the original merge
+  /// behaviour of letting the snapshot win.
   static const updatedAtFields = <String, String>{
     'animals': 'lastUpdateDate',
     'lotes': 'lastUpdateDate',
@@ -390,5 +408,8 @@ class IsarBackupStore implements BackupStore {
     await isar.isarAgendaEntrys.clear();
     await isar.isarWorkerProfiles.clear();
     await isar.isarWorkTeams.clear();
+    await isar.isarCareRules.clear();
+    await isar.isarCareRecords.clear();
+    await isar.isarScheduledCares.clear();
   }
 }

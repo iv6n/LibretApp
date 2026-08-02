@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_state \u2014 state for AnimalesBloc.
+/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_state \u2014 state for AnimalesBloc.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -21,7 +21,6 @@ class AnimalesLoading extends AnimalesState {
 }
 
 class AnimalesLoaded extends AnimalesState {
-
   const AnimalesLoaded({
     required this.allAnimals,
     required this.visibleAnimals,
@@ -33,9 +32,13 @@ class AnimalesLoaded extends AnimalesState {
     this.hasMore = false,
     this.isLoadingMore = false,
     this.currentOffset = 0,
+    this.herdTotal = 0,
+    this.herdStageCounts = const {},
   });
   static const int pageSize = 20;
 
+  /// Animals loaded so far — the first page, then more as the user scrolls.
+  /// Not the herd: see [herdTotal].
   final List<AnimalEntity> allAnimals;
   final List<AnimalEntity> visibleAnimals;
   final bool isSearching;
@@ -46,6 +49,15 @@ class AnimalesLoaded extends AnimalesState {
   final bool hasMore;
   final bool isLoadingMore;
   final int currentOffset;
+
+  /// Size of the whole active herd, counted in the database — not just the
+  /// pages loaded so far. What the list's "N animales" label must show, so it
+  /// does not read 20 and then climb as the user scrolls.
+  final int herdTotal;
+
+  /// Whole-herd tally per life stage, for the same reason as [herdTotal]:
+  /// the filter chips have to state the real figure from the first frame.
+  final Map<LifeStage, int> herdStageCounts;
 
   // Backward-friendly accessor for existing usages.
   List<AnimalEntity> get animales => visibleAnimals;
@@ -63,6 +75,8 @@ class AnimalesLoaded extends AnimalesState {
     bool? hasMore,
     bool? isLoadingMore,
     int? currentOffset,
+    int? herdTotal,
+    Map<LifeStage, int>? herdStageCounts,
   }) {
     return AnimalesLoaded(
       allAnimals: allAnimals ?? this.allAnimals,
@@ -75,6 +89,8 @@ class AnimalesLoaded extends AnimalesState {
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       currentOffset: currentOffset ?? this.currentOffset,
+      herdTotal: herdTotal ?? this.herdTotal,
+      herdStageCounts: herdStageCounts ?? this.herdStageCounts,
     );
   }
 
@@ -90,6 +106,8 @@ class AnimalesLoaded extends AnimalesState {
     hasMore,
     isLoadingMore,
     currentOffset,
+    herdTotal,
+    herdStageCounts,
   ];
 }
 

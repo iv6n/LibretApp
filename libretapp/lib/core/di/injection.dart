@@ -18,6 +18,7 @@ import 'package:libretapp/core/backup/isar_backup_store.dart';
 import 'package:libretapp/core/backup/supabase_cloud_backup_repository.dart';
 import 'package:libretapp/core/backup/supabase_config.dart';
 import 'package:libretapp/core/backup/unavailable_cloud_backup_repository.dart';
+import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 import 'package:libretapp/core/security/services/auth_service.dart';
@@ -66,6 +67,8 @@ import 'package:libretapp/features/ubicaciones/infrastructure/repositories/isar_
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -128,6 +131,7 @@ Future<void> setupLocator() async {
   _registerMilkingFinanzas();
   _registerBackupExport();
   _registerInicioPerfilReportes();
+  _registerDemo();
 }
 
 void _registerInfrastructure(
@@ -238,6 +242,19 @@ void _registerDirectorioAnimales() {
     )
     ..registerLazySingleton<CareRepository>(
       () => CareRepositoryIsar(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<CareCalendarService>(
+      () => CareCalendarService(locator<CareRepository>()),
+    )
+    ..registerLazySingleton<AnimalEditService>(
+      () => AnimalEditService(
+        animalRepository: locator<AnimalRepository>(),
+        lotesRepository: locator<LotesRepository>(),
+        movementRepository: locator<MovementRecordRepository>(),
+        careRepository: locator<CareRepository>(),
+        agendaReminderSyncService: locator<AgendaReminderSyncService>(),
+        careCalendarService: locator<CareCalendarService>(),
+      ),
     );
 }
 
@@ -277,8 +294,36 @@ void _registerAgenda() {
         agendaRepository: locator<AgendaRepository>(),
         healthRepo: locator<HealthRecordRepository>(),
         reproductionRepo: locator<ReproductionRecordRepository>(),
+        careRepo: locator<CareRepository>(),
+        careCalendarService: locator<CareCalendarService>(),
       ),
     );
+}
+
+void _registerDemo() {
+  locator.registerLazySingleton<DemoScenarioService>(
+    () => DemoScenarioService(
+      animalRepository: locator<AnimalRepository>(),
+      lotesRepository: locator<LotesRepository>(),
+      locationRepository: locator<LocationRepository>(),
+      weightRepository: locator<WeightRecordRepository>(),
+      healthRepository: locator<HealthRecordRepository>(),
+      reproductionRepository: locator<ReproductionRecordRepository>(),
+      productionRepository: locator<ProductionRecordRepository>(),
+      movementRepository: locator<MovementRecordRepository>(),
+      commercialRepository: locator<CommercialRecordRepository>(),
+      costRepository: locator<CostRecordRepository>(),
+      careRepository: locator<CareRepository>(),
+      careCalendarService: locator<CareCalendarService>(),
+      milkingRepository: locator<MilkingRepository>(),
+      finanzasRepository: locator<FinanzasRepository>(),
+      agendaRepository: locator<AgendaRepository>(),
+      workforceRepository: locator<WorkforceRepository>(),
+      perfilRepository: locator<PerfilRepository>(),
+      agendaReminderSyncService: locator<AgendaReminderSyncService>(),
+      prefs: locator<SharedPrefsService>(),
+    ),
+  );
 }
 
 void _registerMilkingFinanzas() {

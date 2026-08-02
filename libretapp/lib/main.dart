@@ -11,8 +11,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_index.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/core/mock/mock_data_seeder.dart';
+import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Opt-in gate for `DemoScenarioService.install()` at startup — never set in
+/// a release build. `--dart-define=LIBRET_ENABLE_DEMO_DATA=true` at build
+/// time is the only way to turn it on; unset, this is `false` in every
+/// build, debug included.
+const bool enableDemoDataOnStartup = bool.fromEnvironment(
+  'LIBRET_ENABLE_DEMO_DATA',
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,8 +71,21 @@ void main() async {
     final startupSpan = PerformanceMonitor().startSpan('app.startup');
     LoggerService.i('Iniciando configuración de LibretApp', tag: 'Main');
     await setupLocator();
-    if (kDebugMode) {
-      await seedMockAnimals();
+    // Opt-in only: never seeded silently in release, and only when the
+    // caller explicitly asks for it via `--dart-define=LIBRET_ENABLE_DEMO_DATA=true`.
+    // A debug-only action in the Perfil screen offers the same install/reset
+    // without a rebuild. See DemoScenarioService for why this replaced the
+    // old unconditional `seedMockAnimals()` call.
+    if (!kReleaseMode && enableDemoDataOnStartup) {
+      try {
+        await locator<DemoScenarioService>().install();
+      } catch (e, st) {
+        LoggerService.e(
+          'Error al instalar el escenario demo en el arranque: $e',
+          tag: 'Main',
+          stackTrace: st,
+        );
+      }
     }
 
     const enableTracing = kDebugMode || kProfileMode;

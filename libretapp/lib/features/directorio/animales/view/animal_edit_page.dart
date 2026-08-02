@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 
 class AnimalEditPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class AnimalEditPage extends StatefulWidget {
 class _AnimalEditPageState extends State<AnimalEditPage> {
   final _formKey = GlobalKey<FormState>();
   late final AnimalRepository _repository;
+  late final AnimalEditService _animalEditService;
 
   final _earTagCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
@@ -51,6 +53,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   void initState() {
     super.initState();
     _repository = locator<AnimalRepository>();
+    _animalEditService = locator<AnimalEditService>();
     _loadAnimal();
   }
 
@@ -176,12 +179,15 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
         ),
       );
 
-      await _repository.update(updated);
+      await _animalEditService.applyEdit(original: animal, draft: updated);
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      _showMessage('No se pudo actualizar el animal: $e');
+      final message = e is AnimalEditValidationException
+          ? e.message
+          : 'No se pudo actualizar el animal: $e';
+      _showMessage(message);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -11,6 +11,8 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/default_care_rules.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
 
 part 'app_event.dart';
@@ -31,6 +33,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   final Set<String> _supportedLanguageCodes;
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
+    await _preloadCareDefaults();
     await _syncAutomaticReminders();
 
     // Ejecutar migración de enums de ubicaciones (Spanish → English strings)
@@ -52,6 +55,24 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   Future<void> _finishStartup(Emitter<AppState> emit) async {
     final languageCode = await _resolveInitialLanguage();
     emit(AppReady(languageCode: languageCode));
+  }
+
+  Future<void> _preloadCareDefaults() async {
+    try {
+      if (!locator.isRegistered<CareCalendarService>()) return;
+      final key = PrefsKeys.careDefaultsPreloaded(DefaultCareRules.version);
+      final alreadyLoaded = _prefs.getBool(key) ?? false;
+      await locator<CareCalendarService>().preloadDefaults(
+        alreadyLoaded: alreadyLoaded,
+      );
+      if (!alreadyLoaded) await _prefs.setBool(key, true);
+    } catch (e, st) {
+      LoggerService.e(
+        'Error al precargar el calendario sanitario por defecto: $e',
+        tag: 'AppBloc',
+        stackTrace: st,
+      );
+    }
   }
 
   Future<void> _syncAutomaticReminders() async {
