@@ -15,7 +15,18 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class BulkHealthRegistroPage extends StatefulWidget {
-  const BulkHealthRegistroPage({super.key});
+  const BulkHealthRegistroPage({
+    this.initialAnimalUuids,
+    this.initialType,
+    super.key,
+  });
+
+  /// Pre-selected animals — when non-empty, step 0 is skipped (the user can
+  /// still return to it via the back arrow to adjust the selection).
+  final List<String>? initialAnimalUuids;
+
+  /// Pre-selected record type, overriding the default `vaccine`.
+  final HealthRecordType? initialType;
 
   @override
   State<BulkHealthRegistroPage> createState() => _BulkHealthRegistroPageState();
@@ -50,6 +61,13 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
     super.initState();
     _loadAnimals();
     _searchCtrl.addListener(_applyFilter);
+    final initialUuids = widget.initialAnimalUuids;
+    if (initialUuids != null && initialUuids.isNotEmpty) {
+      _selectedUuids.addAll(initialUuids);
+      _step = 1;
+    }
+    final initialType = widget.initialType;
+    if (initialType != null) _recordType = initialType;
   }
 
   @override
@@ -148,12 +166,13 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
     );
 
     try {
+      final savedUuids = _selectedUuids.toList(growable: false);
       await locator<HealthRecordRepository>().addHealthRecordToMultiple(
-        _selectedUuids.toList(growable: false),
+        savedUuids,
         record,
       );
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(savedUuids);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

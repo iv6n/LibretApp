@@ -27,6 +27,16 @@ Color colorForTipo(String tipo) {
       return Colors.redAccent;
     case 'recordatorio':
       return AppColors.secondary;
+    case 'baño garrapaticida':
+      return const Color(0xFF6E8B3D);
+    case 'suplemento/vitaminas':
+      return AppColors.amber;
+    case 'revisión de casco':
+      return const Color(0xFF3A7F78);
+    case 'chequeo reproductivo':
+      return AppColors.earth;
+    case 'cuidado':
+      return AppColors.primary;
     default:
       return AppColors.primary;
   }
@@ -55,6 +65,16 @@ IconData iconForTipo(String tipo) {
       return Icons.warning_amber_outlined;
     case 'recordatorio':
       return Icons.alarm;
+    case 'baño garrapaticida':
+      return Icons.water_drop_outlined;
+    case 'suplemento/vitaminas':
+      return Icons.medication_outlined;
+    case 'revisión de casco':
+      return Icons.pets_outlined;
+    case 'chequeo reproductivo':
+      return Icons.favorite_outline;
+    case 'cuidado':
+      return Icons.health_and_safety_outlined;
     default:
       return Icons.event_note;
   }

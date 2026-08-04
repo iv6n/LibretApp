@@ -188,7 +188,7 @@ void main() {
       expect(entries, hasLength(1));
       expect(entries.single.id, startsWith('auto:care:vaca-1:r1:'));
       expect(entries.single.titulo, contains('Vacunación anual'));
-      expect(entries.single.tipo, 'Cuidado sanitario');
+      expect(entries.single.tipo, 'Vacunación');
     });
 
     test('recording the care pushes the reminder a year out', () async {

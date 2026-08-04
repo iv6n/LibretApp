@@ -17,6 +17,7 @@ import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_workforce_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -259,6 +260,32 @@ void main() {
     final locations = await IsarLocationRepository(database).getAll();
     expect(locations, hasLength(15));
   });
+
+  test(
+    'the demo produces a shared care campaign with several animals',
+    () async {
+      await service.install(referenceDate: referenceDate);
+      final entries = await IsarAgendaRepository(
+        database,
+        prefs,
+      ).fetchEntries();
+      final groups = const AgendaTaskGrouper().group(
+        entries,
+        today: referenceDate,
+      );
+      final events = groups.expand((category) => category.events);
+
+      final deworming = events.where(
+        (event) => event.tipo == 'Desparasitación',
+      );
+      expect(deworming, hasLength(1));
+      expect(
+        deworming.single.animalCount,
+        greaterThan(1),
+        reason: 'cattle, goat and sheep deworming must share one Agenda card',
+      );
+    },
+  );
 
   test(
     'the installed scenario passes DemoDataIntegrityValidator with no errors',

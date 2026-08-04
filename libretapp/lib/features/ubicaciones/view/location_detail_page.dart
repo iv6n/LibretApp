@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/widgets/app_loading_indicator.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -76,7 +77,7 @@ class _LocationDetailView extends StatelessWidget {
         body: BlocBuilder<LocationDetailCubit, LocationDetailState>(
           builder: (context, state) {
             if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const AppLoadingIndicator();
             }
 
             if (state.isNotFound) {

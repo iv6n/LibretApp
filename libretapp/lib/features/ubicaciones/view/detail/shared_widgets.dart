@@ -255,31 +255,9 @@ class _RecordCount extends StatelessWidget {
   }
 }
 
-// ─── StatusChip ───────────────────────────────────────────────────────────────
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Chip(
-      label: Text(_capitalize(status)),
-      backgroundColor: theme.colorScheme.primaryContainer,
-      labelStyle: TextStyle(
-        color: theme.colorScheme.onPrimaryContainer,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _capitalize(String value) {
   if (value.isEmpty) return value;
   return value[0].toUpperCase() + value.substring(1);
 }
-

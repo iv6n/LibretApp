@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
+import 'package:libretapp/core/widgets/app_loading_indicator.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 enum DashboardWidgetStatus { loading, empty, error, data }
@@ -55,7 +56,7 @@ class DashboardWidgetCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadii.lg),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -74,11 +75,9 @@ class DashboardWidgetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 switch (status) {
-                  DashboardWidgetStatus.loading => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+                  DashboardWidgetStatus.loading => const Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: AppLoadingIndicator.inline(),
                   ),
                   DashboardWidgetStatus.error => AppEmptyState(
                     icon: Icons.error_outline,

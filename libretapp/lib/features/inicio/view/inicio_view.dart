@@ -27,7 +27,7 @@ class InicioView extends StatelessWidget {
         final data = state.data;
 
         if (data == null && state.status == InicioStatus.loading) {
-          return const Center(child: CircularProgressIndicator());
+          return const AppLoadingIndicator();
         }
 
         if (data == null && state.status == InicioStatus.error) {
@@ -137,14 +137,14 @@ class _TodayPriorityPanel extends StatelessWidget {
 
     return Material(
       color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(AppRadii.lg),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         onTap: route == null ? null : () => context.push(route),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(color: color.withValues(alpha: 0.22)),
             color: Color.alphaBlend(
               color.withValues(alpha: 0.07),
@@ -166,7 +166,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                 height: 42,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
                 child: Icon(
                   severity == null
@@ -175,7 +175,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                   color: color,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,7 +210,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                 ),
               ),
               if (route != null) ...[
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSpacing.xs),
                 Icon(Icons.chevron_right, color: color),
               ],
             ],

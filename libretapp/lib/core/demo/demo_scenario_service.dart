@@ -643,7 +643,7 @@ class DemoScenarioService {
     // 12. Derive care schedules + automatic agenda reminders for the whole
     // active herd (demo and real alike) from what was just written — the
     // same recompute the app already runs on every start.
-    await _agendaReminderSyncService.sync();
+    await _agendaReminderSyncService.sync(now: reference);
 
     return profileWritten;
   }

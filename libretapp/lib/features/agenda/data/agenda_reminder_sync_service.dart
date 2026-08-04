@@ -40,7 +40,7 @@ class AgendaReminderSyncService {
   final CareCalendarService _careCalendarService;
   final ReproductionScheduler _reproductionScheduler;
 
-  Future<int> sync() async {
+  Future<int> sync({DateTime? now}) async {
     final existing = await _agendaRepository.fetchEntries();
     final manual = existing
         .where((e) => !_isAutoEntry(e.id))
@@ -51,7 +51,7 @@ class AgendaReminderSyncService {
         entry.id: entry,
     };
 
-    final desiredAuto = await _buildAutoEntries();
+    final desiredAuto = await _buildAutoEntries(now: now);
 
     final mergedAuto = desiredAuto
         .map((desired) {
@@ -79,7 +79,20 @@ class AgendaReminderSyncService {
         })
         .toList(growable: false);
 
-    final merged = <AgendaEntry>[...manual, ...mergedAuto];
+    final desiredIds = desiredAuto.map((entry) => entry.id).toSet();
+    final activeAnimalIds = (await _animalRepository.getAll())
+        .map((animal) => animal.uuid)
+        .toSet();
+    final historicalAuto = existingAuto.values.where(
+      (entry) =>
+          !desiredIds.contains(entry.id) &&
+          (entry.estado == AgendaEstado.completado ||
+              entry.estado == AgendaEstado.verificado ||
+              entry.estado == AgendaEstado.cancelado) &&
+          entry.animalIds.any(activeAnimalIds.contains),
+    );
+
+    final merged = <AgendaEntry>[...manual, ...historicalAuto, ...mergedAuto];
 
     await _agendaRepository.replaceAll(merged);
     return desiredAuto.length;
@@ -87,7 +100,7 @@ class AgendaReminderSyncService {
 
   bool _isAutoEntry(String id) => id.startsWith('auto:');
 
-  Future<List<AgendaEntry>> _buildAutoEntries() async {
+  Future<List<AgendaEntry>> _buildAutoEntries({DateTime? now}) async {
     final animals = await _animalRepository.getAll();
     final desired = <String, AgendaEntry>{};
     final careRules = {
@@ -95,7 +108,10 @@ class AgendaReminderSyncService {
     };
 
     for (final animal in animals) {
-      final pendingCare = await _careCalendarService.regenerateFor(animal);
+      final pendingCare = await _careCalendarService.regenerateFor(
+        animal,
+        now: now,
+      );
       for (final task in pendingCare) {
         if (task.done) continue;
         final label = careRules[task.ruleId]?.name ?? _careTypeLabel(task.type);
@@ -106,7 +122,7 @@ class AgendaReminderSyncService {
           titulo: '$label - ${_animalLabel(animal)}',
           descripcion: 'Tarea de cuidado programada automáticamente.',
           fecha: date,
-          tipo: 'Cuidado sanitario',
+          tipo: _careTypeLabel(task.type),
           animalIds: [animal.uuid],
           loteIds: const [],
           ubicacion: animal.currentLocationId ?? 'Sin ubicación',

@@ -6,13 +6,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
-import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
 import 'package:libretapp/features/agenda/view/agenda_task_detail_page.dart';
 import 'package:libretapp/features/agenda/widgets/widgets.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 
 class AgendaView extends StatefulWidget {
   const AgendaView({super.key});
@@ -24,17 +28,29 @@ class AgendaView extends StatefulWidget {
 class _AgendaViewState extends State<AgendaView> {
   final TextEditingController _searchController = TextEditingController();
   late final FocusNode _searchFocusNode;
+  late final ScrollController _scrollController;
   DateTime _visibleDate = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   bool _isSearchActive = false;
   bool _isSearchFieldActive = false;
   CalendarMode _calendarMode = CalendarMode.twoWeeks;
+  Map<String, AnimalEntity> _animalsById = {};
+  bool _showAgendaFab = true;
+  double _lastScrollOffset = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()..addListener(_handleScroll);
     _searchFocusNode = FocusNode()..addListener(_updateSearchActive);
     _searchController.addListener(_updateSearchActive);
+    _loadAnimals();
+  }
+
+  Future<void> _loadAnimals() async {
+    final animals = await locator<AnimalRepository>().getAll();
+    if (!mounted) return;
+    setState(() => _animalsById = {for (final a in animals) a.uuid: a});
   }
 
   @override
@@ -42,7 +58,27 @@ class _AgendaViewState extends State<AgendaView> {
     _searchController.removeListener(_updateSearchActive);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final offset = _scrollController.position.pixels;
+    final atTop = offset <= 0;
+    final scrollingDown = offset > _lastScrollOffset + 1;
+    final scrollingUp = offset < _lastScrollOffset - 1;
+    _lastScrollOffset = offset;
+
+    var shouldShow = _showAgendaFab;
+    if (atTop || scrollingUp) {
+      shouldShow = true;
+    } else if (scrollingDown) {
+      shouldShow = false;
+    }
+    if (shouldShow == _showAgendaFab) return;
+    setState(() => _showAgendaFab = shouldShow);
   }
 
   @override
@@ -58,7 +94,7 @@ class _AgendaViewState extends State<AgendaView> {
     );
 
     return ShellFabConfigScope(
-      config: fabConfig,
+      config: _showAgendaFab ? fabConfig : null,
       child: ShellChromeScope(
         visible: !_isSearchActive,
         child: Scaffold(
@@ -111,7 +147,7 @@ class _AgendaViewState extends State<AgendaView> {
           body: BlocBuilder<AgendaBloc, AgendaState>(
             builder: (context, state) {
               if (state is AgendaLoading) {
-                return const Center(child: CircularProgressIndicator());
+                return const AppLoadingIndicator();
               }
               if (state is AgendaError) {
                 return Center(child: Text('Error: ${state.message}'));
@@ -138,9 +174,20 @@ class _AgendaViewState extends State<AgendaView> {
               final entriesHoy = selectedKey != null
                   ? entriesPorDia[selectedKey] ?? const <AgendaEntry>[]
                   : const <AgendaEntry>[];
-              final proximosEntries = _proximos(filteredEntries, selectedKey);
+              final today = DateTime.now();
+              const grouper = AgendaTaskGrouper();
+              final todayGroups = grouper.group(entriesHoy, today: today);
+              final proximosGroups = grouper.group(
+                _entriesPendientes(
+                  filteredEntries,
+                  today,
+                  selectedKey: selectedKey,
+                ),
+                today: today,
+              );
 
               return SingleChildScrollView(
+                controller: _scrollController,
                 padding: EdgeInsets.fromLTRB(7, 4, 7, bottomInset + 80),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,51 +214,29 @@ class _AgendaViewState extends State<AgendaView> {
                     // Entries for selected day
                     const _SectionHeader(title: 'Hoy'),
                     const SizedBox(height: 8),
-                    if (entriesHoy.isEmpty)
-                      _EmptyState(
-                        icon: Icons.inbox_outlined,
-                        message: selectedDay == null
-                            ? 'Selecciona un día para ver tareas'
-                            : 'Sin tareas para este día',
-                      )
-                    else
-                      Column(
-                        children: entriesHoy
-                            .map(
-                              (e) => AgendaSummaryCard(
-                                entry: e,
-                                onDelete: () => context.read<AgendaBloc>().add(
-                                  DeleteAgendaEntry(e.id),
-                                ),
-                                onRealize: () => _openTaskDetail(context, e),
-                              ),
-                            )
-                            .toList(),
-                      ),
+                    AgendaProximasSection(
+                      groups: todayGroups,
+                      animalsById: _animalsById,
+                      today: today,
+                      emptyTitle: selectedDay == null
+                          ? 'Selecciona un día para ver tareas'
+                          : 'Sin pendientes para este día',
+                      emptyMessage:
+                          'No hay eventos pendientes en la fecha seleccionada.',
+                      onOpenGroup: (group) => _openTaskDetail(context, group),
+                    ),
                     const SizedBox(height: 20),
 
-                    // Próximas tareas
-                    const _SectionHeader(title: 'Próximas tareas (14 días)'),
+                    // Pendientes (atrasadas + próximos 14 días), agrupadas
+                    // por categoría > tipo > animal, ordenadas por urgencia.
+                    const _SectionHeader(title: 'Pendientes'),
                     const SizedBox(height: 8),
-                    if (proximosEntries.isEmpty)
-                      const _EmptyState(
-                        icon: Icons.event_outlined,
-                        message: 'No hay próximas tareas',
-                      )
-                    else
-                      Column(
-                        children: proximosEntries
-                            .map(
-                              (e) => AgendaSummaryCard(
-                                entry: e,
-                                onDelete: () => context.read<AgendaBloc>().add(
-                                  DeleteAgendaEntry(e.id),
-                                ),
-                                onRealize: () => _openTaskDetail(context, e),
-                              ),
-                            )
-                            .toList(),
-                      ),
+                    AgendaProximasSection(
+                      groups: proximosGroups,
+                      animalsById: _animalsById,
+                      today: today,
+                      onOpenGroup: (group) => _openTaskDetail(context, group),
+                    ),
                   ],
                 ),
               );
@@ -229,23 +254,29 @@ class _AgendaViewState extends State<AgendaView> {
     setState(() => _isSearchActive = active);
   }
 
-  List<AgendaEntry> _proximos(
+  /// Overdue (no lower bound) plus what's due in the next 14 days, excluding
+  /// today itself (already shown in the "Hoy" section above). Anchored on
+  /// real "today", not the calendar's selected day, so the pending worklist
+  /// doesn't shift just because the user is browsing a different date.
+  List<AgendaEntry> _entriesPendientes(
     List<AgendaEntry> entries,
+    DateTime today, {
     DateTime? selectedKey,
-  ) {
-    if (selectedKey == null) return entries;
-    final limite = selectedKey.add(const Duration(days: 14));
-    return entries
-        .where(
-          (e) =>
-              e.fecha.isAfter(selectedKey) &&
-              e.fecha.isBefore(limite.add(const Duration(days: 1))) &&
-              e.estado != AgendaEstado.completado &&
-              e.estado != AgendaEstado.verificado &&
-              e.estado != AgendaEstado.cancelado,
-        )
-        .toList()
-      ..sort((a, b) => a.fecha.compareTo(b.fecha));
+  }) {
+    final todayKey = DateTime(today.year, today.month, today.day);
+    final limite = todayKey.add(const Duration(days: 14));
+    return entries.where((e) {
+      final noCompletado =
+          e.estado != AgendaEstado.completado &&
+          e.estado != AgendaEstado.verificado &&
+          e.estado != AgendaEstado.cancelado;
+      if (!noCompletado) return false;
+      final day = DateTime(e.fecha.year, e.fecha.month, e.fecha.day);
+      if (selectedKey != null && day == selectedKey) return false;
+      final overdue = day.isBefore(todayKey);
+      final upcoming = day.isAfter(todayKey) && !day.isAfter(limite);
+      return overdue || upcoming;
+    }).toList();
   }
 
   Map<DateTime, List<AgendaEntry>> _agruparPorDia(List<AgendaEntry> entries) {
@@ -374,12 +405,12 @@ class _AgendaViewState extends State<AgendaView> {
     );
   }
 
-  void _openTaskDetail(BuildContext context, AgendaEntry entry) {
+  void _openTaskDetail(BuildContext context, AgendaEventGroup group) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: context.read<AgendaBloc>(),
-          child: AgendaTaskDetailPage(entry: entry),
+          child: AgendaTaskDetailPage(group: group),
         ),
       ),
     );
@@ -495,37 +526,6 @@ class _CalendarSection extends StatelessWidget {
           onDaySelected: onDaySelected,
         ),
       ],
-    );
-  }
-}
-
-// Widget: Estado vacío
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.icon, required this.message});
-
-  final IconData icon;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(icon, size: 36, color: theme.colorScheme.outline),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
