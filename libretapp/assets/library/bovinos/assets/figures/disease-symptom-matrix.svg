@@ -1,0 +1,213 @@
+﻿<svg width="100%" viewBox="0 0 680 480" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>F-06: Quick-Reference Disease Identification Matrix — Common Cattle Diseases in Tropical Systems</title>
+<desc>Matrix showing 10 common cattle diseases as rows and 8 key symptoms as columns. Each cell indicates whether the symptom is a primary sign, secondary sign, absent, or a key differentiator for that disease. Includes urgency level and notifiable status.</desc>
+<rect x="0" y="0" width="680" height="480" fill="#F8F7F2"/>
+
+<text x="340" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#2C2C2A">F-06 — Disease symptom matrix · tropical cattle quick reference</text>
+<text x="340" y="37" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">● Primary sign  ◐ Often present  ○ Possible  — Absent / not typical  ★ Key differentiator</text>
+
+<!-- Column headers: Symptoms -->
+<!-- Col positions: Disease(0-160), Fever(161-214), Resp(215-254), Diarrhea(255-294), Neuro(295-334), Lameness(335-374), Abort(375-414), Red urine(415-454), Sudden death(455-494), Urgency(495-540), Notifiable(541-640) -->
+
+<rect x="30" y="46" width="640" height="22" rx="4" fill="#2C2C2A"/>
+<text x="95" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Disease</text>
+<text x="182" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Fever</text>
+<text x="226" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Resp.</text>
+<text x="268" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Diarrhea</text>
+<text x="313" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Neuro</text>
+<text x="357" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Lame</text>
+<text x="399" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Abort</text>
+<text x="437" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="500" fill="white">Red urine</text>
+<text x="479" y="61" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="500" fill="white">Sudden ✝</text>
+<text x="520" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="500" fill="white">Urgency</text>
+<text x="590" y="57" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" font-weight="500" fill="white">Key differentiator</text>
+
+<!-- Helper for rows: alternating backgrounds -->
+<!-- Row height: 32px each, starting y=68 -->
+
+<!-- DISEASE ROWS -->
+
+<!-- Row 1: BRD -->
+<rect x="30" y="68" width="640" height="32" rx="0" fill="white"/>
+<text x="35" y="82" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">BRD (respiratory)</text>
+<text x="35" y="94" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Bacterial/viral pneumonia</text>
+<text x="182" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="226" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="268" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="399" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="87" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<rect x="498" y="73" width="42" height="18" rx="9" fill="#FAECE7"/>
+<text x="519" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#712B13">Urgent</text>
+<text x="560" y="87" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Cough + nasal discharge</text>
+
+<!-- Row 2: Babesiosis -->
+<rect x="30" y="100" width="640" height="32" rx="0" fill="#F8F7F2"/>
+<text x="35" y="114" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Babesiosis (tick fever)</text>
+<text x="35" y="126" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Babesia bovis/bigemina</text>
+<text x="182" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="226" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="357" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="399" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="479" y="119" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<rect x="498" y="105" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="118" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">Critical</text>
+<text x="560" y="119" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Red/dark urine + high fever</text>
+
+<!-- Row 3: Anaplasmosis -->
+<rect x="30" y="132" width="640" height="32" rx="0" fill="white"/>
+<text x="35" y="146" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Anaplasmosis</text>
+<text x="35" y="158" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Anaplasma marginale</text>
+<text x="182" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="226" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="357" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="399" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="151" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<rect x="498" y="137" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">Critical</text>
+<text x="560" y="151" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Pale membranes, NO red urine</text>
+
+<!-- Row 4: Blackleg -->
+<rect x="30" y="164" width="640" height="32" rx="0" fill="#F8F7F2"/>
+<text x="35" y="178" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Blackleg</text>
+<text x="35" y="190" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Clostridium chauvoei</text>
+<text x="182" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="226" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="399" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="183" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<rect x="498" y="169" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="182" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">Critical</text>
+<text x="560" y="183" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Crackling swollen muscle</text>
+
+<!-- Row 5: Tetanus -->
+<rect x="30" y="196" width="640" height="32" rx="0" fill="white"/>
+<text x="35" y="210" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Tetanus</text>
+<text x="35" y="222" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Clostridium tetani</text>
+<text x="182" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="226" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="357" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="399" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<rect x="498" y="201" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="214" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">Critical</text>
+<text x="560" y="215" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Lockjaw + rigid gait after wound</text>
+
+<!-- Row 6: FMD — Notifiable -->
+<rect x="30" y="228" width="640" height="32" rx="0" fill="#FFF3F0"/>
+<text x="35" y="242" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#A32D2D">FMD ⚠ NOTIFIABLE</text>
+<text x="35" y="254" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Foot-and-Mouth Disease</text>
+<text x="182" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#D85A30">●</text>
+<text x="226" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="399" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="437" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<rect x="498" y="233" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="246" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">NOTIFY</text>
+<text x="560" y="247" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Blisters on mouth AND feet</text>
+
+<!-- Row 7: Rabies — Notifiable -->
+<rect x="30" y="260" width="640" height="32" rx="0" fill="#FFF3F0"/>
+<text x="35" y="274" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#A32D2D">Rabies ⚠ NOTIFIABLE</text>
+<text x="35" y="286" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Vampire bat vector (LatAm)</text>
+<text x="182" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="226" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="357" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="399" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="279" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<rect x="498" y="265" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="278" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">NOTIFY</text>
+<text x="560" y="279" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Neurological signs, fatal</text>
+
+<!-- Row 8: Brucellosis — Notifiable -->
+<rect x="30" y="292" width="640" height="32" rx="0" fill="#FFF3F0"/>
+<text x="35" y="306" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#A32D2D">Brucellosis ⚠ NOTIFIABLE</text>
+<text x="35" y="318" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Brucella abortus · zoonotic</text>
+<text x="182" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="226" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">○</text>
+<text x="399" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="437" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="311" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<rect x="498" y="297" width="42" height="18" rx="9" fill="#FCEBEB"/>
+<text x="519" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">NOTIFY</text>
+<text x="560" y="311" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Late-term abortion storm</text>
+
+<!-- Row 9: Foot Rot -->
+<rect x="30" y="324" width="640" height="32" rx="0" fill="white"/>
+<text x="35" y="338" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Foot rot</text>
+<text x="35" y="350" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Fusobacterium necrophorum</text>
+<text x="182" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="226" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#D85A30">★</text>
+<text x="399" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="343" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<rect x="498" y="329" width="42" height="18" rx="9" fill="#FAEEDA"/>
+<text x="519" y="342" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Treat</text>
+<text x="560" y="343" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Sudden lameness, foul odor, interdigital</text>
+
+<!-- Row 10: Mastitis -->
+<rect x="30" y="356" width="640" height="32" rx="0" fill="#F8F7F2"/>
+<text x="35" y="370" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">Mastitis</text>
+<text x="35" y="382" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A">Dairy / dual-purpose</text>
+<text x="182" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">◐</text>
+<text x="226" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="268" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="313" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="357" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="399" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="437" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<text x="479" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#888780">—</text>
+<rect x="498" y="361" width="42" height="18" rx="9" fill="#FAEEDA"/>
+<text x="519" y="374" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Treat</text>
+<text x="560" y="375" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Hot swollen quarter, clots in milk</text>
+
+<!-- Bottom border -->
+<line x1="30" y1="388" x2="670" y2="388" stroke="#D3D1C7" stroke-width="0.5"/>
+
+<!-- Column dividers -->
+<line x1="160" y1="46" x2="160" y2="388" stroke="#D3D1C7" stroke-width="0.5"/>
+<line x1="205" y1="46" x2="205" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="247" y1="46" x2="247" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="289" y1="46" x2="289" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="333" y1="46" x2="333" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="377" y1="46" x2="377" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="419" y1="46" x2="419" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="457" y1="46" x2="457" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="493" y1="46" x2="493" y2="388" stroke="#D3D1C7" stroke-width="0.3"/>
+<line x1="543" y1="46" x2="543" y2="388" stroke="#D3D1C7" stroke-width="0.5"/>
+
+<!-- Caption -->
+<text x="340" y="408" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Figure F-06 · For notifiable diseases (FMD, Rabies, Brucellosis): isolate, stop movement, call national authority before treating</text>
+<text x="340" y="422" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">See ch-07 for DARTER assessment protocol · ch-15 for notifiable disease reporting · ch-25 for full clinical profiles</text>
+
+<!-- Notifiable legend -->
+<rect x="30" y="432" width="14" height="10" rx="2" fill="#FFF3F0" stroke="#A32D2D" stroke-width="0.5"/>
+<text x="48" y="441" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">Notifiable disease — legal obligation to report to animal health authority</text>
+<text x="400" y="441" font-family="system-ui, sans-serif" font-size="9" fill="#888780">⚠ = zoonotic risk (transmissible to humans)</text>
+</svg>

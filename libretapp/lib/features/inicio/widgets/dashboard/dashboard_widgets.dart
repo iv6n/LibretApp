@@ -10,7 +10,8 @@ import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_widget_card.dart';
 import 'package:libretapp/features/inicio/widgets/quick_summary_section.dart';
-import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
+import 'package:libretapp/features/biblioteca/widgets/library_book_card.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -26,7 +27,7 @@ class DashboardWidgetHost extends StatelessWidget {
   final DashboardWidgetConfig config;
   final InicioDashboardData data;
   final FinanceSummaryDetail? financeDetail;
-  final List<LibraryItem> libraryItems;
+  final List<LibraryManifestBook> libraryItems;
 
   @override
   Widget build(BuildContext context) {
@@ -453,7 +454,7 @@ class _InventoryWidget extends StatelessWidget {
 
 class _LibraryPicksWidget extends StatelessWidget {
   const _LibraryPicksWidget({required this.items});
-  final List<LibraryItem> items;
+  final List<LibraryManifestBook> items;
 
   @override
   Widget build(BuildContext context) {
@@ -470,9 +471,9 @@ class _LibraryPicksWidget extends StatelessWidget {
           return ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            leading: Icon(item.category.icon, size: 20, color: AppColors.primary),
+            leading: Icon(item.icon, size: 20, color: AppColors.primary),
             title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(item.summary, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
           );
         }).toList(),
       ),

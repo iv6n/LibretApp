@@ -276,12 +276,11 @@ final router = GoRouter(
                     return _buildOverlayDetailPage(
                       state: state,
                       child: BlocProvider(
-                        create: (_) =>
-                            AgendaBloc(
-                              locator<AgendaRepository>(),
-                              lotesRepository: locator<LotesRepository>(),
-                            )
-                              ..add(const LoadAgenda()),
+                        create: (_) => AgendaBloc(
+                          locator<AgendaRepository>(),
+                          lotesRepository: locator<LotesRepository>(),
+                          refreshSignal: locator<AgendaRefreshSignal>(),
+                        )..add(const LoadAgenda()),
                         child: LocationDetailPage(locationUuid: uuid),
                       ),
                     );
@@ -308,12 +307,12 @@ final router = GoRouter(
               path: AppRoutes.agenda,
               name: AppRoutes.nameAgenda,
               builder: (context, state) => BlocProvider(
-                create: (_) =>
-                    AgendaBloc(
-                      locator<AgendaRepository>(),
-                      lotesRepository: locator<LotesRepository>(),
-                    )
-                      ..add(const LoadAgenda()),
+                create: (_) => AgendaBloc(
+                  locator<AgendaRepository>(),
+                  lotesRepository: locator<LotesRepository>(),
+                  syncService: locator<AgendaReminderSyncService>(),
+                  refreshSignal: locator<AgendaRefreshSignal>(),
+                )..add(const LoadAgenda()),
                 child: const AgendaPage(),
               ),
               routes: [
@@ -330,6 +329,7 @@ final router = GoRouter(
                         create: (_) => AgendaBloc(
                           locator<AgendaRepository>(),
                           lotesRepository: locator<LotesRepository>(),
+                          refreshSignal: locator<AgendaRefreshSignal>(),
                         ),
                         child: AgendaEntryFormPage(initialDate: initialDate),
                       ),
@@ -372,6 +372,42 @@ final router = GoRouter(
               path: AppRoutes.perfil,
               name: AppRoutes.namePerfil,
               builder: (context, state) => const PerfilPage(),
+              routes: [
+                GoRoute(
+                  path: 'biblioteca/:id',
+                  name: AppRoutes.namePerfilBibliotecaItem,
+                  pageBuilder: (context, state) {
+                    final id = state.pathParameters['id'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: BookDetailPage(
+                        bookId: id,
+                        initialManifestBook:
+                            state.extra is LibraryManifestBook
+                            ? state.extra! as LibraryManifestBook
+                            : null,
+                      ),
+                    );
+                  },
+                  routes: [
+                    GoRoute(
+                      path: ':chapterId',
+                      name: AppRoutes.namePerfilBibliotecaCapitulo,
+                      pageBuilder: (context, state) {
+                        final args = state.extra;
+                        return _buildOverlayDetailPage(
+                          state: state,
+                          child: args is ChapterReaderArgs
+                              ? ChapterReaderPage(args: args)
+                              : _ChapterNotFoundPage(
+                                  bookId: state.pathParameters['id'] ?? '',
+                                ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
           ],
         ),
@@ -539,4 +575,42 @@ CustomTransitionPage<void> _buildOverlayDetailPage({
       );
     },
   );
+}
+
+/// Reached only via a direct deep link into a chapter without going through
+/// [BookDetailPage] first (normal in-app navigation always supplies
+/// [ChapterReaderArgs] via `extra`, since the book's content is already in
+/// memory at that point).
+class _ChapterNotFoundPage extends StatelessWidget {
+  const _ChapterNotFoundPage({required this.bookId});
+  final String bookId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Capítulo no disponible')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Abre este capítulo desde el libro para cargarlo.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => context.pushNamed(
+                  AppRoutes.namePerfilBibliotecaItem,
+                  pathParameters: {'id': bookId},
+                ),
+                child: const Text('Ir al libro'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

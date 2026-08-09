@@ -1,43 +1,61 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/biblioteca/cubit/biblioteca_cubit.dart';
-import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/book_content.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
 import 'package:libretapp/features/biblioteca/data/library_repository.dart';
+
+const _adaptive = LibraryAdaptiveSummary(enabled: false, supportedRegions: []);
 
 class _FakeLibraryRepository implements LibraryRepository {
   bool shouldFail = false;
   String? lastSearchQuery;
 
   @override
-  Future<List<LibraryItem>> byCategory(LibraryCategory category) async =>
-      const [];
-
-  @override
-  Future<List<LibraryItem>> getAll() async {
+  Future<List<LibraryManifestBook>> getAll() async {
     if (shouldFail) throw StateError('boom');
     return const [
-      LibraryItem(
-        id: 'guide-1',
+      LibraryManifestBook(
+        bookId: 'bovinos',
+        subject: 'bovinos',
+        packageDir: 'bovinos',
         title: 'Guía de vacunación',
-        summary: 'Calendario recomendado',
-        category: LibraryCategory.guides,
-        contentType: LibraryContentType.guide,
+        subtitle: 'Calendario recomendado',
+        description: 'Calendario recomendado',
+        language: 'es',
+        translationStatus: 'publication_ready',
+        tags: [],
+        stats: {},
+        adaptive: _adaptive,
+        contentPath: 'content/book-content.json',
       ),
     ];
   }
 
   @override
-  Future<List<LibraryItem>> search(String query) async {
+  Future<List<LibraryManifestBook>> search(String query) async {
     lastSearchQuery = query;
     if (shouldFail) throw StateError('boom');
     return const [
-      LibraryItem(
-        id: 'guide-2',
+      LibraryManifestBook(
+        bookId: 'caprinos',
+        subject: 'caprinos',
+        packageDir: 'caprinos',
         title: 'Resultado de búsqueda',
-        summary: 'Coincide con la búsqueda',
-        category: LibraryCategory.guides,
-        contentType: LibraryContentType.guide,
+        subtitle: 'Coincide con la búsqueda',
+        description: 'Coincide con la búsqueda',
+        language: 'es',
+        translationStatus: 'publication_ready',
+        tags: [],
+        stats: {},
+        adaptive: _adaptive,
+        contentPath: 'content/book-content.json',
       ),
     ];
+  }
+
+  @override
+  Future<BookContent> loadBookContent(LibraryManifestBook book) {
+    throw UnimplementedError('not exercised by BibliotecaCubit tests');
   }
 }
 
@@ -52,19 +70,19 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  test('loads every item when no query is given', () async {
+  test('loads every book when no query is given', () async {
     await cubit.loadBiblioteca();
 
     expect(cubit.state.status, BibliotecaLoadStatus.loaded);
-    expect(cubit.state.items, hasLength(1));
-    expect(cubit.state.items.single.id, 'guide-1');
+    expect(cubit.state.books, hasLength(1));
+    expect(cubit.state.books.single.bookId, 'bovinos');
   });
 
   test('searches when a non-empty query is given', () async {
     await cubit.loadBiblioteca(query: 'vacuna');
 
     expect(repository.lastSearchQuery, 'vacuna');
-    expect(cubit.state.items.single.id, 'guide-2');
+    expect(cubit.state.books.single.bookId, 'caprinos');
     expect(cubit.state.query, 'vacuna');
   });
 
@@ -72,7 +90,7 @@ void main() {
     await cubit.loadBiblioteca(query: '   ');
 
     expect(repository.lastSearchQuery, isNull);
-    expect(cubit.state.items.single.id, 'guide-1');
+    expect(cubit.state.books.single.bookId, 'bovinos');
   });
 
   test('emits an error state when the repository throws', () async {

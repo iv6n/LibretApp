@@ -1,0 +1,311 @@
+﻿{
+    "format":  "libretapp-library",
+    "schema_version":  "1.0",
+    "generated_at":  "2026-08-08T23:04:18Z",
+    "book_count":  7,
+    "books":  [
+                  {
+                      "book_id":  "agriculture",
+                      "subject":  "agriculture",
+                      "package_dir":  "agriculture",
+                      "title":  "Agricultura: sistemas agrícolas y sostenibilidad",
+                      "subtitle":  "Referencia práctica de sistemas agrícolas para Libretapp",
+                      "description":  "Guía práctica de agricultura que aborda la historia agrícola, los sistemas de producción, el manejo de cultivos, la nutrición vegetal, el manejo integrado de plagas, la tecnología y la sostenibilidad.",
+                      "primary_species":  null,
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "agriculture",
+                                   "crop_management",
+                                   "soil",
+                                   "irrigation",
+                                   "plant_nutrition",
+                                   "ipm",
+                                   "agroecology",
+                                   "sustainability"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  7,
+                                    "appendices":  0,
+                                    "figures":  7,
+                                    "glossary_terms":  12
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "bovinos",
+                      "subject":  "bovinos",
+                      "package_dir":  "bovinos",
+                      "title":  "Guía para la cría y el manejo de bovinos",
+                      "subtitle":  "Referencia práctica de producción bovina tropical y semiárida para Libretapp",
+                      "description":  "Guía práctica de producción bovina que aborda planificación, nutrición, condición corporal, reproducción, salud preventiva, enfermedades, sistemas productivos, infraestructura, finanzas, bienestar, pasturas, agua, genética, becerros, silvopastoreo y adaptación climática.",
+                      "primary_species":  "cattle",
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "cattle",
+                                   "bovinos",
+                                   "ranching",
+                                   "tropical_cattle",
+                                   "semi_arid",
+                                   "beef",
+                                   "dairy",
+                                   "pasture",
+                                   "herd_health"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  30,
+                                    "appendices":  1,
+                                    "figures":  8,
+                                    "glossary_terms":  12
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "caprinos",
+                      "subject":  "caprinos",
+                      "package_dir":  "caprinos",
+                      "title":  "Producción y manejo caprino",
+                      "subtitle":  "Referencia práctica de producción caprina para Libretapp",
+                      "description":  "Guía práctica de producción caprina que aborda razas, nutrición, reproducción, sanidad, infraestructura, productos y comercialización en México y Latinoamérica.",
+                      "primary_species":  "goats",
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "goats",
+                                   "caprine",
+                                   "goat_farming",
+                                   "meat",
+                                   "dairy",
+                                   "fiber",
+                                   "semi_arid",
+                                   "small_ruminants"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  8,
+                                    "appendices":  0,
+                                    "figures":  8,
+                                    "glossary_terms":  8
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "equinos",
+                      "subject":  "equinos",
+                      "package_dir":  "equinos",
+                      "title":  "Producción, cuidado y manejo equino",
+                      "subtitle":  "Referencia práctica de manejo equino para Libretapp",
+                      "description":  "Guía práctica equina que aborda razas, morfología, nutrición, reproducción, salud, manejo, entrenamiento, instalaciones y economía del caballo.",
+                      "primary_species":  "horses",
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "horses",
+                                   "equine",
+                                   "horse_care",
+                                   "nutrition",
+                                   "reproduction",
+                                   "training",
+                                   "facilities",
+                                   "business"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  12,
+                                    "appendices":  0,
+                                    "figures":  8,
+                                    "glossary_terms":  16
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "mascotas",
+                      "subject":  "mascotas",
+                      "package_dir":  "mascotas",
+                      "title":  "Cuidado responsable de animales de compañía",
+                      "subtitle":  "Referencia práctica de animales de compañía para Libretapp",
+                      "description":  "Guía práctica de animales de compañía que aborda la tenencia responsable, perros, gatos, aves, pequeños mamíferos, instalaciones, nutrición, salud preventiva y comportamiento.",
+                      "primary_species":  null,
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "pets",
+                                   "companion_animals",
+                                   "dogs",
+                                   "cats",
+                                   "birds",
+                                   "small_mammals",
+                                   "nutrition",
+                                   "preventive_health",
+                                   "behavior"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  8,
+                                    "appendices":  0,
+                                    "figures":  8,
+                                    "glossary_terms":  7
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "suelos",
+                      "subject":  "suelos",
+                      "package_dir":  "suelos",
+                      "title":  "Ciencia del suelo y recursos naturales",
+                      "subtitle":  "Referencia práctica de suelos y recursos naturales para Libretapp",
+                      "description":  "Guía práctica de ciencia del suelo que aborda formación, clasificación, fertilidad, conservación del agua, erosión, manejo sostenible, cambio climático y política del suelo.",
+                      "primary_species":  null,
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "soil",
+                                   "soil_science",
+                                   "fertility",
+                                   "erosion",
+                                   "water_conservation",
+                                   "climate_change",
+                                   "natural_resources",
+                                   "policy"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  8,
+                                    "appendices":  0,
+                                    "figures":  8,
+                                    "glossary_terms":  8
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  },
+                  {
+                      "book_id":  "ovinos",
+                      "subject":  "ovinos",
+                      "package_dir":  "ovinos",
+                      "title":  "Producción y manejo ovino",
+                      "subtitle":  "Referencia práctica de producción ovina para Libretapp",
+                      "description":  "Guía práctica de producción ovina que aborda sistemas, razas, nutrición, reproducción, salud, instalaciones, productos y mercados.",
+                      "primary_species":  "sheep",
+                      "language":  "es",
+                      "translation_status":  "publication_ready",
+                      "tags":  [
+                                   "sheep",
+                                   "ovine",
+                                   "small_ruminants",
+                                   "lamb",
+                                   "wool",
+                                   "milk",
+                                   "grazing",
+                                   "markets"
+                               ],
+                      "stats":  {
+                                    "main_chapters":  8,
+                                    "appendices":  0,
+                                    "figures":  8,
+                                    "glossary_terms":  12
+                                },
+                      "adaptive":  {
+                                       "enabled":  true,
+                                       "supported_regions":  [
+                                                                 "northwest_arid",
+                                                                 "northern_rangelands"
+                                                             ],
+                                       "pilot_state":  "sonora",
+                                       "selection_precedence":  [
+                                                                    "state",
+                                                                    "region",
+                                                                    "production_setting",
+                                                                    "general"
+                                                                ]
+                                   },
+                      "content_path":  "content/book-content.json",
+                      "manifest_path":  "book.json"
+                  }
+              ]
+}

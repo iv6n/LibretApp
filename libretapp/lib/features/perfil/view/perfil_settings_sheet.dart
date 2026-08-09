@@ -1,8 +1,11 @@
 /// Settings sheet: theme, backup, export, edit profile.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
@@ -13,6 +16,7 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
 import 'package:libretapp/core/services/export_service.dart';
+import 'package:libretapp/features/biblioteca/data/region_catalog.dart';
 import 'package:libretapp/features/exportar/cubit/export_cubit.dart';
 import 'package:libretapp/features/exportar/widgets/export_selection_panel.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
@@ -59,6 +63,20 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
     );
   }
 
+  void _openRegionSettings() {
+    final perfilBloc = context.read<PerfilBloc>();
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => BlocProvider.value(
+        value: perfilBloc,
+        child: _RegionSettingsSheet(perfil: widget.perfil),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -91,6 +109,14 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               leading: const Icon(Icons.edit_outlined),
               title: const Text('Editar perfil'),
               onTap: _openEdit,
+            ),
+            ListTile(
+              leading: const Icon(Icons.map_outlined),
+              title: const Text('Región y tipo de producción'),
+              subtitle: const Text(
+                'Ajusta el contenido de la biblioteca a tu estado y sistema.',
+              ),
+              onTap: _openRegionSettings,
             ),
             BlocBuilder<ThemeBloc, ThemeState>(
               builder: (context, state) {
@@ -533,6 +559,154 @@ class _EditPerfilSheetState extends State<_EditPerfilSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Lets the reader pick their state and production setting so the biblioteca
+/// can show the matching regional adaptation instead of the general
+/// fallback — see lib/features/biblioteca/domain/adaptive_resolver.dart.
+class _RegionSettingsSheet extends StatefulWidget {
+  const _RegionSettingsSheet({required this.perfil});
+  final Perfil perfil;
+
+  @override
+  State<_RegionSettingsSheet> createState() => _RegionSettingsSheetState();
+}
+
+class _RegionSettingsSheetState extends State<_RegionSettingsSheet> {
+  RegionCatalog? _catalog;
+  String? _error;
+  late String _stateId;
+  late String _productionSettingId;
+
+  @override
+  void initState() {
+    super.initState();
+    _stateId = widget.perfil.regionState;
+    _productionSettingId = widget.perfil.productionSetting;
+    _loadCatalog();
+  }
+
+  Future<void> _loadCatalog() async {
+    try {
+      final raw = await rootBundle.loadString(
+        'assets/library/mexico-regions.json',
+      );
+      final catalog = RegionCatalog.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      if (!mounted) return;
+      setState(() {
+        _catalog = catalog;
+        if (catalog.stateById(_stateId) == null) _stateId = 'general';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    }
+  }
+
+  List<ProductionSettingInfo> _availableProductionSettings(
+    RegionCatalog catalog,
+  ) {
+    final settingIds = catalog.stateById(_stateId)?.productionSettings;
+    if (settingIds == null) return catalog.productionSettings;
+    return catalog.productionSettings
+        .where((s) => settingIds.contains(s.id))
+        .toList(growable: false);
+  }
+
+  void _save() {
+    final updated = widget.perfil.copyWith(
+      regionState: _stateId,
+      productionSetting: _productionSettingId,
+    );
+    context.read<PerfilBloc>().add(SavePerfil(updated));
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final catalog = _catalog;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Región y tipo de producción',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Se usa para mostrar el recuadro de adaptación regional en la '
+            'biblioteca. Puedes dejarlo en General.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          if (_error != null)
+            Text(
+              'No se pudo cargar el catálogo de regiones: $_error',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            )
+          else if (catalog == null)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else ...[
+            DropdownButtonFormField<String>(
+              initialValue: _stateId,
+              decoration: const InputDecoration(labelText: 'Estado'),
+              items: catalog.states
+                  .map(
+                    (s) =>
+                        DropdownMenuItem(value: s.id, child: Text(s.name)),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _stateId = value;
+                  final available = _availableProductionSettings(catalog)
+                      .map((s) => s.id);
+                  if (!available.contains(_productionSettingId)) {
+                    _productionSettingId = 'general';
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _productionSettingId,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de producción',
+              ),
+              items: _availableProductionSettings(catalog)
+                  .map(
+                    (s) =>
+                        DropdownMenuItem(value: s.id, child: Text(s.name)),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() => _productionSettingId = value);
+              },
+            ),
+            const SizedBox(height: 24),
+            FilledButton(onPressed: _save, child: const Text('Guardar')),
+          ],
+        ],
       ),
     );
   }

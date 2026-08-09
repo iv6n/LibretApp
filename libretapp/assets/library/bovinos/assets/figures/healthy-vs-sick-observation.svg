@@ -1,0 +1,158 @@
+﻿<svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>F-03: BCS Comparison — Scores 2, 4, 6, and 8 in Brahman/Nelore Cows</title>
+<desc>Side-by-side schematic comparison of Brahman/Nelore cows at four body condition scores: BCS 2 (very thin), BCS 4 (borderline), BCS 6 (good/optimal), and BCS 8 (very fat). Shows key visual landmarks for each condition level.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+<rect x="0" y="0" width="680" height="360" fill="#F8F7F2"/>
+
+<text x="340" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">F-03 — BCS comparison: Brahman/Nelore cow · side profile</text>
+<text x="340" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#888780">Key landmarks: spine · short ribs · hip (hook) bones · tailhead · pin bones</text>
+
+<!-- 4 panels -->
+<!-- Panel 1: BCS 2 -->
+<rect x="12" y="52" width="158" height="252" rx="6" fill="white" stroke="#E24B4A" stroke-width="1"/>
+<rect x="12" y="52" width="158" height="28" rx="6" fill="#FCEBEB"/>
+<text x="91" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#A32D2D">BCS 2 — Very thin</text>
+
+<!-- Cow side profile BCS2 - Zebu with hump, angular body -->
+<g transform="translate(91, 175)">
+  <!-- Body - very angular, lean -->
+  <path d="M -52,20 C -50,0 -46,-28 -30,-34 C -18,-38 0,-40 16,-38 C 30,-36 40,-30 46,-16 C 50,-6 48,10 44,20 Z" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1.5"/>
+  <!-- Zebu hump - very small when thin -->
+  <path d="M -10,-38 C -6,-46 2,-50 8,-48 C 14,-46 16,-40 12,-36" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1.2"/>
+  <!-- Head -->
+  <path d="M -52,20 C -56,8 -62,-4 -60,-14 C -58,-22 -52,-26 -46,-24 C -40,-22 -38,-14 -40,-6 C -42,4 -46,12 -46,20" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1.2"/>
+  <!-- Prominent ribs -->
+  <line x1="-20" y1="-30" x2="-24" y2="16" stroke="#A32D2D" stroke-width="2"/>
+  <line x1="-8" y1="-32" x2="-12" y2="16" stroke="#A32D2D" stroke-width="2"/>
+  <line x1="4" y1="-34" x2="0" y2="16" stroke="#A32D2D" stroke-width="2"/>
+  <line x1="16" y1="-34" x2="12" y2="18" stroke="#A32D2D" stroke-width="1.5"/>
+  <!-- Sharp spine ridge -->
+  <polyline points="-42,-26 -30,-32 -10,-36 10,-36 30,-28 42,-16 44,20" fill="none" stroke="#A32D2D" stroke-width="2.5"/>
+  <!-- Sharp hip bone (hook) -->
+  <polygon points="36,-14 44,-22 52,-14 44,-6" fill="#E24B4A" opacity="0.8"/>
+  <!-- Pin bone sharp -->
+  <polygon points="38,18 44,12 50,18 44,24" fill="#E24B4A" opacity="0.6"/>
+  <!-- Legs -->
+  <rect x="-40" y="20" width="10" height="36" rx="3" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1"/>
+  <rect x="-10" y="20" width="10" height="36" rx="3" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1"/>
+  <rect x="16" y="20" width="10" height="36" rx="3" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1"/>
+  <rect x="36" y="20" width="10" height="36" rx="3" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1"/>
+  <!-- Tail -->
+  <path d="M44,18 C50,10 54,2 52,-8" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+</g>
+
+<!-- Labels for BCS2 -->
+<text x="42" y="246" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">▲ Ribs visible</text>
+<text x="42" y="258" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">▲ Sharp spine</text>
+<text x="42" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">▲ Hook bones</text>
+<text x="42" y="282" font-family="system-ui, sans-serif" font-size="9" fill="#A32D2D">   prominent</text>
+<text x="42" y="296" font-family="system-ui, sans-serif" font-size="9" fill="#888780">No palpable fat</text>
+
+<!-- Panel 2: BCS 4 -->
+<rect x="178" y="52" width="158" height="252" rx="6" fill="white" stroke="#EF9F27" stroke-width="1"/>
+<rect x="178" y="52" width="158" height="28" rx="6" fill="#FAEEDA"/>
+<text x="257" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#854F0B">BCS 4 — Borderline</text>
+
+<g transform="translate(257,175)">
+  <path d="M -52,18 C -50,-2 -46,-30 -28,-36 C -16,-40 2,-42 18,-40 C 32,-38 42,-30 48,-14 C 52,-4 50,10 46,18 Z" fill="#FAC775" stroke="#EF9F27" stroke-width="1.5" opacity="0.8"/>
+  <!-- Hump - small -->
+  <path d="M -8,-38 C -4,-48 4,-52 10,-50 C 16,-48 18,-42 14,-38" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+  <path d="M -52,18 C -56,6 -62,-6 -60,-16 C -58,-24 -50,-28 -44,-26 C -38,-24 -36,-14 -38,-4 C -40,6 -44,12 -44,18" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+  <!-- Ribs barely visible -->
+  <line x1="-18" y1="-30" x2="-22" y2="14" stroke="#854F0B" stroke-width="1.2" opacity="0.6"/>
+  <line x1="-6" y1="-34" x2="-10" y2="14" stroke="#854F0B" stroke-width="1.2" opacity="0.5"/>
+  <line x1="6" y1="-36" x2="2" y2="14" stroke="#854F0B" stroke-width="1" opacity="0.4"/>
+  <!-- Spine less sharp -->
+  <polyline points="-40,-24 -28,-32 -8,-38 12,-38 32,-28 44,-14 46,18" fill="none" stroke="#854F0B" stroke-width="1.8"/>
+  <!-- Hook bone - less sharp -->
+  <polygon points="36,-12 44,-20 52,-12 44,-4" fill="#EF9F27" opacity="0.6"/>
+  <polygon points="38,16 44,10 50,16 44,22" fill="#EF9F27" opacity="0.5"/>
+  <!-- Legs -->
+  <rect x="-40" y="18" width="10" height="36" rx="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <rect x="-10" y="18" width="10" height="36" rx="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <rect x="16" y="18" width="10" height="36" rx="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <rect x="36" y="18" width="10" height="36" rx="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <path d="M44,16 C50,8 54,0 52,-10" fill="none" stroke="#854F0B" stroke-width="1.5"/>
+</g>
+
+<text x="208" y="246" font-family="system-ui, sans-serif" font-size="9" fill="#854F0B">~ Ribs barely visible</text>
+<text x="208" y="258" font-family="system-ui, sans-serif" font-size="9" fill="#854F0B">~ Spine palpable</text>
+<text x="208" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#854F0B">~ Hooks prominent</text>
+<text x="208" y="282" font-family="system-ui, sans-serif" font-size="9" fill="#854F0B">   under pressure</text>
+<text x="208" y="296" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Slight fat cover</text>
+
+<!-- Panel 3: BCS 6 — OPTIMAL -->
+<rect x="344" y="48" width="162" height="260" rx="6" fill="white" stroke="#0F6E56" stroke-width="2"/>
+<rect x="344" y="48" width="162" height="28" rx="6" fill="#1D9E75"/>
+<text x="425" y="66" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">★ OPTIMAL CONDITION</text>
+<text x="425" y="82" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#085041">BCS 6 — Good</text>
+
+<g transform="translate(425,178)">
+  <!-- Smoothly rounded body -->
+  <path d="M -54,16 C -52,-4 -46,-34 -26,-40 C -14,-44 4,-46 20,-44 C 34,-42 44,-32 50,-14 C 54,-2 52,12 48,16 Z" fill="#5DCAA5" opacity="0.55" stroke="#0F6E56" stroke-width="1.5"/>
+  <!-- Fat covering makes smooth profile -->
+  <path d="M -52,16 C -50,0 -46,-30 -26,-38 C -14,-42 4,-44 20,-42 C 34,-40 44,-30 50,-14 C 54,-2 52,12 48,16 Z" fill="#9FE1CB" opacity="0.5" stroke="none"/>
+  <!-- Zebu hump - good size when good condition -->
+  <path d="M -6,-40 C -2,-54 8,-58 16,-56 C 22,-54 24,-46 20,-40" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.5"/>
+  <path d="M -54,16 C -58,4 -64,-8 -62,-18 C -60,-26 -52,-30 -46,-28 C -40,-26 -38,-16 -40,-6 C -42,6 -46,12 -46,16" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.2"/>
+  <!-- No visible ribs -->
+  <!-- Smooth rounded back -->
+  <path d="M -44,-26 C -30,-38 -6,-44 18,-44 C 38,-42 48,-28 48,16" fill="none" stroke="#0F6E56" stroke-width="1.5"/>
+  <!-- Hook bones rounded -->
+  <ellipse cx="44" cy="-14" rx="8" ry="7" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <ellipse cx="42" cy="14" rx="7" ry="6" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <!-- Legs -->
+  <rect x="-42" y="16" width="11" height="36" rx="3" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <rect x="-10" y="16" width="11" height="36" rx="3" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <rect x="16" y="16" width="11" height="36" rx="3" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <rect x="36" y="16" width="11" height="36" rx="3" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <path d="M46,14 C52,6 56,-2 54,-12" fill="none" stroke="#0F6E56" stroke-width="1.5"/>
+</g>
+
+<text x="370" y="249" font-family="system-ui, sans-serif" font-size="9" fill="#085041">✓ Ribs not visible</text>
+<text x="370" y="261" font-family="system-ui, sans-serif" font-size="9" fill="#085041">✓ Smooth fat cover</text>
+<text x="370" y="273" font-family="system-ui, sans-serif" font-size="9" fill="#085041">✓ Hooks rounded</text>
+<text x="370" y="285" font-family="system-ui, sans-serif" font-size="9" fill="#085041">✓ Hump well-developed</text>
+<text x="370" y="299" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56" font-weight="500">Target: calving &amp; breeding</text>
+
+<!-- Panel 4: BCS 8 -->
+<rect x="514" y="52" width="154" height="252" rx="6" fill="white" stroke="#D85A30" stroke-width="1"/>
+<rect x="514" y="52" width="154" height="28" rx="6" fill="#FAECE7"/>
+<text x="591" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#993C1D">BCS 8 — Very fat</text>
+
+<g transform="translate(591,175)">
+  <!-- Very round, blocky body -->
+  <path d="M -50,14 C -48,-8 -42,-38 -20,-44 C -8,-48 8,-50 22,-48 C 36,-46 46,-36 50,-16 C 54,-4 52,10 48,14 Z" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.5"/>
+  <!-- Large hump -->
+  <path d="M -4,-42 C 0,-60 12,-66 20,-64 C 28,-62 30,-52 26,-44" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.5"/>
+  <path d="M -50,14 C -54,2 -60,-10 -58,-20 C -56,-28 -48,-32 -42,-30 C -36,-28 -34,-16 -36,-6 C -38,6 -42,10 -42,14" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.2"/>
+  <!-- Fat deposits around tailhead visible -->
+  <ellipse cx="-4" cy="-40" rx="16" ry="8" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="44" cy="-14" rx="12" ry="10" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="42" cy="12" rx="11" ry="9" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <!-- Brisket fat -->
+  <ellipse cx="-30" cy="12" rx="12" ry="6" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <!-- Back line is rounded/fat -->
+  <path d="M -40,-26 C -20,-44 4,-48 24,-48 C 42,-46 50,-30 48,14" fill="none" stroke="#D85A30" stroke-width="2"/>
+  <!-- Legs - fat-padded -->
+  <rect x="-38" y="14" width="12" height="36" rx="4" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <rect x="-6" y="14" width="12" height="36" rx="4" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <rect x="18" y="14" width="12" height="36" rx="4" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <rect x="38" y="14" width="12" height="36" rx="4" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <path d="M46,12 C52,4 56,-4 54,-14" fill="none" stroke="#D85A30" stroke-width="1.5"/>
+</g>
+
+<text x="530" y="246" font-family="system-ui, sans-serif" font-size="9" fill="#993C1D">▲ Heavy fat deposits</text>
+<text x="530" y="258" font-family="system-ui, sans-serif" font-size="9" fill="#993C1D">▲ Ribs not palpable</text>
+<text x="530" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#993C1D">▲ Blocky appearance</text>
+<text x="530" y="282" font-family="system-ui, sans-serif" font-size="9" fill="#993C1D">▲ Tailhead buried</text>
+<text x="530" y="296" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Dystocia risk in heifers</text>
+
+<!-- Caption -->
+<text x="340" y="332" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Figure F-03 · Brahman/Nelore side profile schematics · BCS assessed visually (profile) and by palpation (short ribs, spine, tailhead)</text>
+<text x="340" y="346" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Note the Zebu hump — size reflects body condition and energy reserves; hump shrinks below BCS 4</text>
+</svg>

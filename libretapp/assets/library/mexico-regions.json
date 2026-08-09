@@ -1,0 +1,94 @@
+{
+  "country": "mexico",
+  "default_state": "general",
+  "default_region": "general",
+  "default_production_setting": "general",
+  "states": [
+    {
+      "id": "general",
+      "name": "General / Ningún estado seleccionado",
+      "regions": ["general"],
+      "production_settings": ["general"]
+    },
+    {
+      "id": "sonora",
+      "name": "Sonora",
+      "regions": ["northwest_arid", "northern_rangelands"],
+      "production_settings": ["irrigated_valley", "desert_coastal", "rangeland", "foothills_highland", "urban_peri_urban"]
+    }
+  ],
+  "regions": [
+    {
+      "id": "general",
+      "name": "General",
+      "risks": ["use_local_data", "verify_before_publication"],
+      "description": "Orientación general cuando no se selecciona estado ni región climática."
+    },
+    {
+      "id": "northwest_arid",
+      "name": "Noroeste árido y valles irrigados",
+      "states": ["sonora", "baja_california", "baja_california_sur", "sinaloa"],
+      "risks": ["heat_stress", "drought", "salinity", "irrigation_dependency", "groundwater_stress"],
+      "description": "Sistemas áridos y semiáridos con valles irrigados, agricultura desértica, límites de forraje y alta importancia del manejo del agua."
+    },
+    {
+      "id": "northern_rangelands",
+      "name": "Agostaderos del norte",
+      "states": ["sonora", "chihuahua", "coahuila", "durango", "zacatecas"],
+      "risks": ["drought", "forage_shortage", "water_points", "overgrazing", "heat_stress"],
+      "description": "Sistemas extensivos de ganadería y secano donde la presión de pastoreo, los puntos de agua y la planeación de sequía guían las decisiones."
+    },
+    {
+      "id": "bajio_irrigated",
+      "name": "Bajío y agricultura irrigada del centro",
+      "states": ["guanajuato", "queretaro", "aguascalientes", "michoacan", "jalisco"],
+      "risks": ["groundwater_stress", "intensive_crops", "salinity", "market_volatility"],
+      "description": "Sistemas intensivos de cultivos y ganadería con riego, acceso a mercados y presión sobre el agua subterránea."
+    },
+    {
+      "id": "central_highlands",
+      "name": "Altiplano central",
+      "states": ["puebla", "tlaxcala", "hidalgo", "estado_de_mexico", "michoacan"],
+      "risks": ["frost", "erosion", "smallholder_maize", "cool_nights"],
+      "description": "Sistemas agrícolas y ganaderos de altura con riesgo de heladas, necesidades de manejo de laderas y producción de pequeña escala."
+    },
+    {
+      "id": "pacific_dry_tropics",
+      "name": "Trópico seco del Pacífico",
+      "states": ["sinaloa", "nayarit", "jalisco", "colima", "guerrero", "oaxaca"],
+      "risks": ["wet_dry_season", "heat", "tropical_pests", "hurricane_rain_events"],
+      "description": "Sistemas tropicales con estación húmeda y seca marcada, ciclos fuertes de plagas y producción mixta de cultivos y ganadería."
+    },
+    {
+      "id": "humid_tropics",
+      "name": "Golfo y trópico húmedo",
+      "states": ["veracruz", "tabasco", "chiapas", "oaxaca"],
+      "risks": ["high_rainfall", "parasites", "fungal_disease", "drainage", "mud"],
+      "description": "Sistemas agrícolas y ganaderos de alta lluvia donde el drenaje, los parásitos y las enfermedades fúngicas son centrales."
+    },
+    {
+      "id": "yucatan_peninsula",
+      "name": "Península de Yucatán",
+      "states": ["yucatan", "campeche", "quintana_roo"],
+      "risks": ["limestone_soils", "shallow_soils", "hurricanes", "heat", "water_storage"],
+      "description": "Sistemas kársticos y calcáreos con suelos someros, calor, tormentas estacionales, relevancia de miel/cítricos/ganadería y límites de almacenamiento de agua."
+    },
+    {
+      "id": "mountain_cloud_forest",
+      "name": "Montaña y bosque de niebla",
+      "states": ["oaxaca", "chiapas", "veracruz", "puebla", "hidalgo"],
+      "risks": ["steep_slopes", "erosion", "humidity", "coffee_systems", "landslide_risk"],
+      "description": "Sistemas de montaña con pendientes, erosión, humedad, café/agroforestería y microclimas localizados."
+    }
+  ],
+  "production_settings": [
+    {"id": "general", "name": "General / No especificado"},
+    {"id": "irrigated_valley", "name": "Valle irrigado"},
+    {"id": "desert_coastal", "name": "Llanura desértica o costera"},
+    {"id": "rangeland", "name": "Agostadero"},
+    {"id": "foothills_highland", "name": "Pie de monte o altiplano"},
+    {"id": "urban_peri_urban", "name": "Urbano o periurbano"},
+    {"id": "humid_lowland", "name": "Tierras bajas húmedas"},
+    {"id": "mountain_slope", "name": "Ladera de montaña"}
+  ]
+}

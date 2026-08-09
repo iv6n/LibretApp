@@ -1,4 +1,4 @@
-﻿/// features › perfil › data › perfil_model — data model for the user profile.
+/// features › perfil › data › perfil_model — data model for the user profile.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -13,6 +13,8 @@ class Perfil extends Equatable {
     required this.finca,
     required this.direccion,
     this.upp = '',
+    this.regionState = 'general',
+    this.productionSetting = 'general',
   });
   final String id;
   final String nombre;
@@ -22,6 +24,17 @@ class Perfil extends Equatable {
   final String finca;
   final String direccion;
   final String upp;
+
+  /// State id from the shared region catalog (regions/mexico-regions.json
+  /// in the content repo, bundled at assets/library/mexico-regions.json).
+  /// Drives which book adaptations/task tips the reader sees — see
+  /// lib/features/biblioteca/domain/adaptive_resolver.dart. `'general'`
+  /// means no state selected.
+  final String regionState;
+
+  /// Production setting id from the same catalog (e.g. `rangeland`,
+  /// `irrigated_valley`). `'general'` means none selected.
+  final String productionSetting;
 
   String get fullName => '$nombre $apellido'.trim();
 
@@ -34,6 +47,8 @@ class Perfil extends Equatable {
     String? finca,
     String? direccion,
     String? upp,
+    String? regionState,
+    String? productionSetting,
   }) {
     return Perfil(
       id: id ?? this.id,
@@ -44,6 +59,8 @@ class Perfil extends Equatable {
       finca: finca ?? this.finca,
       direccion: direccion ?? this.direccion,
       upp: upp ?? this.upp,
+      regionState: regionState ?? this.regionState,
+      productionSetting: productionSetting ?? this.productionSetting,
     );
   }
 
@@ -56,6 +73,8 @@ class Perfil extends Equatable {
     'finca': finca,
     'direccion': direccion,
     'upp': upp,
+    'region_state': regionState,
+    'production_setting': productionSetting,
   };
 
   factory Perfil.fromJson(Map<String, dynamic> json) => Perfil(
@@ -67,6 +86,8 @@ class Perfil extends Equatable {
     finca: json['finca'] as String? ?? '',
     direccion: json['direccion'] as String? ?? '',
     upp: json['upp'] as String? ?? '',
+    regionState: json['region_state'] as String? ?? 'general',
+    productionSetting: json['production_setting'] as String? ?? 'general',
   );
 
   @override
@@ -79,5 +100,7 @@ class Perfil extends Equatable {
     finca,
     direccion,
     upp,
+    regionState,
+    productionSetting,
   ];
 }

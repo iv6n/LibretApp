@@ -1,0 +1,257 @@
+﻿<svg width="100%" viewBox="0 0 680 500" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>F-08: Annual Grazing Calendar — Paddock Rotation Sequence and Rest Periods by Month</title>
+<desc>Annual grazing calendar showing 8-paddock rotation schedule across 12 months. Rows represent paddocks P1–P8 plus a sacrifice paddock. Columns represent months Jan–Dec. Cells are colored by status: actively grazing (dark green), resting/recovering (light green), or sacrifice/dry-season reserve (amber). Seasonal bands show wet, transition, and dry seasons.</desc>
+
+<rect x="0" y="0" width="680" height="500" fill="#F8F7F2"/>
+
+<!-- Title -->
+<text x="340" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#2C2C2A">F-08 — Annual grazing calendar · 8-paddock rotation · tropical lowland system</text>
+<text x="340" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Illustrative rotation sequence · adjust entry/exit dates by forage height, not calendar · Sonora: shift wet season to Jul–Sep</text>
+
+<!-- Season bands across the top -->
+<!-- Months: Jan(1)–Dec(12). Grid x=120 to x=660, 12 cols = 45px each -->
+<!-- Dry: Jan-Apr = cols 1-4, x=120-300 -->
+<rect x="120" y="47" width="180" height="18" rx="3" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="210" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#633806">DRY SEASON · Long dry</text>
+
+<!-- Transition: May-Jun = cols 5-6, x=300-390 -->
+<rect x="300" y="47" width="90" height="18" rx="3" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+<text x="345" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#185FA5">Transition</text>
+
+<!-- Wet: Jul-Oct = cols 7-10, x=390-570 -->
+<rect x="390" y="47" width="180" height="18" rx="3" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="480" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#085041">WET SEASON · Peak growth</text>
+
+<!-- Transition: Nov-Dec = cols 11-12, x=570-660 -->
+<rect x="570" y="47" width="90" height="18" rx="3" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+<text x="615" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#185FA5">Transition</text>
+
+<!-- Month column headers -->
+<rect x="120" y="65" width="540" height="20" rx="0" fill="#2C2C2A"/>
+<text x="60" y="79" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#2C2C2A">Paddock</text>
+<!-- Month labels at col centers: 120+22.5, +45 each -->
+<text x="142" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Jan</text>
+<text x="187" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Feb</text>
+<text x="232" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Mar</text>
+<text x="277" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Apr</text>
+<text x="322" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">May</text>
+<text x="367" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Jun</text>
+<text x="412" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Jul</text>
+<text x="457" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Aug</text>
+<text x="502" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Sep</text>
+<text x="547" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Oct</text>
+<text x="592" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Nov</text>
+<text x="637" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">Dec</text>
+
+<!-- Grid: 9 paddock rows + 1 sacrifice row, row height=30px, y starts at 85 -->
+<!-- Colors: G=grazing #1D9E75, R=resting #D5F0E8, S=sacrifice #FAEEDA, D=dry reserve #F5E4C0 -->
+<!-- Each cell: 45px wide, 30px tall -->
+
+<!-- Helper macro: cell at col c (0-indexed), row r (0-indexed) = x=120+c*45, y=85+r*30 -->
+
+<!-- ROW 0: P1 -->
+<rect x="30" y="85" width="90" height="30" rx="0" fill="#F0EEE8"/>
+<text x="75" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P1</text>
+<!-- Jan: grazing (dry season – grazing resting paddocks slowly) -->
+<rect x="120" y="85" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="142" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+<!-- Feb: resting -->
+<rect x="165" y="85" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="187" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<!-- Mar: resting -->
+<rect x="210" y="85" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="232" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<!-- Apr: resting -->
+<rect x="255" y="85" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="277" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<!-- May: resting / transition -->
+<rect x="300" y="85" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="322" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<!-- Jun: grazing transition -->
+<rect x="345" y="85" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="367" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<!-- Jul: resting -->
+<rect x="390" y="85" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="412" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<!-- Aug: resting -->
+<rect x="435" y="85" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="457" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<!-- Sep: grazing -->
+<rect x="480" y="85" width="45" height="30" fill="#1D9E75" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="502" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<!-- Oct: resting -->
+<rect x="525" y="85" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="547" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<!-- Nov: resting / transition -->
+<rect x="570" y="85" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="592" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<!-- Dec: grazing -->
+<rect x="615" y="85" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/>
+<text x="637" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+
+<!-- ROW 1: P2 -->
+<rect x="30" y="115" width="90" height="30" rx="0" fill="#F8F7F2"/>
+<text x="75" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P2</text>
+<rect x="120" y="115" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="115" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+<rect x="210" y="115" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="115" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="115" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="115" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="115" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="435" y="115" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="480" y="115" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="525" y="115" width="45" height="30" fill="#1D9E75" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="570" y="115" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="615" y="115" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 2: P3 -->
+<rect x="30" y="145" width="90" height="30" rx="0" fill="#F0EEE8"/>
+<text x="75" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P3</text>
+<rect x="120" y="145" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="145" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="145" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+<rect x="255" y="145" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="145" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="145" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="145" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="435" y="145" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="480" y="145" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="525" y="145" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="570" y="145" width="45" height="30" fill="#1D9E75" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="615" y="145" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 3: P4 -->
+<rect x="30" y="175" width="90" height="30" rx="0" fill="#F8F7F2"/>
+<text x="75" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P4</text>
+<rect x="120" y="175" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="175" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="175" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="175" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+<rect x="300" y="175" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="345" y="175" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="175" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="435" y="175" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="480" y="175" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="525" y="175" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="570" y="175" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="615" y="175" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="194" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 4: P5 -->
+<rect x="30" y="205" width="90" height="30" rx="0" fill="#F0EEE8"/>
+<text x="75" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P5</text>
+<rect x="120" y="205" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="205" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="205" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="205" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="205" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="205" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="390" y="205" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="435" y="205" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="480" y="205" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="525" y="205" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="570" y="205" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="615" y="205" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 5: P6 -->
+<rect x="30" y="235" width="90" height="30" rx="0" fill="#F8F7F2"/>
+<text x="75" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P6</text>
+<rect x="120" y="235" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="235" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="235" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="235" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="235" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="235" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="235" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="435" y="235" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="480" y="235" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="525" y="235" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="570" y="235" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="615" y="235" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="254" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 6: P7 -->
+<rect x="30" y="265" width="90" height="30" rx="0" fill="#F0EEE8"/>
+<text x="75" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P7</text>
+<rect x="120" y="265" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="265" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="265" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="265" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="435" y="265" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="480" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="525" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="570" y="265" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="615" y="265" width="45" height="30" fill="#FAC775" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#633806">Graze</text>
+
+<!-- ROW 7: P8 -->
+<rect x="30" y="295" width="90" height="30" rx="0" fill="#F8F7F2"/>
+<text x="75" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#2C2C2A">P8</text>
+<rect x="120" y="295" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="165" y="295" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="210" y="295" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="255" y="295" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+<rect x="300" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="345" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="390" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="435" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="480" y="295" width="45" height="30" fill="#5DCAA5" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Graze</text>
+<rect x="525" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="570" y="295" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Rest</text>
+<rect x="615" y="295" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="314" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Rest</text>
+
+<!-- ROW 8: Sacrifice paddock (special) -->
+<rect x="30" y="325" width="90" height="30" rx="0" fill="#FAEEDA"/>
+<text x="75" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#633806">Sacrifice</text>
+<text x="75" y="352" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#854F0B">paddock</text>
+<!-- Sacrifice active in dry months Jan-Apr, resting in wet -->
+<rect x="120" y="325" width="45" height="30" fill="#EF9F27" stroke="#F8F7F2" stroke-width="0.5"/><text x="142" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Active</text>
+<rect x="165" y="325" width="45" height="30" fill="#EF9F27" stroke="#F8F7F2" stroke-width="0.5"/><text x="187" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Active</text>
+<rect x="210" y="325" width="45" height="30" fill="#EF9F27" stroke="#F8F7F2" stroke-width="0.5"/><text x="232" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Active</text>
+<rect x="255" y="325" width="45" height="30" fill="#EF9F27" stroke="#F8F7F2" stroke-width="0.5"/><text x="277" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="white">Active</text>
+<rect x="300" y="325" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="322" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Recover</text>
+<rect x="345" y="325" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="367" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Recover</text>
+<rect x="390" y="325" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="412" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Recover</text>
+<rect x="435" y="325" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="457" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Recover</text>
+<rect x="480" y="325" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="502" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Recover</text>
+<rect x="525" y="325" width="45" height="30" fill="#D5F0E8" stroke="#F8F7F2" stroke-width="0.5"/><text x="547" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#0F6E56">Recover</text>
+<rect x="570" y="325" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="592" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Prep dry</text>
+<rect x="615" y="325" width="45" height="30" fill="#F5E4C0" stroke="#F8F7F2" stroke-width="0.5"/><text x="637" y="344" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#888780">Prep dry</text>
+
+<!-- Outer grid border -->
+<rect x="120" y="85" width="540" height="270" fill="none" stroke="#B4B2A9" stroke-width="1"/>
+
+<!-- Stocking density row -->
+<rect x="30" y="360" width="630" height="28" rx="4" fill="#F0EEE8" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="75" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#5F5E5A">Stock density</text>
+<text x="210" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#854F0B">Low · 40–50% utilisation</text>
+<text x="345" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">Transitioning</text>
+<text x="480" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#085041">High · 50% utilisation per pass</text>
+<text x="615" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">Reduce stock</text>
+
+<!-- Rest period annotation bar -->
+<rect x="30" y="394" width="630" height="24" rx="4" fill="#E6F1FB" stroke="#378ADD" stroke-width="0.5"/>
+<text x="75" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#185FA5">Rest period</text>
+<text x="210" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">45–60 days dry season</text>
+<text x="345" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">35–45 days transition</text>
+<text x="480" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">21–28 days growing season</text>
+<text x="615" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#185FA5">35–45 days</text>
+
+<!-- Legend -->
+<rect x="30" y="424" width="12" height="10" rx="2" fill="#1D9E75"/>
+<text x="46" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Grazing · wet season</text>
+<rect x="150" y="424" width="12" height="10" rx="2" fill="#5DCAA5"/>
+<text x="166" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Grazing · transition</text>
+<rect x="264" y="424" width="12" height="10" rx="2" fill="#FAC775"/>
+<text x="280" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Grazing · dry season</text>
+<rect x="378" y="424" width="12" height="10" rx="2" fill="#D5F0E8" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="394" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Resting · recovering</text>
+<rect x="494" y="424" width="12" height="10" rx="2" fill="#F5E4C0" stroke="#888780" stroke-width="0.5"/>
+<text x="510" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Resting · dry / dormant</text>
+<rect x="620" y="424" width="12" height="10" rx="2" fill="#EF9F27"/>
+<text x="636" y="433" font-family="system-ui, sans-serif" font-size="9" fill="#2C2C2A">Sacrifice</text>
+
+<text x="340" y="453" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Figure F-08 · Calendar shows one representative annual cycle · trigger for moving cattle is always forage height (25–35 cm entry, ~15 cm exit), not calendar date</text>
+<text x="340" y="467" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Sonora adaptation: wet season Jul–Sep only (3 months) · dry season Oct–Jun · minimum 10 paddocks recommended for semi-arid rangeland</text>
+</svg>

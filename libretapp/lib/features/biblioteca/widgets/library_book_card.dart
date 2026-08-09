@@ -1,20 +1,29 @@
-/// features > biblioteca > widgets > library_category_card — library category or item card.
+/// features > biblioteca > widgets > library_book_card — card for a subject
+/// book in the library catalog (the "book of books" top-level grouping).
 library;
 
 import 'package:flutter/material.dart';
-import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
-class LibraryCategoryCard extends StatelessWidget {
-  const LibraryCategoryCard({
-    required this.category,
-    required this.itemCount,
-    this.onTap,
-    super.key,
-  });
+const _bookIcons = <String, IconData>{
+  'agriculture': Icons.agriculture_outlined,
+  'bovinos': Icons.cruelty_free_outlined,
+  'caprinos': Icons.terrain_outlined,
+  'equinos': Icons.directions_walk,
+  'mascotas': Icons.favorite_outline,
+  'suelos': Icons.landscape_outlined,
+  'ovinos': Icons.grass_outlined,
+};
 
-  final LibraryCategory category;
-  final int itemCount;
+extension LibraryManifestBookIcon on LibraryManifestBook {
+  IconData get icon => _bookIcons[bookId] ?? Icons.menu_book_outlined;
+}
+
+class LibraryBookCard extends StatelessWidget {
+  const LibraryBookCard({required this.book, this.onTap, super.key});
+
+  final LibraryManifestBook book;
   final VoidCallback? onTap;
 
   @override
@@ -36,6 +45,7 @@ class LibraryCategoryCard extends StatelessWidget {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
@@ -43,7 +53,7 @@ class LibraryCategoryCard extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppRadii.sm),
                 ),
-                child: Icon(category.icon, color: AppColors.primary),
+                child: Icon(book.icon, color: AppColors.primary),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
@@ -51,14 +61,26 @@ class LibraryCategoryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      category.label,
+                      book.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      '$itemCount artículo${itemCount == 1 ? '' : 's'}',
-                      style: theme.textTheme.bodySmall,
+                      book.subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${book.mainChapters} capítulo${book.mainChapters == 1 ? '' : 's'}',
+                      style: theme.textTheme.labelSmall,
                     ),
                   ],
                 ),
@@ -66,42 +88,6 @@ class LibraryCategoryCard extends StatelessWidget {
               const Icon(Icons.chevron_right),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class LibraryItemCard extends StatelessWidget {
-  const LibraryItemCard({
-    required this.item,
-    this.onTap,
-    super.key,
-  });
-
-  final LibraryItem item;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(item.category.icon, color: AppColors.primary),
-        title: Text(item.title),
-        subtitle: Text(item.summary, maxLines: 2, overflow: TextOverflow.ellipsis),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (item.isPremium)
-              const Padding(
-                padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.star, size: 16, color: AppColors.amber),
-              ),
-            if (item.contentType == LibraryContentType.pdf)
-              const Icon(Icons.picture_as_pdf_outlined, size: 18),
-          ],
         ),
       ),
     );

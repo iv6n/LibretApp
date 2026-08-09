@@ -18,7 +18,8 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
-import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/book_content.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
 import 'package:libretapp/features/biblioteca/data/library_repository.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,14 +102,15 @@ class _FakeFinanceSummaryService implements FinanceSummaryService {
 
 class _FakeLibraryRepository implements LibraryRepository {
   @override
-  Future<List<LibraryItem>> byCategory(LibraryCategory category) async =>
-      const [];
+  Future<List<LibraryManifestBook>> getAll() async => const [];
 
   @override
-  Future<List<LibraryItem>> getAll() async => const [];
+  Future<List<LibraryManifestBook>> search(String query) async => const [];
 
   @override
-  Future<List<LibraryItem>> search(String query) async => const [];
+  Future<BookContent> loadBookContent(LibraryManifestBook book) {
+    throw UnimplementedError('not exercised by the app-boot smoke test');
+  }
 }
 
 void main() {

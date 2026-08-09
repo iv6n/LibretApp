@@ -47,6 +47,8 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
+import 'package:libretapp/features/agenda/domain/operational_planning_service.dart';
 import 'package:libretapp/features/agenda/data/workforce_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_workforce_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
@@ -279,6 +281,7 @@ void _registerUbicaciones(SharedPreferences sharedPreferences) {
 
 void _registerAgenda() {
   locator
+    ..registerLazySingleton<AgendaRefreshSignal>(AgendaRefreshSignal.new)
     ..registerLazySingleton<AgendaRepository>(
       () => IsarAgendaRepository(
         locator<IsarDatabase>(),
@@ -296,6 +299,13 @@ void _registerAgenda() {
         reproductionRepo: locator<ReproductionRecordRepository>(),
         careRepo: locator<CareRepository>(),
         careCalendarService: locator<CareCalendarService>(),
+        locationRepository: locator<LocationRepository>(),
+        refreshSignal: locator<AgendaRefreshSignal>(),
+      ),
+    )
+    ..registerLazySingleton<OperationalPlanningService>(
+      () => OperationalPlanningService(
+        agendaRepository: locator<AgendaRepository>(),
       ),
     );
 }
@@ -403,7 +413,7 @@ void _registerInicioPerfilReportes() {
     ..registerLazySingleton<DashboardConfigRepository>(
       () => DashboardConfigRepository(locator<SharedPrefsService>()),
     )
-    ..registerLazySingleton<LibraryRepository>(MockLibraryRepository.new)
+    ..registerLazySingleton<LibraryRepository>(AssetLibraryRepository.new)
     ..registerLazySingleton<ReportSummaryService>(
       () => ReportSummaryService(
         animalRepository: locator<AnimalRepository>(),

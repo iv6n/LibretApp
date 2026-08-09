@@ -5,7 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
 import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
-import 'package:libretapp/features/biblioteca/data/library_item.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 
 enum InicioStatus { initial, loading, loaded, refreshing, error }
@@ -31,7 +31,7 @@ class InicioState extends Equatable {
   final List<DashboardWidgetConfig> widgetConfigs;
   final List<DashboardQuickAction> quickActions;
   final FinanceSummaryDetail? financeDetail;
-  final List<LibraryItem> libraryPicks;
+  final List<LibraryManifestBook> libraryPicks;
 
   bool get isLoading =>
       status == InicioStatus.loading || status == InicioStatus.refreshing;
@@ -43,7 +43,7 @@ class InicioState extends Equatable {
     List<DashboardWidgetConfig>? widgetConfigs,
     List<DashboardQuickAction>? quickActions,
     FinanceSummaryDetail? financeDetail,
-    List<LibraryItem>? libraryPicks,
+    List<LibraryManifestBook>? libraryPicks,
   }) {
     return InicioState(
       status: status ?? this.status,

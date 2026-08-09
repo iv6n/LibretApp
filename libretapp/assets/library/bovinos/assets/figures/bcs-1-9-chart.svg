@@ -1,0 +1,246 @@
+﻿<svg width="100%" viewBox="0 0 680 560" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>F-02: BCS 1–9 Scoring Chart for Bos indicus Beef Cattle</title>
+<desc>Body Condition Scoring chart showing scores 1 through 9 for Bos indicus beef cattle, with silhouette-style illustrations and palpation landmarks for each score level. Optimal range is BCS 5–6.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect x="0" y="0" width="680" height="560" fill="#F8F7F2"/>
+
+<!-- Title -->
+<text x="340" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#2C2C2A">F-02 — Body Condition Scoring (BCS 1–9) · Bos indicus beef cattle</text>
+<text x="340" y="42" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#888780">Palpation sites: short ribs · spine (mid-back to tailhead) · hook and pin bones</text>
+
+<!-- Score band gradient bar -->
+<defs>
+  <linearGradient id="bcs-gradient" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#E24B4A"/>
+    <stop offset="25%" stop-color="#EF9F27"/>
+    <stop offset="50%" stop-color="#1D9E75"/>
+    <stop offset="75%" stop-color="#1D9E75"/>
+    <stop offset="100%" stop-color="#BA7517"/>
+  </linearGradient>
+</defs>
+<rect x="40" y="54" width="600" height="8" rx="4" fill="url(#bcs-gradient)"/>
+
+<!-- 9 score columns -->
+<!-- Col width = 600/9 = ~66.6 each, starting x=40 -->
+
+<!-- Helper macro approach: draw each score box -->
+<!-- Score 1 -->
+<rect x="40" y="68" width="64" height="420" rx="4" fill="#FCEBEB" stroke="#E24B4A" stroke-width="0.5"/>
+<text x="72" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#A32D2D">1</text>
+<text x="72" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#791F1F">Emaciated</text>
+<!-- Cattle silhouette BCS1 - very bony, angular -->
+<g transform="translate(72,165)">
+  <!-- Body - very thin angular -->
+  <ellipse cx="0" cy="0" rx="18" ry="28" fill="#F09595" stroke="#E24B4A" stroke-width="1"/>
+  <!-- Prominent ribs - multiple lines -->
+  <line x1="-14" y1="-16" x2="-6" y2="-8" stroke="#A32D2D" stroke-width="1.5"/>
+  <line x1="-14" y1="-8" x2="-6" y2="0" stroke="#A32D2D" stroke-width="1.5"/>
+  <line x1="-14" y1="0" x2="-6" y2="8" stroke="#A32D2D" stroke-width="1.5"/>
+  <line x1="-14" y1="8" x2="-6" y2="16" stroke="#A32D2D" stroke-width="1.5"/>
+  <!-- Sharp hip bones -->
+  <polygon points="-16,-24 -8,-30 0,-24" fill="#E24B4A" opacity="0.7"/>
+  <polygon points="16,-24 8,-30 0,-24" fill="#E24B4A" opacity="0.7"/>
+  <!-- Sharp spine -->
+  <polyline points="-4,-28 -2,-20 -2,-10 -2,0 -2,10 -2,20 -2,28" fill="none" stroke="#A32D2D" stroke-width="2"/>
+  <!-- Pin bones very prominent -->
+  <circle cx="-14" cy="22" r="4" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+  <circle cx="14" cy="22" r="4" fill="none" stroke="#E24B4A" stroke-width="1.5"/>
+</g>
+<text x="72" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#791F1F">Bone structure</text>
+<text x="72" y="261" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#791F1F">visible · no fat</text>
+<text x="72" y="280" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#888780">Spine</text>
+<circle cx="72" cy="290" r="3" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+<text x="72" y="308" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#888780">Ribs</text>
+<rect x="58" y="314" width="28" height="6" rx="1" fill="none" stroke="#A32D2D" stroke-width="1" stroke-dasharray="2 1"/>
+<text x="72" y="336" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#888780">Hips</text>
+<polygon points="66,342 72,338 78,342" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+<text x="72" y="368" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#A32D2D" font-weight="500">Near</text>
+<text x="72" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#A32D2D" font-weight="500">death</text>
+
+<!-- Score 2 -->
+<rect x="108" y="68" width="64" height="420" rx="4" fill="#FCEBEB" stroke="#E24B4A" stroke-width="0.5"/>
+<text x="140" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#A32D2D">2</text>
+<text x="140" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#791F1F">Very thin</text>
+<g transform="translate(140,165)">
+  <ellipse cx="0" cy="0" rx="20" ry="30" fill="#F7C1C1" stroke="#E24B4A" stroke-width="1"/>
+  <line x1="-16" y1="-12" x2="-7" y2="-5" stroke="#A32D2D" stroke-width="1.2"/>
+  <line x1="-16" y1="-4" x2="-7" y2="4" stroke="#A32D2D" stroke-width="1.2"/>
+  <line x1="-16" y1="4" x2="-7" y2="12" stroke="#A32D2D" stroke-width="1.2"/>
+  <polygon points="-14,-22 -7,-28 0,-22" fill="#E24B4A" opacity="0.5"/>
+  <polygon points="14,-22 7,-28 0,-22" fill="#E24B4A" opacity="0.5"/>
+  <polyline points="-2,-28 -2,-15 -2,0 -2,15 -2,28" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+  <circle cx="-13" cy="20" r="3.5" fill="none" stroke="#E24B4A" stroke-width="1.2"/>
+  <circle cx="13" cy="20" r="3.5" fill="none" stroke="#E24B4A" stroke-width="1.2"/>
+</g>
+<text x="140" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#791F1F">Ribs sharply</text>
+<text x="140" y="261" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#791F1F">visible · no fat</text>
+<circle cx="140" cy="290" r="3" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+<rect x="126" y="314" width="28" height="6" rx="1" fill="none" stroke="#A32D2D" stroke-width="1" stroke-dasharray="2 1"/>
+<polygon points="134,342 140,338 146,342" fill="none" stroke="#A32D2D" stroke-width="1.5"/>
+
+<!-- Score 3 -->
+<rect x="176" y="68" width="64" height="420" rx="4" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="208" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#854F0B">3</text>
+<text x="208" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#633806">Thin</text>
+<g transform="translate(208,165)">
+  <ellipse cx="0" cy="0" rx="22" ry="32" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <line x1="-16" y1="-10" x2="-6" y2="-3" stroke="#854F0B" stroke-width="1"/>
+  <line x1="-16" y1="-2" x2="-6" y2="5" stroke="#854F0B" stroke-width="1"/>
+  <line x1="-16" y1="6" x2="-6" y2="13" stroke="#854F0B" stroke-width="1"/>
+  <polygon points="-12,-18 -6,-24 0,-18" fill="#EF9F27" opacity="0.6"/>
+  <polygon points="12,-18 6,-24 0,-18" fill="#EF9F27" opacity="0.6"/>
+  <polyline points="-2,-28 -2,-14 -2,0 -2,14 -2,26" fill="none" stroke="#854F0B" stroke-width="1.2"/>
+  <circle cx="-12" cy="20" r="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <circle cx="12" cy="20" r="3" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+</g>
+<text x="208" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">Ribs visible</text>
+<text x="208" y="261" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">slight fat cover</text>
+<circle cx="208" cy="290" r="3.5" fill="#FAC775" stroke="#854F0B" stroke-width="1"/>
+<rect x="194" y="314" width="28" height="6" rx="1" fill="#FAC775" stroke="#854F0B" stroke-width="1"/>
+<polygon points="202,342 208,338 214,342" fill="#FAC775" stroke="#854F0B" stroke-width="1"/>
+
+<!-- Score 4 -->
+<rect x="244" y="68" width="64" height="420" rx="4" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="276" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#854F0B">4</text>
+<text x="276" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#633806">Borderline</text>
+<g transform="translate(276,165)">
+  <ellipse cx="0" cy="0" rx="24" ry="34" fill="#EF9F27" opacity="0.5" stroke="#BA7517" stroke-width="1"/>
+  <line x1="-16" y1="-8" x2="-5" y2="-2" stroke="#854F0B" stroke-width="0.8" opacity="0.7"/>
+  <line x1="-16" y1="0" x2="-5" y2="6" stroke="#854F0B" stroke-width="0.8" opacity="0.7"/>
+  <line x1="-16" y1="8" x2="-5" y2="14" stroke="#854F0B" stroke-width="0.8" opacity="0.5"/>
+  <polygon points="-10,-16 -5,-22 0,-16" fill="#EF9F27" opacity="0.5"/>
+  <polygon points="10,-16 5,-22 0,-16" fill="#EF9F27" opacity="0.5"/>
+  <polyline points="-1,-28 -1,-14 -1,0 -1,14 -1,26" fill="none" stroke="#854F0B" stroke-width="1"/>
+  <ellipse cx="-10" cy="20" rx="5" ry="4" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <ellipse cx="10" cy="20" rx="5" ry="4" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+</g>
+<text x="276" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">Ribs barely</text>
+<text x="276" y="261" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">visible · some fat</text>
+<circle cx="276" cy="290" r="4" fill="#FAC775" stroke="#854F0B" stroke-width="1"/>
+<rect x="262" y="314" width="28" height="7" rx="1" fill="#FAC775" stroke="#EF9F27" stroke-width="0.8"/>
+<ellipse cx="276" cy="343" rx="7" ry="5" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+
+<!-- Score 5 — OPTIMAL, highlighted -->
+<rect x="312" y="62" width="68" height="432" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="2"/>
+<rect x="312" y="62" width="68" height="20" rx="6" fill="#1D9E75"/>
+<text x="346" y="76" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">OPTIMAL</text>
+<text x="346" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#085041">5</text>
+<text x="346" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#085041">Moderate</text>
+<g transform="translate(346,168)">
+  <ellipse cx="0" cy="0" rx="26" ry="36" fill="#5DCAA5" opacity="0.5" stroke="#0F6E56" stroke-width="1.5"/>
+  <!-- No visible ribs -->
+  <ellipse cx="-2" cy="0" rx="20" ry="28" fill="#9FE1CB" opacity="0.6" stroke="none"/>
+  <polyline points="0,-30 0,-15 0,0 0,15 0,28" fill="none" stroke="#085041" stroke-width="0.8" opacity="0.5"/>
+  <ellipse cx="-10" cy="22" rx="7" ry="5" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <ellipse cx="10" cy="22" rx="7" ry="5" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+  <!-- Smooth back line -->
+  <path d="M -20,-20 Q -10,-26 0,-26 Q 10,-26 20,-20" fill="none" stroke="#0F6E56" stroke-width="1.5"/>
+</g>
+<text x="346" y="256" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#085041">Ribs not visible</text>
+<text x="346" y="267" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#085041">smooth fat cover</text>
+<circle cx="346" cy="295" r="5" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.5"/>
+<rect x="330" y="318" width="32" height="8" rx="2" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+<ellipse cx="346" cy="346" rx="9" ry="6" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+<text x="346" y="376" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#0F6E56" font-weight="500">Target for</text>
+<text x="346" y="386" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#0F6E56" font-weight="500">calving &amp; breeding</text>
+
+<!-- Score 6 — OPTIMAL too -->
+<rect x="384" y="62" width="68" height="432" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="2"/>
+<rect x="384" y="62" width="68" height="20" rx="6" fill="#1D9E75"/>
+<text x="418" y="76" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="white">OPTIMAL</text>
+<text x="418" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#085041">6</text>
+<text x="418" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#085041">Good</text>
+<g transform="translate(418,168)">
+  <ellipse cx="0" cy="0" rx="27" ry="37" fill="#5DCAA5" opacity="0.55" stroke="#0F6E56" stroke-width="1.5"/>
+  <ellipse cx="-2" cy="0" rx="22" ry="30" fill="#9FE1CB" opacity="0.7" stroke="none"/>
+  <polyline points="0,-30 0,-15 0,0 0,15 0,28" fill="none" stroke="#085041" stroke-width="0.6" opacity="0.4"/>
+  <ellipse cx="-10" cy="22" rx="8" ry="6" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.2"/>
+  <ellipse cx="10" cy="22" rx="8" ry="6" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.2"/>
+  <path d="M -22,-20 Q -10,-28 0,-28 Q 10,-28 22,-20" fill="none" stroke="#0F6E56" stroke-width="1.5"/>
+</g>
+<text x="418" y="256" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#085041">Fat soft/spongy</text>
+<text x="418" y="267" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#085041">hooks rounded</text>
+<circle cx="418" cy="295" r="6" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.5"/>
+<rect x="402" y="318" width="32" height="9" rx="2" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1"/>
+<ellipse cx="418" cy="346" rx="10" ry="7" fill="#9FE1CB" stroke="#0F6E56" stroke-width="1.2"/>
+<text x="418" y="376" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#0F6E56" font-weight="500">Upper target</text>
+<text x="418" y="386" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#0F6E56" font-weight="500">pre-calving</text>
+
+<!-- Score 7 -->
+<rect x="456" y="68" width="64" height="420" rx="4" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="488" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#854F0B">7</text>
+<text x="488" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#633806">Fat</text>
+<g transform="translate(488,165)">
+  <ellipse cx="0" cy="0" rx="29" ry="38" fill="#EF9F27" opacity="0.45" stroke="#BA7517" stroke-width="1"/>
+  <ellipse cx="0" cy="0" rx="22" ry="31" fill="#FAC775" opacity="0.7" stroke="none"/>
+  <!-- Fat deposits visible around tailhead -->
+  <ellipse cx="-4" cy="-28" rx="8" ry="6" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+  <ellipse cx="-12" cy="22" rx="9" ry="7" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+  <ellipse cx="12" cy="22" rx="9" ry="7" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+  <!-- Brisket fat -->
+  <ellipse cx="0" cy="36" rx="12" ry="5" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+</g>
+<text x="488" y="256" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">Fat deposits</text>
+<text x="488" y="267" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#633806">visible tailhead</text>
+<circle cx="488" cy="295" r="7" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+<rect x="472" y="318" width="32" height="10" rx="2" fill="#FAC775" stroke="#EF9F27" stroke-width="1"/>
+<ellipse cx="488" cy="346" rx="11" ry="8" fill="#FAC775" stroke="#EF9F27" stroke-width="1.2"/>
+
+<!-- Score 8 -->
+<rect x="524" y="68" width="64" height="420" rx="4" fill="#FAECE7" stroke="#D85A30" stroke-width="0.5"/>
+<text x="556" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#993C1D">8</text>
+<text x="556" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#712B13">Very fat</text>
+<g transform="translate(556,165)">
+  <ellipse cx="0" cy="0" rx="30" ry="40" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="0" cy="0" rx="24" ry="33" fill="#F0997B" opacity="0.6" stroke="none"/>
+  <ellipse cx="-4" cy="-30" rx="10" ry="8" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="-13" cy="22" rx="11" ry="9" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.2"/>
+  <ellipse cx="13" cy="22" rx="11" ry="9" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.2"/>
+  <ellipse cx="0" cy="38" rx="14" ry="7" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+</g>
+<text x="556" y="256" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#712B13">Ribs not</text>
+<text x="556" y="267" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#712B13">palpable</text>
+<circle cx="556" cy="295" r="8" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.2"/>
+<rect x="538" y="318" width="36" height="11" rx="2" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+<ellipse cx="556" cy="346" rx="13" ry="10" fill="#F5C4B3" stroke="#D85A30" stroke-width="1.2"/>
+
+<!-- Score 9 -->
+<rect x="592" y="68" width="46" height="420" rx="4" fill="#FAECE7" stroke="#D85A30" stroke-width="0.5"/>
+<text x="615" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#993C1D">9</text>
+<text x="615" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="500" fill="#712B13">Obese</text>
+<g transform="translate(615,165)">
+  <ellipse cx="0" cy="0" rx="19" ry="36" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="-3" cy="-28" rx="9" ry="7" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="-11" cy="22" rx="10" ry="8" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="11" cy="22" rx="10" ry="8" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <ellipse cx="0" cy="36" rx="13" ry="7" fill="#F0997B" stroke="#D85A30" stroke-width="1"/>
+  <!-- Blocky appearance indicator -->
+  <text font-size="8" fill="#712B13" text-anchor="middle" y="52">blocky</text>
+</g>
+<text x="615" y="256" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#712B13">Massive</text>
+<text x="615" y="267" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8" fill="#712B13">fat deposits</text>
+
+<!-- Palpation landmark row labels — left side -->
+<text x="28" y="295" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A" transform="rotate(-90,28,295)" text-anchor="middle">Spine</text>
+<text x="28" y="330" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A" transform="rotate(-90,28,330)" text-anchor="middle">Ribs</text>
+<text x="28" y="365" font-family="system-ui, sans-serif" font-size="9" fill="#5F5E5A" transform="rotate(-90,28,365)" text-anchor="middle">Hips</text>
+
+<!-- Horizontal dividers -->
+<line x1="40" y1="282" x2="638" y2="282" stroke="#D3D1C7" stroke-width="0.5"/>
+<line x1="40" y1="308" x2="638" y2="308" stroke="#D3D1C7" stroke-width="0.5"/>
+<line x1="40" y1="334" x2="638" y2="334" stroke="#D3D1C7" stroke-width="0.5"/>
+<line x1="40" y1="360" x2="638" y2="360" stroke="#D3D1C7" stroke-width="0.5"/>
+
+<!-- Caption -->
+<text x="340" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">Figure F-02 · BCS assessed by palpating short ribs, spine, and hook/pin bones · Score 5–6 optimal for most production stages</text>
+<text x="340" y="518" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#888780">1–5 dairy scale equivalent: BCS 5 (beef) ≈ BCS 3 (dairy) · BCS 7 (beef) ≈ BCS 4 (dairy)</text>
+
+<!-- Optimal range bracket -->
+<path d="M312 494 L312 490 L452 490 L452 494" fill="none" stroke="#0F6E56" stroke-width="1.5"/>
+<text x="382" y="488" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#0F6E56">Optimal range</text>
+</svg>
