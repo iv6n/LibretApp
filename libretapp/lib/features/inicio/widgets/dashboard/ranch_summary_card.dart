@@ -43,7 +43,6 @@ class RanchSummaryCard extends StatelessWidget {
                     'Resumen del rancho',
                     style: tt.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF174332),
                     ),
                   ),
                 ),
@@ -100,7 +99,7 @@ class RanchSummaryCard extends StatelessWidget {
                     label: 'Ubicaciones',
                     value: '${data.totalLocations}',
                     icon: Icons.location_on_outlined,
-                    color: const Color(0xFF5A8F6B),
+                    color: AppColors.earth,
                   ),
                 ),
               ],
@@ -134,17 +133,24 @@ class _RanchKpiTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // The brand tokens are tuned against the cream surface. On the dark
+    // surface they land near 1.6:1 — the tile fill, its icon and its value
+    // all but vanish — so lift them before use.
+    final accent = isDark ? Color.lerp(color, Colors.white, 0.55)! : color;
+    final mutedText = isDark ? DarkColors.textMuted : LightColors.textMuted;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
+        color: accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
+        border: Border.all(color: accent.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 20),
+          Icon(icon, color: accent, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -153,7 +159,7 @@ class _RanchKpiTile extends StatelessWidget {
                 Text(
                   value,
                   style: tt.titleLarge?.copyWith(
-                    color: color,
+                    color: accent,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),
@@ -161,7 +167,7 @@ class _RanchKpiTile extends StatelessWidget {
                 Text(
                   label,
                   style: tt.labelSmall?.copyWith(
-                    color: const Color(0xFF455A50),
+                    color: mutedText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

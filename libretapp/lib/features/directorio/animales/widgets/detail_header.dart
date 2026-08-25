@@ -338,7 +338,10 @@ class BadgeChip extends StatelessWidget {
     super.key,
     required this.label,
     required this.color,
-    this.textColor = Colors.black,
+    // Required rather than defaulted: this chip is only ever drawn over the
+    // photo/gradient hero, where the caller knows the contrast. A black
+    // default was a trap waiting for the first caller that omitted it.
+    required this.textColor,
     this.borderColor,
   });
 

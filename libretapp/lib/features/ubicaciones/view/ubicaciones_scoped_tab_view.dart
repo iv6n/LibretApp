@@ -277,7 +277,9 @@ class _ScopedTabHeader extends StatelessWidget {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: rootLocation.status.color,
+                    color: rootLocation.status.foregroundOn(
+                      Theme.of(context).brightness,
+                    ),
                     shape: BoxShape.circle,
                   ),
                 ),

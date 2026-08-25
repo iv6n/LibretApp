@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/theme/app_theme.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 
 class InicioWeatherCard extends StatelessWidget {
@@ -44,6 +45,11 @@ class InicioWeatherCard extends StatelessWidget {
     final hour = DateTime.now().hour;
     final theme = Theme.of(context);
     final tt = theme.textTheme;
+    // The card sits on colorScheme.surface, which is near-black in dark mode;
+    // these used to be fixed near-black literals and went illegible there.
+    final muted = theme.brightness == Brightness.dark
+        ? DarkColors.textMuted
+        : LightColors.textMuted;
     final iconColor = _colorForCondition(weather.condition);
 
     return Container(
@@ -75,7 +81,6 @@ class InicioWeatherCard extends StatelessWidget {
               Text(
                 '${weather.temperature}°',
                 style: tt.headlineSmall?.copyWith(
-                  color: const Color(0xFF1F271F),
                   fontWeight: FontWeight.w900,
                   height: 1,
                 ),
@@ -87,13 +92,13 @@ class InicioWeatherCard extends StatelessWidget {
             weather.condition,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: tt.labelSmall?.copyWith(color: const Color(0xFF4F5F54)),
+            style: tt.labelSmall?.copyWith(color: muted),
           ),
           const SizedBox(height: 8),
           Text(
             'Máx. ${weather.maxTemperature}°',
             style: tt.labelSmall?.copyWith(
-              color: const Color(0xFF3F4C43),
+              color: muted,
               fontSize: 10,
             ),
           ),
@@ -102,7 +107,7 @@ class InicioWeatherCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: tt.labelSmall?.copyWith(
-              color: const Color(0xFF3F4C43),
+              color: muted,
               fontSize: 10,
             ),
           ),
@@ -110,7 +115,7 @@ class InicioWeatherCard extends StatelessWidget {
           Text(
             'Open-Meteo',
             style: tt.labelSmall?.copyWith(
-              color: const Color(0xFF6B786E),
+              color: muted,
               fontSize: 8,
             ),
           ),

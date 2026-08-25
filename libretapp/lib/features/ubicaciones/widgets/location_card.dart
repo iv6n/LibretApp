@@ -784,10 +784,11 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: status.backgroundColor,
+        color: status.backgroundOn(brightness),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -795,7 +796,7 @@ class _StatusPill extends StatelessWidget {
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
-          color: status.color,
+          color: status.foregroundOn(brightness),
         ),
       ),
     );

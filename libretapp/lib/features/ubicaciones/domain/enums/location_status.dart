@@ -34,39 +34,37 @@ extension LocationStatusX on LocationStatus {
     }
   }
 
-  Color get color {
+  /// Icon and label colour for this status on a surface of [brightness].
+  ///
+  /// Brightness-aware because the light values are saturated mid-tones chosen
+  /// against cream; on the dark surface they sit at 1.3-2.1:1 and are
+  /// unreadable. Every value here clears 3:1 against its own surface.
+  Color foregroundOn(Brightness brightness) {
+    final dark = brightness == Brightness.dark;
     switch (this) {
       case LocationStatus.available:
-        return const Color(0xFF2E7D32); // green
+        return dark ? const Color(0xFF7FC98A) : const Color(0xFF2E7D32);
       case LocationStatus.inUse:
-        return const Color(0xFF1565C0); // blue
+        return dark ? const Color(0xFF79B8F0) : const Color(0xFF1565C0);
       case LocationStatus.resting:
-        return const Color(0xFFE65100); // orange
+        return dark ? const Color(0xFFF0A868) : const Color(0xFFE65100);
       case LocationStatus.closed:
-        return const Color(0xFFC62828); // red
+        return dark ? const Color(0xFFF08A80) : const Color(0xFFC62828);
       case LocationStatus.inPreparation:
-        return const Color(0xFF6A1B9A); // purple
+        return dark ? const Color(0xFFC89AE0) : const Color(0xFF6A1B9A);
       case LocationStatus.abandoned:
-        return const Color(0xFF757575); // grey
+        return dark ? const Color(0xFFA8B4B0) : const Color(0xFF757575);
     }
   }
 
-  Color get backgroundColor {
-    switch (this) {
-      case LocationStatus.available:
-        return const Color(0xFFE8F5E9);
-      case LocationStatus.inUse:
-        return const Color(0xFFE3F2FD);
-      case LocationStatus.resting:
-        return const Color(0xFFFFF3E0);
-      case LocationStatus.closed:
-        return const Color(0xFFFFEBEE);
-      case LocationStatus.inPreparation:
-        return const Color(0xFFF3E5F5);
-      case LocationStatus.abandoned:
-        return const Color(0xFFF5F5F5);
-    }
-  }
+  /// Chip fill for this status on a surface of [brightness].
+  ///
+  /// Derived as a wash of [foregroundOn] rather than a fixed pastel: the old
+  /// fixed values were light pastels with no dark variant, so a status chip
+  /// rendered as a near-white block on the dark surface.
+  Color backgroundOn(Brightness brightness) => foregroundOn(
+    brightness,
+  ).withValues(alpha: brightness == Brightness.dark ? 0.18 : 0.14);
 
   /// Mapping from old Spanish Isar-stored enum names to new English names.
   /// Used exclusively by [LocationEnumMigrationService].
