@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 /// Configuration for a single bottom-navigation item.
 class AppNavItemConfig {
@@ -28,8 +29,8 @@ class AppBottomNavBar extends StatelessWidget {
     this.barHorizontalPadding = 10,
     this.barBottomGap = 10,
     this.centerGapWidth = 56,
-    this.backgroundColor = Colors.white,
-    this.shadowColor = const Color(0x24000000),
+    required this.backgroundColor,
+    required this.shadowColor,
   });
 
   final List<AppNavItemConfig> items;
@@ -46,7 +47,12 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
+    final chrome = Theme.of(context).extension<ShellChromeTheme>();
+    final selected =
+        chrome?.navSelectedItem ?? Theme.of(context).colorScheme.primary;
+    final unselected =
+        chrome?.navUnselectedItem ??
+        Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: EdgeInsets.only(bottom: barBottomGap),
@@ -74,7 +80,7 @@ class AppBottomNavBar extends StatelessWidget {
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
-                    children: _buildNavItems(accent),
+                    children: _buildNavItems(selected, unselected),
                   ),
                 ),
               ),
@@ -86,7 +92,7 @@ class AppBottomNavBar extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildNavItems(Color accent) {
+  List<Widget> _buildNavItems(Color selected, Color unselected) {
     final widgets = <Widget>[];
     for (final item in items) {
       if (item.index == centerIndex) {
@@ -99,7 +105,8 @@ class AppBottomNavBar extends StatelessWidget {
             icon: item.icon,
             label: item.label,
             isSelected: selectedIndex == item.index,
-            accent: accent,
+            selectedColor: selected,
+            unselectedColor: unselected,
             onTap: () => onItemSelected(item.index),
           ),
         ),
@@ -114,20 +121,21 @@ class _NavButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.isSelected,
-    required this.accent,
+    required this.selectedColor,
+    required this.unselectedColor,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
-  final Color accent;
+  final Color selectedColor;
+  final Color unselectedColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = isSelected ? accent : Colors.grey.shade400;
-    final textColor = isSelected ? accent : Colors.grey.shade500;
+    final itemColor = isSelected ? selectedColor : unselectedColor;
 
     return InkWell(
       onTap: onTap,
@@ -137,7 +145,7 @@ class _NavButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: iconColor, size: 22),
+            Icon(icon, color: itemColor, size: 22),
             const SizedBox(height: 1),
             Text(
               label,
@@ -147,7 +155,7 @@ class _NavButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: isSelected ? 9 : 8,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: textColor,
+                color: itemColor,
               ),
             ),
             const SizedBox(height: 4),
@@ -155,7 +163,7 @@ class _NavButton extends StatelessWidget {
               height: 2,
               width: 18,
               decoration: BoxDecoration(
-                color: isSelected ? accent : Colors.transparent,
+                color: isSelected ? selectedColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(99),
               ),
             ),
