@@ -348,5 +348,8 @@
   "recordDeleteUndone": "Record restored",
   "recordRestoredSyncWarning": "Record restored; Agenda could not be synchronized",
   "actionUndo": "Undo",
-  "actionEdit": "Correct"
+  "actionEdit": "Correct",
+  "mediaTakePhoto": "Take photo",
+  "mediaChooseGallery": "Choose from gallery",
+  "mediaSaveError": "The image could not be saved"
 }

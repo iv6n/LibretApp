@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/media/image_source_picker.dart';
+import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
@@ -22,7 +24,7 @@ import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 
 class AgendaTaskDetailPage extends StatefulWidget {
   const AgendaTaskDetailPage({super.key, required this.group});
@@ -314,53 +316,38 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
   }
 
   Future<void> _addEvidence() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      useRootNavigator: true,
-      builder: (sheetContext) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Tomar foto'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Elegir de galería'),
-              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
+    final source = await showImageSourcePicker(context);
     if (source == null) return;
 
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      imageQuality: 82,
-      maxWidth: 2048,
-    );
-    if (picked == null) return;
-
-    final now = DateTime.now();
-    final documents = await getApplicationDocumentsDirectory();
-    final evidenceDir = Directory('${documents.path}/agenda_evidence');
-    await evidenceDir.create(recursive: true);
-    final extension = picked.path.contains('.')
-        ? picked.path.substring(picked.path.lastIndexOf('.'))
-        : '.jpg';
-    final saved = await File(picked.path).copy(
-      '${evidenceDir.path}/${_entry.id}-${now.microsecondsSinceEpoch}$extension',
-    );
+    String savedPath;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 82,
+        maxWidth: 2048,
+      );
+      if (picked == null) return;
+      savedPath = await locator<MediaStore>().persist(
+        picked,
+        MediaBucket.agenda,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalizations.of(context).mediaSaveError)),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
 
+    final now = DateTime.now();
     final updated = _entry.copyWith(
       evidence: [
         ..._entry.evidence,
         AgendaEvidence(
           id: 'evidence-${now.microsecondsSinceEpoch}',
-          path: saved.path,
+          path: savedPath,
           createdAt: now,
         ),
       ],

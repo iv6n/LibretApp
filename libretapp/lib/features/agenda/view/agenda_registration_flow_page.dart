@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/media/image_source_picker.dart';
+import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/domain/agenda_realize_strategy.dart';
 import 'package:libretapp/features/agenda/domain/agenda_registration.dart';
@@ -18,6 +20,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/theme.dart';
 
 /// Arguments passed to the root overlay route used by the Agenda register
@@ -1136,9 +1139,26 @@ class _AgendaRegistrationFlowPageState
   }
 
   Future<void> _pickEvidence() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image != null && mounted) {
-      setState(() => _evidencePaths = [..._evidencePaths, image.path]);
+    final source = await showImageSourcePicker(context);
+    if (source == null || !mounted) return;
+    try {
+      final image = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 82,
+        maxWidth: 2048,
+      );
+      if (image == null) return;
+      final savedPath = await locator<MediaStore>().persist(
+        image,
+        MediaBucket.agenda,
+      );
+      if (!mounted) return;
+      setState(() => _evidencePaths = [..._evidencePaths, savedPath]);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).mediaSaveError)),
+      );
     }
   }
 

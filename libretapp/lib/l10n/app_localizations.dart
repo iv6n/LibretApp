@@ -1927,6 +1927,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Corregir'**
   String get actionEdit;
+
+  /// No description provided for @mediaTakePhoto.
+  ///
+  /// In es, this message translates to:
+  /// **'Tomar foto'**
+  String get mediaTakePhoto;
+
+  /// No description provided for @mediaChooseGallery.
+  ///
+  /// In es, this message translates to:
+  /// **'Elegir de galería'**
+  String get mediaChooseGallery;
+
+  /// No description provided for @mediaSaveError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo guardar la imagen'**
+  String get mediaSaveError;
 }
 
 class _AppLocalizationsDelegate

@@ -19,6 +19,7 @@ import 'package:libretapp/core/backup/supabase_cloud_backup_repository.dart';
 import 'package:libretapp/core/backup/supabase_config.dart';
 import 'package:libretapp/core/backup/unavailable_cloud_backup_repository.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
+import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
 import 'package:libretapp/core/security/services/auth_service.dart';
@@ -150,6 +151,7 @@ void _registerInfrastructure(
     ..registerSingleton<SharedPrefsService>(
       SharedPrefsService(sharedPreferences),
     )
+    ..registerLazySingleton<MediaStore>(MediaStore.new)
     ..registerLazySingleton<ThemeRepository>(
       () => ThemeRepository(locator<SharedPrefsService>()),
     );

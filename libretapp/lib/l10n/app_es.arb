@@ -348,5 +348,8 @@
   "recordDeleteUndone": "Registro restaurado",
   "recordRestoredSyncWarning": "Registro restaurado; no se pudo sincronizar Agenda",
   "actionUndo": "Deshacer",
-  "actionEdit": "Corregir"
+  "actionEdit": "Corregir",
+  "mediaTakePhoto": "Tomar foto",
+  "mediaChooseGallery": "Elegir de galería",
+  "mediaSaveError": "No se pudo guardar la imagen"
 }

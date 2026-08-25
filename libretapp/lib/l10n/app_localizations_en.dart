@@ -1092,4 +1092,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionEdit => 'Correct';
+
+  @override
+  String get mediaTakePhoto => 'Take photo';
+
+  @override
+  String get mediaChooseGallery => 'Choose from gallery';
+
+  @override
+  String get mediaSaveError => 'The image could not be saved';
 }

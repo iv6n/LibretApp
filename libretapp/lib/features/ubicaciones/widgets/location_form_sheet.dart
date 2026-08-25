@@ -5,6 +5,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/media/image_source_picker.dart';
+import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/dynamic_attribute.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -12,6 +15,7 @@ import 'package:libretapp/features/ubicaciones/domain/enums/location_category.da
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_labels.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 
 class LocationFormSheet extends StatefulWidget {
   const LocationFormSheet({
@@ -536,16 +540,47 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   }
 
   Future<void> _pickImage() async {
+    final source = await showImageSourcePicker(context);
+    if (source == null || !mounted) return;
+
     final picker = ImagePicker();
-    final picked = await picker.pickMultiImage(imageQuality: 80);
+    final List<XFile> picked;
+    if (source == ImageSource.camera) {
+      final image = await picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 2048,
+      );
+      picked = image == null ? const [] : [image];
+    } else {
+      picked = await picker.pickMultiImage(imageQuality: 80, maxWidth: 2048);
+    }
     if (picked.isEmpty) return;
-    setState(() {
-      for (final img in picked) {
-        if (!_imagePaths.contains(img.path)) {
-          _imagePaths.add(img.path);
-        }
+
+    final savedPaths = <String>[];
+    var failed = false;
+    for (final image in picked) {
+      try {
+        savedPaths.add(
+          await locator<MediaStore>().persist(image, MediaBucket.locations),
+        );
+      } catch (_) {
+        failed = true;
       }
-    });
+    }
+    if (!mounted) return;
+    if (savedPaths.isNotEmpty) {
+      setState(() {
+        for (final path in savedPaths) {
+          if (!_imagePaths.contains(path)) _imagePaths.add(path);
+        }
+      });
+    }
+    if (failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).mediaSaveError)),
+      );
+    }
   }
 
   Widget _buildAdaptivePropertiesSection(ThemeData theme) {
