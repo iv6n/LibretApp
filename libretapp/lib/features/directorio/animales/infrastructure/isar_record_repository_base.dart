@@ -7,6 +7,7 @@ import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
 import 'package:uuid/uuid.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
 
 /// Shared CRUD skeleton for the animal "child record" repositories (health,
 /// movement, weight, cost, commercial, production, reproduction), which all
@@ -89,6 +90,10 @@ abstract class IsarRecordRepositoryBase<
       await collection(db).delete(id);
       if (animalUuid != null && animalUuid.isNotEmpty) {
         await AnimalActivityTracker.recalculate(db, animalUuid);
+        // The animal's denormalized fields were derived from this record too;
+        // without this a deleted weighing left its value on the animal and a
+        // deleted death record left the animal dead.
+        await AnimalProjectionRecalculator.recalculate(db, animalUuid);
       }
     });
   }

@@ -4,9 +4,9 @@ library;
 import 'package:isar/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
 
 class ProductionRecordRepositoryIsar
     extends IsarRecordRepositoryBase<ProductionRecord, IsarProductionRecord>
@@ -50,33 +50,9 @@ class ProductionRecordRepositoryIsar
   ) => addRecordFor(
     animalUuid,
     record,
-    onSaved: (isar, _) => _applyProductionEffects(isar, animalUuid, record),
+    onSaved: (isar, _) =>
+        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
   );
-
-  /// Copies a body-condition score onto the animal so the card and the
-  /// nutrition rules read the latest one instead of the value typed at
-  /// registration.
-  Future<void> _applyProductionEffects(
-    Isar isar,
-    String animalUuid,
-    ProductionRecord record,
-  ) async {
-    if (record.type != ProductionRecordType.bodyConditionScore) return;
-    final score = record.score;
-    if (score == null) return;
-
-    final animal = await isar.isarAnimals
-        .where()
-        .uuidEqualTo(animalUuid)
-        .findFirst();
-    if (animal == null) return;
-
-    animal
-      ..bodyConditionScore = score
-      ..lastUpdateDate = DateTime.now()
-      ..synced = false;
-    await isar.isarAnimals.put(animal);
-  }
 
   @override
   Future<void> deleteProductionRecord(String recordId) => deleteRecordById(recordId);

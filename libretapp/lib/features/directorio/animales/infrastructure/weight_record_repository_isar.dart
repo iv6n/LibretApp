@@ -5,8 +5,8 @@ import 'package:isar/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
 
 class WeightRecordRepositoryIsar
     extends IsarRecordRepositoryBase<WeightRecord, IsarWeightRecord>
@@ -68,7 +68,8 @@ class WeightRecordRepositoryIsar
   ) => addRecordFor(
     animalUuid,
     record,
-    onSaved: (isar, _) => _applyWeightEffect(isar, animalUuid, record),
+    onSaved: (isar, _) =>
+        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
   );
 
   @override
@@ -96,21 +97,4 @@ class WeightRecordRepositoryIsar
   @override
   Future<void> deleteWeightRecord(String recordId) =>
       deleteRecordById(recordId);
-
-  Future<void> _applyWeightEffect(
-    Isar isar,
-    String animalUuid,
-    WeightRecord record,
-  ) async {
-    final animal = await isar.isarAnimals
-        .where()
-        .uuidEqualTo(animalUuid)
-        .findFirst();
-    if (animal == null) return;
-    animal
-      ..weight = record.weight
-      ..lastUpdateDate = DateTime.now()
-      ..synced = false;
-    await isar.isarAnimals.put(animal);
-  }
 }

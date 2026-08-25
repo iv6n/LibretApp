@@ -4,12 +4,12 @@ library;
 import 'package:isar/isar.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 import 'package:uuid/uuid.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
 
 class HealthRecordRepositoryIsar
     extends IsarRecordRepositoryBase<HealthRecord, IsarHealthRecord>
@@ -88,7 +88,8 @@ class HealthRecordRepositoryIsar
   ) => addRecordFor(
     animalUuid,
     record,
-    onSaved: (isar, _) => _applyHealthEffects(isar, animalUuid, record),
+    onSaved: (isar, _) =>
+        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
   );
 
   @override
@@ -106,9 +107,9 @@ class HealthRecordRepositoryIsar
         .toList(growable: false);
     await db.writeTxn(() async {
       await db.isarHealthRecords.putAll(models);
-      final now = DateTime.now();
       for (final animalUuid in animalUuids) {
-        await _applyHealthEffects(db, animalUuid, record, now: now);
+        await AnimalActivityTracker.touch(db, animalUuid, DateTime.now());
+        await AnimalProjectionRecalculator.recalculate(db, animalUuid);
       }
     });
     LoggerService.i(
@@ -149,37 +150,4 @@ class HealthRecordRepositoryIsar
   @override
   Future<void> deleteHealthRecord(String recordId) =>
       deleteRecordById(recordId);
-
-  Future<void> _applyHealthEffects(
-    Isar isar,
-    String animalUuid,
-    HealthRecord record, {
-    DateTime? now,
-  }) async {
-    final animal = await isar.isarAnimals
-        .where()
-        .uuidEqualTo(animalUuid)
-        .findFirst();
-    if (animal == null) return;
-    if (record.type == HealthRecordType.vaccine) animal.vaccinated = true;
-    if (record.type == HealthRecordType.deworming) animal.dewormed = true;
-    if (record.type == HealthRecordType.vitamins) animal.hasVitamins = true;
-    if (record.type == HealthRecordType.disease) {
-      animal
-        ..underObservation = true
-        ..requiresAttention = true;
-    }
-    if (record.type == HealthRecordType.death) {
-      // Recording a death has to take the animal out of the herd, or it keeps
-      // counting in the inventory and the totals.
-      animal
-        ..status = AnimalStatus.dead.name
-        ..underObservation = false
-        ..requiresAttention = false;
-    }
-    animal
-      ..lastUpdateDate = now ?? DateTime.now()
-      ..synced = false;
-    await isar.isarAnimals.put(animal);
-  }
 }
