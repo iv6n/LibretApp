@@ -175,6 +175,12 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               onTap: () => context.push(AppRoutes.exportar),
             ),
             ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('Finanzas'),
+              subtitle: const Text('Ingresos, gastos y balance del rancho.'),
+              onTap: () => context.push(AppRoutes.finanzas),
+            ),
+            ListTile(
               leading: const Icon(Icons.upload_outlined),
               title: const Text('Importar animales desde Excel'),
               subtitle: const Text(
@@ -670,16 +676,16 @@ class _RegionSettingsSheetState extends State<_RegionSettingsSheet> {
               decoration: const InputDecoration(labelText: 'Estado'),
               items: catalog.states
                   .map(
-                    (s) =>
-                        DropdownMenuItem(value: s.id, child: Text(s.name)),
+                    (s) => DropdownMenuItem(value: s.id, child: Text(s.name)),
                   )
                   .toList(growable: false),
               onChanged: (value) {
                 if (value == null) return;
                 setState(() {
                   _stateId = value;
-                  final available = _availableProductionSettings(catalog)
-                      .map((s) => s.id);
+                  final available = _availableProductionSettings(
+                    catalog,
+                  ).map((s) => s.id);
                   if (!available.contains(_productionSettingId)) {
                     _productionSettingId = 'general';
                   }
@@ -694,8 +700,7 @@ class _RegionSettingsSheetState extends State<_RegionSettingsSheet> {
               ),
               items: _availableProductionSettings(catalog)
                   .map(
-                    (s) =>
-                        DropdownMenuItem(value: s.id, child: Text(s.name)),
+                    (s) => DropdownMenuItem(value: s.id, child: Text(s.name)),
                   )
                   .toList(growable: false),
               onChanged: (value) {

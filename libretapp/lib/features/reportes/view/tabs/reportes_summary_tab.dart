@@ -248,10 +248,8 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
   }
 
   Widget _activitySection(ReportSummary summary) {
-    final items = [
-      ...summary.recentMovements,
-      ...summary.recentRecords,
-    ]..sort((a, b) => b.date.compareTo(a.date));
+    final items = [...summary.recentMovements, ...summary.recentRecords]
+      ..sort((a, b) => b.date.compareTo(a.date));
 
     return ReportSectionCard(
       title: 'Actividad reciente',
@@ -274,6 +272,17 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
         childAspectRatio: 1.15,
         children: [
           ReportCard(
+            icon: ReportType.financial.icon,
+            title: ReportType.financial.label,
+            onTap: () => context.push(AppRoutes.finanzas),
+          ),
+          ReportCard(
+            icon: ReportType.pdfExport.icon,
+            title: 'Exportar datos',
+            subtitle: 'Excel / respaldo',
+            onTap: () => context.push(AppRoutes.exportar),
+          ),
+          ReportCard(
             icon: ReportType.sanitary.icon,
             title: ReportType.sanitary.label,
             comingSoon: true,
@@ -284,17 +293,6 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
             title: ReportType.reproductive.label,
             comingSoon: true,
             onTap: () => _comingSoon(context),
-          ),
-          ReportCard(
-            icon: ReportType.financial.icon,
-            title: ReportType.financial.label,
-            onTap: () => context.push(AppRoutes.finanzas),
-          ),
-          ReportCard(
-            icon: ReportType.pdfExport.icon,
-            title: 'Exportar datos',
-            subtitle: 'Excel / respaldo',
-            onTap: () => context.push(AppRoutes.exportar),
           ),
         ],
       ),

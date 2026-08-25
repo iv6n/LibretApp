@@ -325,12 +325,7 @@ class _AppShellState extends State<AppShell>
   bool get _canMutateShell => mounted && _treeActive;
 
   void _onCentralTap(BuildContext context) {
-    final isHome = widget.navigationShell.currentIndex == 2;
-    if (isHome) {
-      context.push(AppRoutes.registro);
-    } else {
-      widget.navigationShell.goBranch(2, initialLocation: true);
-    }
+    context.push(AppRoutes.registro);
   }
 
   double _bodyBottomInset(BuildContext context) {
