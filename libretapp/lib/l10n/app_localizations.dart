@@ -1898,11 +1898,23 @@ abstract class AppLocalizations {
   /// **'Registro eliminado'**
   String get recordDeleted;
 
+  /// No description provided for @recordDeletedSyncWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro eliminado; no se pudo sincronizar Agenda'**
+  String get recordDeletedSyncWarning;
+
   /// No description provided for @recordDeleteUndone.
   ///
   /// In es, this message translates to:
   /// **'Registro restaurado'**
   String get recordDeleteUndone;
+
+  /// No description provided for @recordRestoredSyncWarning.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro restaurado; no se pudo sincronizar Agenda'**
+  String get recordRestoredSyncWarning;
 
   /// No description provided for @actionUndo.
   ///

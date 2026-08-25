@@ -1083,7 +1083,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get recordDeleted => 'Registro eliminado';
 
   @override
+  String get recordDeletedSyncWarning =>
+      'Registro eliminado; no se pudo sincronizar Agenda';
+
+  @override
   String get recordDeleteUndone => 'Registro restaurado';
+
+  @override
+  String get recordRestoredSyncWarning =>
+      'Registro restaurado; no se pudo sincronizar Agenda';
 
   @override
   String get actionUndo => 'Deshacer';

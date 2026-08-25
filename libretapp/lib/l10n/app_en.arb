@@ -344,7 +344,9 @@
   "recordDeleteTitle": "Delete record",
   "recordDeleteConfirm": "Delete this record? You can undo it right after.",
   "recordDeleted": "Record deleted",
+  "recordDeletedSyncWarning": "Record deleted; Agenda could not be synchronized",
   "recordDeleteUndone": "Record restored",
+  "recordRestoredSyncWarning": "Record restored; Agenda could not be synchronized",
   "actionUndo": "Undo",
   "actionEdit": "Correct"
 }

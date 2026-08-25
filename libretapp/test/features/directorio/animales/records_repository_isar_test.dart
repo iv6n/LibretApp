@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,6 +175,26 @@ void main() {
       skip: !_canRunIsarNative(),
     );
 
+    test('deshacer restaura la misma identidad estable', () async {
+      final repo = WeightRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-weight-undo';
+      final saved = await repo.addWeightRecord(
+        uuid,
+        WeightRecord(
+          date: DateTime(2025, 5, 1),
+          weight: 410,
+          method: WeightMethod.scale,
+        ),
+      );
+
+      await repo.deleteWeightRecord(saved.id!);
+      final restored = await repo.addWeightRecord(uuid, saved);
+
+      expect(restored.id, saved.id);
+      expect(restored.recordUuid, saved.recordUuid);
+      expect(await repo.getWeightRecords(uuid), hasLength(1));
+    }, skip: !_canRunIsarNative());
+
     test('elimina el registro y deja la colección vacía', () async {
       final repo = WeightRecordRepositoryIsar(IsarDatabase());
       const uuid = 'animal-weight-del';
@@ -346,48 +366,51 @@ void main() {
   // ─── ProductionRecord ─────────────────────────────────────────────────────
 
   group('recent-activity lookups', () {
-    test('devuelven los mas recientes de todo el hato, con su animal', () async {
-      final movements = MovementRecordRepositoryIsar(IsarDatabase());
-      final health = HealthRecordRepositoryIsar(IsarDatabase());
+    test(
+      'devuelven los mas recientes de todo el hato, con su animal',
+      () async {
+        final movements = MovementRecordRepositoryIsar(IsarDatabase());
+        final health = HealthRecordRepositoryIsar(IsarDatabase());
 
-      // Three animals, interleaved dates, so "most recent" cannot be
-      // satisfied by reading one animal's records in isolation.
-      for (final (animal, day) in [
-        ('animal-recent-a', 1),
-        ('animal-recent-b', 5),
-        ('animal-recent-c', 3),
-      ]) {
-        await movements.addMovementRecord(
-          animal,
-          MovementRecord(
-            date: DateTime(2025, 7, day),
-            toLocation: 'Potrero $day',
-            reason: MovementReason.paddockRotation,
-          ),
+        // Three animals, interleaved dates, so "most recent" cannot be
+        // satisfied by reading one animal's records in isolation.
+        for (final (animal, day) in [
+          ('animal-recent-a', 1),
+          ('animal-recent-b', 5),
+          ('animal-recent-c', 3),
+        ]) {
+          await movements.addMovementRecord(
+            animal,
+            MovementRecord(
+              date: DateTime(2025, 7, day),
+              toLocation: 'Potrero $day',
+              reason: MovementReason.paddockRotation,
+            ),
+          );
+          await health.addHealthRecord(
+            animal,
+            HealthRecord(
+              date: DateTime(2025, 7, day),
+              type: HealthRecordType.vaccine,
+              product: 'Producto $day',
+            ),
+          );
+        }
+
+        final recentMovements = await movements.getRecentMovementRecords(
+          limit: 2,
         );
-        await health.addHealthRecord(
-          animal,
-          HealthRecord(
-            date: DateTime(2025, 7, day),
-            type: HealthRecordType.vaccine,
-            product: 'Producto $day',
-          ),
-        );
-      }
+        expect(recentMovements, hasLength(2));
+        expect(recentMovements.first.animalUuid, 'animal-recent-b');
+        expect(recentMovements.first.record.date, DateTime(2025, 7, 5));
+        expect(recentMovements.last.animalUuid, 'animal-recent-c');
 
-      final recentMovements = await movements.getRecentMovementRecords(
-        limit: 2,
-      );
-      expect(recentMovements, hasLength(2));
-      expect(recentMovements.first.animalUuid, 'animal-recent-b');
-      expect(recentMovements.first.record.date, DateTime(2025, 7, 5));
-      expect(recentMovements.last.animalUuid, 'animal-recent-c');
-
-      final recentHealth = await health.getRecentHealthRecords(limit: 2);
-      expect(recentHealth, hasLength(2));
-      expect(recentHealth.first.animalUuid, 'animal-recent-b');
-      expect(recentHealth.last.animalUuid, 'animal-recent-c');
-    });
+        final recentHealth = await health.getRecentHealthRecords(limit: 2);
+        expect(recentHealth, hasLength(2));
+        expect(recentHealth.first.animalUuid, 'animal-recent-b');
+        expect(recentHealth.last.animalUuid, 'animal-recent-c');
+      },
+    );
 
     test('respetan el limite pedido', () async {
       final movements = MovementRecordRepositoryIsar(IsarDatabase());

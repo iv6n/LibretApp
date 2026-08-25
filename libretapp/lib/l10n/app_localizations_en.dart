@@ -1077,7 +1077,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordDeleted => 'Record deleted';
 
   @override
+  String get recordDeletedSyncWarning =>
+      'Record deleted; Agenda could not be synchronized';
+
+  @override
   String get recordDeleteUndone => 'Record restored';
+
+  @override
+  String get recordRestoredSyncWarning =>
+      'Record restored; Agenda could not be synchronized';
 
   @override
   String get actionUndo => 'Undo';

@@ -435,7 +435,11 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
             animal: data.animal,
             data: data,
           ),
-          RecordsTab(key: const PageStorageKey('records_tab'), data: data),
+          RecordsTab(
+            key: const PageStorageKey('records_tab'),
+            data: data,
+            onChanged: _reload,
+          ),
           PedigreeTab(key: const PageStorageKey('pedigree_tab'), data: data),
           CareTab(
             key: const PageStorageKey('care_tab'),

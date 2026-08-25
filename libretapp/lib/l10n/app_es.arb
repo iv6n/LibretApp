@@ -344,7 +344,9 @@
   "recordDeleteTitle": "Eliminar registro",
   "recordDeleteConfirm": "¿Eliminar este registro? Podrás deshacerlo enseguida.",
   "recordDeleted": "Registro eliminado",
+  "recordDeletedSyncWarning": "Registro eliminado; no se pudo sincronizar Agenda",
   "recordDeleteUndone": "Registro restaurado",
+  "recordRestoredSyncWarning": "Registro restaurado; no se pudo sincronizar Agenda",
   "actionUndo": "Deshacer",
   "actionEdit": "Corregir"
 }
