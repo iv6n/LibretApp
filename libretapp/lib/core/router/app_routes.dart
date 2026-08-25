@@ -52,7 +52,6 @@ class AppRoutes {
   static const registroTratarLote = '/registro/tratar-lote';
   static const finanzas = '/finanzas';
   static const exportar = '/exportar';
-  static const perfilReporte = '/perfil/reporte/:tipo';
   static const perfilBibliotecaItem = '/perfil/biblioteca/:id';
   static const perfilBibliotecaCapitulo = '/perfil/biblioteca/:id/:chapterId';
 
@@ -97,7 +96,6 @@ class AppRoutes {
   static const nameRegistroTratarLote = 'registro_tratar_lote';
   static const nameFinanzas = 'finanzas';
   static const nameExportar = 'exportar';
-  static const namePerfilReporte = 'perfil_reporte';
   static const namePerfilBibliotecaItem = 'perfil_biblioteca_item';
   static const namePerfilBibliotecaCapitulo = 'perfil_biblioteca_capitulo';
 
@@ -147,7 +145,6 @@ class AppRoutes {
       '/directorio/ubicaciones/$uuid/editar';
   static String agendaNuevoPath() => '/agenda/nuevo';
   static String registroTratarLotePath() => '/registro/tratar-lote';
-  static String perfilReportePath(String tipo) => '/perfil/reporte/$tipo';
   static String perfilBibliotecaItemPath(String id) => '/perfil/biblioteca/$id';
   static String perfilBibliotecaCapituloPath(String id, String chapterId) =>
       '/perfil/biblioteca/$id/$chapterId';

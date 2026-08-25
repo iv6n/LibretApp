@@ -14,5 +14,4 @@ export 'quick_actions_fab.dart';
 export 'record_form_scaffold.dart';
 export 'registration_widgets.dart';
 export 'records_tab.dart';
-export 'animal_search_overlay.dart';
 export 'care_tab.dart';
