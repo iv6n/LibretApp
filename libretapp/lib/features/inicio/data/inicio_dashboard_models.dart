@@ -179,7 +179,6 @@ class InicioDashboardData extends Equatable {
     required this.totalAnimals,
     required this.totalAnimalCapacity,
     required this.attentionAnimals,
-    required this.unsyncedAnimals,
     required this.activeLotes,
     required this.totalLocations,
     required this.upcomingEventsCount,
@@ -199,7 +198,6 @@ class InicioDashboardData extends Equatable {
   final int totalAnimals;
   final int totalAnimalCapacity;
   final int attentionAnimals;
-  final int unsyncedAnimals;
   final int activeLotes;
   final int totalLocations;
   final int upcomingEventsCount;
@@ -220,7 +218,6 @@ class InicioDashboardData extends Equatable {
     totalAnimals,
     totalAnimalCapacity,
     attentionAnimals,
-    unsyncedAnimals,
     activeLotes,
     totalLocations,
     upcomingEventsCount,

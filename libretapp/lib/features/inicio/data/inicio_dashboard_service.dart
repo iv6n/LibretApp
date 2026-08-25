@@ -68,7 +68,6 @@ class InicioDashboardService {
 
     final totalAnimals = (statistics['total'] as int?) ?? animals.length;
     final attentionAnimals = (statistics['attention'] as int?) ?? 0;
-    final unsyncedAnimals = (statistics['unsynced'] as int?) ?? 0;
     final totalAnimalCapacity = locations.fold<int>(
       0,
       (sum, location) => sum + location.capacity,
@@ -161,22 +160,11 @@ class InicioDashboardService {
       );
     }
 
-    if (unsyncedAnimals > 0) {
-      alerts.add(
-        InicioAlertItem(
-          title: 'Pendientes de sincronizacion',
-          message: '$unsyncedAnimals registros aun no sincronizados.',
-          severity: InicioAlertSeverity.info,
-          targetRoute: AppRoutes.animales,
-        ),
-      );
-    }
-
     if (alerts.isEmpty) {
       alerts.add(
         const InicioAlertItem(
-          title: 'Operacion estable',
-          message: 'No se detectaron alertas criticas por ahora.',
+          title: 'Operación estable',
+          message: 'No se detectaron alertas críticas por ahora.',
           severity: InicioAlertSeverity.info,
           targetRoute: AppRoutes.inicio,
         ),
@@ -209,7 +197,7 @@ class InicioDashboardService {
       tasks.add(
         const InicioTaskItem(
           title: 'Registrar ubicaciones base',
-          message: 'Crea al menos una ubicacion para organizar movimientos.',
+          message: 'Crea al menos una ubicación para organizar movimientos.',
           targetRoute: AppRoutes.ubicaciones,
         ),
       );
@@ -219,7 +207,7 @@ class InicioDashboardService {
       tasks.add(
         const InicioTaskItem(
           title: 'Crear un lote activo',
-          message: 'Agrupa animales para gestionar campanas y recorridos.',
+          message: 'Agrupa animales para gestionar campañas y recorridos.',
           targetRoute: AppRoutes.directorio,
         ),
       );
@@ -324,7 +312,6 @@ class InicioDashboardService {
       totalAnimals: totalAnimals,
       totalAnimalCapacity: totalAnimalCapacity,
       attentionAnimals: attentionAnimals,
-      unsyncedAnimals: unsyncedAnimals,
       activeLotes: activeLotes.length,
       totalLocations: locations.length,
       upcomingEventsCount: upcomingEvents.length,

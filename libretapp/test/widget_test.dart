@@ -36,7 +36,6 @@ class _FakeInicioDashboardService implements InicioDashboardService {
       totalAnimals: 0,
       totalAnimalCapacity: 0,
       attentionAnimals: 0,
-      unsyncedAnimals: 0,
       activeLotes: 0,
       totalLocations: 0,
       upcomingEventsCount: 0,
