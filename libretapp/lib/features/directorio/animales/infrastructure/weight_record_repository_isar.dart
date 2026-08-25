@@ -7,10 +7,14 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class WeightRecordRepositoryIsar
     extends IsarRecordRepositoryBase<WeightRecord, IsarWeightRecord>
-    implements WeightRecordRepository, WeightRecordUuidLookup {
+    implements
+        WeightRecordRepository,
+        WeightRecordUuidLookup,
+        EditableRecordRepository<WeightRecord> {
   WeightRecordRepositoryIsar(super.database);
 
   @override
@@ -97,4 +101,13 @@ class WeightRecordRepositoryIsar
   @override
   Future<void> deleteWeightRecord(String recordId) =>
       deleteRecordById(recordId);
+
+  @override
+  Future<WeightRecord> updateRecord(String animalUuid, WeightRecord record) =>
+      updateRecordFor(
+        animalUuid,
+        record,
+        onSaved: (isar, _) =>
+            AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+      );
 }

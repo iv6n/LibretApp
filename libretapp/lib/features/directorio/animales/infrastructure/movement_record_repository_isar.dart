@@ -7,13 +7,15 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_movement_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class MovementRecordRepositoryIsar
     extends IsarRecordRepositoryBase<MovementRecord, IsarMovementRecord>
     implements
         MovementRecordRepository,
         MovementRecordUuidLookup,
-        MovementRecordRecentLookup {
+        MovementRecordRecentLookup,
+        EditableRecordRepository<MovementRecord> {
   MovementRecordRepositoryIsar(super.database);
 
   @override
@@ -92,4 +94,15 @@ class MovementRecordRepositoryIsar
   @override
   Future<void> deleteMovementRecord(String recordId) =>
       deleteRecordById(recordId);
+
+  @override
+  Future<MovementRecord> updateRecord(
+    String animalUuid,
+    MovementRecord record,
+  ) => updateRecordFor(
+    animalUuid,
+    record,
+    onSaved: (isar, _) =>
+        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+  );
 }

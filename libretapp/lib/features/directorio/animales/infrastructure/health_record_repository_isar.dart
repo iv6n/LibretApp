@@ -10,13 +10,15 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar_recor
 import 'package:uuid/uuid.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class HealthRecordRepositoryIsar
     extends IsarRecordRepositoryBase<HealthRecord, IsarHealthRecord>
     implements
         HealthRecordRepository,
         HealthRecordUuidLookup,
-        HealthRecordRecentLookup {
+        HealthRecordRecentLookup,
+        EditableRecordRepository<HealthRecord> {
   HealthRecordRepositoryIsar(super.database);
 
   @override
@@ -150,4 +152,13 @@ class HealthRecordRepositoryIsar
   @override
   Future<void> deleteHealthRecord(String recordId) =>
       deleteRecordById(recordId);
+
+  @override
+  Future<HealthRecord> updateRecord(String animalUuid, HealthRecord record) =>
+      updateRecordFor(
+        animalUuid,
+        record,
+        onSaved: (isar, _) =>
+            AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+      );
 }

@@ -78,6 +78,54 @@ abstract class IsarRecordRepositoryBase<
     return saved;
   }
 
+  /// Replaces the record [record] identifies, keeping its Isar id and its
+  /// stable `recordUuid`.
+  ///
+  /// The write itself is the same `put` an add does — the unique+replace index
+  /// on `recordUuid` means a put over an existing row updates it in place. What
+  /// this adds over [addRecordFor] is the guard: an update with no id, or one
+  /// whose row is gone, is a mistake, and inserting instead would leave the
+  /// breeder with two rows where they were fixing one.
+  Future<TEntity> updateRecordFor(
+    String animalUuid,
+    TEntity record, {
+    Future<void> Function(Isar isar, TIsarModel savedModel)? onSaved,
+  }) async {
+    final db = await isar;
+    final model = toIsarModel(record, animalUuid);
+
+    if (model.id == Isar.autoIncrement) {
+      throw ArgumentError.value(
+        record,
+        'record',
+        'updateRecordFor needs a record that is already stored; use '
+            'addRecordFor for a new one.',
+      );
+    }
+
+    final stored = await collection(db).get(model.id);
+    if (stored == null) {
+      throw StateError(
+        'No existe un registro con id ${model.id} para actualizar.',
+      );
+    }
+    // Keep the identity the rest of the app refers to, whatever the caller
+    // passed: agenda registrations and care cycles resolve records by uuid.
+    if (model.recordUuid.isEmpty) model.recordUuid = stored.recordUuid;
+
+    final editedAt = DateTime.now();
+    await db.writeTxn(() async {
+      final id = await collection(db).put(model);
+      assignId(model, id);
+      await AnimalActivityTracker.touch(db, animalUuid, editedAt);
+      if (onSaved != null) await onSaved(db, model);
+    });
+
+    final saved = toEntity(model);
+    LoggerService.i('Registro corregido para $animalUuid', tag: logTag);
+    return saved;
+  }
+
   Future<void> deleteRecordById(String recordId) async {
     final db = await isar;
     final id = int.tryParse(recordId);

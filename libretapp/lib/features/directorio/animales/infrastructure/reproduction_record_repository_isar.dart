@@ -7,10 +7,14 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class ReproductionRecordRepositoryIsar
     extends IsarRecordRepositoryBase<ReproductionRecord, IsarReproductionRecord>
-    implements ReproductionRecordRepository, ReproductionRecordUuidLookup {
+    implements
+        ReproductionRecordRepository,
+        ReproductionRecordUuidLookup,
+        EditableRecordRepository<ReproductionRecord> {
   ReproductionRecordRepositoryIsar(super.database);
 
   @override
@@ -160,4 +164,14 @@ class ReproductionRecordRepositoryIsar
         )
         .toList(growable: false);
   }
+
+  @override
+  Future<ReproductionRecord> updateRecord(
+    String animalUuid,
+    ReproductionRecord record,
+  ) => updateRecordFor(
+    animalUuid,
+    record,
+    onSaved: (isar, _) => _recalculateBothSides(isar, animalUuid, record),
+  );
 }

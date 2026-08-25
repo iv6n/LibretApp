@@ -7,27 +7,37 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class ProductionRecordRepositoryIsar
     extends IsarRecordRepositoryBase<ProductionRecord, IsarProductionRecord>
-    implements ProductionRecordRepository {
+    implements
+        ProductionRecordRepository,
+        EditableRecordRepository<ProductionRecord> {
   ProductionRecordRepositoryIsar(super.database);
 
   @override
   String get logTag => 'ProductionRecordRepositoryIsar';
 
   @override
-  IsarCollection<IsarProductionRecord> collection(Isar isar) => isar.isarProductionRecords;
+  IsarCollection<IsarProductionRecord> collection(Isar isar) =>
+      isar.isarProductionRecords;
 
   @override
   Future<List<IsarProductionRecord>> queryByAnimal(
     IsarCollection<IsarProductionRecord> collection,
     String animalUuid,
-  ) => collection.where().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection
+      .where()
+      .animalUuidEqualTo(animalUuid)
+      .sortByDateDesc()
+      .findAll();
 
   @override
-  IsarProductionRecord toIsarModel(ProductionRecord record, String animalUuid) =>
-      record.toIsar(animalUuid);
+  IsarProductionRecord toIsarModel(
+    ProductionRecord record,
+    String animalUuid,
+  ) => record.toIsar(animalUuid);
 
   @override
   ProductionRecord toEntity(IsarProductionRecord model) => model.toEntity();
@@ -55,5 +65,17 @@ class ProductionRecordRepositoryIsar
   );
 
   @override
-  Future<void> deleteProductionRecord(String recordId) => deleteRecordById(recordId);
+  Future<void> deleteProductionRecord(String recordId) =>
+      deleteRecordById(recordId);
+
+  @override
+  Future<ProductionRecord> updateRecord(
+    String animalUuid,
+    ProductionRecord record,
+  ) => updateRecordFor(
+    animalUuid,
+    record,
+    onSaved: (isar, _) =>
+        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+  );
 }

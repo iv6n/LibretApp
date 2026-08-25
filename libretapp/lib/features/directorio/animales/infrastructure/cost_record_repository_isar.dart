@@ -6,10 +6,11 @@ import 'package:libretapp/features/directorio/animales/domain/entities/cost_reco
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar_record_repository_base.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class CostRecordRepositoryIsar
     extends IsarRecordRepositoryBase<CostRecord, IsarCostRecord>
-    implements CostRecordRepository {
+    implements CostRecordRepository, EditableRecordRepository<CostRecord> {
   CostRecordRepositoryIsar(super.database);
 
   @override
@@ -22,7 +23,11 @@ class CostRecordRepositoryIsar
   Future<List<IsarCostRecord>> queryByAnimal(
     IsarCollection<IsarCostRecord> collection,
     String animalUuid,
-  ) => collection.where().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection
+      .where()
+      .animalUuidEqualTo(animalUuid)
+      .sortByDateDesc()
+      .findAll();
 
   @override
   IsarCostRecord toIsarModel(CostRecord record, String animalUuid) =>
@@ -39,7 +44,8 @@ class CostRecordRepositoryIsar
       'Costo guardado para $animalUuid (${saved.id})';
 
   @override
-  Future<List<CostRecord>> getCostRecords(String animalUuid) => getRecordsFor(animalUuid);
+  Future<List<CostRecord>> getCostRecords(String animalUuid) =>
+      getRecordsFor(animalUuid);
 
   @override
   Future<CostRecord> addCostRecord(String animalUuid, CostRecord record) =>
@@ -47,4 +53,8 @@ class CostRecordRepositoryIsar
 
   @override
   Future<void> deleteCostRecord(String recordId) => deleteRecordById(recordId);
+
+  @override
+  Future<CostRecord> updateRecord(String animalUuid, CostRecord record) =>
+      updateRecordFor(animalUuid, record);
 }

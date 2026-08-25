@@ -263,6 +263,79 @@ void main() {
       },
     );
   });
+  group('editing a record', () {
+    test('replaces the row in place instead of adding a second one', () async {
+      final repo = WeightRecordRepositoryIsar(IsarDatabase());
+
+      final saved = await repo.addWeightRecord(
+        _uuid,
+        WeightRecord(
+          date: DateTime(2025, 6, 10),
+          weight: 380,
+          method: WeightMethod.scale,
+        ),
+      );
+
+      // The breeder meant 350, not 380.
+      final corrected = await repo.updateRecord(
+        _uuid,
+        saved.copyWith(weight: 350),
+      );
+
+      final records = await repo.getWeightRecords(_uuid);
+      expect(records, hasLength(1), reason: 'a correction is not a new record');
+      expect(records.single.weight, 350);
+      expect(corrected.id, saved.id, reason: 'the id has to survive');
+      expect(
+        records.single.recordUuid,
+        saved.recordUuid,
+        reason: 'agenda registrations and care cycles resolve records by uuid',
+      );
+      expect((await subject()).weight, 350);
+    });
+
+    test('refuses a record that is not already stored', () async {
+      final repo = WeightRecordRepositoryIsar(IsarDatabase());
+
+      expect(
+        () => repo.updateRecord(
+          _uuid,
+          WeightRecord(
+            date: DateTime(2025, 6, 10),
+            weight: 350,
+            method: WeightMethod.scale,
+          ),
+        ),
+        throwsArgumentError,
+        reason: 'silently inserting would leave two rows where one was fixed',
+      );
+    });
+
+    test('correcting a death record to a checkup returns the animal', () async {
+      final repo = HealthRecordRepositoryIsar(IsarDatabase());
+
+      final death = await repo.addHealthRecord(
+        _uuid,
+        HealthRecord(
+          date: DateTime(2025, 3, 1),
+          type: HealthRecordType.death,
+          product: 'Muerte',
+        ),
+      );
+      expect((await subject()).status, AnimalStatus.dead);
+
+      await repo.updateRecord(
+        _uuid,
+        death.copyWith(type: HealthRecordType.checkup, product: 'Revision'),
+      );
+
+      expect(
+        (await subject()).status,
+        AnimalStatus.active,
+        reason: 'the status latch used to be one-way',
+      );
+    });
+  });
 }
 
 Future<void> _seedAnimal({String uuid = _uuid, Sex sex = Sex.female}) async {
