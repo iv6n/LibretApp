@@ -75,6 +75,9 @@ class _PagedAnimalRepository implements AnimalRepository {
   }) async => _active.skip(offset).take(limit).toList();
 
   @override
+  Future<List<AnimalEntity>> getAll() async => List<AnimalEntity>.from(_active);
+
+  @override
   Future<int> count() async => _active.length;
 
   @override
@@ -206,6 +209,69 @@ void main() {
       expect(state.herdStageCounts[LifeStage.heifer], 8);
       expect(state.herdStageCounts[LifeStage.bull], 3);
       expect(state.herdTotal, 36);
+    });
+
+    test(
+      'loads the full herd before searching, without requiring scroll',
+      () async {
+        final repository = _PagedAnimalRepository([
+          for (var i = 0; i < 20; i++)
+            _animal(uuid: 'cow-$i', lifeStage: LifeStage.cow),
+          for (var i = 20; i < 50; i++)
+            _animal(uuid: 'cow-$i', lifeStage: LifeStage.cow),
+        ]);
+        final bloc = AnimalesBloc(
+          repository,
+          animalEditService: _editService(repository),
+        );
+        addTearDown(bloc.close);
+
+        bloc.add(const LoadAnimales());
+        await _flush();
+        expect((bloc.state as AnimalesLoaded).allAnimals, hasLength(20));
+
+        bloc.add(const SearchQueryChanged('cow-49'));
+        await Future<void>.delayed(const Duration(milliseconds: 320));
+
+        final state = bloc.state as AnimalesLoaded;
+        expect(state.allAnimals, hasLength(50));
+        expect(state.visibleAnimals.map((animal) => animal.uuid), ['cow-49']);
+        expect(state.hasMore, isFalse);
+      },
+    );
+
+    test('loads the full herd before applying stage and sex filters', () async {
+      final target = _animal(
+        uuid: 'bull-male-after-first-page',
+        lifeStage: LifeStage.bull,
+      ).copyWith(sex: Sex.male);
+      final repository = _PagedAnimalRepository([
+        for (var i = 0; i < 20; i++)
+          _animal(uuid: 'cow-$i', lifeStage: LifeStage.cow),
+        target,
+      ]);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _editService(repository),
+      );
+      addTearDown(bloc.close);
+
+      bloc.add(const LoadAnimales());
+      await _flush();
+      bloc.add(
+        const SetSearchFilters(stages: {LifeStage.bull}, sexes: {Sex.male}),
+      );
+      await _flush();
+
+      var state = bloc.state as AnimalesLoaded;
+      expect(state.allAnimals, hasLength(21));
+      expect(state.visibleAnimals.map((animal) => animal.uuid), [target.uuid]);
+      expect(state.hasMore, isFalse);
+
+      bloc.add(const SetSearchFilters());
+      await _flush();
+      state = bloc.state as AnimalesLoaded;
+      expect(state.visibleAnimals, hasLength(21));
     });
 
     test('excludes animals that left the herd from the total', () async {

@@ -23,7 +23,7 @@
 ///   cost records** have no such id — `IsarRecordRepositoryBase` mints a
 ///   fresh random `recordUuid` for every insert. For these, idempotency is
 ///   "delete every existing record the previous install wrote for this demo
-///   animal, then insert the fresh set" — scoped strictly to the 40 demo
+///   animal, then insert the fresh set" — scoped strictly to the 35 demo
 ///   animal uuids, so a real user's own animals are never touched.
 /// - **Milking sessions/entries** are upserted by their `demoId(...)` uuid,
 ///   but nothing exposes "delete a session", so a full reinstall goes
@@ -551,6 +551,11 @@ class DemoScenarioService {
     // 3. Animals — upsert by uuid (update if present, save if not: a plain
     // `save()` twice would violate the unique index on `uuid`).
     final animals = buildDemoAnimals(reference: reference);
+    final removedObsolete = await _removeObsoleteDemoAnimals(
+      existing: await _animalRepository.getAllIncludingInactive(),
+      desiredUuids: animals.map((animal) => animal.uuid).toSet(),
+    );
+    counts['obsoleteAnimalsRemoved'] = removedObsolete;
     for (final animal in animals) {
       final existing = await _animalRepository.getByUuid(animal.uuid);
       if (existing == null) {
@@ -569,7 +574,7 @@ class DemoScenarioService {
     // 5. Per-animal child records with no stable id: clear this demo
     // animal's previous rows, then write the fresh set.
     await _reinstallWeights(reference, animalUuids, counts);
-    await _reinstallHealth(reference, animalUuids, counts);
+    await _reinstallHealth(reference, animals, counts);
     await _reinstallReproduction(reference, animalUuids, counts);
     await _reinstallProduction(reference, animalUuids, counts);
     await _reinstallMovements(reference, animalUuids, counts);
@@ -648,6 +653,44 @@ class DemoScenarioService {
     return profileWritten;
   }
 
+  /// Removes demo animals that belonged to an older roster but are no longer
+  /// part of the current scenario. Real animals are never candidates here.
+  /// All child records are removed before purging the animal, and surviving
+  /// animals are detached from obsolete parent references.
+  Future<int> _removeObsoleteDemoAnimals({
+    required List<AnimalEntity> existing,
+    required Set<String> desiredUuids,
+  }) async {
+    final obsolete = existing
+        .where(
+          (animal) =>
+              isDemoId(animal.uuid) && !desiredUuids.contains(animal.uuid),
+        )
+        .toList(growable: false);
+    if (obsolete.isEmpty) return 0;
+
+    final obsoleteUuids = obsolete.map((animal) => animal.uuid).toSet();
+    for (final animal in existing) {
+      if (obsoleteUuids.contains(animal.uuid)) continue;
+      final losesSire = obsoleteUuids.contains(animal.sireUuid);
+      final losesDam = obsoleteUuids.contains(animal.damUuid);
+      if (!losesSire && !losesDam) continue;
+      await _animalRepository.update(
+        animal.copyWith(
+          sireUuid: losesSire ? null : animal.sireUuid,
+          damUuid: losesDam ? null : animal.damUuid,
+        ),
+      );
+    }
+
+    for (final animal in obsolete) {
+      await _deleteAnimalRecords(animal.uuid);
+      await _careRepository.deleteAllForAnimal(animal.uuid);
+      await _animalRepository.purge(animal.uuid);
+    }
+    return obsolete.length;
+  }
+
   // ── Per-animal record reinstallation ────────────────────────────────────
 
   Future<void> _reinstallWeights(
@@ -677,15 +720,20 @@ class DemoScenarioService {
 
   Future<void> _reinstallHealth(
     DateTime reference,
-    List<String> animalUuids,
+    List<AnimalEntity> animals,
     Map<String, int> counts,
   ) async {
-    final bySlug = <String, List<dynamic>>{
-      for (final s in buildDemoHealthRecords(reference: reference))
-        demoAnimalUuid(s.animalSlug): s.records,
-    };
+    final bySlug = <String, List<dynamic>>{};
+    for (final series in buildDemoHealthRecords(
+      reference: reference,
+      animals: animals,
+    )) {
+      bySlug
+          .putIfAbsent(demoAnimalUuid(series.animalSlug), () => [])
+          .addAll(series.records);
+    }
     var written = 0;
-    for (final uuid in animalUuids) {
+    for (final uuid in animals.map((animal) => animal.uuid)) {
       final existing = await _healthRepository.getHealthRecords(uuid);
       for (final record in existing) {
         if (record.id != null) {

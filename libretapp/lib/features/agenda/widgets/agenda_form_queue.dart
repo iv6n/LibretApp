@@ -4,6 +4,8 @@
 /// taps from the pending list. Core loop is BuildContext-free and pure.
 library;
 
+import 'dart:async';
+
 /// Pushes a form for each uuid in order, stopping (without erroring) the
 /// first time a step fails [isSuccess] — i.e. the user backed out or
 /// cancelled — so already-completed steps are not rolled back. Calls
@@ -16,7 +18,7 @@ Future<List<String>> runAgendaFormQueue<T>({
   required List<String> animalUuids,
   required AgendaFormQueueStep<T> pushStep,
   required bool Function(T? result) isSuccess,
-  required void Function(String animalUuid) onStepSuccess,
+  required FutureOr<void> Function(String animalUuid) onStepSuccess,
   bool Function()? shouldContinue,
 }) async {
   final completed = <String>[];
@@ -26,7 +28,7 @@ Future<List<String>> runAgendaFormQueue<T>({
     final result = await pushStep(uuid, i, animalUuids.length);
     if (!isSuccess(result)) break;
     completed.add(uuid);
-    onStepSuccess(uuid);
+    await onStepSuccess(uuid);
   }
   return completed;
 }

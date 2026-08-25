@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart'
     hide ClearSearch;
@@ -19,6 +20,7 @@ import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/lotes_list_view.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_page.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class DirectorioView extends StatefulWidget {
   const DirectorioView({super.key});
@@ -76,9 +78,8 @@ class _DirectorioViewState extends State<DirectorioView>
     super.dispose();
   }
 
-  List<DirectorioSection> get _activeSections => _orderedSections
-      .where(_visibleSections.contains)
-      .toList(growable: false);
+  List<DirectorioSection> get _activeSections =>
+      _orderedSections.where(_visibleSections.contains).toList(growable: false);
 
   DirectorioSection get _activeSection {
     final sections = _activeSections;
@@ -275,12 +276,12 @@ class _DirectorioViewState extends State<DirectorioView>
 
     return Row(
       children: [
-        IconButton(
+        AppIconButton(
+          icon: Icons.arrow_back,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: () => _clearAnimalSelection(context),
-          icon: const Icon(Icons.arrow_back),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xxs),
         if (!state.isSearching) ...[
           Expanded(
             child: Text(
@@ -290,31 +291,24 @@ class _DirectorioViewState extends State<DirectorioView>
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
-          IconButton(
+          AppIconButton(
+            icon: Icons.search,
             tooltip: l10n.animalsSearchHint,
-            icon: const Icon(Icons.search),
             onPressed: () => bloc.add(const ToggleSearch(enabled: true)),
           ),
         ] else ...[
           Expanded(
-            child: TextField(
+            child: AppSearchBar(
               controller: _animalSearchController,
               focusNode: _animalSearchFocusNode,
-              textInputAction: TextInputAction.search,
               onChanged: (value) => bloc.add(SearchQueryChanged(value)),
-              decoration: InputDecoration(
-                hintText: l10n.animalsSearchHint,
-                isDense: true,
-                border: InputBorder.none,
-                suffixIcon: IconButton(
-                  tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    _animalSearchFocusNode.unfocus();
-                    bloc.add(const animales_event.ClearSearch());
-                  },
-                ),
-              ),
+              hintText: l10n.animalsSearchHint,
+              onClose: () {
+                _animalSearchFocusNode.unfocus();
+                bloc.add(const ToggleSearch(enabled: false));
+                bloc.add(const animales_event.ClearSearch());
+              },
+              onClear: () => bloc.add(const animales_event.ClearSearch()),
             ),
           ),
         ],
@@ -324,7 +318,6 @@ class _DirectorioViewState extends State<DirectorioView>
 
   Widget _buildDirectoryMenu(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final outlineColor = Theme.of(context).colorScheme.outlineVariant;
 
     return MenuAnchor(
       menuChildren: [
@@ -344,8 +337,9 @@ class _DirectorioViewState extends State<DirectorioView>
         ),
       ],
       builder: (context, controller, child) {
-        return IconButton(
-          icon: const Icon(Icons.more_vert),
+        return AppIconButton(
+          icon: Icons.more_vert,
+          tooltip: 'Más opciones del directorio',
           onPressed: () {
             if (controller.isOpen) {
               controller.close();
@@ -353,9 +347,6 @@ class _DirectorioViewState extends State<DirectorioView>
               controller.open();
             }
           },
-          style: IconButton.styleFrom(
-            shape: CircleBorder(side: BorderSide(color: outlineColor)),
-          ),
         );
       },
     );
@@ -372,15 +363,17 @@ class _DirectorioViewState extends State<DirectorioView>
     return BlocBuilder<DirectorioBloc, DirectorioState>(
       builder: (context, state) {
         if (state is DirectorioLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: AppLoadingIndicator());
         }
 
         if (state is DirectorioError) {
           return Scaffold(
             appBar: AppBar(title: const Text('Directorio')),
-            body: Center(child: Text('Error: ${state.message}')),
+            body: AppEmptyState(
+              icon: Icons.error_outline,
+              title: 'No se pudo cargar el directorio',
+              message: state.message,
+            ),
           );
         }
 
@@ -408,70 +401,30 @@ class _DirectorioViewState extends State<DirectorioView>
                       title: isAnimalSelectionMode
                           ? _buildAnimalSelectionTitle(context, animalesLoaded!)
                           : _isSearching
-                          ? TextField(
-                              focusNode: _searchFocusNode,
-                              controller: _searchController,
-                              onChanged: _onSearchChanged,
-                              decoration: InputDecoration(
-                                hintText: 'Buscar...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade400,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: _toggleSearch,
-                                ),
+                          ? SizedBox(
+                              width: MediaQuery.sizeOf(
+                                context,
+                              ).width.clamp(220.0, 420.0),
+                              child: AppSearchBar(
+                                focusNode: _searchFocusNode,
+                                controller: _searchController,
+                                onChanged: _onSearchChanged,
+                                hintText: 'Buscar en el directorio',
+                                onClose: _toggleSearch,
                               ),
-                              style: const TextStyle(color: Colors.white),
                             )
                           : Text(
                               _directoryTitle(),
-                              style: const TextStyle(
-                                fontSize: 23,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
                       actions: isAnimalSelectionMode
                           ? const []
                           : !_isSearching
                           ? [
-                              IconButton(
-                                icon: const Icon(Icons.search),
+                              AppIconButton(
+                                icon: Icons.search,
+                                tooltip: 'Buscar en el directorio',
                                 onPressed: _toggleSearch,
-                                style: IconButton.styleFrom(
-                                  shape: CircleBorder(
-                                    side: BorderSide(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outlineVariant,
-                                    ),
-                                  ),
-                                ),
                               ),
                               _buildDirectoryMenu(context),
                             ]
@@ -733,7 +686,12 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (results.isEmpty) {
-      return const Center(child: Text('No se encontraron resultados'));
+      return const AppEmptyState(
+        compact: true,
+        icon: Icons.search_off,
+        title: 'No se encontraron resultados',
+        message: 'Prueba con otro término de búsqueda.',
+      );
     }
 
     return ListView.builder(
@@ -758,15 +716,15 @@ Widget buildDirectorioTypeIcon(CombinedSearchType type) {
   switch (type) {
     case CombinedSearchType.animal:
       icon = Icons.pets;
-      color = Colors.blue;
+      color = AppColors.secondary;
       break;
     case CombinedSearchType.lote:
       icon = Icons.agriculture;
-      color = Colors.green;
+      color = AppColors.success;
       break;
     case CombinedSearchType.ubicacion:
       icon = Icons.location_on;
-      color = Colors.orange;
+      color = AppColors.warning;
       break;
   }
 

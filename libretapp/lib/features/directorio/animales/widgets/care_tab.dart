@@ -9,6 +9,9 @@ import 'package:libretapp/features/directorio/animales/domain/entities/scheduled
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/core/di/injection.dart';
 
 /// What's due for this animal and what's already been done, driven by the
 /// same [CareRule]s the Agenda reads to build its automatic reminders — this
@@ -40,10 +43,23 @@ class _CareTabState extends State<CareTab> {
       ..sort((a, b) => a.dueAt.compareTo(b.dueAt));
     final records = [...data.careRecords]
       ..sort((a, b) => b.performedAt.compareTo(a.performedAt));
+    final operational = data.agendaPending
+        .where((entry) => entry.actionKind != 'recordCare')
+        .toList(growable: false);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
+        const _SectionTitle(
+          icon: Icons.work_outline,
+          label: 'Próximos trabajos',
+        ),
+        const SizedBox(height: 8),
+        if (operational.isEmpty)
+          const _EmptyHint(message: 'Sin trabajos operativos programados.')
+        else
+          ...operational.map(_OperationalTile.new),
+        const SizedBox(height: 20),
         const _SectionTitle(
           icon: Icons.event_available_outlined,
           label: 'Pendientes',
@@ -108,10 +124,38 @@ class _CareTabState extends State<CareTab> {
       await CareCalendarService(
         widget.careRepo,
       ).regenerateFor(widget.data.animal, now: DateTime.now());
+      await locator<AgendaReminderSyncService>().sync();
       widget.onChanged();
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+}
+
+class _OperationalTile extends StatelessWidget {
+  const _OperationalTile(this.entry);
+
+  final AgendaEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final overdue = entry.fecha.isBefore(DateTime.now());
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(
+          overdue ? Icons.warning_amber_rounded : Icons.event_available,
+          color: overdue
+              ? Theme.of(context).colorScheme.error
+              : Theme.of(context).colorScheme.primary,
+        ),
+        title: Text(entry.titulo),
+        subtitle: Text(
+          '${DateFormat('dd/MM/yyyy').format(entry.fecha)} · ${entry.tipo}',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+      ),
+    );
   }
 }
 

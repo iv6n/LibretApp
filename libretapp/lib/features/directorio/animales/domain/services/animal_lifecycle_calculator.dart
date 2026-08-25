@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_taxonomy.dart';
@@ -15,6 +16,7 @@ class AnimalLifecycleCalculator {
     required DateTime birthDate,
     required Species species,
     required Sex sex,
+    Category? category,
     LifeStage? currentLifeStage,
     DateTime? now,
   }) {
@@ -23,6 +25,7 @@ class AnimalLifecycleCalculator {
     final resolvedLifeStage = _resolveLifeStage(
       species: species,
       sex: sex,
+      category: category,
       ageMonths: ageMonths,
       fallback: currentLifeStage,
     );
@@ -54,12 +57,14 @@ class AnimalLifecycleCalculator {
   static LifeStage _resolveLifeStage({
     required Species species,
     required Sex sex,
+    Category? category,
     required int ageMonths,
     LifeStage? fallback,
   }) {
     return AnimalTaxonomy.resolveLifeStage(
       species: species,
       sex: sex,
+      category: category,
       ageMonths: ageMonths,
       fallback: fallback,
     );

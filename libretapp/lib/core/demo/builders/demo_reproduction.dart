@@ -23,11 +23,11 @@ List<DemoReproductionEntry> buildDemoReproductionRecords({
   required DateTime reference,
 }) {
   // Gestante con parto esperado dentro de 7–14 días.
-  final prietaCalving = daysAfter(reference, 10);
+  final prietaCalving = daysAfter(reference, 7);
   final prietaService = daysBefore(prietaCalving, bovineGestationDays);
 
   // Gestante con parto esperado dentro de 30–60 días.
-  final weraCalving = daysAfter(reference, 45);
+  final weraCalving = daysAfter(reference, 14);
   final weraService = daysBefore(weraCalving, bovineGestationDays);
 
   // Parto histórico exitoso: coincide con el nacimiento de "becerra-2".

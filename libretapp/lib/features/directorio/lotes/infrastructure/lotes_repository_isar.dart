@@ -116,7 +116,7 @@ class LotesRepositoryIsar implements LotesRepository {
   Future<void> purge(String uuid) async {
     final isar = await _isar;
     await isar.writeTxn(() async {
-      await isar.isarLotes.filter().uuidEqualTo(uuid).deleteAll();
+      await isar.isarLotes.where().uuidEqualTo(uuid).deleteAll();
     });
   }
 

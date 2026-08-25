@@ -40,7 +40,10 @@ class AppCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (title != null || trailing != null)
+              if (title != null ||
+                  subtitle != null ||
+                  leading != null ||
+                  trailing != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -80,7 +83,10 @@ class AppCard extends StatelessWidget {
                   ],
                 ),
               if (body != null) ...[
-                if (title != null || trailing != null)
+                if (title != null ||
+                    subtitle != null ||
+                    leading != null ||
+                    trailing != null)
                   const SizedBox(height: AppSpacing.md),
                 body!,
               ],

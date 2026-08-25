@@ -121,13 +121,21 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormCostTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormCostTitle,
+            assetPath: AppAssetPaths.recordCost,
+            fallbackIcon: Icons.payments_outlined,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -145,7 +153,12 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
                   border: const OutlineInputBorder(),
                 ),
                 items: CostType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);

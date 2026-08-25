@@ -14,3 +14,9 @@ abstract class WeightRecordRepository {
   Future<WeightRecord> addWeightRecord(String animalUuid, WeightRecord record);
   Future<void> deleteWeightRecord(String recordId);
 }
+
+abstract interface class WeightRecordUuidLookup {
+  Future<Map<String, WeightRecord>> getWeightRecordsByRecordUuids(
+    Set<String> recordUuids,
+  );
+}

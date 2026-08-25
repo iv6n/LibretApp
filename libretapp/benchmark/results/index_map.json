@@ -1,0 +1,104 @@
+{
+  "IsarAgendaEntry": [
+    "estado",
+    "fecha",
+    "isarId",
+    "prioridad",
+    "tipo",
+    "uuid"
+  ],
+  "IsarAgendaRegistration": [
+    "animalId",
+    "batchId",
+    "entryId",
+    "eventKey",
+    "isarId",
+    "recordUuid",
+    "updatedAt",
+    "uuid"
+  ],
+  "IsarWorkerProfile": [
+    "active",
+    "isarId",
+    "name",
+    "uuid"
+  ],
+  "IsarWorkTeam": [
+    "active",
+    "isarId",
+    "name",
+    "uuid"
+  ],
+  "IsarAnimal": [
+    "damUuid",
+    "sireUuid",
+    "uuid"
+  ],
+  "IsarCareRule": [
+    "recordUuid"
+  ],
+  "IsarCareRecord": [
+    "animalUuid",
+    "recordUuid",
+    "ruleId"
+  ],
+  "IsarScheduledCare": [
+    "animalUuid",
+    "dueAt",
+    "recordUuid"
+  ],
+  "IsarCommercialRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarCostRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarHealthRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarMovementRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarProductionRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarReproductionRecord": [
+    "animalUuid",
+    "maleSireUuid",
+    "recordUuid"
+  ],
+  "IsarWeightRecord": [
+    "animalUuid",
+    "recordUuid"
+  ],
+  "IsarLote": [
+    "uuid"
+  ],
+  "IsarGeneralExpenseRecord": [
+    "date",
+    "recordUuid"
+  ],
+  "IsarIncomeRecord": [
+    "date",
+    "recordUuid"
+  ],
+  "IsarMilkingEntry": [
+    "animalUuid",
+    "sessionUuidAnimalUuid",
+    "uuid"
+  ],
+  "IsarMilkingSession": [
+    "occurredAt",
+    "sourceLoteUuid",
+    "status",
+    "uuid"
+  ],
+  "IsarLocation": [
+    "uuid"
+  ]
+}

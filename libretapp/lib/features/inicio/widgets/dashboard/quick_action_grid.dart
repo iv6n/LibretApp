@@ -3,8 +3,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
-import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class QuickActionGrid extends StatelessWidget {
   const QuickActionGrid({
@@ -23,92 +25,68 @@ class QuickActionGrid extends StatelessWidget {
 
     if (enabled.isEmpty) return const SizedBox.shrink();
 
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context);
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final actionExtent = (74 * textScale).clamp(74.0, 96.0).toDouble();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.55),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Accesos rápidos',
-                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (onCustomizeTap != null)
-                IconButton(
-                  icon: const Icon(Icons.tune, size: 20),
-                  tooltip: 'Personalizar',
-                  onPressed: onCustomizeTap,
-                  visualDensity: VisualDensity.compact,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 0.85,
+    return AppCard(
+      key: const ValueKey<String>('quick-action-grid'),
+      title: l10n.uiQuickActions,
+      trailing: onCustomizeTap == null
+          ? null
+          : AppIconButton(
+              icon: Icons.tune,
+              tooltip: l10n.uiCustomize,
+              onPressed: onCustomizeTap,
+              compact: true,
             ),
-            itemCount: enabled.length,
-            itemBuilder: (context, i) {
-              final action = enabled[i];
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          const gap = AppSpacing.xs;
+          final itemWidth = (constraints.maxWidth - (gap * 3)) / 4;
+
+          return Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: enabled.map((action) {
               final tone = action.tone ?? AppColors.primary;
-              return InkWell(
-                onTap: () => context.pushNamed(action.routeName),
-                borderRadius: BorderRadius.circular(AppRadii.sm),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    color: tone.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(action.icon, color: tone, size: 22),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: Text(
-                          action.label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.labelSmall?.copyWith(
-                            fontSize: 9,
-                            height: 1.1,
+              return SizedBox(
+                width: itemWidth,
+                height: actionExtent,
+                child: InkWell(
+                  onTap: () => context.pushNamed(action.routeName),
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: tone.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(action.icon, color: tone, size: 22),
+                        const SizedBox(height: AppSpacing.xxs),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xxs,
+                          ),
+                          child: Text(
+                            action.label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tt.labelSmall?.copyWith(height: 1.1),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
-            },
-          ),
-        ],
+            }).toList(),
+          );
+        },
       ),
     );
   }

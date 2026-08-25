@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/widgets/kpi_card.dart';
 
@@ -28,6 +29,9 @@ class ResumenTab extends StatelessWidget {
           value: '${isProfit ? '+' : ''}${fmt.format(s.netProfit)}',
           icon: isProfit ? Icons.trending_up : Icons.trending_down,
           color: isProfit ? Colors.green : Colors.red,
+          assetPath: isProfit
+              ? AppAssetPaths.inventoryProfitability
+              : AppAssetPaths.inventoryExpense,
           large: true,
         ),
         const SizedBox(height: 12),
@@ -39,6 +43,7 @@ class ResumenTab extends StatelessWidget {
                 value: fmt.format(s.totalIncome),
                 icon: Icons.attach_money,
                 color: Colors.teal,
+                assetPath: AppAssetPaths.inventoryIncome,
               ),
             ),
             const SizedBox(width: 12),
@@ -48,6 +53,7 @@ class ResumenTab extends StatelessWidget {
                 value: fmt.format(s.totalAnimalSales),
                 icon: Icons.store,
                 color: Colors.blue,
+                assetPath: AppAssetPaths.inventorySale,
               ),
             ),
           ],
@@ -70,6 +76,7 @@ class ResumenTab extends StatelessWidget {
                 value: fmt.format(s.totalGeneralExpenses),
                 icon: Icons.receipt_long,
                 color: Colors.deepOrange,
+                assetPath: AppAssetPaths.inventoryExpense,
               ),
             ),
           ],
@@ -80,6 +87,7 @@ class ResumenTab extends StatelessWidget {
           value: fmt.format(s.totalRevenue),
           icon: Icons.account_balance_wallet,
           color: Colors.indigo,
+          assetPath: AppAssetPaths.inventoryIncome,
         ),
         const SizedBox(height: 12),
         KpiCard(
@@ -87,6 +95,7 @@ class ResumenTab extends StatelessWidget {
           value: fmt.format(s.totalExpenses),
           icon: Icons.money_off,
           color: Colors.brown,
+          assetPath: AppAssetPaths.inventoryExpense,
         ),
         if (s.totalRevenue > 0) ...[
           const SizedBox(height: 12),
@@ -95,6 +104,9 @@ class ResumenTab extends StatelessWidget {
             value: '${(s.profitMargin * 100).toStringAsFixed(1)}%',
             icon: Icons.pie_chart,
             color: isProfit ? Colors.green : Colors.red,
+            assetPath: isProfit
+                ? AppAssetPaths.inventoryProfitability
+                : AppAssetPaths.inventoryExpense,
           ),
         ],
       ],

@@ -9,9 +9,11 @@ library;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/widgets/generated_asset_title.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class BulkHealthRegistroPage extends StatefulWidget {
@@ -189,10 +191,12 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _step == 0
+        title: GeneratedAssetTitle(
+          title: _step == 0
               ? 'Seleccionar animales'
               : 'Aplicar tratamiento (${_selectedUuids.length})',
+          assetPath: assetForHealthRecordType(_recordType),
+          fallbackIcon: fallbackIconForHealthRecordType(_recordType),
         ),
         leading: _step == 1
             ? IconButton(

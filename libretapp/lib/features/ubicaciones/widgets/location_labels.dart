@@ -298,6 +298,7 @@ const Map<LocationType, String> _locationTypeEs = {
   LocationType.dam: 'Presa',
   LocationType.spring: 'Manantial',
   LocationType.pond: 'Estanque',
+  LocationType.aguada: 'Aguada',
   LocationType.trough: 'Bebedero',
   LocationType.canal: 'Canal',
   LocationType.reservoir: 'Reservorio',

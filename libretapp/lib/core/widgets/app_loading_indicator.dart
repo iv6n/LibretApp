@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/theme.dart';
 
 class AppLoadingIndicator extends StatelessWidget {
@@ -20,31 +21,48 @@ class AppLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final spinner = SizedBox(
       width: strokeWidth == 2 ? 20 : 32,
       height: strokeWidth == 2 ? 20 : 32,
       child: CircularProgressIndicator(strokeWidth: strokeWidth),
     );
 
-    if (!_center) return Center(child: spinner);
+    if (!_center) {
+      return Semantics(
+        label: l10n.uiLoading,
+        liveRegion: true,
+        child: Center(child: spinner),
+      );
+    }
 
-    if (message == null) return Center(child: spinner);
+    if (message == null) {
+      return Semantics(
+        label: l10n.uiLoading,
+        liveRegion: true,
+        child: Center(child: spinner),
+      );
+    }
 
     final theme = Theme.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          spinner,
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            message!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.64),
+    return Semantics(
+      label: message,
+      liveRegion: true,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            spinner,
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.64),
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

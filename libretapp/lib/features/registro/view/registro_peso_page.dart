@@ -115,13 +115,21 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormWeightTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormWeightTitle,
+            assetPath: AppAssetPaths.healthWeight,
+            fallbackIcon: Icons.monitor_weight_outlined,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(

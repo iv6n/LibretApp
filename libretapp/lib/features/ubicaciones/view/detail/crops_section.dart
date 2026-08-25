@@ -3,7 +3,11 @@ part of '../location_detail_widgets.dart';
 // ─── UpcomingTasksCard ────────────────────────────────────────────────────────
 
 class UpcomingTasksCard extends StatelessWidget {
-  const UpcomingTasksCard({super.key, required this.location, required this.onComplete});
+  const UpcomingTasksCard({
+    super.key,
+    required this.location,
+    required this.onComplete,
+  });
 
   final LocationEntity location;
   final void Function(String cropUuid, String taskUuid) onComplete;
@@ -136,7 +140,8 @@ class UpcomingTasksCard extends StatelessWidget {
 // ─── CropsSection ─────────────────────────────────────────────────────────────
 
 class CropsSection extends StatelessWidget {
-  const CropsSection({super.key, 
+  const CropsSection({
+    super.key,
     required this.location,
     required this.onAddCrop,
     required this.onEditCrop,
@@ -271,6 +276,7 @@ class _CropTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isActive = crop.status == CropStatus.active;
+    final cropAssetPath = crop.assetPath;
     final overdue = crop.isOverdueForWatering;
     final daysLeft = crop.daysUntilHarvest;
     final pendingTasks = crop.tasks.where((t) => !t.completed).toList();
@@ -295,12 +301,18 @@ class _CropTile extends StatelessWidget {
                 backgroundColor: isActive
                     ? theme.colorScheme.primary.withValues(alpha: 0.15)
                     : theme.colorScheme.surfaceContainerHighest,
-                child: Icon(
-                  Icons.eco_outlined,
-                  color: isActive
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  size: 20,
+                child: Image.asset(
+                  cropAssetPath,
+                  fit: BoxFit.contain,
+                  width: 32,
+                  height: 32,
+                  errorBuilder: (_, _, _) => Icon(
+                    Icons.eco_outlined,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -546,4 +558,3 @@ class _CropActionChip extends StatelessWidget {
     );
   }
 }
-

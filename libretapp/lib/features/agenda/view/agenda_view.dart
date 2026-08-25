@@ -1,6 +1,8 @@
 /// features › agenda › view › agenda_view — main view for the agenda calendar.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -10,10 +12,13 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
+import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/domain/agenda_registration.dart';
 import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
 import 'package:libretapp/features/agenda/view/agenda_task_detail_page.dart';
+import 'package:libretapp/features/agenda/view/agenda_registration_flow_page.dart';
 import 'package:libretapp/features/agenda/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -26,6 +31,8 @@ class AgendaView extends StatefulWidget {
 }
 
 class _AgendaViewState extends State<AgendaView> {
+  static const _taskGrouper = AgendaTaskGrouper();
+
   final TextEditingController _searchController = TextEditingController();
   late final FocusNode _searchFocusNode;
   late final ScrollController _scrollController;
@@ -35,6 +42,7 @@ class _AgendaViewState extends State<AgendaView> {
   bool _isSearchFieldActive = false;
   CalendarMode _calendarMode = CalendarMode.twoWeeks;
   Map<String, AnimalEntity> _animalsById = {};
+  StreamSubscription<void>? _animalChangesSubscription;
   bool _showAgendaFab = true;
   double _lastScrollOffset = 0;
 
@@ -45,6 +53,9 @@ class _AgendaViewState extends State<AgendaView> {
     _searchFocusNode = FocusNode()..addListener(_updateSearchActive);
     _searchController.addListener(_updateSearchActive);
     _loadAnimals();
+    _animalChangesSubscription = locator<AnimalRepository>()
+        .watchChanges()
+        .listen((_) => _loadAnimals());
   }
 
   Future<void> _loadAnimals() async {
@@ -60,6 +71,7 @@ class _AgendaViewState extends State<AgendaView> {
     _searchFocusNode.dispose();
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
+    _animalChangesSubscription?.cancel();
     super.dispose();
   }
 
@@ -165,25 +177,31 @@ class _AgendaViewState extends State<AgendaView> {
               final entriesPorDia = _agruparPorDia(entriesVisibles);
               final DateTime? selectedDay = _selectedDay;
               final selectedKey = selectedDay != null
-                  ? DateTime(
-                      selectedDay.year,
-                      selectedDay.month,
-                      selectedDay.day,
-                    )
+                  ? _dayKey(selectedDay)
                   : null;
               final entriesHoy = selectedKey != null
                   ? entriesPorDia[selectedKey] ?? const <AgendaEntry>[]
                   : const <AgendaEntry>[];
               final today = DateTime.now();
-              const grouper = AgendaTaskGrouper();
-              final todayGroups = grouper.group(entriesHoy, today: today);
-              final proximosGroups = grouper.group(
+              final todayGroups = _taskGrouper.group(
+                entriesHoy,
+                today: today,
+                includeCompletedAnimals: true,
+              );
+              final proximosGroups = _taskGrouper.group(
                 _entriesPendientes(
                   filteredEntries,
                   today,
                   selectedKey: selectedKey,
                 ),
                 today: today,
+                includeCompletedAnimals: true,
+              );
+              final realizadasGroups = _taskGrouper.group(
+                entriesHoy.where(_taskGrouper.isTerminal).toList(),
+                today: today,
+                includeFinished: true,
+                includeCompletedAnimals: true,
               );
 
               return SingleChildScrollView(
@@ -224,7 +242,23 @@ class _AgendaViewState extends State<AgendaView> {
                       emptyMessage:
                           'No hay eventos pendientes en la fecha seleccionada.',
                       onOpenGroup: (group) => _openTaskDetail(context, group),
+                      onRegisterGroup: _registerAgendaGroup,
+                      registrationDetailsByRow: state.registrationDetailsByRow,
                     ),
+                    if (realizadasGroups.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const _SectionHeader(title: 'Realizadas'),
+                      const SizedBox(height: 8),
+                      AgendaProximasSection(
+                        groups: realizadasGroups,
+                        animalsById: _animalsById,
+                        today: today,
+                        readOnly: true,
+                        registrationDetailsByRow:
+                            state.registrationDetailsByRow,
+                        onOpenGroup: (group) => _openTaskDetail(context, group),
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     // Pendientes (atrasadas + próximos 14 días), agrupadas
@@ -236,6 +270,8 @@ class _AgendaViewState extends State<AgendaView> {
                       animalsById: _animalsById,
                       today: today,
                       onOpenGroup: (group) => _openTaskDetail(context, group),
+                      onRegisterGroup: _registerAgendaGroup,
+                      registrationDetailsByRow: state.registrationDetailsByRow,
                     ),
                   ],
                 ),
@@ -254,6 +290,9 @@ class _AgendaViewState extends State<AgendaView> {
     setState(() => _isSearchActive = active);
   }
 
+  DateTime _dayKey(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
   /// Overdue (no lower bound) plus what's due in the next 14 days, excluding
   /// today itself (already shown in the "Hoy" section above). Anchored on
   /// real "today", not the calendar's selected day, so the pending worklist
@@ -263,15 +302,11 @@ class _AgendaViewState extends State<AgendaView> {
     DateTime today, {
     DateTime? selectedKey,
   }) {
-    final todayKey = DateTime(today.year, today.month, today.day);
+    final todayKey = _dayKey(today);
     final limite = todayKey.add(const Duration(days: 14));
     return entries.where((e) {
-      final noCompletado =
-          e.estado != AgendaEstado.completado &&
-          e.estado != AgendaEstado.verificado &&
-          e.estado != AgendaEstado.cancelado;
-      if (!noCompletado) return false;
-      final day = DateTime(e.fecha.year, e.fecha.month, e.fecha.day);
+      if (_taskGrouper.isTerminal(e)) return false;
+      final day = _dayKey(e.fecha);
       if (selectedKey != null && day == selectedKey) return false;
       final overdue = day.isBefore(todayKey);
       final upcoming = day.isAfter(todayKey) && !day.isAfter(limite);
@@ -282,11 +317,7 @@ class _AgendaViewState extends State<AgendaView> {
   Map<DateTime, List<AgendaEntry>> _agruparPorDia(List<AgendaEntry> entries) {
     final mapa = <DateTime, List<AgendaEntry>>{};
     for (final entry in entries) {
-      final key = DateTime(
-        entry.fecha.year,
-        entry.fecha.month,
-        entry.fecha.day,
-      );
+      final key = _dayKey(entry.fecha);
       mapa.putIfAbsent(key, () => <AgendaEntry>[]).add(entry);
     }
     return mapa;
@@ -380,7 +411,7 @@ class _AgendaViewState extends State<AgendaView> {
   }
 
   DateTime _inicioSemana(DateTime fecha) {
-    final normalizada = DateTime(fecha.year, fecha.month, fecha.day);
+    final normalizada = _dayKey(fecha);
     final diasARestar = normalizada.weekday - DateTime.monday;
     return normalizada.subtract(Duration(days: diasARestar));
   }
@@ -389,7 +420,7 @@ class _AgendaViewState extends State<AgendaView> {
     final rango = _visibleRange();
     final sel = _selectedDay;
     if (sel == null) return;
-    final normalizada = DateTime(sel.year, sel.month, sel.day);
+    final normalizada = _dayKey(sel);
     if (normalizada.isBefore(rango.start) || normalizada.isAfter(rango.end)) {
       _selectedDay = rango.start;
     } else {
@@ -414,6 +445,24 @@ class _AgendaViewState extends State<AgendaView> {
         ),
       ),
     );
+  }
+
+  Future<void> _registerAgendaGroup(
+    AgendaEventGroup group,
+    List<AgendaTaskRow> selectedRows,
+  ) async {
+    final result = await context.pushNamed<AgendaRegistrationBatchResult>(
+      AppRoutes.nameAgendaRegistro,
+      extra: AgendaRegistrationRouteArgs(
+        agendaBloc: context.read<AgendaBloc>(),
+        group: group,
+        rows: selectedRows,
+        animalsById: _animalsById,
+      ),
+    );
+    if (result != null && mounted) {
+      context.read<AgendaBloc>().add(const RefreshAgenda());
+    }
   }
 }
 

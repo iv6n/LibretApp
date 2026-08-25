@@ -47,8 +47,13 @@ const IsarWeightRecordSchema = CollectionSchema(
       name: r'recordUuid',
       type: IsarType.string,
     ),
-    r'weight': PropertySchema(
+    r'updatedAt': PropertySchema(
       id: 6,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'weight': PropertySchema(
+      id: 7,
       name: r'weight',
       type: IsarType.double,
     )
@@ -130,7 +135,8 @@ void _isarWeightRecordSerialize(
   writer.writeString(offsets[3], object.method);
   writer.writeString(offsets[4], object.notes);
   writer.writeString(offsets[5], object.recordUuid);
-  writer.writeDouble(offsets[6], object.weight);
+  writer.writeDateTime(offsets[6], object.updatedAt);
+  writer.writeDouble(offsets[7], object.weight);
 }
 
 IsarWeightRecord _isarWeightRecordDeserialize(
@@ -147,7 +153,8 @@ IsarWeightRecord _isarWeightRecordDeserialize(
   object.method = reader.readString(offsets[3]);
   object.notes = reader.readStringOrNull(offsets[4]);
   object.recordUuid = reader.readString(offsets[5]);
-  object.weight = reader.readDouble(offsets[6]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[6]);
+  object.weight = reader.readDouble(offsets[7]);
   return object;
 }
 
@@ -171,6 +178,8 @@ P _isarWeightRecordDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 7:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1247,6 +1256,80 @@ extension IsarWeightRecordQueryFilter
   }
 
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
       weightEqualTo(
     double value, {
     double epsilon = Query.epsilon,
@@ -1404,6 +1487,20 @@ extension IsarWeightRecordQuerySortBy
   }
 
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
       sortByWeight() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'weight', Sort.asc);
@@ -1516,6 +1613,20 @@ extension IsarWeightRecordQuerySortThenBy
   }
 
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
       thenByWeight() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'weight', Sort.asc);
@@ -1574,6 +1685,13 @@ extension IsarWeightRecordQueryWhereDistinct
   }
 
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QDistinct>
       distinctByWeight() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'weight');
@@ -1625,6 +1743,13 @@ extension IsarWeightRecordQueryProperty
       recordUuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'recordUuid');
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, DateTime?, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 

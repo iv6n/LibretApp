@@ -25,6 +25,7 @@ class IsarMovementRecord implements StableRecordModel {
   late String reason;
   String? notes;
   String? movedBy;
+  DateTime? updatedAt;
 }
 
 extension IsarMovementRecordMapper on IsarMovementRecord {
@@ -37,6 +38,8 @@ extension IsarMovementRecordMapper on IsarMovementRecord {
       reason: MovementReason.values.byName(reason),
       notes: notes,
       movedBy: movedBy,
+      recordUuid: recordUuid,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -50,7 +53,10 @@ extension MovementRecordToIsar on MovementRecord {
       ..date = date
       ..reason = reason.name
       ..notes = notes
-      ..movedBy = movedBy;
+      ..movedBy = movedBy
+      ..updatedAt = DateTime.now();
+
+    if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 
     if (id != null) {
       final parsed = int.tryParse(id!);

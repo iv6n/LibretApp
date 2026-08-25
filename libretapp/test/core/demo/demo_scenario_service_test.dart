@@ -13,11 +13,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/demo/demo_data_integrity_validator.dart';
+import 'package:libretapp/core/demo/demo_identity.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
+import 'package:libretapp/features/agenda/domain/operational_work.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_workforce_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -64,7 +66,7 @@ void main() {
   late AnimalRepositoryIsar animalRepository;
   late DemoScenarioService service;
 
-  final referenceDate = DateTime(2026, 8, 1);
+  final referenceDate = DateTime(2026, 8, 16);
 
   setUpAll(() async {
     tempDir = await Directory.systemTemp.createTemp('libretapp_demo_test_');
@@ -114,6 +116,7 @@ void main() {
     final agendaReminderSyncService = AgendaReminderSyncService(
       animalRepository: animalRepository,
       agendaRepository: agendaRepository,
+      locationRepository: locationRepository,
       healthRepo: healthRepository,
       reproductionRepo: reproductionRepository,
       careRepo: careRepository,
@@ -206,18 +209,18 @@ void main() {
   }
 
   test(
-    'install seeds exactly 40 animals with the expected breakdown',
+    'install seeds exactly 35 animals with the expected breakdown',
     () async {
       await service.install(referenceDate: referenceDate);
 
       final animals = await animalRepository.getAllIncludingInactive();
-      expect(animals, hasLength(40));
+      expect(animals, hasLength(35));
 
       final cattle = animals.where((a) => a.species == Species.cattle).toList();
-      expect(cattle, hasLength(24));
+      expect(cattle, hasLength(22));
       expect(
         cattle.where((a) => a.status == AnimalStatus.active),
-        hasLength(21),
+        hasLength(19),
       );
       expect(cattle.where((a) => a.status == AnimalStatus.sold), hasLength(1));
       expect(cattle.where((a) => a.status == AnimalStatus.dead), hasLength(1));
@@ -229,8 +232,8 @@ void main() {
       expect(animals.where((a) => a.species == Species.goat), hasLength(4));
       expect(animals.where((a) => a.species == Species.sheep), hasLength(3));
       expect(animals.where((a) => a.species == Species.equine), hasLength(2));
-      expect(animals.where((a) => a.species == Species.pig), hasLength(2));
-      expect(animals.where((a) => a.species == Species.poultry), hasLength(4));
+      expect(animals.where((a) => a.species == Species.pig), hasLength(1));
+      expect(animals.where((a) => a.species == Species.poultry), hasLength(2));
       expect(animals.where((a) => a.species == Species.canine), hasLength(1));
 
       expect(animals.every((a) => a.uuid.startsWith('demo-')), isTrue);
@@ -246,13 +249,13 @@ void main() {
     final second = await service.install(referenceDate: referenceDate);
     expect(second.alreadyInstalled, isTrue);
     final afterNoop = await animalRepository.getAllIncludingInactive();
-    expect(afterNoop, hasLength(40));
+    expect(afterNoop, hasLength(35));
     expect(afterNoop.map((a) => a.uuid).toSet(), firstUuids);
 
-    // An explicit reset reseeds, but still converges to the same 40 uuids.
+    // An explicit reset reseeds, but still converges to the same 35 uuids.
     await service.install(referenceDate: referenceDate, reset: true);
     final afterReset = await animalRepository.getAllIncludingInactive();
-    expect(afterReset, hasLength(40));
+    expect(afterReset, hasLength(35));
     expect(afterReset.map((a) => a.uuid).toSet(), firstUuids);
 
     final lotes = await LotesRepositoryIsar(database).getAll();
@@ -286,6 +289,128 @@ void main() {
       );
     },
   );
+
+  test(
+    'the vaccination campaign has one automatic occurrence per active animal',
+    () async {
+      await service.install(referenceDate: referenceDate);
+      final entries = await IsarAgendaRepository(
+        database,
+        prefs,
+      ).fetchEntries();
+      final vaccines = entries
+          .where(
+            (entry) =>
+                entry.actionKind == WorkActionType.recordHealth.name &&
+                entry.sourceType == WorkSourceType.health.name &&
+                entry.fecha == referenceDate,
+          )
+          .toList();
+
+      expect(vaccines, hasLength(32));
+      expect(vaccines.map((entry) => entry.id).toSet(), hasLength(32));
+      expect(
+        vaccines.every((entry) => entry.id.startsWith('auto:health:')),
+        isTrue,
+      );
+
+      final groups = const AgendaTaskGrouper().group(
+        entries,
+        today: referenceDate,
+      );
+      final campaignCards = groups
+          .expand((category) => category.events)
+          .where((event) => event.animalCount == 32);
+      expect(campaignCards, isNotEmpty);
+    },
+  );
+
+  test(
+    'the demo exposes both upcoming calvings and crop work in Agenda',
+    () async {
+      await service.install(referenceDate: referenceDate);
+      final entries = await IsarAgendaRepository(
+        database,
+        prefs,
+      ).fetchEntries();
+
+      final calvings = entries
+          .where(
+            (entry) =>
+                entry.actionKind == WorkActionType.calving.name &&
+                entry.sourceType == WorkSourceType.reproduction.name &&
+                entry.sourceId?.endsWith(':parto') == true,
+          )
+          .toList();
+      expect(
+        calvings,
+        hasLength(2),
+        reason: calvings
+            .map(
+              (entry) => '${entry.titulo} | ${entry.sourceId} | ${entry.fecha}',
+            )
+            .join('; '),
+      );
+      expect(
+        calvings.map((entry) => entry.fecha).toSet(),
+        containsAll(<DateTime>[
+          referenceDate.add(const Duration(days: 7)),
+          referenceDate.add(const Duration(days: 14)),
+        ]),
+      );
+
+      expect(
+        entries.any(
+          (entry) => entry.actionKind == WorkActionType.cropWater.name,
+        ),
+        isTrue,
+      );
+      expect(
+        entries.any(
+          (entry) => entry.actionKind == WorkActionType.cropTask.name,
+        ),
+        isTrue,
+      );
+      expect(
+        entries.any((entry) => entry.actionKind == WorkActionType.harvest.name),
+        isTrue,
+      );
+    },
+  );
+
+  test('a reset removes obsolete demo animals from an older roster', () async {
+    await service.install(referenceDate: referenceDate);
+    final templates = (await animalRepository.getAllIncludingInactive())
+        .take(5)
+        .toList();
+    const obsoleteSlugs = <String>[
+      'waka',
+      'novillo-4',
+      'gallina-2',
+      'gallina-3',
+      'lechon-1',
+    ];
+    for (var i = 0; i < obsoleteSlugs.length; i++) {
+      final slug = obsoleteSlugs[i];
+      await animalRepository.save(
+        templates[i].copyWith(
+          uuid: demoId('animal', slug),
+          customName: 'Obsoleto $slug',
+        ),
+      );
+    }
+
+    final result = await service.install(
+      referenceDate: referenceDate,
+      reset: true,
+    );
+
+    expect(result.counts['obsoleteAnimalsRemoved'], 5);
+    for (final slug in obsoleteSlugs) {
+      expect(await animalRepository.getByUuid(demoId('animal', slug)), isNull);
+    }
+    expect(await animalRepository.getAllIncludingInactive(), hasLength(35));
+  });
 
   test(
     'the installed scenario passes DemoDataIntegrityValidator with no errors',
@@ -362,7 +487,7 @@ void main() {
       expect(stillThere!.customName, 'Animal real del usuario');
 
       final all = await animalRepository.getAllIncludingInactive();
-      expect(all, hasLength(41)); // 40 demo + 1 real
+      expect(all, hasLength(36)); // 35 demo + 1 real
     },
   );
 
@@ -384,7 +509,7 @@ void main() {
       final result = await service.uninstall();
 
       expect(result.removed, isTrue);
-      expect(result.counts['animals'], 40);
+      expect(result.counts['animals'], 35);
       expect(result.counts['locations'], 15);
       expect(result.counts['lotes'], 6);
       expect(result.counts['milkingSessions'], greaterThan(0));

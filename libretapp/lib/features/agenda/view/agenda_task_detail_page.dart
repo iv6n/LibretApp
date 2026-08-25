@@ -14,8 +14,12 @@ import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/domain/agenda_realize_strategy.dart';
+import 'package:libretapp/features/agenda/domain/agenda_registration.dart';
 import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
+import 'package:libretapp/features/agenda/view/agenda_registration_flow_page.dart';
+import 'package:libretapp/features/agenda/widgets/agenda_registration_table.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_bulk_movement_sheet.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_form_queue.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
@@ -42,6 +46,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
   final Map<String, Set<String>> _entryIdsByAnimal = {};
   final Set<String> _selectedAnimalIds = {};
   bool _loading = true;
+  Map<String, AgendaRegistrationDetail> _registrationDetailsByRow = {};
 
   late AgendaEntry _entry;
   late Map<String, AgendaEntry> _entriesById;
@@ -70,6 +75,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
       if (updated.isEmpty) return;
       _confirmedEntries = Map.of(updated);
       setState(() {
+        _registrationDetailsByRow = state.registrationDetailsByRow;
         _entriesById = updated;
         _entry = updated[_entry.id] ?? updated.values.first;
         _selectedAnimalIds.removeWhere(_isAnimalCompleted);
@@ -101,6 +107,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
           if (representedIds.contains(entry.id)) entry.id: entry,
       };
       if (currentEntries.isNotEmpty) {
+        _registrationDetailsByRow = blocState.registrationDetailsByRow;
         _entriesById = currentEntries;
         _confirmedEntries = Map.of(currentEntries);
         _entry = currentEntries[_entry.id] ?? currentEntries.values.first;
@@ -172,7 +179,9 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
 
   bool _entryIsTerminal(AgendaEntry entry) =>
       entry.estado == AgendaEstado.completado ||
-      entry.estado == AgendaEstado.verificado;
+      entry.estado == AgendaEstado.verificado ||
+      entry.estado == AgendaEstado.cancelado ||
+      entry.estado == AgendaEstado.reprogramada;
 
   bool _isAnimalCompleted(String animalUuid) {
     final entryIds = _entryIdsByAnimal[animalUuid] ?? const <String>{};
@@ -216,18 +225,33 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     return values;
   }
 
-  void _markCompleted(String animalUuid) {
+  Future<void> _markCompleted(String animalUuid) async {
     final entryIds = _entryIdsByAnimal[animalUuid] ?? const <String>{};
     final bloc = context.read<AgendaBloc>();
     for (final entryId in entryIds) {
+      if (!mounted) return;
       final source = _entriesById[entryId];
       if (source == null ||
           source.completedAnimalIds.contains(animalUuid) ||
           _entryIsTerminal(source)) {
         continue;
       }
+
+      // Saving the domain record can reconcile an automatic occurrence before
+      // this event reaches the bloc. The domain operation already succeeded;
+      // there is simply no Agenda row left to mark as completed.
+      try {
+        final current = await bloc.repository.getEntry(entryId);
+        if (current.completedAnimalIds.contains(animalUuid) ||
+            _entryIsTerminal(current)) {
+          continue;
+        }
+      } on StateError {
+        continue;
+      }
       bloc.add(MarkAnimalCompleted(entryId: entryId, animalId: animalUuid));
     }
+    if (!mounted) return;
     setState(() {
       final now = DateTime.now();
       for (final entryId in entryIds) {
@@ -246,6 +270,24 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
       _entry = _entriesById[_entry.id] ?? _entriesById.values.first;
       _selectedAnimalIds.remove(animalUuid);
     });
+    await _closeIfGroupConsumed();
+  }
+
+  Future<void> _closeIfGroupConsumed() async {
+    if (!mounted || _entriesById.isEmpty) return;
+    List<AgendaEntry> currentEntries;
+    try {
+      currentEntries = await context
+          .read<AgendaBloc>()
+          .repository
+          .fetchEntries();
+    } catch (_) {
+      return;
+    }
+    final stillRepresented = currentEntries.any(
+      (entry) => _entriesById.containsKey(entry.id),
+    );
+    if (!stillRepresented && mounted) Navigator.of(context).pop();
   }
 
   /// Advances the care calendar when an automatic care reminder is executed.
@@ -281,6 +323,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
           ),
         );
       }
+      await locator<AgendaReminderSyncService>().sync();
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -464,7 +507,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     Future<void> onSaved() async {
       await _recordCareExecution(animal.uuid);
       if (!mounted) return;
-      _markCompleted(animal.uuid);
+      await _markCompleted(animal.uuid);
       if (mounted) {
         ScaffoldMessenger.of(this.context).showSnackBar(
           SnackBar(
@@ -522,6 +565,42 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     }
   }
 
+  AgendaTaskRow _rowForAnimal(String animalId) {
+    for (final row in widget.group.rows) {
+      if (row.animalId == animalId) return row;
+    }
+    final entryId = _entryIdsByAnimal[animalId]?.firstOrNull;
+    return AgendaTaskRow(
+      entry: (entryId == null ? null : _entriesById[entryId]) ?? _entry,
+      animalId: animalId,
+    );
+  }
+
+  Future<AgendaRegistrationBatchResult?> _pushRegistrationFlow({
+    required List<AgendaTaskRow> rows,
+    required Map<String, AnimalEntity> animalsById,
+    AgendaRegistration? existingRegistration,
+  }) => context.pushNamed<AgendaRegistrationBatchResult>(
+    AppRoutes.nameAgendaRegistro,
+    extra: AgendaRegistrationRouteArgs(
+      agendaBloc: context.read<AgendaBloc>(),
+      group: widget.group,
+      rows: rows,
+      animalsById: animalsById,
+      existingRegistration: existingRegistration,
+    ),
+  );
+
+  Future<void> _openRegistrationForAnimal(AnimalEntity animal) async {
+    final result = await _pushRegistrationFlow(
+      rows: [_rowForAnimal(animal.uuid)],
+      animalsById: {animal.uuid: animal},
+    );
+    if (result != null && mounted) {
+      setState(() => _selectedAnimalIds.remove(animal.uuid));
+    }
+  }
+
   void _toggleAnimalSelection(String animalUuid, bool selected) {
     if (_isAnimalCompleted(animalUuid)) return;
     setState(() {
@@ -549,6 +628,50 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     });
   }
 
+  Future<void> _openRegistrationForSelected() async {
+    final ids = _selectedAnimalIds
+        .where((id) => !_isAnimalCompleted(id))
+        .toList(growable: false);
+    if (ids.isEmpty) return;
+    final rows = ids.map(_rowForAnimal).toList(growable: false);
+    final animals = {
+      for (final animal in _allAnimals)
+        if (ids.contains(animal.uuid)) animal.uuid: animal,
+    };
+    final result = await _pushRegistrationFlow(
+      rows: rows,
+      animalsById: animals,
+    );
+    if (result != null && mounted) setState(_selectedAnimalIds.clear);
+  }
+
+  Future<void> _openRegistrationForGeneral() async {
+    final row = widget.group.rows.firstWhere(
+      (candidate) => candidate.animalId == null,
+      orElse: () => AgendaTaskRow(entry: _entry),
+    );
+    await _pushRegistrationFlow(rows: [row], animalsById: const {});
+  }
+
+  Future<void> _editRegistration(
+    AgendaTaskRow row,
+    AgendaRegistrationDetail detail,
+  ) async {
+    final animal = row.animalId == null
+        ? null
+        : _allAnimals
+              .where((candidate) => candidate.uuid == row.animalId)
+              .firstOrNull;
+    final result = await _pushRegistrationFlow(
+      rows: [row],
+      animalsById: animal == null ? const {} : {animal.uuid: animal},
+      existingRegistration: detail.registration,
+    );
+    if (result != null && mounted) {
+      context.read<AgendaBloc>().add(const RefreshAgenda());
+    }
+  }
+
   Future<void> _realizeSelected() async {
     final ids = _selectedAnimalIds
         .where((id) => !_isAnimalCompleted(id))
@@ -569,7 +692,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
         for (final animalId in result) {
           await _recordCareExecution(animalId);
           if (!mounted) return;
-          _markCompleted(animalId);
+          await _markCompleted(animalId);
         }
       case AgendaRealizeStrategy.bulkMovement:
         final animals = ids
@@ -585,7 +708,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
         );
         if (saved == true && mounted) {
           for (final animalId in ids) {
-            _markCompleted(animalId);
+            await _markCompleted(animalId);
           }
         }
       case AgendaRealizeStrategy.queuedReproduction:
@@ -618,7 +741,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
         );
         if (confirmed == true && mounted) {
           for (final animalId in ids) {
-            _markCompleted(animalId);
+            await _markCompleted(animalId);
           }
         }
     }
@@ -645,7 +768,9 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
           pathParameters: {'uuid': uuid},
         );
       },
-      onStepSuccess: _markCompleted,
+      onStepSuccess: (animalUuid) async {
+        await _markCompleted(animalUuid);
+      },
     );
   }
 
@@ -695,8 +820,9 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                                     color: typeColor.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(
-                                    iconForTipo(_entry.tipo),
+                                  child: AgendaAssetIcon(
+                                    assetPath: assetForTipo(_entry.tipo),
+                                    fallbackIcon: iconForTipo(_entry.tipo),
                                     color: typeColor,
                                     size: 22,
                                   ),
@@ -952,7 +1078,7 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton.icon(
-                            onPressed: _realizeSelected,
+                            onPressed: _openRegistrationForSelected,
                             icon: const Icon(Icons.playlist_add_check),
                             label: Text(
                               'Realizar (${_selectedAnimalIds.length})',
@@ -969,12 +1095,21 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                           selected: _selectedAnimalIds.contains(animal.uuid),
                           onSelected: (selected) =>
                               _toggleAnimalSelection(animal.uuid, selected),
-                          onRegister: () => _openRegistroForm(context, animal),
-                          onMarkDone: () async {
-                            await _recordCareExecution(animal.uuid);
-                            if (mounted) _markCompleted(animal.uuid);
-                          },
+                          onRegister: () => _openRegistrationForAnimal(animal),
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (_registrationDetailsByRow.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      AgendaRegistrationTable(
+                        rows: widget.group.rows,
+                        detailsByRow: _registrationDetailsByRow,
+                        animalsById: {
+                          for (final animal in _allAnimals) animal.uuid: animal,
+                        },
+                        onEdit: _editRegistration,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -1000,11 +1135,8 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
                               ),
                               const SizedBox(height: 4),
                               FilledButton.tonal(
-                                onPressed: () =>
-                                    _changeStatus(AgendaEstado.completado),
-                                child: const Text(
-                                  'Marcar tarea como completada',
-                                ),
+                                onPressed: _openRegistrationForGeneral,
+                                child: const Text('Registrar tarea'),
                               ),
                             ],
                           ),
@@ -1037,7 +1169,9 @@ class _TaskStatusActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (status == AgendaEstado.verificado || status == AgendaEstado.cancelado) {
+    if (status == AgendaEstado.verificado ||
+        status == AgendaEstado.cancelado ||
+        status == AgendaEstado.reprogramada) {
       return const SizedBox.shrink();
     }
 
@@ -1141,7 +1275,6 @@ class _AnimalTaskRow extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     required this.onRegister,
-    required this.onMarkDone,
   });
 
   final AnimalEntity animal;
@@ -1150,7 +1283,6 @@ class _AnimalTaskRow extends StatelessWidget {
   final bool selected;
   final ValueChanged<bool> onSelected;
   final VoidCallback onRegister;
-  final VoidCallback onMarkDone;
 
   @override
   Widget build(BuildContext context) {
@@ -1196,15 +1328,6 @@ class _AnimalTaskRow extends StatelessWidget {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: onMarkDone,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Listo'),
-                  ),
-                  const SizedBox(width: 4),
                   FilledButton.tonal(
                     onPressed: onRegister,
                     style: FilledButton.styleFrom(

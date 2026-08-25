@@ -5,42 +5,107 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_recurrence.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/domain/agenda_registration_read_service.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 
 class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
-  AgendaBloc(this.repository, {LotesRepository? lotesRepository})
-    : _lotesRepository = lotesRepository,
-      super(const AgendaInitial()) {
+  AgendaBloc(
+    this.repository, {
+    LotesRepository? lotesRepository,
+    AgendaReminderSyncService? syncService,
+    AgendaRefreshSignal? refreshSignal,
+    AgendaRegistrationRepository? registrationRepository,
+    AgendaRegistrationReadService? registrationReadService,
+  }) : _lotesRepository = lotesRepository,
+       _syncService = syncService,
+       _refreshSignal = refreshSignal,
+       _registrationRepository = registrationRepository,
+       _registrationReadService = registrationReadService,
+       super(const AgendaInitial()) {
     on<LoadAgenda>(_onLoad);
+    on<RefreshAgenda>(_onRefresh);
     on<AddAgendaEntry>(_onAdd);
     on<UpdateAgendaEntry>(_onUpdate);
     on<DeleteAgendaEntry>(_onDelete);
     on<MarkAnimalCompleted>(_onMarkAnimalCompleted);
     on<ChangeAgendaStatus>(_onChangeStatus);
     on<ToggleAgendaChecklistItem>(_onToggleChecklistItem);
+    _refreshSignal?.addListener(_handleExternalRefresh);
   }
 
   final AgendaRepository repository;
   final LotesRepository? _lotesRepository;
+  final AgendaReminderSyncService? _syncService;
+  final AgendaRefreshSignal? _refreshSignal;
+  final AgendaRegistrationRepository? _registrationRepository;
+  final AgendaRegistrationReadService? _registrationReadService;
 
-  Future<void> _onLoad(LoadAgenda event, Emitter<AgendaState> emit) async {
-    emit(const AgendaLoading());
+  void _handleExternalRefresh() {
+    if (!isClosed) add(const RefreshAgenda());
+  }
+
+  void _notifyAgendaChanged() => _refreshSignal?.notifyChanged();
+
+  Future<void> _emitLoaded(Emitter<AgendaState> emit) async {
+    final entries = await repository.fetchEntries();
+    final registrations =
+        await _registrationRepository?.fetchForEntries({
+          for (final entry in entries) entry.id,
+        }) ??
+        const [];
+    final details =
+        await _registrationReadService?.resolve(registrations) ?? const [];
+    emit(
+      AgendaLoaded(
+        entries,
+        registrations: registrations,
+        registrationDetails: details,
+      ),
+    );
+  }
+
+  Future<void> _notifyAndEmitLoaded(Emitter<AgendaState> emit) async {
+    _notifyAgendaChanged();
+    await _emitLoaded(emit);
+  }
+
+  Future<void> _onRefresh(
+    RefreshAgenda event,
+    Emitter<AgendaState> emit,
+  ) async {
     try {
-      final entries = await repository.fetchEntries();
-      emit(AgendaLoaded(entries));
+      await _emitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
   }
 
+  Future<void> _onLoad(LoadAgenda event, Emitter<AgendaState> emit) async {
+    emit(const AgendaLoading());
+    try {
+      await _syncService?.sync();
+      await _emitLoaded(emit);
+    } catch (e) {
+      emit(AgendaError(e.toString()));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _refreshSignal?.removeListener(_handleExternalRefresh);
+    return super.close();
+  }
+
   Future<void> _onAdd(AddAgendaEntry event, Emitter<AgendaState> emit) async {
     try {
       await repository.saveEntry(event.entry);
-      final entries = await repository.fetchEntries();
-      emit(AgendaLoaded(entries));
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
@@ -52,8 +117,7 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
   ) async {
     try {
       await repository.updateEntry(event.entry);
-      final entries = await repository.fetchEntries();
-      emit(AgendaLoaded(entries));
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
@@ -65,8 +129,8 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
   ) async {
     try {
       await repository.deleteEntry(event.id);
-      final entries = await repository.fetchEntries();
-      emit(AgendaLoaded(entries));
+      await _registrationRepository?.deleteForEntry(event.id);
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
@@ -121,8 +185,7 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
 
       await repository.updateEntry(updated);
       await _scheduleNextOccurrenceIfNeeded(before: entry, after: updated);
-      final refreshed = await repository.fetchEntries();
-      emit(AgendaLoaded(refreshed));
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
@@ -135,7 +198,8 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
     try {
       final entry = await repository.getEntry(event.entryId);
       final now = DateTime.now();
-      final completed = event.status == AgendaEstado.completado ||
+      final completed =
+          event.status == AgendaEstado.completado ||
           event.status == AgendaEstado.verificado;
       final updated = entry.copyWith(
         estado: event.status,
@@ -157,7 +221,7 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
       );
       await repository.updateEntry(updated);
       await _scheduleNextOccurrenceIfNeeded(before: entry, after: updated);
-      emit(AgendaLoaded(await repository.fetchEntries()));
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }
@@ -183,14 +247,16 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
     try {
       final entry = await repository.getEntry(event.entryId);
       final now = DateTime.now();
-      final checklist = entry.checklist.map((item) {
-        if (item.id != event.itemId) return item;
-        return item.copyWith(
-          completed: event.completed,
-          completedById: event.actorId.isEmpty ? null : event.actorId,
-          completedAt: event.completed ? now : null,
-        );
-      }).toList(growable: false);
+      final checklist = entry.checklist
+          .map((item) {
+            if (item.id != event.itemId) return item;
+            return item.copyWith(
+              completed: event.completed,
+              completedById: event.actorId.isEmpty ? null : event.actorId,
+              completedAt: event.completed ? now : null,
+            );
+          })
+          .toList(growable: false);
       final updated = entry.copyWith(
         checklist: checklist,
         updatedAt: now,
@@ -198,7 +264,9 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
           ...entry.activities,
           AgendaActivity(
             id: generateId(),
-            type: event.completed ? 'checklist_completed' : 'checklist_reopened',
+            type: event.completed
+                ? 'checklist_completed'
+                : 'checklist_reopened',
             timestamp: now,
             actorId: event.actorId.isEmpty ? null : event.actorId,
             note: event.itemId,
@@ -206,7 +274,7 @@ class AgendaBloc extends Bloc<AgendaEvent, AgendaState> {
         ],
       );
       await repository.updateEntry(updated);
-      emit(AgendaLoaded(await repository.fetchEntries()));
+      await _notifyAndEmitLoaded(emit);
     } catch (e) {
       emit(AgendaError(e.toString()));
     }

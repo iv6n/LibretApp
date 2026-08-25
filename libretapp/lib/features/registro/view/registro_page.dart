@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/widgets/generated_asset_icon.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
+import 'package:libretapp/features/registro/widgets/registro_style.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class RegistroPage extends StatefulWidget {
@@ -72,6 +74,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Paricion',
                       subtitle: 'Registro de paricion',
                       color: Colors.pink,
+                      assetPath: assetForRegistroAction('Parición'),
                       featured: true,
                       large: true,
                       onTap: (context) => context.pushNamed(
@@ -89,6 +92,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Tratar lote',
                       subtitle: 'Vacunar o tratar varios animales',
                       color: Colors.teal.shade700,
+                      assetPath: assetForRegistroAction('Tratar lote'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroTratarLote),
                     ),
@@ -97,6 +101,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Peso',
                       subtitle: 'Peso del animal',
                       color: Colors.green,
+                      assetPath: assetForRegistroAction('Peso'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroPeso),
                     ),
@@ -105,6 +110,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Sanitario',
                       subtitle: 'Vacunas y tratamiento',
                       color: Colors.teal,
+                      assetPath: assetForRegistroAction('Sanitario'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroSanitario),
                     ),
@@ -113,6 +119,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Costo',
                       subtitle: 'Costos de manejo',
                       color: Colors.brown,
+                      assetPath: assetForRegistroAction('Costo'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroCosto),
                     ),
@@ -121,6 +128,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Cambio de ubicacion',
                       subtitle: 'Movimiento interno',
                       color: Colors.indigo,
+                      assetPath: assetForRegistroAction('Cambio de ubicacion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroMovimiento),
                     ),
@@ -129,6 +137,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Produccion',
                       subtitle: 'Ganancia o condicion',
                       color: Colors.blue,
+                      assetPath: assetForRegistroAction('Produccion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroProduccion),
                     ),
@@ -137,6 +146,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Ordeña',
                       subtitle: 'Leche por vaca o lote',
                       color: Colors.lightBlue.shade700,
+                      assetPath: assetForRegistroAction('Ordeña'),
                       featured: true,
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroOrdena),
@@ -146,6 +156,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Reproduccion',
                       subtitle: 'Servicio o paricion',
                       color: Colors.deepOrange,
+                      assetPath: assetForRegistroAction('Reproduccion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroReproduccion),
                     ),
@@ -154,6 +165,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Comercial',
                       subtitle: 'Compra y venta',
                       color: Colors.purple,
+                      assetPath: assetForRegistroAction('Comercial'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroComercial),
                     ),
@@ -179,6 +191,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Cultivo',
                       subtitle: 'Nuevo cultivo',
                       color: Colors.lightGreen,
+                      assetPath: assetForRegistroAction('Cultivo'),
                       onTap: (context) {
                         _handleNewCrop(context);
                       },
@@ -193,6 +206,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Cosecha',
                       subtitle: 'Rendimiento de cultivo',
                       color: Colors.orange,
+                      assetPath: assetForRegistroAction('Cosecha'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -582,8 +596,8 @@ class _RegistroCard extends StatelessWidget {
     final bgColor = item.featured
         ? item.color.withValues(alpha: 0.08)
         : theme.colorScheme.surfaceContainerLow;
-    final iconSize = item.large ? 52.0 : 38.0;
-    final iconInnerSize = item.large ? 26.0 : 20.0;
+    final iconSize = item.large ? 60.0 : 48.0;
+    final iconInnerSize = item.large ? 34.0 : 26.0;
     final chevronSize = item.large ? 24.0 : 20.0;
     final chevronIcon = item.large ? 14.0 : 12.0;
     final hPad = item.large ? 10.0 : 8.0;
@@ -606,10 +620,16 @@ class _RegistroCard extends StatelessWidget {
                 width: iconSize,
                 height: iconSize,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(AppRadii.sm),
                   color: item.color.withValues(alpha: 0.15),
                 ),
-                child: Icon(item.icon, color: item.color, size: iconInnerSize),
+                child: item.assetPath == null
+                    ? Icon(item.icon, color: item.color, size: iconInnerSize)
+                    : GeneratedAssetIcon(
+                        assetPath: item.assetPath!,
+                        fallbackIcon: item.icon,
+                        size: iconInnerSize,
+                      ),
               ),
               SizedBox(width: iconGap),
               Expanded(
@@ -671,6 +691,7 @@ class _RegistroCardItem {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.assetPath,
     this.featured = false,
     this.large = false,
   });
@@ -680,6 +701,7 @@ class _RegistroCardItem {
   final String subtitle;
   final Color color;
   final void Function(BuildContext context) onTap;
+  final String? assetPath;
   final bool featured;
   final bool large;
 
@@ -690,11 +712,12 @@ class _RegistroCardItem {
         other.icon == icon &&
         other.label == label &&
         other.subtitle == subtitle &&
-        other.color == color;
+        other.color == color &&
+        other.assetPath == assetPath;
   }
 
   @override
-  int get hashCode => Object.hash(icon, label, subtitle, color);
+  int get hashCode => Object.hash(icon, label, subtitle, color, assetPath);
 }
 
 enum _CropRecordMenuAction {

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_registration.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_workforce.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
@@ -56,6 +57,7 @@ class IsarDatabase {
         IsarMilkingSessionSchema,
         IsarMilkingEntrySchema,
         IsarAgendaEntrySchema,
+        IsarAgendaRegistrationSchema,
         IsarWorkerProfileSchema,
         IsarWorkTeamSchema,
         IsarCareRuleSchema,
@@ -103,6 +105,7 @@ class IsarDatabase {
       await db.isarMilkingEntrys.clear();
       await db.isarMilkingSessions.clear();
       await db.isarAgendaEntrys.clear();
+      await db.isarAgendaRegistrations.clear();
       await db.isarWorkerProfiles.clear();
       await db.isarWorkTeams.clear();
       await db.isarCareRules.clear();

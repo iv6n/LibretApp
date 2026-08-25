@@ -21,6 +21,7 @@ class ReportSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final trailingWidget = trailing;
 
     return Container(
       margin: margin,
@@ -53,7 +54,7 @@ class ReportSectionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                ?trailing,
+                if (trailingWidget != null) trailingWidget,
               ],
             ),
             const SizedBox(height: 10),

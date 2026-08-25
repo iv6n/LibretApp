@@ -141,13 +141,21 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormCommercialTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormCommercialTitle,
+            assetPath: AppAssetPaths.recordSale,
+            fallbackIcon: Icons.sell_outlined,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -165,7 +173,12 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
                   border: const OutlineInputBorder(),
                 ),
                 items: CommercialRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);

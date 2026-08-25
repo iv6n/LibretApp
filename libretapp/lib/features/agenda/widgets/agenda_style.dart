@@ -2,24 +2,151 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
+String _agendaKey(String value) => value
+    .toLowerCase()
+    .trim()
+    .replaceAll('á', 'a')
+    .replaceAll('é', 'e')
+    .replaceAll('í', 'i')
+    .replaceAll('ó', 'o')
+    .replaceAll('ú', 'u')
+    .replaceAll('ü', 'u')
+    .replaceAll('ñ', 'n')
+    .replaceAll(' ', '_');
+
+String? assetForTipo(String tipo) {
+  switch (_agendaKey(tipo)) {
+    case 'ordena':
+    case 'ordeno':
+      return AppAssetPaths.taskMilking;
+    case 'bano_garrapaticida':
+      return AppAssetPaths.taskTickBath;
+    case 'suplemento/vitaminas':
+    case 'suplemento_/_vitaminas':
+      return AppAssetPaths.taskVitamins;
+    case 'revision_de_casco':
+      return AppAssetPaths.taskHoofCheck;
+    case 'chequeo_reproductivo':
+      return AppAssetPaths.taskReproductiveCheck;
+    case 'fertilizacion':
+      return AppAssetPaths.taskFertilization;
+    case 'fumigacion':
+      return AppAssetPaths.taskFumigation;
+    case 'cosecha':
+      return AppAssetPaths.taskHarvest;
+    case 'desparasitacion':
+    case 'desparasitar':
+      return AppAssetPaths.taskDeworming;
+    case 'vacunacion':
+    case 'vacunacion_anual':
+    case 'vacuna_anual':
+      return AppAssetPaths.taskAnnualVaccination;
+    case 'pesaje':
+      return AppAssetPaths.healthWeight;
+    case 'revision_veterinaria':
+    case 'sanidad':
+    case 'sanitario':
+      return AppAssetPaths.healthDiagnosis;
+    case 'parto':
+      return AppAssetPaths.healthBirth;
+    case 'gestacion':
+    case 'inseminacion':
+      return AppAssetPaths.healthReproduction;
+    case 'movimiento_de_lote':
+      return AppAssetPaths.recordMovement;
+    case 'comercial':
+      return AppAssetPaths.recordSale;
+    case 'cultivo':
+      return AppAssetPaths.cropField;
+    case 'mantenimiento':
+      return AppAssetPaths.inventoryTool;
+    default:
+      return null;
+  }
+}
+
+String? assetForEstado(String estado) {
+  switch (_agendaKey(estado)) {
+    case 'pendiente':
+      return AppAssetPaths.statusPending;
+    case 'completado':
+    case 'verificado':
+      return AppAssetPaths.statusCompleted;
+    case 'vencido':
+      return AppAssetPaths.statusOverdue;
+    case 'en_progreso':
+      return AppAssetPaths.statusInProgress;
+    case 'cancelado':
+    case 'canceled':
+      return AppAssetPaths.statusCanceled;
+    case 'critico':
+    case 'critical':
+      return AppAssetPaths.statusCritical;
+    case 'en_cuarentena':
+    case 'cuarentena':
+      return AppAssetPaths.statusQuarantine;
+    case 'sincronizado':
+    case 'synced':
+      return AppAssetPaths.statusSynced;
+    case 'sin_conexion':
+    case 'offline':
+      return AppAssetPaths.statusOffline;
+    default:
+      return null;
+  }
+}
+
+class AgendaAssetIcon extends StatelessWidget {
+  const AgendaAssetIcon({
+    required this.assetPath,
+    required this.fallbackIcon,
+    this.size = 20,
+    this.color,
+    super.key,
+  });
+
+  final String? assetPath;
+  final IconData fallbackIcon;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (assetPath == null) {
+      return Icon(fallbackIcon, size: size, color: color);
+    }
+    return Image.asset(
+      assetPath!,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
+      errorBuilder: (_, _, _) => Icon(fallbackIcon, size: size, color: color),
+    );
+  }
+}
+
 Color colorForTipo(String tipo) {
-  switch (tipo.toLowerCase()) {
-    case 'vacunación':
+  switch (_agendaKey(tipo)) {
+    case 'vacunacion':
       return AppColors.primary;
-    case 'desparasitación':
+    case 'desparasitacion':
       return AppColors.success;
     case 'pesaje':
       return AppColors.secondary;
-    case 'revisión veterinaria':
+    case 'revision_veterinaria':
+    case 'sanidad':
+    case 'sanitario':
       return const Color(0xFF3A7F78);
-    case 'inseminación':
+    case 'inseminacion':
       return AppColors.earth;
     case 'parto':
-    case 'gestación':
+    case 'gestacion':
       return const Color(0xFF8B623A);
-    case 'movimiento de lote':
+    case 'movimiento_de_lote':
       return AppColors.earth;
     case 'mantenimiento':
       return AppColors.amber;
@@ -27,15 +154,20 @@ Color colorForTipo(String tipo) {
       return Colors.redAccent;
     case 'recordatorio':
       return AppColors.secondary;
-    case 'baño garrapaticida':
+    case 'bano_garrapaticida':
       return const Color(0xFF6E8B3D);
     case 'suplemento/vitaminas':
+    case 'suplemento_/_vitaminas':
       return AppColors.amber;
-    case 'revisión de casco':
+    case 'revision_de_casco':
       return const Color(0xFF3A7F78);
-    case 'chequeo reproductivo':
+    case 'chequeo_reproductivo':
       return AppColors.earth;
     case 'cuidado':
+      return AppColors.primary;
+    case 'comercial':
+      return const Color(0xFF7A4FA3);
+    case 'cultivo':
       return AppColors.primary;
     default:
       return AppColors.primary;
@@ -43,21 +175,23 @@ Color colorForTipo(String tipo) {
 }
 
 IconData iconForTipo(String tipo) {
-  switch (tipo.toLowerCase()) {
-    case 'vacunación':
+  switch (_agendaKey(tipo)) {
+    case 'vacunacion':
       return Icons.vaccines_outlined;
-    case 'desparasitación':
+    case 'desparasitacion':
       return Icons.bug_report_outlined;
     case 'pesaje':
       return Icons.monitor_weight_outlined;
-    case 'revisión veterinaria':
+    case 'revision_veterinaria':
+    case 'sanidad':
+    case 'sanitario':
       return Icons.medical_services_outlined;
-    case 'inseminación':
+    case 'inseminacion':
       return Icons.favorite_border;
     case 'parto':
-    case 'gestación':
+    case 'gestacion':
       return Icons.child_care;
-    case 'movimiento de lote':
+    case 'movimiento_de_lote':
       return Icons.swap_horiz;
     case 'mantenimiento':
       return Icons.home_repair_service_outlined;
@@ -65,16 +199,21 @@ IconData iconForTipo(String tipo) {
       return Icons.warning_amber_outlined;
     case 'recordatorio':
       return Icons.alarm;
-    case 'baño garrapaticida':
+    case 'bano_garrapaticida':
       return Icons.water_drop_outlined;
     case 'suplemento/vitaminas':
+    case 'suplemento_/_vitaminas':
       return Icons.medication_outlined;
-    case 'revisión de casco':
+    case 'revision_de_casco':
       return Icons.pets_outlined;
-    case 'chequeo reproductivo':
+    case 'chequeo_reproductivo':
       return Icons.favorite_outline;
     case 'cuidado':
       return Icons.health_and_safety_outlined;
+    case 'comercial':
+      return Icons.storefront_outlined;
+    case 'cultivo':
+      return Icons.grass_outlined;
     default:
       return Icons.event_note;
   }
@@ -85,6 +224,8 @@ Color colorForEstado(String estado) {
     case 'verificado':
     case 'completado':
       return AppColors.success;
+    case 'reprogramada':
+      return AppColors.warning;
     case 'en_progreso':
       return AppColors.secondary;
     case 'bloqueado':
@@ -104,6 +245,8 @@ IconData iconForEstado(String estado) {
       return Icons.verified_outlined;
     case 'completado':
       return Icons.check_circle_outline;
+    case 'reprogramada':
+      return Icons.event_repeat_outlined;
     case 'en_progreso':
       return Icons.timelapse;
     case 'bloqueado':
@@ -124,6 +267,8 @@ String labelForEstado(String estado) {
       return 'Verificado';
     case 'completado':
       return 'Completado';
+    case 'reprogramada':
+      return 'Reprogramada';
     case 'en_progreso':
       return 'En progreso';
     case 'bloqueado':

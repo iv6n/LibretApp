@@ -1,8 +1,9 @@
-﻿/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_controller \u2014 controller for the animals list screen.
+/// features \u203a directorio \u203a animales \u203a view \u203a animales_list_controller \u2014 controller for the animals list screen.
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
@@ -11,6 +12,8 @@ import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
+const Object _selectedSpeciesUnset = Object();
+
 @immutable
 class AnimalesListState {
   const AnimalesListState({
@@ -18,6 +21,8 @@ class AnimalesListState {
     required this.selectedStages,
     required this.onlyAttention,
     required this.onlyPendingEarTag,
+    this.selectedSpecies,
+    this.taxonomyCounts = const <Species, Map<LifeStage, int>>{},
     this.includeInactive = false,
     this.indicatorSnapshots = const <String, AnimalIndicatorSnapshot>{},
   });
@@ -33,6 +38,8 @@ class AnimalesListState {
   final Set<LifeStage> selectedStages;
   final bool onlyAttention;
   final bool onlyPendingEarTag;
+  final Species? selectedSpecies;
+  final Map<Species, Map<LifeStage, int>> taxonomyCounts;
 
   /// Shows animals that left the herd — sold, dead or archived. Off by
   /// default so the list reflects what is actually out in the field.
@@ -47,6 +54,8 @@ class AnimalesListState {
     Set<LifeStage>? selectedStages,
     bool? onlyAttention,
     bool? onlyPendingEarTag,
+    Object? selectedSpecies = _selectedSpeciesUnset,
+    Map<Species, Map<LifeStage, int>>? taxonomyCounts,
     bool? includeInactive,
     Map<String, AnimalIndicatorSnapshot>? indicatorSnapshots,
   }) {
@@ -55,6 +64,10 @@ class AnimalesListState {
       selectedStages: selectedStages ?? this.selectedStages,
       onlyAttention: onlyAttention ?? this.onlyAttention,
       onlyPendingEarTag: onlyPendingEarTag ?? this.onlyPendingEarTag,
+      selectedSpecies: identical(selectedSpecies, _selectedSpeciesUnset)
+          ? this.selectedSpecies
+          : selectedSpecies as Species?,
+      taxonomyCounts: taxonomyCounts ?? this.taxonomyCounts,
       includeInactive: includeInactive ?? this.includeInactive,
       indicatorSnapshots: indicatorSnapshots ?? this.indicatorSnapshots,
     );
@@ -62,6 +75,7 @@ class AnimalesListState {
 
   bool get hasFilters =>
       selectedStages.isNotEmpty ||
+      selectedSpecies != null ||
       onlyAttention ||
       onlyPendingEarTag ||
       includeInactive;
@@ -70,11 +84,13 @@ class AnimalesListState {
 class AnimalesListController extends ChangeNotifier {
   AnimalesListController({
     required LocationRepository locationRepository,
+    AnimalRepository? animalRepository,
     ReproductionRecordRepository? reproductionRepository,
     HealthRecordRepository? healthRepository,
     WeightRecordRepository? weightRepository,
     MilkingRepository? milkingRepository,
   }) : _locationRepository = locationRepository,
+       _animalRepository = animalRepository,
        _reproductionRepository = reproductionRepository,
        _healthRepository = healthRepository,
        _weightRepository = weightRepository,
@@ -82,6 +98,7 @@ class AnimalesListController extends ChangeNotifier {
        _state = AnimalesListState.initial();
 
   final LocationRepository _locationRepository;
+  final AnimalRepository? _animalRepository;
 
   // All optional: focused widget tests build the list without them, and each
   // missing source simply leaves its slice of the snapshot null, which the
@@ -109,6 +126,70 @@ class AnimalesListController extends ChangeNotifier {
   Future<void> loadInitial() async {
     final locations = await _locationRepository.getAll();
     _setState(_state.copyWith(locations: locations));
+  }
+
+  /// Loads whole-herd species/stage availability so filter chips never depend
+  /// on which animal page happens to be visible.
+  Future<void> loadTaxonomy([Iterable<AnimalEntity>? fallbackAnimals]) async {
+    final counts = _animalRepository == null
+        ? _taxonomyFromAnimals(fallbackAnimals ?? const <AnimalEntity>[])
+        : await _animalRepository!.getActiveTaxonomyCounts();
+    if (_disposed) return;
+
+    final selected = _state.selectedSpecies;
+    final nextSelected = selected != null && counts.containsKey(selected)
+        ? selected
+        : null;
+    _setState(
+      _state.copyWith(
+        taxonomyCounts: counts,
+        selectedSpecies: nextSelected,
+        selectedStages: _stagesForSpecies(
+          _state.selectedStages,
+          nextSelected,
+          counts,
+        ),
+      ),
+    );
+  }
+
+  Set<Species> get availableSpecies => _state.taxonomyCounts.keys.toSet();
+
+  int get taxonomyTotal => _state.taxonomyCounts.values.fold<int>(
+    0,
+    (sum, stages) => sum + stages.values.fold<int>(0, (a, b) => a + b),
+  );
+
+  Map<LifeStage, int> get selectedSpeciesStageCounts {
+    var species = _state.selectedSpecies;
+    if (species == null && availableSpecies.length == 1) {
+      species = availableSpecies.first;
+    }
+    return species == null
+        ? const <LifeStage, int>{}
+        : _state.taxonomyCounts[species] ?? const <LifeStage, int>{};
+  }
+
+  Map<Species, Map<LifeStage, int>> _taxonomyFromAnimals(
+    Iterable<AnimalEntity> animals,
+  ) {
+    final counts = <Species, Map<LifeStage, int>>{};
+    for (final animal in animals) {
+      counts
+          .putIfAbsent(animal.species, () => <LifeStage, int>{})
+          .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  Set<LifeStage> _stagesForSpecies(
+    Set<LifeStage> stages,
+    Species? species,
+    Map<Species, Map<LifeStage, int>> counts,
+  ) {
+    if (species == null) return const <LifeStage>{};
+    final available = counts[species]?.keys.toSet() ?? const <LifeStage>{};
+    return stages.where(available.contains).toSet();
   }
 
   /// Builds card indicators for [animals] in one batch query.
@@ -222,6 +303,15 @@ class AnimalesListController extends ChangeNotifier {
     _setState(_state.copyWith(selectedStages: Set<LifeStage>.from(stages)));
   }
 
+  void setSpecies(Species? species) {
+    _setState(
+      _state.copyWith(
+        selectedSpecies: species,
+        selectedStages: const <LifeStage>{},
+      ),
+    );
+  }
+
   void setOnlyAttention(bool value) {
     _setState(_state.copyWith(onlyAttention: value));
   }
@@ -287,6 +377,9 @@ class AnimalesListController extends ChangeNotifier {
       final matchesStage =
           _state.selectedStages.isEmpty ||
           _state.selectedStages.contains(animal.lifeStage);
+      final matchesSpecies =
+          _state.selectedSpecies == null ||
+          _state.selectedSpecies == animal.species;
 
       final needsAttention =
           animal.requiresAttention ||
@@ -304,94 +397,32 @@ class AnimalesListController extends ChangeNotifier {
       final matchesHerd =
           _state.includeInactive || animal.status.isInActiveHerd;
 
-      return matchesStage &&
+      return matchesSpecies &&
+          matchesStage &&
           matchesAttention &&
           matchesPendingEarTag &&
           matchesHerd;
     }).toList();
 
-    // Sort critical/attention cases first, then by severity and most recent.
+    // Activity is the directory's primary order. Alerts remain available as
+    // indicators and filters, but an older alert must not outrank a newer
+    // animal record.
     filtered.sort(_compareAnimals);
     return filtered;
   }
 
   int _compareAnimals(AnimalEntity a, AnimalEntity b) {
-    final aNeedsPriority = _needsTopPriority(a);
-    final bNeedsPriority = _needsTopPriority(b);
-    if (aNeedsPriority != bNeedsPriority) {
-      return aNeedsPriority ? -1 : 1;
-    }
-
-    if (a.underObservation != b.underObservation) {
-      return a.underObservation ? -1 : 1;
-    }
-
-    final healthOrder = _healthSeverity(
-      b.healthStatus,
-    ).compareTo(_healthSeverity(a.healthStatus));
-    if (healthOrder != 0) return healthOrder;
-
-    final riskOrder = _riskSeverity(
-      b.riskLevel,
-    ).compareTo(_riskSeverity(a.riskLevel));
-    if (riskOrder != 0) return riskOrder;
-
-    if (a.requiresAttention != b.requiresAttention) {
-      return a.requiresAttention ? -1 : 1;
-    }
-
     final recencyOrder = b.lastUpdateDate.compareTo(a.lastUpdateDate);
     if (recencyOrder != 0) return recencyOrder;
 
-    return _stableIdentifier(a).compareTo(_stableIdentifier(b));
-  }
+    final ageOrder = a.ageMonths.compareTo(b.ageMonths);
+    if (ageOrder != 0) return ageOrder;
 
-  bool _needsTopPriority(AnimalEntity animal) {
-    return animal.underObservation ||
-        animal.requiresAttention ||
-        _healthSeverity(animal.healthStatus) >= 3 ||
-        _riskSeverity(animal.riskLevel) >= 3;
-  }
-
-  int _healthSeverity(HealthStatus status) {
-    switch (status) {
-      case HealthStatus.critical:
-        return 4;
-      case HealthStatus.poor:
-        return 3;
-      case HealthStatus.fair:
-        return 2;
-      case HealthStatus.good:
-        return 1;
-      case HealthStatus.excellent:
-      case HealthStatus.unknown:
-        return 0;
-    }
-  }
-
-  int _riskSeverity(RiskLevel level) {
-    switch (level) {
-      case RiskLevel.critical:
-        return 4;
-      case RiskLevel.high:
-        return 3;
-      case RiskLevel.medium:
-        return 2;
-      case RiskLevel.low:
-        return 1;
-      case RiskLevel.none:
-        return 0;
-    }
-  }
-
-  String _stableIdentifier(AnimalEntity animal) {
-    final earTag = animal.earTagNumber.trim().toLowerCase();
-    if (earTag.isNotEmpty) return earTag;
-
-    final visualId = animal.visualId?.trim().toLowerCase();
-    if (visualId != null && visualId.isNotEmpty) return visualId;
-
-    return animal.uuid.trim().toLowerCase();
+    final earTagOrder = a.earTagNumber.trim().toLowerCase().compareTo(
+      b.earTagNumber.trim().toLowerCase(),
+    );
+    if (earTagOrder != 0) return earTagOrder;
+    return a.uuid.trim().toLowerCase().compareTo(b.uuid.trim().toLowerCase());
   }
 
   void _setState(AnimalesListState newState) {

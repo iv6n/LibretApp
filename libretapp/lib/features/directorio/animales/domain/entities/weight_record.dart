@@ -13,18 +13,24 @@ class WeightRecord extends TimestampedRecord {
     required this.weight,
     required this.method,
     this.measuredBy,
+    this.recordUuid,
+    this.updatedAt,
     super.notes,
     super.id,
   });
   final double weight;
   final WeightMethod method;
   final String? measuredBy;
+  final String? recordUuid;
+  final DateTime? updatedAt;
 
   WeightRecord copyWith({
     DateTime? date,
     double? weight,
     WeightMethod? method,
     String? measuredBy,
+    String? recordUuid,
+    DateTime? updatedAt,
     String? notes,
     String? id,
   }) {
@@ -33,11 +39,20 @@ class WeightRecord extends TimestampedRecord {
       weight: weight ?? this.weight,
       method: method ?? this.method,
       measuredBy: measuredBy ?? this.measuredBy,
+      recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       notes: notes ?? this.notes,
       id: id ?? this.id,
     );
   }
 
   @override
-  List<Object?> get props => [...super.props, weight, method, measuredBy];
+  List<Object?> get props => [
+    ...super.props,
+    weight,
+    method,
+    measuredBy,
+    recordUuid,
+    updatedAt,
+  ];
 }

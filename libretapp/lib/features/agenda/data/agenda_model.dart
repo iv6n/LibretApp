@@ -11,6 +11,7 @@ class AgendaEstado {
   static const bloqueado = 'bloqueado';
   static const completado = 'completado';
   static const verificado = 'verificado';
+  static const reprogramada = 'reprogramada';
   static const cancelado = 'cancelado';
 }
 
@@ -72,13 +73,7 @@ class AgendaChecklistItem extends Equatable {
       );
 
   @override
-  List<Object?> get props => [
-    id,
-    label,
-    completed,
-    completedById,
-    completedAt,
-  ];
+  List<Object?> get props => [id, label, completed, completedById, completedAt];
 }
 
 const Object _agendaSentinel = Object();
@@ -177,6 +172,15 @@ class AgendaEntry extends Equatable {
     this.updatedAt,
     this.recurrenceRule,
     this.blockedReason,
+    this.remindAt,
+    this.actionKind,
+    this.sourceType,
+    this.sourceId,
+    this.planId,
+    this.originalFecha,
+    this.supersedesId,
+    this.rescheduleReason,
+    this.cropUuid,
     this.checklist = const [],
     this.activities = const [],
     this.evidence = const [],
@@ -218,6 +222,36 @@ class AgendaEntry extends Equatable {
   final DateTime? updatedAt;
   final String? recurrenceRule;
   final String? blockedReason;
+
+  /// Date on which the reminder should become visible. The occurrence itself
+  /// remains anchored to [fecha], so overdue work never loses its original
+  /// scheduled date.
+  final DateTime? remindAt;
+
+  /// Stable operation identifier used by the domain form that opens when the
+  /// user chooses "Registrar" (for example: recordHealth or cropWater).
+  final String? actionKind;
+
+  /// Source that generated this occurrence. Automatic entries use this pair
+  /// as their reconciliation key; manual work may leave it null.
+  final String? sourceType;
+  final String? sourceId;
+
+  /// Optional recurring work-plan identifier.
+  final String? planId;
+
+  /// Original date before a reprogramming chain began.
+  final DateTime? originalFecha;
+
+  /// Previous occurrence in a reprogramming chain.
+  final String? supersedesId;
+
+  /// Human-readable reason for a reprogramming decision.
+  final String? rescheduleReason;
+
+  /// Crop target. Location remains the physical work site.
+  final String? cropUuid;
+
   final List<AgendaChecklistItem> checklist;
   final List<AgendaActivity> activities;
   final List<AgendaEvidence> evidence;
@@ -236,7 +270,7 @@ class AgendaEntry extends Equatable {
     String? estado,
     List<String>? completedAnimalIds,
     String? notas,
-    DateTime? fechaCompletado,
+    Object? fechaCompletado = _sentinel,
     Object? locationUuid = _sentinel,
     String? prioridad,
     Object? assigneeId = _sentinel,
@@ -247,6 +281,15 @@ class AgendaEntry extends Equatable {
     Object? updatedAt = _sentinel,
     Object? recurrenceRule = _sentinel,
     Object? blockedReason = _sentinel,
+    Object? remindAt = _sentinel,
+    Object? actionKind = _sentinel,
+    Object? sourceType = _sentinel,
+    Object? sourceId = _sentinel,
+    Object? planId = _sentinel,
+    Object? originalFecha = _sentinel,
+    Object? supersedesId = _sentinel,
+    Object? rescheduleReason = _sentinel,
+    Object? cropUuid = _sentinel,
     List<AgendaChecklistItem>? checklist,
     List<AgendaActivity>? activities,
     List<AgendaEvidence>? evidence,
@@ -263,7 +306,9 @@ class AgendaEntry extends Equatable {
       estado: estado ?? this.estado,
       completedAnimalIds: completedAnimalIds ?? this.completedAnimalIds,
       notas: notas ?? this.notas,
-      fechaCompletado: fechaCompletado ?? this.fechaCompletado,
+      fechaCompletado: fechaCompletado == _sentinel
+          ? this.fechaCompletado
+          : fechaCompletado as DateTime?,
       locationUuid: locationUuid == _sentinel
           ? this.locationUuid
           : locationUuid as String?,
@@ -278,14 +323,37 @@ class AgendaEntry extends Equatable {
       createdById: createdById == _sentinel
           ? this.createdById
           : createdById as String?,
-      createdAt: createdAt == _sentinel ? this.createdAt : createdAt as DateTime?,
-      updatedAt: updatedAt == _sentinel ? this.updatedAt : updatedAt as DateTime?,
+      createdAt: createdAt == _sentinel
+          ? this.createdAt
+          : createdAt as DateTime?,
+      updatedAt: updatedAt == _sentinel
+          ? this.updatedAt
+          : updatedAt as DateTime?,
       recurrenceRule: recurrenceRule == _sentinel
           ? this.recurrenceRule
           : recurrenceRule as String?,
       blockedReason: blockedReason == _sentinel
           ? this.blockedReason
           : blockedReason as String?,
+      remindAt: remindAt == _sentinel ? this.remindAt : remindAt as DateTime?,
+      actionKind: actionKind == _sentinel
+          ? this.actionKind
+          : actionKind as String?,
+      sourceType: sourceType == _sentinel
+          ? this.sourceType
+          : sourceType as String?,
+      sourceId: sourceId == _sentinel ? this.sourceId : sourceId as String?,
+      planId: planId == _sentinel ? this.planId : planId as String?,
+      originalFecha: originalFecha == _sentinel
+          ? this.originalFecha
+          : originalFecha as DateTime?,
+      supersedesId: supersedesId == _sentinel
+          ? this.supersedesId
+          : supersedesId as String?,
+      rescheduleReason: rescheduleReason == _sentinel
+          ? this.rescheduleReason
+          : rescheduleReason as String?,
+      cropUuid: cropUuid == _sentinel ? this.cropUuid : cropUuid as String?,
       checklist: checklist ?? this.checklist,
       activities: activities ?? this.activities,
       evidence: evidence ?? this.evidence,
@@ -315,6 +383,16 @@ class AgendaEntry extends Equatable {
     if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     if (recurrenceRule != null) 'recurrenceRule': recurrenceRule,
     if (blockedReason != null) 'blockedReason': blockedReason,
+    if (remindAt != null) 'remindAt': remindAt!.toIso8601String(),
+    if (actionKind != null) 'actionKind': actionKind,
+    if (sourceType != null) 'sourceType': sourceType,
+    if (sourceId != null) 'sourceId': sourceId,
+    if (planId != null) 'planId': planId,
+    if (originalFecha != null)
+      'originalFecha': originalFecha!.toIso8601String(),
+    if (supersedesId != null) 'supersedesId': supersedesId,
+    if (rescheduleReason != null) 'rescheduleReason': rescheduleReason,
+    if (cropUuid != null) 'cropUuid': cropUuid,
     'checklist': checklist.map((item) => item.toJson()).toList(),
     'activities': activities.map((activity) => activity.toJson()).toList(),
     'evidence': evidence.map((item) => item.toJson()).toList(),
@@ -373,6 +451,19 @@ class AgendaEntry extends Equatable {
           : DateTime.parse(json['updatedAt'] as String),
       recurrenceRule: json['recurrenceRule'] as String?,
       blockedReason: json['blockedReason'] as String?,
+      remindAt: json['remindAt'] == null
+          ? null
+          : DateTime.parse(json['remindAt'] as String),
+      actionKind: json['actionKind'] as String?,
+      sourceType: json['sourceType'] as String?,
+      sourceId: json['sourceId'] as String?,
+      planId: json['planId'] as String?,
+      originalFecha: json['originalFecha'] == null
+          ? null
+          : DateTime.parse(json['originalFecha'] as String),
+      supersedesId: json['supersedesId'] as String?,
+      rescheduleReason: json['rescheduleReason'] as String?,
+      cropUuid: json['cropUuid'] as String?,
       checklist:
           (json['checklist'] as List<dynamic>?)
               ?.map(
@@ -427,6 +518,15 @@ class AgendaEntry extends Equatable {
     updatedAt,
     recurrenceRule,
     blockedReason,
+    remindAt,
+    actionKind,
+    sourceType,
+    sourceId,
+    planId,
+    originalFecha,
+    supersedesId,
+    rescheduleReason,
+    cropUuid,
     checklist,
     activities,
     evidence,

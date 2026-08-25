@@ -3,6 +3,7 @@ library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 
 /// Contrato para la persistencia y acceso de datos de animales.
 abstract class AnimalRepository {
@@ -42,6 +43,22 @@ abstract class AnimalRepository {
   /// the values gives the herd total, since every active animal has exactly
   /// one life stage.
   Future<Map<LifeStage, int>> getActiveStageCounts();
+
+  /// Whole-herd taxonomy counts used by adaptive directory filters.
+  Future<Map<Species, Map<LifeStage, int>>> getActiveTaxonomyCounts() async {
+    final counts = <Species, Map<LifeStage, int>>{};
+    for (final animal in await getAll()) {
+      counts
+          .putIfAbsent(animal.species, () => <LifeStage, int>{})
+          .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  /// Persists lifecycle-derived fields without turning age advancement into
+  /// directory activity. Real persistence overrides this default method.
+  Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) =>
+      update(animal);
   Future<AnimalEntity> save(AnimalEntity animal);
   Future<AnimalEntity> update(AnimalEntity animal);
   Future<void> markAsSynced(String uuid, String remoteId);

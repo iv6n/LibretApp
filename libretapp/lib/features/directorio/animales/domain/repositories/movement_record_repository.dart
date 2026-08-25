@@ -11,3 +11,9 @@ abstract class MovementRecordRepository {
   );
   Future<void> deleteMovementRecord(String recordId);
 }
+
+abstract interface class MovementRecordUuidLookup {
+  Future<Map<String, MovementRecord>> getMovementRecordsByRecordUuids(
+    Set<String> recordUuids,
+  );
+}

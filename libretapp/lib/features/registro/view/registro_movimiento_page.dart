@@ -128,13 +128,21 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormMovementTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormMovementTitle,
+            assetPath: AppAssetPaths.recordMovement,
+            fallbackIcon: Icons.swap_horiz,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(

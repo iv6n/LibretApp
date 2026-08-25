@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
 import 'package:uuid/uuid.dart';
 
 /// Shared CRUD skeleton for the animal "child record" repositories (health,
@@ -56,6 +57,7 @@ abstract class IsarRecordRepositoryBase<
   }) async {
     final db = await isar;
     final model = toIsarModel(record, animalUuid);
+    final activityAt = DateTime.now();
     await db.writeTxn(() async {
       if (model.recordUuid.isEmpty) {
         final existing = model.id == Isar.autoIncrement
@@ -67,6 +69,7 @@ abstract class IsarRecordRepositoryBase<
       }
       final id = await collection(db).put(model);
       assignId(model, id);
+      await AnimalActivityTracker.touch(db, animalUuid, activityAt);
       if (onSaved != null) await onSaved(db, model);
     });
     final saved = toEntity(model);
@@ -79,7 +82,14 @@ abstract class IsarRecordRepositoryBase<
     final id = int.tryParse(recordId);
     if (id == null) return;
     await db.writeTxn(() async {
+      final stored = await collection(db).get(id);
+      final animalUuid = stored == null
+          ? null
+          : (stored as dynamic).animalUuid as String?;
       await collection(db).delete(id);
+      if (animalUuid != null && animalUuid.isNotEmpty) {
+        await AnimalActivityTracker.recalculate(db, animalUuid);
+      }
     });
   }
 }

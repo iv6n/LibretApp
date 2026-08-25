@@ -155,7 +155,7 @@ static const Map<String, String> legacyNameMap = {
   'monte'         : 'monte',
   'corral'        : 'corral',
   'almacenamiento': 'warehouse',
-  'aguada'        : 'pond',
+  'aguada'        : 'aguada',
   'siembra'       : 'field',
   'casa'          : 'house',
 };

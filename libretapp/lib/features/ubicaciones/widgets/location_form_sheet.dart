@@ -406,25 +406,29 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
             ),
             const Spacer(),
             TextButton.icon(
-              onPressed: () { _pickImage(); },
+              onPressed: () {
+                _pickImage();
+              },
               icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
               label: const Text('Agregar'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
             ),
           ],
         ),
         if (_imagePaths.isEmpty)
           GestureDetector(
-            onTap: () { _pickImage(); },
+            onTap: () {
+              _pickImage();
+            },
             child: Container(
               height: 90,
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
                   style: BorderStyle.solid,
                 ),
               ),
@@ -459,15 +463,18 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
               itemBuilder: (context, index) {
                 if (index == _imagePaths.length) {
                   return GestureDetector(
-                    onTap: () { _pickImage(); },
+                    onTap: () {
+                      _pickImage();
+                    },
                     child: Container(
                       width: 90,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: theme.colorScheme.outlineVariant
-                              .withValues(alpha: 0.5),
+                          color: theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                       child: Icon(
@@ -502,7 +509,8 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                       top: 4,
                       right: 4,
                       child: GestureDetector(
-                        onTap: () => setState(() => _imagePaths.removeAt(index)),
+                        onTap: () =>
+                            setState(() => _imagePaths.removeAt(index)),
                         child: Container(
                           width: 22,
                           height: 22,
@@ -1144,6 +1152,9 @@ _typeSpecificAdaptiveFields = {
     _AdaptiveFieldSpec(key: 'springProtection', kind: _AdaptiveFieldKind.text),
   ],
   LocationType.pond: [
+    _AdaptiveFieldSpec(key: 'pondUse', kind: _AdaptiveFieldKind.text),
+  ],
+  LocationType.aguada: [
     _AdaptiveFieldSpec(key: 'pondUse', kind: _AdaptiveFieldKind.text),
   ],
   LocationType.trough: [

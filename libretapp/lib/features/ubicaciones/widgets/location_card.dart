@@ -367,34 +367,68 @@ class LocationTypeAvatar extends StatelessWidget {
   }
 }
 
+const _specificLocationAssets = <LocationType, String>{
+  LocationType.ranch: 'assets/images/location_ranch.webp',
+  LocationType.farm: 'assets/images/location_farm.webp',
+  LocationType.finca: 'assets/images/location_finca.webp',
+  LocationType.hacienda: 'assets/images/location_hacienda.webp',
+  LocationType.plantation: 'assets/images/location_plantation.webp',
+  LocationType.property: 'assets/images/location_property.webp',
+  LocationType.homestead: 'assets/images/location_homestead.webp',
+  LocationType.warehouse: 'assets/images/location_warehouse.webp',
+  LocationType.monte: 'assets/images/location_monte.webp',
+  LocationType.ejido: 'assets/images/location_ejido.webp',
+  LocationType.corral: 'assets/images/location_corral.webp',
+  LocationType.feedlot: 'assets/images/location_feedlot.webp',
+  LocationType.stable: 'assets/images/location_stable.webp',
+  LocationType.pen: 'assets/images/location_pen.webp',
+  LocationType.chute: 'assets/images/location_chute.webp',
+  LocationType.quarantineArea: 'assets/images/location_quarantine_area.webp',
+  LocationType.loadingArea: 'assets/images/location_loading_area.webp',
+  LocationType.weighingArea: 'assets/images/location_weighing_area.webp',
+  LocationType.spring: 'assets/images/location_spring.webp',
+  LocationType.well: 'assets/images/location_well.webp',
+  LocationType.pond: 'assets/images/location_pond.webp',
+  LocationType.aguada: 'assets/images/location_aguada.webp',
+  LocationType.pasture: 'assets/images/location_pasture.webp',
+  LocationType.field: 'assets/images/location_field.webp',
+  LocationType.barn: 'assets/images/location_barn.webp',
+  LocationType.house: 'assets/images/location_house.webp',
+  LocationType.road: 'assets/images/location_road.webp',
+  LocationType.gate: 'assets/images/location_gate.webp',
+  LocationType.waterTank: 'assets/images/location_water_tank.webp',
+  LocationType.plot: 'assets/images/location_plot.webp',
+  LocationType.milpa: 'assets/images/location_milpa.webp',
+  LocationType.orchard: 'assets/images/location_orchard.webp',
+  LocationType.greenhouse: 'assets/images/location_greenhouse.webp',
+  LocationType.nursery: 'assets/images/location_nursery.webp',
+  LocationType.garden: 'assets/images/location_garden.webp',
+  LocationType.forest: 'assets/images/location_forest.webp',
+  LocationType.lagoon: 'assets/images/location_lagoon.webp',
+  LocationType.river: 'assets/images/location_river.webp',
+  LocationType.wetland: 'assets/images/location_wetland.webp',
+  LocationType.protectedArea: 'assets/images/location_protected_area.webp',
+  LocationType.workshop: 'assets/images/location_workshop.webp',
+  LocationType.office: 'assets/images/location_office.webp',
+  LocationType.dam: 'assets/images/location_dam.webp',
+  LocationType.trough: 'assets/images/location_trough.webp',
+  LocationType.canal: 'assets/images/location_canal.webp',
+  LocationType.reservoir: 'assets/images/location_reservoir.webp',
+};
+
 String locationAssetForType(LocationType type) {
-  return switch (type) {
-    LocationType.warehouse => 'assets/images/location_warehouse.png',
-    LocationType.monte => 'assets/images/location_monte.png',
-    LocationType.ejido => 'assets/images/location_ejido.png',
-    LocationType.corral => 'assets/images/location_corral.png',
-    LocationType.spring => 'assets/images/location_spring.png',
-    LocationType.well => 'assets/images/location_well.png',
-    LocationType.pond => 'assets/images/location_pond.png',
-    LocationType.pasture => 'assets/images/location_pasture.png',
-    LocationType.field => 'assets/images/location_field.png',
-    LocationType.barn => 'assets/images/location_barn.png',
-    LocationType.house => 'assets/images/location_house.png',
-    LocationType.road => 'assets/images/location_road.png',
-    LocationType.gate => 'assets/images/location_gate.png',
-    LocationType.waterTank => 'assets/images/location_water_tank.png',
-    _ => switch (type.category) {
-      LocationCategory.macro => 'assets/images/location_macro.png',
-      LocationCategory.livestock => 'assets/images/location_livestock.png',
-      LocationCategory.handling => 'assets/images/location_handling.png',
-      LocationCategory.agricultural =>
-        'assets/images/location_agricultural.png',
-      LocationCategory.natural => 'assets/images/location_natural.png',
-      LocationCategory.infrastructure =>
-        'assets/images/location_infrastructure.png',
-      LocationCategory.water => 'assets/images/location_water.png',
-    },
-  };
+  return _specificLocationAssets[type] ??
+      switch (type.category) {
+        LocationCategory.macro => 'assets/images/location_macro.webp',
+        LocationCategory.livestock => 'assets/images/location_livestock.webp',
+        LocationCategory.handling => 'assets/images/location_handling.webp',
+        LocationCategory.agricultural =>
+          'assets/images/location_agricultural.webp',
+        LocationCategory.natural => 'assets/images/location_natural.webp',
+        LocationCategory.infrastructure =>
+          'assets/images/location_infrastructure.webp',
+        LocationCategory.water => 'assets/images/location_water.webp',
+      };
 }
 
 Color locationTypeColor(LocationType type) {
@@ -426,6 +460,7 @@ Color locationTypeColor(LocationType type) {
     case LocationType.gate:
       return const Color(0xFF6B5A4A);
     case LocationType.pond:
+    case LocationType.aguada:
     case LocationType.well:
     case LocationType.dam:
     case LocationType.spring:
@@ -483,6 +518,7 @@ IconData iconForLocationType(LocationType type) {
     case LocationType.gate:
       return Icons.warehouse;
     case LocationType.pond:
+    case LocationType.aguada:
     case LocationType.well:
     case LocationType.dam:
     case LocationType.spring:

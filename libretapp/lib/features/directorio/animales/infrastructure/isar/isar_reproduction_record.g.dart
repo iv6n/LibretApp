@@ -97,6 +97,11 @@ const IsarReproductionRecordSchema = CollectionSchema(
       id: 15,
       name: r'servicedBy',
       type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 16,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _isarReproductionRecordEstimateSize,
@@ -236,6 +241,7 @@ void _isarReproductionRecordSerialize(
   writer.writeDateTime(offsets[13], object.serviceDate);
   writer.writeString(offsets[14], object.serviceType);
   writer.writeString(offsets[15], object.servicedBy);
+  writer.writeDateTime(offsets[16], object.updatedAt);
 }
 
 IsarReproductionRecord _isarReproductionRecordDeserialize(
@@ -262,6 +268,7 @@ IsarReproductionRecord _isarReproductionRecordDeserialize(
   object.serviceDate = reader.readDateTime(offsets[13]);
   object.serviceType = reader.readString(offsets[14]);
   object.servicedBy = reader.readStringOrNull(offsets[15]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[16]);
   return object;
 }
 
@@ -304,6 +311,8 @@ P _isarReproductionRecordDeserializeProp<P>(
       return (reader.readString(offset)) as P;
     case 15:
       return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -2763,6 +2772,80 @@ extension IsarReproductionRecordQueryFilter on QueryBuilder<
       ));
     });
   }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord,
+      QAfterFilterCondition> updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension IsarReproductionRecordQueryObject on QueryBuilder<
@@ -2980,6 +3063,20 @@ extension IsarReproductionRecordQuerySortBy
       sortByServicedByDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'servicedBy', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord, QAfterSortBy>
+      sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -3209,6 +3306,20 @@ extension IsarReproductionRecordQuerySortThenBy on QueryBuilder<
       return query.addSortBy(r'servicedBy', Sort.desc);
     });
   }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord, QAfterSortBy>
+      thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
 }
 
 extension IsarReproductionRecordQueryWhereDistinct
@@ -3326,6 +3437,13 @@ extension IsarReproductionRecordQueryWhereDistinct
       distinctByServicedBy({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'servicedBy', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, IsarReproductionRecord, QDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -3447,6 +3565,13 @@ extension IsarReproductionRecordQueryProperty on QueryBuilder<
       servicedByProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'servicedBy');
+    });
+  }
+
+  QueryBuilder<IsarReproductionRecord, DateTime?, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 }

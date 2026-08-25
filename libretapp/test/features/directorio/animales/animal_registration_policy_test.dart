@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 
 void main() {
   group('AnimalRegistrationPolicy', () {
@@ -84,6 +85,59 @@ void main() {
           ageMonths: 30,
         ),
         contains(Category.cow),
+      );
+    });
+
+    test('resolves cattle stages at 11/12 and 23/24 months', () {
+      final reference = DateTime(2026, 1, 1);
+
+      AnimalLifecycleResult calculate({
+        required Sex sex,
+        required DateTime birthDate,
+        Category? category,
+      }) => AnimalLifecycleCalculator.calculate(
+        birthDate: birthDate,
+        species: Species.cattle,
+        sex: sex,
+        category: category,
+        now: reference,
+      );
+
+      expect(
+        calculate(sex: Sex.female, birthDate: DateTime(2025, 2, 1)).lifeStage,
+        LifeStage.calfFemale,
+      );
+      expect(
+        calculate(sex: Sex.female, birthDate: DateTime(2025, 1, 1)).lifeStage,
+        LifeStage.heifer,
+      );
+      expect(
+        calculate(sex: Sex.female, birthDate: DateTime(2024, 2, 1)).lifeStage,
+        LifeStage.heifer,
+      );
+      expect(
+        calculate(sex: Sex.female, birthDate: DateTime(2024, 1, 1)).lifeStage,
+        LifeStage.cow,
+      );
+      expect(
+        calculate(sex: Sex.male, birthDate: DateTime(2025, 1, 1)).lifeStage,
+        LifeStage.youngBull,
+      );
+      expect(
+        calculate(
+          sex: Sex.male,
+          birthDate: DateTime(2025, 1, 1),
+          category: Category.steer,
+        ).lifeStage,
+        LifeStage.steer,
+      );
+      expect(
+        calculate(
+          sex: Sex.male,
+          birthDate: DateTime(2024, 1, 1),
+          category: Category.oxen,
+        ).lifeStage,
+        LifeStage.steer,
       );
     });
   });

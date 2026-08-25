@@ -58,7 +58,7 @@ List<LocationEntity> buildDemoLocations({required DateTime reference}) {
     visits: [
       VisitRecord(
         date: reference.subtract(const Duration(days: 2)),
-        animals: 40,
+        animals: 35,
         notes: 'Recorrido general del rancho. Registro de demostración.',
         user: 'Rodrigo Valenzuela (DEMO)',
       ),

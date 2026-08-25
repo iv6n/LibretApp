@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -113,6 +114,8 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
       saving: _saving,
       onSave: _save,
       saveLabel: l10n.actionSave,
+      assetPath: AppAssetPaths.recordMovement,
+      fallbackIcon: Icons.swap_horiz,
       fields: [
         DropdownButtonFormField<MovementReason>(
           initialValue: _reason,

@@ -53,6 +53,32 @@ class AgendaEventGroup extends Equatable {
 
   int get completedCount => rows.where((row) => row.isCompleted).length;
 
+  /// All unique animals represented by this logical event, including animals
+  /// that have already been completed in a source entry.
+  Set<String> get allAnimalIds => {
+    for (final entry in entries) ...entry.animalIds,
+  };
+
+  /// Persisted completions for this event, excluding an animal that still has
+  /// a pending row selected from a more urgent source entry.
+  Set<String> get completedAnimalIds {
+    final allIds = allAnimalIds;
+    final pendingIds = {
+      for (final row in rows)
+        if (row.animalId != null && !row.isCompleted) row.animalId!,
+    };
+    return {
+      for (final entry in entries)
+        for (final animalId in entry.completedAnimalIds)
+          if (allIds.contains(animalId) && !pendingIds.contains(animalId))
+            animalId,
+    };
+  }
+
+  int get totalAnimalCount => allAnimalIds.length;
+
+  int get completedAnimalCount => completedAnimalIds.length;
+
   @override
   List<Object?> get props => [key, titulo, tipo, categoria, rows, entries];
 }
@@ -92,7 +118,8 @@ class AgendaTaskGrouper {
   bool isTerminal(AgendaEntry entry) =>
       entry.estado == AgendaEstado.completado ||
       entry.estado == AgendaEstado.verificado ||
-      entry.estado == AgendaEstado.cancelado;
+      entry.estado == AgendaEstado.cancelado ||
+      entry.estado == AgendaEstado.reprogramada;
 
   /// Stable worklist identity: one card per pending type.
   ///
@@ -215,7 +242,10 @@ class AgendaTaskGrouper {
     }
 
     final rows = <AgendaTaskRow>[...byAnimal.values, ...ranchRows]
-      ..sort((a, b) => compareUrgency(a.entry, b.entry, todayKey));
+      ..sort((a, b) {
+        if (a.isCompleted != b.isCompleted) return a.isCompleted ? 1 : -1;
+        return compareUrgency(a.entry, b.entry, todayKey);
+      });
     if (rows.isEmpty) return null;
 
     final uniqueEntries = <String, AgendaEntry>{

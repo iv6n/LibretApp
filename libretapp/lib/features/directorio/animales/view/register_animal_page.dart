@@ -9,6 +9,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -24,6 +25,7 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class RegisterAnimalPage extends StatefulWidget {
   const RegisterAnimalPage({this.animalUuid, this.initialSeed, super.key});
@@ -542,229 +544,223 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               subtitle: 'Ingresa los datos generales del animal.',
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final wide = constraints.maxWidth >= 600;
-                    Widget pair(Widget first, Widget second) {
-                      if (!wide) {
-                        return Column(
-                          children: [first, const SizedBox(height: 12), second],
-                        );
-                      }
-                      return Row(
-                        children: [
-                          Expanded(child: first),
-                          const SizedBox(width: 12),
-                          Expanded(child: second),
-                        ],
+            AppFormSection(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 600;
+                  Widget pair(Widget first, Widget second) {
+                    if (!wide) {
+                      return Column(
+                        children: [first, const SizedBox(height: 12), second],
                       );
                     }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    return Row(
                       children: [
-                        Text('Especie', style: theme.textTheme.labelLarge),
-                        const SizedBox(height: 8),
-                        AnimalSpeciesSelector(
-                          value: _species,
-                          onChanged: _onSpeciesChanged,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _earTagCtrl,
-                          textCapitalization: TextCapitalization.characters,
-                          decoration: InputDecoration(
-                            labelText: policy.identificationLabel,
-                            hintText: policy.identificationHint,
-                            helperText: policy.tracksPendingEarTag
-                                ? 'Recomendado. Puedes dejarlo pendiente.'
-                                : 'Opcional',
-                            suffixIcon: const Icon(
-                              Icons.qr_code_scanner_outlined,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _nameCtrl,
-                          textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(
-                            labelText: 'Nombre o alias — opcional',
-                            hintText: 'Ej. Manchas, Estrella, etc.',
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text('Sexo', style: theme.textTheme.labelLarge),
-                        const SizedBox(height: 8),
-                        CompactSexSelector(
-                          value: _sex,
-                          onChanged: _onSexChanged,
-                        ),
-                        const SizedBox(height: 16),
-                        SegmentedButton<_BirthInputMode>(
-                          segments: const [
-                            ButtonSegment(
-                              value: _BirthInputMode.approximate,
-                              icon: Icon(Icons.cake_outlined),
-                              label: Text('Edad aproximada'),
-                            ),
-                            ButtonSegment(
-                              value: _BirthInputMode.exact,
-                              icon: Icon(Icons.calendar_month_outlined),
-                              label: Text('Fecha exacta'),
-                            ),
-                          ],
-                          selected: {_birthInputMode},
-                          onSelectionChanged: (values) {
-                            _changeBirthInputMode(values.first);
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        if (_birthInputMode == _BirthInputMode.approximate)
-                          ApproximateAgeField(
-                            value: _approximateAge,
-                            onChanged: _onApproximateAgeChanged,
-                          )
-                        else
-                          InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: _pickBirthDate,
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                labelText: 'Fecha de nacimiento',
-                                suffixIcon: Icon(Icons.calendar_month_outlined),
-                              ),
-                              child: Text(
-                                _birthDate == null
-                                    ? 'Selecciona la fecha'
-                                    : _formatDate(_birthDate!),
-                                style: _birthDate == null
-                                    ? TextStyle(color: theme.hintColor)
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<Category>(
-                          key: ValueKey(
-                            'category-${_species.name}-${_sex.name}-'
-                            '${_currentAgeMonths()}-${_category.name}',
-                          ),
-                          initialValue: _category,
-                          decoration: const InputDecoration(
-                            labelText: 'Categoría sugerida',
-                            helperText: 'Se ajusta según especie, sexo y edad.',
-                          ),
-                          items: _availableCategories
-                              .map(
-                                (category) => DropdownMenuItem(
-                                  value: category,
-                                  child: Text(category.displayName),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _category = value);
-                            _scheduleDraftSave();
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        pair(
-                          TextFormField(
-                            controller: _breedCtrl,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              labelText: 'Raza — opcional',
-                              hintText: 'Ej. Angus',
-                            ),
-                          ),
-                          TextFormField(
-                            controller: _crossBreedCtrl,
-                            textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              labelText: 'Segunda raza / cruza — opcional',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        pair(
-                          TextFormField(
-                            controller: _coatColorCtrl,
-                            decoration: InputDecoration(
-                              labelText: '${policy.coatLabel} — opcional',
-                            ),
-                          ),
-                          TextFormField(
-                            controller: _weightCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Peso inicial (kg) — opcional',
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          title: const Text('Detalles adicionales'),
-                          subtitle: const Text('Señas, observaciones y estado'),
-                          children: [
-                            TextFormField(
-                              controller: _distinguishingMarksCtrl,
-                              maxLength: 120,
-                              decoration: const InputDecoration(
-                                labelText: 'Señas particulares',
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _notesCtrl,
-                              maxLines: 3,
-                              maxLength: 300,
-                              decoration: const InputDecoration(
-                                labelText: 'Observaciones',
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField<AnimalStatus>(
-                              initialValue: _status,
-                              decoration: const InputDecoration(
-                                labelText: 'Estado',
-                              ),
-                              items: AnimalStatus.values
-                                  .map(
-                                    (status) => DropdownMenuItem(
-                                      value: status,
-                                      child: Text(status.displayName),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                if (value == null) return;
-                                setState(() => _status = value);
-                                _scheduleDraftSave();
-                              },
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _pickRegistrationDate,
-                          icon: const Icon(Icons.event_available_outlined),
-                          label: Text(
-                            'Fecha de registro: '
-                            '${_formatDate(_registrationDate)}',
-                          ),
-                        ),
+                        Expanded(child: first),
+                        const SizedBox(width: 12),
+                        Expanded(child: second),
                       ],
                     );
-                  },
-                ),
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Especie', style: theme.textTheme.labelLarge),
+                      const SizedBox(height: 8),
+                      AnimalSpeciesSelector(
+                        value: _species,
+                        onChanged: _onSpeciesChanged,
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        controller: _earTagCtrl,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          labelText: policy.identificationLabel,
+                          hintText: policy.identificationHint,
+                          helperText: policy.tracksPendingEarTag
+                              ? 'Recomendado. Puedes dejarlo pendiente.'
+                              : 'Opcional',
+                          suffixIcon: const Icon(
+                            Icons.qr_code_scanner_outlined,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        controller: _nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre o alias — opcional',
+                          hintText: 'Ej. Manchas, Estrella, etc.',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text('Sexo', style: theme.textTheme.labelLarge),
+                      const SizedBox(height: 8),
+                      CompactSexSelector(value: _sex, onChanged: _onSexChanged),
+                      const SizedBox(height: 16),
+                      SegmentedButton<_BirthInputMode>(
+                        segments: const [
+                          ButtonSegment(
+                            value: _BirthInputMode.approximate,
+                            icon: Icon(Icons.cake_outlined),
+                            label: Text('Edad aproximada'),
+                          ),
+                          ButtonSegment(
+                            value: _BirthInputMode.exact,
+                            icon: Icon(Icons.calendar_month_outlined),
+                            label: Text('Fecha exacta'),
+                          ),
+                        ],
+                        selected: {_birthInputMode},
+                        onSelectionChanged: (values) {
+                          _changeBirthInputMode(values.first);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      if (_birthInputMode == _BirthInputMode.approximate)
+                        ApproximateAgeField(
+                          value: _approximateAge,
+                          onChanged: _onApproximateAgeChanged,
+                        )
+                      else
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _pickBirthDate,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Fecha de nacimiento',
+                              suffixIcon: Icon(Icons.calendar_month_outlined),
+                            ),
+                            child: Text(
+                              _birthDate == null
+                                  ? 'Selecciona la fecha'
+                                  : _formatDate(_birthDate!),
+                              style: _birthDate == null
+                                  ? TextStyle(color: theme.hintColor)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<Category>(
+                        key: ValueKey(
+                          'category-${_species.name}-${_sex.name}-'
+                          '${_currentAgeMonths()}-${_category.name}',
+                        ),
+                        initialValue: _category,
+                        decoration: const InputDecoration(
+                          labelText: 'Categoría sugerida',
+                          helperText: 'Se ajusta según especie, sexo y edad.',
+                        ),
+                        items: _availableCategories
+                            .map(
+                              (category) => DropdownMenuItem(
+                                value: category,
+                                child: Text(category.displayName),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() => _category = value);
+                          _scheduleDraftSave();
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      pair(
+                        TextFormField(
+                          controller: _breedCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Raza — opcional',
+                            hintText: 'Ej. Angus',
+                          ),
+                        ),
+                        TextFormField(
+                          controller: _crossBreedCtrl,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Segunda raza / cruza — opcional',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      pair(
+                        TextFormField(
+                          controller: _coatColorCtrl,
+                          decoration: InputDecoration(
+                            labelText: '${policy.coatLabel} — opcional',
+                          ),
+                        ),
+                        TextFormField(
+                          controller: _weightCtrl,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: const InputDecoration(
+                            labelText: 'Peso inicial (kg) — opcional',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: const Text('Detalles adicionales'),
+                        subtitle: const Text('Señas, observaciones y estado'),
+                        children: [
+                          TextFormField(
+                            controller: _distinguishingMarksCtrl,
+                            maxLength: 120,
+                            decoration: const InputDecoration(
+                              labelText: 'Señas particulares',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _notesCtrl,
+                            maxLines: 3,
+                            maxLength: 300,
+                            decoration: const InputDecoration(
+                              labelText: 'Observaciones',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<AnimalStatus>(
+                            initialValue: _status,
+                            decoration: const InputDecoration(
+                              labelText: 'Estado',
+                            ),
+                            items: AnimalStatus.values
+                                .map(
+                                  (status) => DropdownMenuItem(
+                                    value: status,
+                                    child: Text(status.displayName),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setState(() => _status = value);
+                              _scheduleDraftSave();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _pickRegistrationDate,
+                        icon: const Icon(Icons.event_available_outlined),
+                        label: Text(
+                          'Fecha de registro: '
+                          '${_formatDate(_registrationDate)}',
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -1467,45 +1463,48 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     final isFirstStep = _currentStep == 0;
     final isLastStep = _currentStep == _stepLabels.length - 1;
     final canFinish = _canFinishRegistration;
+    final nextOnPressed = _saving
+        ? null
+        : isLastStep
+        ? (canFinish ? _onSave : null)
+        : _onNextStep;
 
     return Container(
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 5),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.xs,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           Expanded(
             child: isFirstStep
-                ? OutlinedButton.icon(
-                    onPressed: _saving ? null : _onSaveForLater,
-                    icon: const Icon(Icons.save_alt_outlined),
-                    label: const Text('Guardar borrador'),
+                ? AppButton(
+                    onPressed: _onSaveForLater,
+                    icon: Icons.save_alt_outlined,
+                    label: 'Guardar borrador',
+                    variant: AppButtonVariant.secondary,
+                    isLoading: _saving,
                   )
-                : ElevatedButton.icon(
+                : AppButton(
                     onPressed: _onPreviousStep,
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Anterior'),
+                    icon: Icons.arrow_back,
+                    label: 'Anterior',
+                    variant: AppButtonVariant.secondary,
                   ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: FilledButton.icon(
-              onPressed: _saving
-                  ? null
-                  : isLastStep
-                  ? (canFinish ? _onSave : null)
-                  : _onNextStep,
-              icon: Icon(
-                isLastStep ? Icons.save_outlined : Icons.arrow_forward,
-              ),
-              label: Text(
-                _saving
-                    ? 'Guardando...'
-                    : isLastStep
-                    ? 'Guardar animal'
-                    : 'Siguiente',
-              ),
+            child: AppButton(
+              onPressed: nextOnPressed,
+              icon: isLastStep ? Icons.save_outlined : Icons.arrow_forward,
+              label: isLastStep ? 'Guardar animal' : 'Siguiente',
+              isLoading: _saving,
+              loadingLabel: 'Guardando...',
             ),
           ),
         ],
@@ -1514,43 +1513,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   Widget _buildSectionTitle(String title, IconData icon, {String? subtitle}) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 24, color: colorScheme.primary),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (subtitle != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
+    return AppPageHeader(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      padding: EdgeInsets.zero,
     );
   }
 

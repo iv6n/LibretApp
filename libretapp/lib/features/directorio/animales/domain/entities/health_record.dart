@@ -53,6 +53,8 @@ class HealthRecord extends TimestampedRecord {
     this.medicineBatch,
     this.withdrawalDays,
     this.withdrawalEndDate,
+    this.recordUuid,
+    this.updatedAt,
     super.id,
   });
   final HealthRecordType type;
@@ -64,6 +66,10 @@ class HealthRecord extends TimestampedRecord {
   final String? medicineBatch;
   final int? withdrawalDays;
   final DateTime? withdrawalEndDate;
+
+  /// Database-independent identifier used by Agenda and backup merges.
+  final String? recordUuid;
+  final DateTime? updatedAt;
 
   bool get isInWithdrawalPeriod =>
       withdrawalEndDate != null && withdrawalEndDate!.isAfter(DateTime.now());
@@ -80,6 +86,8 @@ class HealthRecord extends TimestampedRecord {
     String? medicineBatch,
     int? withdrawalDays,
     DateTime? withdrawalEndDate,
+    String? recordUuid,
+    DateTime? updatedAt,
     String? id,
   }) {
     return HealthRecord(
@@ -94,6 +102,8 @@ class HealthRecord extends TimestampedRecord {
       medicineBatch: medicineBatch ?? this.medicineBatch,
       withdrawalDays: withdrawalDays ?? this.withdrawalDays,
       withdrawalEndDate: withdrawalEndDate ?? this.withdrawalEndDate,
+      recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
     );
   }
@@ -110,5 +120,7 @@ class HealthRecord extends TimestampedRecord {
     medicineBatch,
     withdrawalDays,
     withdrawalEndDate,
+    recordUuid,
+    updatedAt,
   ];
 }

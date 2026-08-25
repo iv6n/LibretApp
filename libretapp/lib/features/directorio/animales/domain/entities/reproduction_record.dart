@@ -56,6 +56,8 @@ class ReproductionRecord extends Equatable {
     this.calvingNotes,
     this.notes,
     this.servicedBy,
+    this.recordUuid,
+    this.updatedAt,
     this.id,
   });
   final DateTime serviceDate;
@@ -83,6 +85,8 @@ class ReproductionRecord extends Equatable {
 
   final String? notes;
   final String? servicedBy;
+  final String? recordUuid;
+  final DateTime? updatedAt;
   final String? id;
 
   /// Duración real de la gestación. Se deriva en lugar de almacenarse para
@@ -115,6 +119,8 @@ class ReproductionRecord extends Equatable {
     String? calvingNotes,
     String? notes,
     String? servicedBy,
+    String? recordUuid,
+    DateTime? updatedAt,
     String? id,
   }) {
     return ReproductionRecord(
@@ -132,6 +138,8 @@ class ReproductionRecord extends Equatable {
       calvingNotes: calvingNotes ?? this.calvingNotes,
       notes: notes ?? this.notes,
       servicedBy: servicedBy ?? this.servicedBy,
+      recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
     );
   }
@@ -152,6 +160,8 @@ class ReproductionRecord extends Equatable {
     calvingNotes,
     notes,
     servicedBy,
+    recordUuid,
+    updatedAt,
     id,
   ];
 }

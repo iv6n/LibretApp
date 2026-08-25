@@ -11,20 +11,25 @@ import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location
 
 class MovementRecordRepositoryIsar
     extends IsarRecordRepositoryBase<MovementRecord, IsarMovementRecord>
-    implements MovementRecordRepository {
+    implements MovementRecordRepository, MovementRecordUuidLookup {
   MovementRecordRepositoryIsar(super.database);
 
   @override
   String get logTag => 'MovementRecordRepositoryIsar';
 
   @override
-  IsarCollection<IsarMovementRecord> collection(Isar isar) => isar.isarMovementRecords;
+  IsarCollection<IsarMovementRecord> collection(Isar isar) =>
+      isar.isarMovementRecords;
 
   @override
   Future<List<IsarMovementRecord>> queryByAnimal(
     IsarCollection<IsarMovementRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection
+      .where()
+      .animalUuidEqualTo(animalUuid)
+      .sortByDateDesc()
+      .findAll();
 
   @override
   IsarMovementRecord toIsarModel(MovementRecord record, String animalUuid) =>
@@ -45,6 +50,19 @@ class MovementRecordRepositoryIsar
       getRecordsFor(animalUuid);
 
   @override
+  Future<Map<String, MovementRecord>> getMovementRecordsByRecordUuids(
+    Set<String> recordUuids,
+  ) async {
+    if (recordUuids.isEmpty) return const {};
+    final db = await isar;
+    final records = await db.isarMovementRecords
+        .filter()
+        .anyOf(recordUuids, (q, uuid) => q.recordUuidEqualTo(uuid))
+        .findAll();
+    return {for (final record in records) record.recordUuid: record.toEntity()};
+  }
+
+  @override
   Future<MovementRecord> addMovementRecord(
     String animalUuid,
     MovementRecord record,
@@ -55,18 +73,28 @@ class MovementRecordRepositoryIsar
   );
 
   @override
-  Future<void> deleteMovementRecord(String recordId) => deleteRecordById(recordId);
+  Future<void> deleteMovementRecord(String recordId) =>
+      deleteRecordById(recordId);
 
   Future<void> _applyLocationEffect(
     Isar isar,
     String animalUuid,
     MovementRecord record,
   ) async {
-    final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+    final animal = await isar.isarAnimals
+        .where()
+        .uuidEqualTo(animalUuid)
+        .findFirst();
     if (animal == null) return;
     final destination =
-        await isar.isarLocations.where().uuidEqualTo(record.toLocation).findFirst() ??
-        await isar.isarLocations.filter().nameEqualTo(record.toLocation).findFirst();
+        await isar.isarLocations
+            .where()
+            .uuidEqualTo(record.toLocation)
+            .findFirst() ??
+        await isar.isarLocations
+            .filter()
+            .nameEqualTo(record.toLocation)
+            .findFirst();
     animal
       ..currentLocationId = destination?.uuid
       ..lastMovementDate = record.date

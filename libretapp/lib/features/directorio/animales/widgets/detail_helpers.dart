@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
@@ -27,6 +28,7 @@ class DetailData {
     this.carePending = const <ScheduledCare>[],
     this.careRules = const <String, CareRule>{},
     this.careRecords = const <CareRecord>[],
+    this.agendaPending = const <AgendaEntry>[],
   });
 
   final AnimalEntity animal;
@@ -47,6 +49,11 @@ class DetailData {
 
   /// Care completed so far, newest first.
   final List<CareRecord> careRecords;
+
+  /// Central operational occurrences linked to this animal. Care-specific
+  /// entries remain available through [carePending] for compatibility, while
+  /// health, reproduction, movement and production work is read from Agenda.
+  final List<AgendaEntry> agendaPending;
 
   /// Every ancestor resolved for the pedigree tree, keyed by uuid. Parents
   /// recorded but missing from the herd (an outside sire) are simply absent,

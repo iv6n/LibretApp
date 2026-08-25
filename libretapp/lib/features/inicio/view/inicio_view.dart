@@ -6,9 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
+import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_bloc.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_event.dart';
 import 'package:libretapp/features/inicio/bloc/inicio_state.dart';
+import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/view/dashboard_customize_sheet.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_header.dart';
@@ -19,6 +22,9 @@ import 'package:libretapp/theme/app_theme.dart';
 
 class InicioView extends StatelessWidget {
   const InicioView({super.key});
+
+  static const double _tabletBreakpoint = 600;
+  static const double _dashboardMaxWidth = 1200;
 
   @override
   Widget build(BuildContext context) {
@@ -61,43 +67,150 @@ class InicioView extends StatelessWidget {
           },
           child: ColoredBox(
             color: theme.scaffoldBackgroundColor,
-            child: ListView(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 18),
-              children: [
-                DashboardHeader(data: data),
-                const SizedBox(height: 14),
-                _TodayPriorityPanel(data: data),
-                const SizedBox(height: 14),
-                RanchSummaryCard(data: data),
-                const SizedBox(height: 14),
-                QuickActionGrid(
-                  actions: state.quickActions,
-                  onCustomizeTap: () => showDashboardCustomizeSheet(
-                    context: context,
-                    widgets: state.widgetConfigs,
-                    actions: state.quickActions,
-                    onSaved: (w, a) {
-                      context.read<InicioBloc>().add(
-                        UpdateDashboardConfig(widgets: w, actions: a),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 14),
-                ...widgets.map(
-                  (config) => DashboardWidgetHost(
-                    config: config,
-                    data: data,
-                    financeDetail: state.financeDetail,
-                    libraryItems: state.libraryPicks,
-                  ),
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isTablet = constraints.maxWidth >= _tabletBreakpoint;
+                final contentWidth = constraints.maxWidth
+                    .clamp(0.0, _dashboardMaxWidth)
+                    .toDouble();
+                final horizontalPadding = isTablet
+                    ? AppSpacing.lg
+                    : AppSpacing.md;
+
+                return ListView(
+                  padding: EdgeInsets.only(bottom: bottomInset + AppSpacing.md),
+                  children: [
+                    Center(
+                      child: SizedBox(
+                        width: contentWidth,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              DashboardHeader(data: data),
+                              const SizedBox(height: AppSpacing.sm),
+                              _TodayPriorityPanel(data: data),
+                              const SizedBox(height: AppSpacing.sm),
+                              RanchSummaryCard(data: data),
+                              const SizedBox(height: AppSpacing.sm),
+                              QuickActionGrid(
+                                actions: state.quickActions,
+                                onCustomizeTap: () =>
+                                    showDashboardCustomizeSheet(
+                                      context: context,
+                                      widgets: state.widgetConfigs,
+                                      actions: state.quickActions,
+                                      onSaved: (w, a) {
+                                        context.read<InicioBloc>().add(
+                                          UpdateDashboardConfig(
+                                            widgets: w,
+                                            actions: a,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              _DashboardWidgetsLayout(
+                                isTablet: isTablet,
+                                widgets: widgets,
+                                data: data,
+                                financeDetail: state.financeDetail,
+                                libraryItems: state.libraryPicks,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         );
       },
     );
+  }
+}
+
+class _DashboardWidgetsLayout extends StatelessWidget {
+  const _DashboardWidgetsLayout({
+    required this.isTablet,
+    required this.widgets,
+    required this.data,
+    required this.financeDetail,
+    required this.libraryItems,
+  });
+
+  final bool isTablet;
+  final List<DashboardWidgetConfig> widgets;
+  final InicioDashboardData data;
+  final FinanceSummaryDetail? financeDetail;
+  final List<LibraryManifestBook> libraryItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabledWidgets = widgets.where((widget) => widget.enabled).toList();
+
+    if (!isTablet) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: enabledWidgets.map(_buildHost).toList(),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = AppSpacing.sm;
+        final halfWidth = (constraints.maxWidth - gap) / 2;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: 0,
+          children: enabledWidgets.map((config) {
+            final width = _isFullWidth(config.type)
+                ? constraints.maxWidth
+                : halfWidth;
+            return SizedBox(
+              key: ValueKey<String>('dashboard-widget-${config.id}'),
+              width: width,
+              child: DashboardWidgetHost(
+                config: config,
+                data: data,
+                financeDetail: financeDetail,
+                libraryItems: libraryItems,
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildHost(DashboardWidgetConfig config) {
+    return KeyedSubtree(
+      key: ValueKey<String>('dashboard-widget-${config.id}'),
+      child: DashboardWidgetHost(
+        config: config,
+        data: data,
+        financeDetail: financeDetail,
+        libraryItems: libraryItems,
+      ),
+    );
+  }
+
+  bool _isFullWidth(DashboardWidgetType type) {
+    return switch (type) {
+      DashboardWidgetType.animalSummary ||
+      DashboardWidgetType.healthAlerts ||
+      DashboardWidgetType.pendingTasks ||
+      DashboardWidgetType.libraryPicks => true,
+      _ => false,
+    };
   }
 }
 
@@ -118,10 +231,12 @@ class _TodayPriorityPanel extends StatelessWidget {
     final primaryTask = _firstItem(data.tasks);
     final calving = _firstItem(data.upcomingCalvings);
 
-    final title = primaryAlert?.title ??
+    final title =
+        primaryAlert?.title ??
         primaryTask?.title ??
         (calving != null ? 'Proximo parto' : 'Rancho en orden');
-    final message = primaryAlert?.message ??
+    final message =
+        primaryAlert?.message ??
         primaryTask?.message ??
         (calving != null
             ? '${calving.animalTag} en ${calving.daysRemaining} dias'
@@ -152,7 +267,7 @@ class _TodayPriorityPanel extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: theme.colorScheme.shadow.withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -162,8 +277,8 @@ class _TodayPriorityPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: AppControlMetrics.compactIconButtonSize,
+                height: AppControlMetrics.compactIconButtonSize,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadii.md),
@@ -187,7 +302,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       title,
                       maxLines: 1,
@@ -196,7 +311,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       message,
                       maxLines: 2,

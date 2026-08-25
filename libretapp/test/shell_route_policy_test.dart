@@ -58,6 +58,7 @@ void main() {
     test('hides chrome on agenda and register overlays', () {
       const overlayRoutes = <String>[
         '/agenda/nuevo',
+        '/agenda/registro',
         '/registro',
         '/registro/sanitario',
         '/registro/peso',

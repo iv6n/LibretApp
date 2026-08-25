@@ -131,6 +131,7 @@ class AnimalEditService {
         birthDate: next.birthDate,
         species: next.species,
         sex: next.sex,
+        category: next.category,
         currentLifeStage: next.lifeStage,
       );
       next = next.copyWith(

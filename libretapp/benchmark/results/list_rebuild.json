@@ -1,0 +1,66 @@
+{
+  "label": "list-rebuild",
+  "recorded_at": "2026-08-22T10:08:47.266074",
+  "results": [
+    {
+      "name": "eager ListView(children:) rebuild",
+      "scale": "200 animals",
+      "iterations": 15,
+      "median_us": 21149,
+      "mean_us": 23306,
+      "p90_us": 27525,
+      "min_us": 17075,
+      "max_us": 38642
+    },
+    {
+      "name": "lazy ListView.builder rebuild",
+      "scale": "200 animals",
+      "iterations": 15,
+      "median_us": 17981,
+      "mean_us": 18086,
+      "p90_us": 19758,
+      "min_us": 15995,
+      "max_us": 20781
+    },
+    {
+      "name": "eager ListView(children:) rebuild",
+      "scale": "1000 animals",
+      "iterations": 15,
+      "median_us": 19411,
+      "mean_us": 19122,
+      "p90_us": 21913,
+      "min_us": 16175,
+      "max_us": 22494
+    },
+    {
+      "name": "lazy ListView.builder rebuild",
+      "scale": "1000 animals",
+      "iterations": 15,
+      "median_us": 15920,
+      "mean_us": 16200,
+      "p90_us": 17915,
+      "min_us": 14357,
+      "max_us": 19693
+    },
+    {
+      "name": "eager ListView(children:) rebuild",
+      "scale": "2000 animals",
+      "iterations": 15,
+      "median_us": 17613,
+      "mean_us": 19772,
+      "p90_us": 30233,
+      "min_us": 15042,
+      "max_us": 34210
+    },
+    {
+      "name": "lazy ListView.builder rebuild",
+      "scale": "2000 animals",
+      "iterations": 15,
+      "median_us": 14686,
+      "mean_us": 14686,
+      "p90_us": 17020,
+      "min_us": 12404,
+      "max_us": 18784
+    }
+  ]
+}

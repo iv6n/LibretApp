@@ -47,6 +47,15 @@ class IsarAgendaEntry {
   DateTime? updatedAt;
   String? recurrenceRule;
   String? blockedReason;
+  DateTime? remindAt;
+  String? actionKind;
+  String? sourceType;
+  String? sourceId;
+  String? planId;
+  DateTime? originalFecha;
+  String? supersedesId;
+  String? rescheduleReason;
+  String? cropUuid;
 
   late List<String> checklistJson;
   late List<String> activitiesJson;
@@ -77,6 +86,15 @@ extension IsarAgendaEntryMapper on IsarAgendaEntry {
     updatedAt: updatedAt,
     recurrenceRule: recurrenceRule,
     blockedReason: blockedReason,
+    remindAt: remindAt,
+    actionKind: actionKind,
+    sourceType: sourceType,
+    sourceId: sourceId,
+    planId: planId,
+    originalFecha: originalFecha,
+    supersedesId: supersedesId,
+    rescheduleReason: rescheduleReason,
+    cropUuid: cropUuid,
     checklist: checklistJson
         .map(
           (raw) => AgendaChecklistItem.fromJson(
@@ -125,7 +143,18 @@ extension AgendaEntryToIsar on AgendaEntry {
     ..updatedAt = updatedAt
     ..recurrenceRule = recurrenceRule
     ..blockedReason = blockedReason
-    ..checklistJson = checklist.map((item) => jsonEncode(item.toJson())).toList()
+    ..remindAt = remindAt
+    ..actionKind = actionKind
+    ..sourceType = sourceType
+    ..sourceId = sourceId
+    ..planId = planId
+    ..originalFecha = originalFecha
+    ..supersedesId = supersedesId
+    ..rescheduleReason = rescheduleReason
+    ..cropUuid = cropUuid
+    ..checklistJson = checklist
+        .map((item) => jsonEncode(item.toJson()))
+        .toList()
     ..activitiesJson = activities
         .map((activity) => jsonEncode(activity.toJson()))
         .toList()

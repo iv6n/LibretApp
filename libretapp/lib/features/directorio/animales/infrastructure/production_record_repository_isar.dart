@@ -23,7 +23,7 @@ class ProductionRecordRepositoryIsar
   Future<List<IsarProductionRecord>> queryByAnimal(
     IsarCollection<IsarProductionRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection.where().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
 
   @override
   IsarProductionRecord toIsarModel(ProductionRecord record, String animalUuid) =>

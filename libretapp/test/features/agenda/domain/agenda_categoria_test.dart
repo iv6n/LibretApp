@@ -35,5 +35,9 @@ void main() {
     test('la comparación no distingue mayúsculas/minúsculas', () {
       expect(categoriaForTipo('VACUNACIÓN'), AgendaCategoria.sanidad);
     });
+
+    test('la categoria sanitaria usa la etiqueta visible Sanitario', () {
+      expect(AgendaCategoria.sanidad.label, 'Sanitario');
+    });
   });
 }

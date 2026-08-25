@@ -4,4 +4,5 @@ library;
 export 'agenda_page.dart';
 export 'agenda_entry_form_page.dart';
 export 'agenda_task_detail_page.dart';
+export 'agenda_registration_flow_page.dart';
 export 'agenda_view.dart';

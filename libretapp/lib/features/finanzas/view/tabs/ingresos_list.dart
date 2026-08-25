@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/widgets/finanzas_empty_state.dart';
 import 'package:libretapp/features/finanzas/widgets/record_tile.dart';
@@ -42,6 +43,8 @@ class IngresosList extends StatelessWidget {
           date: r.date,
           amount: fmt.format(r.amount),
           amountColor: Colors.teal,
+          assetPath: AppAssetPaths.inventoryIncome,
+          fallbackIcon: Icons.attach_money,
           currency: r.currency,
           onDelete: r.id != null ? () => onDelete(r.id!) : null,
         );

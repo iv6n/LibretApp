@@ -8,6 +8,7 @@ import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 
 String _generateInventoryId() =>
     'inv-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
@@ -43,6 +44,22 @@ extension InventoryCategoryX on InventoryCategory {
         return Icons.precision_manufacturing_outlined;
       case InventoryCategory.other:
         return Icons.inventory_2_outlined;
+    }
+  }
+
+  /// Specific raster asset for categories that already have one.
+  /// Categories without a dedicated illustration keep the Material fallback.
+  String? get assetPath {
+    switch (this) {
+      case InventoryCategory.feed:
+        return AppAssetPaths.inventoryFeed;
+      case InventoryCategory.medicine:
+        return AppAssetPaths.inventoryMedicine;
+      case InventoryCategory.tool:
+        return AppAssetPaths.inventoryTool;
+      case InventoryCategory.equipment:
+      case InventoryCategory.other:
+        return null;
     }
   }
 

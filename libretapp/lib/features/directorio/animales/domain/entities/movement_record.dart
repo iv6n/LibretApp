@@ -45,12 +45,16 @@ class MovementRecord extends TimestampedRecord {
     required this.reason,
     super.notes,
     this.movedBy,
+    this.recordUuid,
+    this.updatedAt,
     super.id,
   });
   final String? fromLocation;
   final String toLocation;
   final MovementReason reason;
   final String? movedBy;
+  final String? recordUuid;
+  final DateTime? updatedAt;
 
   MovementRecord copyWith({
     String? fromLocation,
@@ -59,6 +63,8 @@ class MovementRecord extends TimestampedRecord {
     MovementReason? reason,
     String? notes,
     String? movedBy,
+    String? recordUuid,
+    DateTime? updatedAt,
     String? id,
   }) {
     return MovementRecord(
@@ -68,6 +74,8 @@ class MovementRecord extends TimestampedRecord {
       reason: reason ?? this.reason,
       notes: notes ?? this.notes,
       movedBy: movedBy ?? this.movedBy,
+      recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
     );
   }
@@ -79,5 +87,7 @@ class MovementRecord extends TimestampedRecord {
     toLocation,
     reason,
     movedBy,
+    recordUuid,
+    updatedAt,
   ];
 }

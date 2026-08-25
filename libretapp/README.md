@@ -131,6 +131,32 @@ flutter build apk --release `
   --dart-define-from-file=dart_define.local.json
 ```
 
+For Google Play, generate an Android App Bundle:
+
+```powershell
+flutter build appbundle --release `
+  --dart-define-from-file=dart_define.local.json
+```
+
+For direct installation, prefer the arm64 APK or generate one APK per ABI:
+
+```powershell
+flutter build apk --release `
+  --target-platform android-arm64 `
+  --dart-define-from-file=dart_define.local.json
+
+flutter build apk --release --split-per-abi `
+  --dart-define-from-file=dart_define.local.json
+```
+
+Generated Flutter, Dart, Gradle and Windows intermediary files can be removed
+without touching source code, assets, local databases, keys or uncommitted
+changes:
+
+```powershell
+.\tool\clean_generated.ps1
+```
+
 The pilot application ID is `app.libret`. Changing it after pilot
 installation would break the normal Android upgrade path.
 

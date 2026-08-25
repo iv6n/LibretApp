@@ -13,7 +13,7 @@ import 'package:libretapp/core/demo/builders/demo_animals.dart';
 import 'package:libretapp/core/demo/demo_dates.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/core/demo/demo_identity.dart';
 
 /// Ids of the built-in rules from `DefaultCareRules` this scenario drives —
@@ -39,24 +39,30 @@ class DemoCareSeries {
   final List<CareRecord> records;
 }
 
-List<DemoHealthSeries> buildDemoHealthRecords({required DateTime reference}) {
-  HealthRecord vaccine(
-    int daysAgo, {
-    int nextDueDays = 365,
-    String appliedBy = 'Rodrigo Valenzuela (DEMO)',
-  }) {
-    final date = daysBefore(reference, daysAgo);
-    return HealthRecord(
-      date: date,
-      type: HealthRecordType.vaccine,
-      product: 'Vacuna reproductiva DEMO',
-      dose: '5 mL (registro de demostración)',
-      appliedBy: appliedBy,
-      nextDueDate: daysAfter(date, nextDueDays),
-      notes: 'Registro de demostración.',
-    );
+String _vaccineProduct(Species species) {
+  switch (species) {
+    case Species.cattle:
+      return 'Vacuna preventiva bovinos DEMO';
+    case Species.goat:
+    case Species.sheep:
+      return 'Vacuna preventiva pequenos rumiantes DEMO';
+    case Species.equine:
+      return 'Vacuna preventiva equinos DEMO';
+    case Species.pig:
+      return 'Vacuna preventiva porcinos DEMO';
+    case Species.poultry:
+      return 'Vacuna preventiva aves DEMO';
+    case Species.canine:
+      return 'Vacuna preventiva canina DEMO';
+    case Species.other:
+      return 'Vacuna preventiva general DEMO';
   }
+}
 
+List<DemoHealthSeries> buildDemoHealthRecords({
+  required DateTime reference,
+  required Iterable<AnimalEntity> animals,
+}) {
   HealthRecord deworming(int daysAgo, {int nextDueDays = 180}) {
     final date = daysBefore(reference, daysAgo);
     return HealthRecord(
@@ -70,11 +76,33 @@ List<DemoHealthSeries> buildDemoHealthRecords({required DateTime reference}) {
     );
   }
 
+  HealthRecord campaignVaccine(AnimalEntity animal) => HealthRecord(
+    date: monthsBefore(reference, 12),
+    type: HealthRecordType.vaccine,
+    product: _vaccineProduct(animal.species),
+    dose: 'Aplicacion registrada en campana DEMO',
+    appliedBy: 'Rodrigo Valenzuela (DEMO)',
+    nextDueDate: reference,
+    notes: 'Campana sanitaria anual del hato. Registro de demostracion.',
+  );
+
+  final animalsByUuid = {for (final animal in animals) animal.uuid: animal};
+  final campaign = demoAnimalSlugs
+      .map((slug) {
+        final animal = animalsByUuid[demoAnimalUuid(slug)];
+        if (animal == null || !animal.status.isInActiveHerd) return null;
+        return DemoHealthSeries(
+          animalSlug: slug,
+          records: [campaignVaccine(animal)],
+        );
+      })
+      .whereType<DemoHealthSeries>()
+      .toList(growable: false);
+
   return [
     // Vacunación vigente (aplicada hace poco, vence lejos en el futuro).
-    DemoHealthSeries(animalSlug: aniWeraSlug, records: [vaccine(60)]),
+    ...campaign,
     // Vacunación vencida.
-    DemoHealthSeries(animalSlug: aniPelonaSlug, records: [vaccine(400)]),
     // Desparasitación próxima a vencer.
     DemoHealthSeries(
       animalSlug: aniMiguelitaSlug,

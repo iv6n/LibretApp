@@ -116,6 +116,49 @@ void main() {
       },
     );
 
+    test(
+      'global search waits for the complete animal tab and ignores stale queries',
+      () async {
+        final repository = _ControlledAnimalRepository();
+        final animalTabBloc = AnimalesTabBloc(repository);
+        final lotesBloc = LotesTabBloc(_FakeLotesRepository());
+        final ubicacionesBloc = UbicacionesTabBloc(_FakeLocationRepository());
+        final bloc = DirectorioBloc(
+          animalesTabBloc: animalTabBloc,
+          lotesTabBloc: lotesBloc,
+          ubicacionesTabBloc: ubicacionesBloc,
+        );
+
+        bloc.add(const LoadDirectorioData());
+        await _flushEvents();
+        expect(bloc.state, isA<DirectorioLoaded>());
+
+        bloc.add(const PerformCombinedSearch('late-first'));
+        bloc.add(const PerformCombinedSearch('late-second'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        repository.emit([
+          _buildAnimal(
+            uuid: 'animal-loaded-after-search',
+            earTagNumber: 'late-second',
+          ),
+        ]);
+        await _flushEvents();
+
+        final loaded = bloc.state as DirectorioLoaded;
+        expect(loaded.searchQuery, 'late-second');
+        expect(loaded.searchResults, hasLength(1));
+        expect(loaded.searchResults.single.type, CombinedSearchType.animal);
+        expect(loaded.searchResults.single.id, 'animal-loaded-after-search');
+
+        await bloc.close();
+        await animalTabBloc.close();
+        await lotesBloc.close();
+        await ubicacionesBloc.close();
+        await repository.dispose();
+      },
+    );
+
     test('ignores ChangeDirectorioTab when bloc is not loaded', () async {
       final bloc = DirectorioBloc(
         animalesTabBloc: AnimalesTabBloc(_FakeAnimalRepository()),
@@ -240,7 +283,9 @@ void main() {
       },
     );
 
-    test('section config changes order and keeps active section when visible', () async {
+    test(
+      'section config changes order and keeps active section when visible',
+      () async {
         directorioBloc.add(
           const SetDirectorioSectionConfig(
             orderedSections: [
@@ -933,7 +978,22 @@ LocationEntity _buildLocation({required String uuid, required String name}) {
 
 class _FakeAnimalRepository implements AnimalRepository {
   @override
-  Stream<List<AnimalEntity>> watchAll() => const Stream.empty();
+  Stream<List<AnimalEntity>> watchAll() => Stream.value(const <AnimalEntity>[]);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _ControlledAnimalRepository implements AnimalRepository {
+  final StreamController<List<AnimalEntity>> _controller =
+      StreamController<List<AnimalEntity>>.broadcast();
+
+  @override
+  Stream<List<AnimalEntity>> watchAll() => _controller.stream;
+
+  void emit(List<AnimalEntity> animals) => _controller.add(animals);
+
+  Future<void> dispose() => _controller.close();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

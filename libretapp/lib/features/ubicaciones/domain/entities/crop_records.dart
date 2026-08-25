@@ -1,9 +1,10 @@
-﻿/// features \u203a ubicaciones \u203a domain \u203a entities \u203a crop_records \u2014 entities for crop-related records.
+/// features \u203a ubicaciones \u203a domain \u203a entities \u203a crop_records \u2014 entities for crop-related records.
 library;
 
 import 'dart:math';
 
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
@@ -48,8 +49,8 @@ class CropRecord extends Equatable {
   final List<CropTask> tasks;
 
   DateTime? get nextWateringDate {
-    if (lastWateredDate == null) return null;
-    return lastWateredDate!.add(Duration(days: wateringFrequencyDays));
+    final baseDate = lastWateredDate ?? plantingDate;
+    return baseDate.add(Duration(days: wateringFrequencyDays));
   }
 
   bool get isOverdueForWatering {
@@ -64,6 +65,17 @@ class CropRecord extends Equatable {
   }
 
   double get totalYieldKg => harvests.fold(0.0, (sum, h) => sum + h.yieldKg);
+
+  String get assetPath {
+    switch (status) {
+      case CropStatus.active:
+        return growthStage.assetPath;
+      case CropStatus.harvested:
+        return AppAssetPaths.cropHarvested;
+      case CropStatus.failed:
+        return AppAssetPaths.cropFailed;
+    }
+  }
 
   CropRecord copyWith({
     String? uuid,

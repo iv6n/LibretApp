@@ -6,11 +6,18 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/services/logger_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalHealthFormPage extends StatefulWidget {
@@ -121,9 +128,32 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
         widget.animalUuid,
         record,
       );
+      var agendaNeedsRetry = false;
+      try {
+        await _registerMatchingCareCycle(record);
+        // HealthRecord remains the source of truth; Agenda is reconciled from
+        // it immediately so an explicit next date appears in both views.
+        await locator<AgendaReminderSyncService>().sync();
+      } catch (error, stackTrace) {
+        // The health record is already durable at this point. A failure in the
+        // derived care/calendar projection must not tell the user that the
+        // health operation failed or prevent returning the successful result.
+        agendaNeedsRetry = true;
+        LoggerService.e(
+          'Registro sanitario guardado, pero Agenda requiere reconciliación: $error',
+          tag: 'AnimalHealthFormPage',
+          stackTrace: stackTrace,
+        );
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormHealthSaved)),
+        SnackBar(
+          content: Text(
+            agendaNeedsRetry
+                ? 'Registro guardado; Agenda se actualizará al sincronizar.'
+                : l10n.detailFormHealthSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -131,6 +161,49 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
       setState(() => _saving = false);
     }
+  }
+
+  Future<void> _registerMatchingCareCycle(HealthRecord record) async {
+    final animal = _animal;
+    final careType = switch (record.type) {
+      HealthRecordType.vaccine => CareType.vaccination,
+      HealthRecordType.deworming => CareType.deworming,
+      HealthRecordType.tickBath => CareType.tickBath,
+      HealthRecordType.vitamins => CareType.supplement,
+      _ => null,
+    };
+    if (animal == null || careType == null) return;
+
+    CareRule? rule;
+    for (final candidate in await locator<CareRepository>().getRules()) {
+      if (candidate.type != careType) continue;
+      if (candidate.species != null && candidate.species != animal.species) {
+        continue;
+      }
+      if (candidate.sex != null && candidate.sex != animal.sex) continue;
+      if (candidate.minAgeMonths != null &&
+          animal.ageMonths < candidate.minAgeMonths!) {
+        continue;
+      }
+      if (candidate.maxAgeMonths != null &&
+          animal.ageMonths > candidate.maxAgeMonths!) {
+        continue;
+      }
+      rule = candidate;
+      break;
+    }
+    if (rule == null) return;
+    await locator<CareRepository>().saveRecord(
+      CareRecord(
+        id: 'health-care:${animal.uuid}:${record.type.name}:${record.date.millisecondsSinceEpoch}',
+        animalId: animal.uuid,
+        ruleId: rule.id,
+        type: rule.type,
+        performedAt: record.date,
+        notes: record.notes,
+        performedBy: record.appliedBy,
+      ),
+    );
   }
 
   @override
@@ -142,6 +215,8 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
       saving: _saving,
       onSave: _save,
       saveLabel: l10n.actionSave,
+      assetPath: assetForHealthRecordType(_type) ?? AppAssetPaths.healthVaccine,
+      fallbackIcon: fallbackIconForHealthRecordType(_type),
       fields: [
         if (_lastRecord != null) ...[
           ActionChip(
@@ -163,7 +238,9 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: HealthRecordType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+              .map(
+                (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+              )
               .toList(),
           onChanged: (value) {
             if (value == null) return;

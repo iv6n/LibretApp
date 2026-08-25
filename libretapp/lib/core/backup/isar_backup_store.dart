@@ -7,6 +7,7 @@ import 'package:libretapp/core/backup/backup_store.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_registration.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_workforce.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
@@ -49,6 +50,7 @@ class IsarBackupStore implements BackupStore {
     'milkingSessions',
     'milkingEntries',
     'agendaEntries',
+    'agendaRegistrations',
     'workerProfiles',
     'workTeams',
     'careRules',
@@ -89,6 +91,9 @@ class IsarBackupStore implements BackupStore {
         'milkingSessions': await isar.isarMilkingSessions.where().exportJson(),
         'milkingEntries': await isar.isarMilkingEntrys.where().exportJson(),
         'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
+        'agendaRegistrations': await isar.isarAgendaRegistrations
+            .where()
+            .exportJson(),
         'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
         'workTeams': await isar.isarWorkTeams.where().exportJson(),
         'careRules': await isar.isarCareRules.where().exportJson(),
@@ -111,9 +116,14 @@ class IsarBackupStore implements BackupStore {
     required BackupImportMode mode,
   }) async {
     final isar = await _database.initialize();
+    final compatibleCollections = <String, List<Map<String, dynamic>>>{
+      ...envelope.collections,
+      'agendaRegistrations':
+          envelope.collections['agendaRegistrations'] ?? const [],
+    };
     final prepared = mode == BackupImportMode.merge
-        ? await _prepareMerge(isar, envelope.collections)
-        : envelope.collections;
+        ? await _prepareMerge(isar, compatibleCollections)
+        : compatibleCollections;
 
     await isar.writeTxn(() async {
       if (mode == BackupImportMode.replaceAll) {
@@ -142,6 +152,9 @@ class IsarBackupStore implements BackupStore {
       await isar.isarMilkingSessions.importJson(prepared['milkingSessions']!);
       await isar.isarMilkingEntrys.importJson(prepared['milkingEntries']!);
       await isar.isarAgendaEntrys.importJson(prepared['agendaEntries']!);
+      await isar.isarAgendaRegistrations.importJson(
+        prepared['agendaRegistrations']!,
+      );
       await isar.isarWorkerProfiles.importJson(prepared['workerProfiles']!);
       await isar.isarWorkTeams.importJson(prepared['workTeams']!);
       await isar.isarCareRules.importJson(prepared['careRules']!);
@@ -254,6 +267,9 @@ class IsarBackupStore implements BackupStore {
         'milkingSessions': await isar.isarMilkingSessions.where().exportJson(),
         'milkingEntries': await isar.isarMilkingEntrys.where().exportJson(),
         'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
+        'agendaRegistrations': await isar.isarAgendaRegistrations
+            .where()
+            .exportJson(),
         'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
         'workTeams': await isar.isarWorkTeams.where().exportJson(),
         'careRules': await isar.isarCareRules.where().exportJson(),
@@ -277,6 +293,7 @@ class IsarBackupStore implements BackupStore {
       'milkingSessions': 'uuid',
       'milkingEntries': 'uuid',
       'agendaEntries': 'uuid',
+      'agendaRegistrations': 'uuid',
       'workerProfiles': 'uuid',
       'workTeams': 'uuid',
       'careRules': 'recordUuid',
@@ -285,6 +302,7 @@ class IsarBackupStore implements BackupStore {
     };
     const idFields = <String, String>{
       'agendaEntries': 'isarId',
+      'agendaRegistrations': 'isarId',
       'workerProfiles': 'isarId',
       'workTeams': 'isarId',
     };
@@ -314,6 +332,11 @@ class IsarBackupStore implements BackupStore {
     'lotes': 'lastUpdateDate',
     'locations': 'updatedAt',
     'agendaEntries': 'updatedAt',
+    'agendaRegistrations': 'updatedAt',
+    'healthRecords': 'updatedAt',
+    'weightRecords': 'updatedAt',
+    'movementRecords': 'updatedAt',
+    'reproductionRecords': 'updatedAt',
     'workerProfiles': 'updatedAt',
     'workTeams': 'updatedAt',
     'milkingSessions': 'updatedAt',
@@ -406,6 +429,7 @@ class IsarBackupStore implements BackupStore {
     await isar.isarMilkingSessions.clear();
     await isar.isarMilkingEntrys.clear();
     await isar.isarAgendaEntrys.clear();
+    await isar.isarAgendaRegistrations.clear();
     await isar.isarWorkerProfiles.clear();
     await isar.isarWorkTeams.clear();
     await isar.isarCareRules.clear();

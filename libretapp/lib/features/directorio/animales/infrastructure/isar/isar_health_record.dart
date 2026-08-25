@@ -30,6 +30,7 @@ class IsarHealthRecord implements StableRecordModel {
   String? medicineBatch;
   int? withdrawalDays;
   DateTime? withdrawalEndDate;
+  DateTime? updatedAt;
 }
 
 extension IsarHealthRecordMapper on IsarHealthRecord {
@@ -47,6 +48,8 @@ extension IsarHealthRecordMapper on IsarHealthRecord {
       medicineBatch: medicineBatch,
       withdrawalDays: withdrawalDays,
       withdrawalEndDate: withdrawalEndDate,
+      recordUuid: recordUuid,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -66,7 +69,10 @@ extension HealthRecordToIsar on HealthRecord {
     model
       ..medicineBatch = medicineBatch
       ..withdrawalDays = withdrawalDays
-      ..withdrawalEndDate = withdrawalEndDate;
+      ..withdrawalEndDate = withdrawalEndDate
+      ..updatedAt = DateTime.now();
+
+    if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 
     if (id != null) {
       final parsed = int.tryParse(id!);

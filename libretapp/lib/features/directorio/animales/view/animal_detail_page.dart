@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -46,6 +48,7 @@ class AnimalDetailPage extends StatefulWidget {
     CostRecordRepository? costRepo,
     MilkingRepository? milkingRepo,
     CareRepository? careRepo,
+    AgendaRepository? agendaRepository,
     super.key,
   }) : repository = repository ?? locator<AnimalRepository>(),
        lotesRepository = lotesRepository ?? locator<LotesRepository>(),
@@ -58,7 +61,8 @@ class AnimalDetailPage extends StatefulWidget {
        movementRepo = movementRepo ?? locator<MovementRecordRepository>(),
        costRepo = costRepo ?? locator<CostRecordRepository>(),
        milkingRepo = milkingRepo ?? locator<MilkingRepository>(),
-       careRepo = careRepo ?? locator<CareRepository>();
+       careRepo = careRepo ?? locator<CareRepository>(),
+       agendaRepository = agendaRepository ?? locator<AgendaRepository>();
 
   final String animalUuid;
   final AnimalRepository repository;
@@ -72,6 +76,7 @@ class AnimalDetailPage extends StatefulWidget {
   final CostRecordRepository costRepo;
   final MilkingRepository milkingRepo;
   final CareRepository careRepo;
+  final AgendaRepository agendaRepository;
   final bool showQuickActions;
 
   @override
@@ -114,6 +119,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final costsFuture = widget.costRepo.getCostRecords(uuid);
     final milkingFuture = widget.milkingRepo.getRecordsByAnimal(uuid);
     final offspringFuture = widget.repository.getByParentUuid(uuid);
+    final agendaFuture = widget.agendaRepository.fetchEntries();
 
     final weights = await weightsFuture;
     final reproductions = await reproductionsFuture;
@@ -124,6 +130,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final costs = await costsFuture;
     final milkingRecords = await milkingFuture;
     final offspring = await offspringFuture;
+    final agendaEntries = await agendaFuture;
     final ancestors = await _loadAncestors(animal);
     // Only males have a sire history, and it is derived from the females'
     // records rather than stored on him.
@@ -140,6 +147,16 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
     final careRules = {
       for (final rule in await widget.careRepo.getRules()) rule.id: rule,
     };
+    final agendaPending = agendaEntries
+        .where(
+          (entry) =>
+              entry.animalIds.contains(uuid) &&
+              entry.estado != AgendaEstado.completado &&
+              entry.estado != AgendaEstado.verificado &&
+              entry.estado != AgendaEstado.cancelado &&
+              entry.estado != AgendaEstado.reprogramada,
+        )
+        .toList(growable: false);
 
     return DetailData(
       animal: animal,
@@ -157,6 +174,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
       carePending: carePending,
       careRecords: careRecords,
       careRules: careRules,
+      agendaPending: agendaPending,
     );
   }
 

@@ -1,0 +1,96 @@
+{
+  "label": "2000a/46000r",
+  "recorded_at": "2026-08-22T10:04:14.234281",
+  "results": [
+    {
+      "name": "AnimalRepository.getAll (directory open)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 93815,
+      "mean_us": 96617,
+      "p90_us": 122761,
+      "min_us": 76352,
+      "max_us": 122761
+    },
+    {
+      "name": "AnimalRepository.getActiveTaxonomyCounts (filter chips)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 91081,
+      "mean_us": 89154,
+      "p90_us": 116948,
+      "min_us": 77190,
+      "max_us": 116948
+    },
+    {
+      "name": "AnimalRepository.getByUuid x50",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 67397,
+      "mean_us": 67487,
+      "p90_us": 71799,
+      "min_us": 64581,
+      "max_us": 71799
+    },
+    {
+      "name": "HealthRepository.getRecordsFor x50 (animal detail)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 71697,
+      "mean_us": 71813,
+      "p90_us": 75856,
+      "min_us": 68590,
+      "max_us": 75856
+    },
+    {
+      "name": "WeightRepository.getRecordsFor x50 (animal detail)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 64760,
+      "mean_us": 64052,
+      "p90_us": 67423,
+      "min_us": 59378,
+      "max_us": 67423
+    },
+    {
+      "name": "Batch indicators for a 30-card page",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 15324,
+      "mean_us": 15418,
+      "p90_us": 17227,
+      "min_us": 14861,
+      "max_us": 17227
+    },
+    {
+      "name": "AnimalActivityTracker.touch x25 (every record save)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 25266,
+      "mean_us": 25556,
+      "p90_us": 29813,
+      "min_us": 22863,
+      "max_us": 29813
+    },
+    {
+      "name": "AnimalActivityTracker.recalculate x5 (record delete)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 43309,
+      "mean_us": 43688,
+      "p90_us": 48641,
+      "min_us": 41199,
+      "max_us": 48641
+    },
+    {
+      "name": "HealthRepository.addHealthRecord (save a treatment)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 5837,
+      "mean_us": 5908,
+      "p90_us": 6950,
+      "min_us": 5273,
+      "max_us": 6950
+    }
+  ]
+}

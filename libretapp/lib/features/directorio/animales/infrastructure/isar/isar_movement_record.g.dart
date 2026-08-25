@@ -57,6 +57,11 @@ const IsarMovementRecordSchema = CollectionSchema(
       id: 7,
       name: r'toLocation',
       type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 8,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _isarMovementRecordEstimateSize,
@@ -145,6 +150,7 @@ void _isarMovementRecordSerialize(
   writer.writeString(offsets[5], object.reason);
   writer.writeString(offsets[6], object.recordUuid);
   writer.writeString(offsets[7], object.toLocation);
+  writer.writeDateTime(offsets[8], object.updatedAt);
 }
 
 IsarMovementRecord _isarMovementRecordDeserialize(
@@ -163,6 +169,7 @@ IsarMovementRecord _isarMovementRecordDeserialize(
   object.reason = reader.readString(offsets[5]);
   object.recordUuid = reader.readString(offsets[6]);
   object.toLocation = reader.readString(offsets[7]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[8]);
   return object;
 }
 
@@ -189,6 +196,8 @@ P _isarMovementRecordDeserializeProp<P>(
       return (reader.readString(offset)) as P;
     case 7:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1554,6 +1563,80 @@ extension IsarMovementRecordQueryFilter
       ));
     });
   }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension IsarMovementRecordQueryObject
@@ -1673,6 +1756,20 @@ extension IsarMovementRecordQuerySortBy
       sortByToLocationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toLocation', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -1804,6 +1901,20 @@ extension IsarMovementRecordQuerySortThenBy
       return query.addSortBy(r'toLocation', Sort.desc);
     });
   }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
 }
 
 extension IsarMovementRecordQueryWhereDistinct
@@ -1861,6 +1972,13 @@ extension IsarMovementRecordQueryWhereDistinct
       distinctByToLocation({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'toLocation', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -1923,6 +2041,13 @@ extension IsarMovementRecordQueryProperty
       toLocationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toLocation');
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, DateTime?, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 }

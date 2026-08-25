@@ -69,35 +69,35 @@ class _CategoryCard extends StatelessWidget {
   static String? _imagePath(Category cat) {
     switch (cat) {
       case Category.calf:
-        return 'assets/images/becerro.png';
+        return 'assets/images/becerro.webp';
       case Category.heifer:
-        return 'assets/images/vaquilla.png';
+        return 'assets/images/vaquilla.webp';
       case Category.youngBull:
-        return 'assets/images/toro.png';
+        return 'assets/images/toro.webp';
       case Category.steer:
-        return 'assets/images/novillo.png';
+        return 'assets/images/novillo.webp';
       case Category.cow:
-        return 'assets/images/vaca.png';
+        return 'assets/images/vaca.webp';
       case Category.bull:
-        return 'assets/images/toro.png';
+        return 'assets/images/toro.webp';
       case Category.oxen:
-        return 'assets/images/novillo.png';
+        return 'assets/images/novillo.webp';
       case Category.weaned:
-        return 'assets/images/becerro.png';
+        return 'assets/images/becerro.webp';
       case Category.juvenile:
-        return 'assets/images/becerro.png';
+        return 'assets/images/becerro.webp';
       case Category.grower:
-        return 'assets/images/novillo.png';
+        return 'assets/images/novillo.webp';
       case Category.fattening:
-        return 'assets/images/novillo.png';
+        return 'assets/images/novillo.webp';
       case Category.production:
-        return 'assets/images/vaca.png';
+        return 'assets/images/vaca.webp';
       case Category.reproduction:
-        return 'assets/images/toro.png';
+        return 'assets/images/toro.webp';
       case Category.work:
-        return 'assets/images/caballo.png';
+        return 'assets/images/caballo.webp';
       case Category.guard:
-        return 'assets/images/canino.png';
+        return 'assets/images/canino.webp';
       case Category.other:
         return null;
     }

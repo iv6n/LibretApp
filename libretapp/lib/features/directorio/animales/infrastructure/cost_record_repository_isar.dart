@@ -22,7 +22,7 @@ class CostRecordRepositoryIsar
   Future<List<IsarCostRecord>> queryByAnimal(
     IsarCollection<IsarCostRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection.where().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
 
   @override
   IsarCostRecord toIsarModel(CostRecord record, String animalUuid) =>

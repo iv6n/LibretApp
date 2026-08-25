@@ -20,45 +20,42 @@ void main() {
       controller.dispose();
     });
 
-    test(
-      'puts priority animals first and sorts by recency within same level',
-      () {
-        final normalRecent = _buildAnimal(
-          uuid: 'normal-recent',
-          earTagNumber: 'Z-200',
-          riskLevel: RiskLevel.low,
-          healthStatus: HealthStatus.good,
-          lastUpdateDate: DateTime(2025, 1, 3),
-        );
-        final poorOld = _buildAnimal(
-          uuid: 'poor-old',
-          earTagNumber: 'A-100',
-          riskLevel: RiskLevel.low,
-          healthStatus: HealthStatus.poor,
-          lastUpdateDate: DateTime(2025, 1, 1),
-        );
-        final poorRecent = _buildAnimal(
-          uuid: 'poor-recent',
-          earTagNumber: 'B-101',
-          riskLevel: RiskLevel.low,
-          healthStatus: HealthStatus.poor,
-          lastUpdateDate: DateTime(2025, 1, 2),
-        );
+    test('sorts the whole directory by latest activity', () {
+      final normalRecent = _buildAnimal(
+        uuid: 'normal-recent',
+        earTagNumber: 'Z-200',
+        riskLevel: RiskLevel.low,
+        healthStatus: HealthStatus.good,
+        lastUpdateDate: DateTime(2025, 1, 3),
+      );
+      final poorOld = _buildAnimal(
+        uuid: 'poor-old',
+        earTagNumber: 'A-100',
+        riskLevel: RiskLevel.low,
+        healthStatus: HealthStatus.poor,
+        lastUpdateDate: DateTime(2025, 1, 1),
+      );
+      final poorRecent = _buildAnimal(
+        uuid: 'poor-recent',
+        earTagNumber: 'B-101',
+        riskLevel: RiskLevel.low,
+        healthStatus: HealthStatus.poor,
+        lastUpdateDate: DateTime(2025, 1, 2),
+      );
 
-        final sorted = controller.applyFilters([
-          normalRecent,
-          poorOld,
-          poorRecent,
-        ]);
+      final sorted = controller.applyFilters([
+        normalRecent,
+        poorOld,
+        poorRecent,
+      ]);
 
-        expect(
-          sorted.map((a) => a.uuid),
-          equals(['poor-recent', 'poor-old', 'normal-recent']),
-        );
-      },
-    );
+      expect(
+        sorted.map((a) => a.uuid),
+        equals(['normal-recent', 'poor-recent', 'poor-old']),
+      );
+    });
 
-    test('prioritizes under observation over other priority factors', () {
+    test('does not let an older alert outrank newer activity', () {
       final observed = _buildAnimal(
         uuid: 'observed',
         earTagNumber: 'OBS-1',
@@ -78,10 +75,10 @@ void main() {
 
       final sorted = controller.applyFilters([poor, observed]);
 
-      expect(sorted.first.uuid, 'observed');
+      expect(sorted.first.uuid, 'poor');
     });
 
-    test('uses ear tag and then visual id as stable tie-breakers', () {
+    test('uses ear tag and then UUID as stable tie-breakers', () {
       final samePriorityDateB = _buildAnimal(
         uuid: 'tie-b',
         earTagNumber: 'B-002',
@@ -107,7 +104,7 @@ void main() {
 
       expect(
         sorted.map((a) => a.uuid),
-        equals(['tie-a', 'tie-visual', 'tie-b']),
+        equals(['tie-visual', 'tie-a', 'tie-b']),
       );
     });
 
@@ -139,6 +136,34 @@ void main() {
 
       expect(filtered.map((animal) => animal.uuid), ['pending']);
     });
+
+    test('filters selected species and its available stages together', () {
+      final cattle = _buildAnimal(
+        uuid: 'cattle',
+        earTagNumber: 'C-1',
+        species: Species.cattle,
+      );
+      final goat = _buildAnimal(
+        uuid: 'goat',
+        earTagNumber: 'G-1',
+        species: Species.goat,
+        lifeStage: LifeStage.goat,
+      );
+      final goatKid = _buildAnimal(
+        uuid: 'goat-kid',
+        earTagNumber: 'G-2',
+        species: Species.goat,
+        lifeStage: LifeStage.kid,
+      );
+
+      controller.loadTaxonomy([cattle, goat, goatKid]);
+      controller.setSpecies(Species.goat);
+      controller.setStages({LifeStage.goat});
+
+      final filtered = controller.applyFilters([cattle, goat, goatKid]);
+
+      expect(filtered.map((animal) => animal.uuid), ['goat']);
+    });
   });
 }
 
@@ -152,6 +177,7 @@ AnimalEntity _buildAnimal({
   RiskLevel riskLevel = RiskLevel.low,
   HealthStatus healthStatus = HealthStatus.good,
   DateTime? lastUpdateDate,
+  LifeStage lifeStage = LifeStage.cow,
 }) {
   final timestamp = lastUpdateDate ?? DateTime(2025, 1, 1);
 
@@ -161,7 +187,7 @@ AnimalEntity _buildAnimal({
     visualId: visualId,
     species: species,
     category: Category.cow,
-    lifeStage: LifeStage.cow,
+    lifeStage: lifeStage,
     sex: Sex.female,
     breed: 'Generic',
     birthDate: DateTime(2023, 1, 1),

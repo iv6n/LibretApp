@@ -1,6 +1,8 @@
 /// features › directorio › bloc › animales_tab_bloc — BLoC managing the animales tab state within the directorio shell.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -17,6 +19,27 @@ class AnimalesTabBloc
     on<AnimalesTabStreamFailed>(_onStreamFailed);
   }
   final AnimalRepository repository;
+
+  /// Returns the complete active herd, waiting for the watch stream when the
+  /// tab has not finished loading yet. The tab repository stream is already
+  /// unpaginated, so this is the source used by the global directory search.
+  Future<List<AnimalEntity>> ensureLoaded() async {
+    final currentState = state;
+    if (currentState is AnimalesTabLoaded) {
+      return currentState.animales;
+    }
+
+    final loadedFuture = stream.firstWhere(
+      (candidate) => candidate is AnimalesTabLoaded,
+    );
+    if (currentState is AnimalesTabInitial ||
+        currentState is AnimalesTabError) {
+      add(const LoadAnimalesTab());
+    }
+
+    final loadedState = await loadedFuture;
+    return (loadedState as AnimalesTabLoaded).animales;
+  }
 
   @override
   Stream<List<AnimalEntity>> watchItems() => repository.watchAll();

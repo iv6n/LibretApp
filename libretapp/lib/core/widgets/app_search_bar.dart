@@ -2,7 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
+import 'app_button.dart';
 
 class AppSearchBar extends StatefulWidget {
   const AppSearchBar({
@@ -12,6 +14,7 @@ class AppSearchBar extends StatefulWidget {
     this.hintText = 'Buscar',
     this.label,
     this.onClear,
+    this.onClose,
     this.onFilterTap,
     this.autofocus = false,
     super.key,
@@ -23,6 +26,7 @@ class AppSearchBar extends StatefulWidget {
   final String hintText;
   final String? label;
   final VoidCallback? onClear;
+  final VoidCallback? onClose;
   final VoidCallback? onFilterTap;
   final bool autofocus;
 
@@ -48,6 +52,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final showClear = widget.controller.text.isNotEmpty;
 
     return Column(
@@ -78,20 +83,29 @@ class _AppSearchBarState extends State<AppSearchBar> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (widget.onFilterTap != null)
-                  IconButton(
-                    tooltip: 'Filtrar',
-                    icon: const Icon(Icons.tune),
+                  AppIconButton(
+                    tooltip: l10n.uiFilter,
+                    icon: Icons.tune,
                     onPressed: widget.onFilterTap,
+                    compact: true,
                   ),
                 if (showClear)
-                  IconButton(
-                    tooltip: 'Limpiar',
-                    icon: const Icon(Icons.clear),
+                  AppIconButton(
+                    tooltip: l10n.uiClear,
+                    icon: Icons.clear,
                     onPressed: () {
                       widget.controller.clear();
                       widget.onChanged('');
                       widget.onClear?.call();
                     },
+                    compact: true,
+                  ),
+                if (widget.onClose != null)
+                  AppIconButton(
+                    tooltip: l10n.uiClose,
+                    icon: Icons.close,
+                    onPressed: widget.onClose,
+                    compact: true,
                   ),
               ],
             ),

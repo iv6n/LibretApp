@@ -10,20 +10,25 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar_recor
 
 class WeightRecordRepositoryIsar
     extends IsarRecordRepositoryBase<WeightRecord, IsarWeightRecord>
-    implements WeightRecordRepository {
+    implements WeightRecordRepository, WeightRecordUuidLookup {
   WeightRecordRepositoryIsar(super.database);
 
   @override
   String get logTag => 'WeightRecordRepositoryIsar';
 
   @override
-  IsarCollection<IsarWeightRecord> collection(Isar isar) => isar.isarWeightRecords;
+  IsarCollection<IsarWeightRecord> collection(Isar isar) =>
+      isar.isarWeightRecords;
 
   @override
   Future<List<IsarWeightRecord>> queryByAnimal(
     IsarCollection<IsarWeightRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection
+      .where()
+      .animalUuidEqualTo(animalUuid)
+      .sortByDateDesc()
+      .findAll();
 
   @override
   IsarWeightRecord toIsarModel(WeightRecord record, String animalUuid) =>
@@ -42,6 +47,19 @@ class WeightRecordRepositoryIsar
   @override
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) =>
       getRecordsFor(animalUuid);
+
+  @override
+  Future<Map<String, WeightRecord>> getWeightRecordsByRecordUuids(
+    Set<String> recordUuids,
+  ) async {
+    if (recordUuids.isEmpty) return const {};
+    final db = await isar;
+    final records = await db.isarWeightRecords
+        .filter()
+        .anyOf(recordUuids, (q, uuid) => q.recordUuidEqualTo(uuid))
+        .findAll();
+    return {for (final record in records) record.recordUuid: record.toEntity()};
+  }
 
   @override
   Future<WeightRecord> addWeightRecord(
@@ -76,14 +94,18 @@ class WeightRecordRepositoryIsar
   }
 
   @override
-  Future<void> deleteWeightRecord(String recordId) => deleteRecordById(recordId);
+  Future<void> deleteWeightRecord(String recordId) =>
+      deleteRecordById(recordId);
 
   Future<void> _applyWeightEffect(
     Isar isar,
     String animalUuid,
     WeightRecord record,
   ) async {
-    final animal = await isar.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+    final animal = await isar.isarAnimals
+        .where()
+        .uuidEqualTo(animalUuid)
+        .findFirst();
     if (animal == null) return;
     animal
       ..weight = record.weight

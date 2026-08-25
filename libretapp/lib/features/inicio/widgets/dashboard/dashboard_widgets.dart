@@ -15,6 +15,8 @@ import 'package:libretapp/features/biblioteca/widgets/library_book_card.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
+const _dashboardTabletBreakpoint = 600.0;
+
 class DashboardWidgetHost extends StatelessWidget {
   const DashboardWidgetHost({
     required this.config,
@@ -33,25 +35,50 @@ class DashboardWidgetHost extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!config.enabled) return const SizedBox.shrink();
 
+    final showSectionAction =
+        MediaQuery.sizeOf(context).width >= _dashboardTabletBreakpoint;
+
     return switch (config.type) {
-      DashboardWidgetType.animalSummary => _AnimalSummaryWidget(data: data),
-      DashboardWidgetType.upcomingEvents => _UpcomingEventsWidget(data: data),
+      DashboardWidgetType.animalSummary => _AnimalSummaryWidget(
+        data: data,
+        showSectionAction: showSectionAction,
+      ),
+      DashboardWidgetType.upcomingEvents => _UpcomingEventsWidget(
+        data: data,
+        showSectionAction: showSectionAction,
+      ),
       DashboardWidgetType.healthAlerts => _HealthAlertsWidget(data: data),
-      DashboardWidgetType.upcomingCalvings => _UpcomingCalvingsWidget(data: data),
-      DashboardWidgetType.financeMonth => _FinanceWidget(detail: financeDetail),
-      DashboardWidgetType.activeLocations => _LocationStatusWidget(data: data),
+      DashboardWidgetType.upcomingCalvings => _UpcomingCalvingsWidget(
+        data: data,
+      ),
+      DashboardWidgetType.financeMonth => _FinanceWidget(
+        detail: financeDetail,
+        showSectionAction: showSectionAction,
+      ),
+      DashboardWidgetType.activeLocations => _LocationStatusWidget(
+        data: data,
+        showSectionAction: showSectionAction,
+      ),
       DashboardWidgetType.recentActivity => _RecentActivityWidget(data: data),
       DashboardWidgetType.pendingTasks => _PendingTasksWidget(data: data),
       DashboardWidgetType.weather => _WeatherWidget(data: data),
       DashboardWidgetType.inventory => const _InventoryWidget(),
-      DashboardWidgetType.libraryPicks => _LibraryPicksWidget(items: libraryItems),
+      DashboardWidgetType.libraryPicks => _LibraryPicksWidget(
+        items: libraryItems,
+        showSectionAction: showSectionAction,
+      ),
     };
   }
 }
 
 class _AnimalSummaryWidget extends StatelessWidget {
-  const _AnimalSummaryWidget({required this.data});
+  const _AnimalSummaryWidget({
+    required this.data,
+    required this.showSectionAction,
+  });
+
   final InicioDashboardData data;
+  final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -63,15 +90,17 @@ class _AnimalSummaryWidget extends StatelessWidget {
       emptyTitle: 'Sin animales',
       emptyMessage: 'Registra tu primer animal.',
       onTap: () => context.push(AppRoutes.directorio),
+      trailing: _sectionAction(
+        context,
+        visible: showSectionAction,
+        route: AppRoutes.directorio,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _Kpi(
-                value: '${data.totalAnimals}',
-                label: 'Total',
-              ),
+              _Kpi(value: '${data.totalAnimals}', label: 'Total'),
               const SizedBox(width: 16),
               _Kpi(
                 value: '${data.attentionAnimals}',
@@ -79,10 +108,7 @@ class _AnimalSummaryWidget extends StatelessWidget {
                 color: AppColors.warning,
               ),
               const SizedBox(width: 16),
-              _Kpi(
-                value: '${data.activeLotes}',
-                label: 'Lotes',
-              ),
+              _Kpi(value: '${data.activeLotes}', label: 'Lotes'),
             ],
           ),
           if (data.categoryBreakdown.isNotEmpty) ...[
@@ -120,8 +146,13 @@ class _Kpi extends StatelessWidget {
 }
 
 class _UpcomingEventsWidget extends StatelessWidget {
-  const _UpcomingEventsWidget({required this.data});
+  const _UpcomingEventsWidget({
+    required this.data,
+    required this.showSectionAction,
+  });
+
   final InicioDashboardData data;
+  final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -134,9 +165,12 @@ class _UpcomingEventsWidget extends StatelessWidget {
       emptyTitle: 'Sin eventos próximos',
       emptyMessage: 'Agenda vacía por ahora.',
       onTap: () => context.push(AppRoutes.agenda),
-      child: Column(
-        children: events.take(4).map(_eventTile).toList(),
+      trailing: _sectionAction(
+        context,
+        visible: showSectionAction,
+        route: AppRoutes.agenda,
       ),
+      child: Column(children: events.take(4).map(_eventTile).toList()),
     );
   }
 
@@ -179,8 +213,15 @@ class _HealthAlertsWidget extends StatelessWidget {
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.warning_amber_rounded, color: color, size: 20),
-            title: Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(a.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+            title: Text(
+              a.title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              a.message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             onTap: () => context.push(a.targetRoute),
           );
         }).toList(),
@@ -214,7 +255,8 @@ class _UpcomingCalvingsWidget extends StatelessWidget {
               DateFormat('d/M').format(c.expectedDate),
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-            onTap: () => context.push(AppRoutes.animalDetallePath(c.animalUuid)),
+            onTap: () =>
+                context.push(AppRoutes.animalDetallePath(c.animalUuid)),
           );
         }).toList(),
       ),
@@ -223,8 +265,10 @@ class _UpcomingCalvingsWidget extends StatelessWidget {
 }
 
 class _FinanceWidget extends StatelessWidget {
-  const _FinanceWidget({this.detail});
+  const _FinanceWidget({this.detail, required this.showSectionAction});
+
   final FinanceSummaryDetail? detail;
+  final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -244,6 +288,11 @@ class _FinanceWidget extends StatelessWidget {
       title: 'Finanzas del mes',
       status: DashboardWidgetStatus.data,
       onTap: () => context.push(AppRoutes.finanzas),
+      trailing: _sectionAction(
+        context,
+        visible: showSectionAction,
+        route: AppRoutes.finanzas,
+      ),
       child: Row(
         children: [
           Expanded(
@@ -264,8 +313,20 @@ class _FinanceWidget extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('+${fmt.format(s.totalRevenue)}', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
-              Text('-${fmt.format(s.totalExpenses)}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+              Text(
+                '+${fmt.format(s.totalRevenue)}',
+                style: const TextStyle(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                '-${fmt.format(s.totalExpenses)}',
+                style: const TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ],
@@ -275,8 +336,13 @@ class _FinanceWidget extends StatelessWidget {
 }
 
 class _LocationStatusWidget extends StatelessWidget {
-  const _LocationStatusWidget({required this.data});
+  const _LocationStatusWidget({
+    required this.data,
+    required this.showSectionAction,
+  });
+
   final InicioDashboardData data;
+  final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -289,6 +355,11 @@ class _LocationStatusWidget extends StatelessWidget {
       emptyTitle: 'Sin ubicaciones',
       emptyMessage: 'Crea potreros, corrales o bodegas.',
       onTap: () => context.push(AppRoutes.ubicaciones),
+      trailing: _sectionAction(
+        context,
+        visible: showSectionAction,
+        route: AppRoutes.ubicaciones,
+      ),
       child: Column(
         children: locs.map((l) {
           return ListTile(
@@ -299,9 +370,7 @@ class _LocationStatusWidget extends StatelessWidget {
             subtitle: Text('${l.animalCount} animales · ${l.typeLabel}'),
             trailing: l.waterEvents > 0 || l.pastureEvents > 0
                 ? Icon(
-                    l.waterEvents > 0
-                        ? Icons.water_drop_outlined
-                        : Icons.grass,
+                    l.waterEvents > 0 ? Icons.water_drop_outlined : Icons.grass,
                     size: 18,
                     color: AppColors.secondary,
                   )
@@ -334,7 +403,10 @@ class _RecentActivityWidget extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: CircleAvatar(
               radius: 14,
-              child: Text(a.categoryAbbrev, style: const TextStyle(fontSize: 10)),
+              child: Text(
+                a.categoryAbbrev,
+                style: const TextStyle(fontSize: 10),
+              ),
             ),
             title: Text(a.animalTag),
             subtitle: Text(a.categoryLabel),
@@ -342,7 +414,8 @@ class _RecentActivityWidget extends StatelessWidget {
               DateFormat('d/M').format(a.lastUpdate),
               style: Theme.of(context).textTheme.labelSmall,
             ),
-            onTap: () => context.push(AppRoutes.animalDetallePath(a.animalUuid)),
+            onTap: () =>
+                context.push(AppRoutes.animalDetallePath(a.animalUuid)),
           );
         }).toList(),
       ),
@@ -370,7 +443,11 @@ class _PendingTasksWidget extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.task_alt_outlined, size: 20),
             title: Text(t.title),
-            subtitle: Text(t.message, maxLines: 2, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              t.message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             onTap: () => context.push(t.targetRoute),
           );
         }).toList(),
@@ -426,7 +503,10 @@ class _WeatherWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(w.condition, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  w.condition,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 Text('Máx ${w.maxTemperature}° · Hum ${w.humidity}%'),
               ],
             ),
@@ -453,8 +533,13 @@ class _InventoryWidget extends StatelessWidget {
 }
 
 class _LibraryPicksWidget extends StatelessWidget {
-  const _LibraryPicksWidget({required this.items});
+  const _LibraryPicksWidget({
+    required this.items,
+    required this.showSectionAction,
+  });
+
   final List<LibraryManifestBook> items;
+  final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
@@ -466,17 +551,50 @@ class _LibraryPicksWidget extends StatelessWidget {
           : DashboardWidgetStatus.data,
       emptyTitle: 'Sin recomendaciones',
       onTap: () => context.push(AppRoutes.perfil),
+      trailing: _sectionAction(
+        context,
+        visible: showSectionAction,
+        route: AppRoutes.perfil,
+      ),
       child: Column(
         children: picks.map((item) {
           return ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
             leading: Icon(item.icon, size: 20, color: AppColors.primary),
-            title: Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(item.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              item.subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           );
         }).toList(),
       ),
     );
   }
+}
+
+Widget? _sectionAction(
+  BuildContext context, {
+  required bool visible,
+  required String route,
+}) {
+  if (!visible) return null;
+
+  return TextButton(
+    onPressed: () => context.push(route),
+    style: TextButton.styleFrom(
+      foregroundColor: AppColors.primary,
+      minimumSize: Size.zero,
+      padding: EdgeInsets.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+    ),
+    child: const Text('Ver todas'),
+  );
 }

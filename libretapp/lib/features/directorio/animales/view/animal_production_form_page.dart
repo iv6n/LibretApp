@@ -4,10 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalProductionFormPage extends StatefulWidget {
@@ -124,6 +126,9 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
       saving: _saving,
       onSave: _save,
       saveLabel: l10n.actionSave,
+      assetPath:
+          assetForProductionRecordType(_type) ?? AppAssetPaths.recordProduction,
+      fallbackIcon: Icons.agriculture_outlined,
       fields: [
         DropdownButtonFormField<ProductionRecordType>(
           initialValue: _type,
@@ -132,7 +137,9 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: ProductionRecordType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+              .map(
+                (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+              )
               .toList(),
           onChanged: (value) {
             if (value == null) return;

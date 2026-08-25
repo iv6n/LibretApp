@@ -72,13 +72,18 @@ const IsarHealthRecordSchema = CollectionSchema(
       name: r'type',
       type: IsarType.string,
     ),
-    r'withdrawalDays': PropertySchema(
+    r'updatedAt': PropertySchema(
       id: 11,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
+    ),
+    r'withdrawalDays': PropertySchema(
+      id: 12,
       name: r'withdrawalDays',
       type: IsarType.long,
     ),
     r'withdrawalEndDate': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'withdrawalEndDate',
       type: IsarType.dateTime,
     )
@@ -184,8 +189,9 @@ void _isarHealthRecordSerialize(
   writer.writeString(offsets[8], object.product);
   writer.writeString(offsets[9], object.recordUuid);
   writer.writeString(offsets[10], object.type);
-  writer.writeLong(offsets[11], object.withdrawalDays);
-  writer.writeDateTime(offsets[12], object.withdrawalEndDate);
+  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeLong(offsets[12], object.withdrawalDays);
+  writer.writeDateTime(offsets[13], object.withdrawalEndDate);
 }
 
 IsarHealthRecord _isarHealthRecordDeserialize(
@@ -207,8 +213,9 @@ IsarHealthRecord _isarHealthRecordDeserialize(
   object.product = reader.readString(offsets[8]);
   object.recordUuid = reader.readString(offsets[9]);
   object.type = reader.readString(offsets[10]);
-  object.withdrawalDays = reader.readLongOrNull(offsets[11]);
-  object.withdrawalEndDate = reader.readDateTimeOrNull(offsets[12]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[11]);
+  object.withdrawalDays = reader.readLongOrNull(offsets[12]);
+  object.withdrawalEndDate = reader.readDateTimeOrNull(offsets[13]);
   return object;
 }
 
@@ -242,8 +249,10 @@ P _isarHealthRecordDeserializeProp<P>(
     case 10:
       return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 12:
+      return (reader.readLongOrNull(offset)) as P;
+    case 13:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1992,6 +2001,80 @@ extension IsarHealthRecordQueryFilter
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'updatedAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
+      updatedAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterFilterCondition>
       withdrawalDaysIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2298,6 +2381,20 @@ extension IsarHealthRecordQuerySortBy
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
       sortByWithdrawalDays() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'withdrawalDays', Sort.asc);
@@ -2491,6 +2588,20 @@ extension IsarHealthRecordQuerySortThenBy
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QAfterSortBy>
       thenByWithdrawalDays() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'withdrawalDays', Sort.asc);
@@ -2599,6 +2710,13 @@ extension IsarHealthRecordQueryWhereDistinct
   }
 
   QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, IsarHealthRecord, QDistinct>
       distinctByWithdrawalDays() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'withdrawalDays');
@@ -2689,6 +2807,13 @@ extension IsarHealthRecordQueryProperty
   QueryBuilder<IsarHealthRecord, String, QQueryOperations> typeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'type');
+    });
+  }
+
+  QueryBuilder<IsarHealthRecord, DateTime?, QQueryOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 

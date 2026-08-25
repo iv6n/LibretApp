@@ -4,7 +4,6 @@ library;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
-import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
@@ -39,6 +38,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   final LotesTabBloc lotesTabBloc;
   final UbicacionesTabBloc ubicacionesTabBloc;
   final DirectorioConfigRepository? _configRepository;
+  int _searchGeneration = 0;
 
   Future<void> _onLoadDirectorioData(
     LoadDirectorioData event,
@@ -95,6 +95,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     if (currentState is! DirectorioLoaded) return;
     if (!currentState.visibleSections.contains(section)) return;
 
+    _searchGeneration++;
     emit(
       currentState.copyWith(
         activeSection: section,
@@ -158,6 +159,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
 
     await _configRepository?.save(config);
 
+    _searchGeneration++;
     emit(
       currentState.copyWith(
         activeSection: active,
@@ -174,6 +176,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final currentState = state;
     if (currentState is! DirectorioLoaded) return;
 
+    _searchGeneration++;
     emit(
       currentState.copyWith(
         isSearching: true,
@@ -183,21 +186,22 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     );
   }
 
-  void _onPerformCombinedSearch(
+  Future<void> _onPerformCombinedSearch(
     PerformCombinedSearch event,
     Emitter<DirectorioState> emit,
-  ) {
+  ) async {
     final currentState = state;
     if (currentState is! DirectorioLoaded) return;
 
-    final results = <CombinedSearchResult>[];
-    final seen = <String>{};
     final query = event.query.trim().toLowerCase();
 
     if (query.isEmpty) {
+      _searchGeneration++;
       emit(currentState.copyWith(searchResults: [], searchQuery: ''));
       return;
     }
+
+    final searchGeneration = ++_searchGeneration;
 
     // Ordenamos según el tab activo
     final orders = _getSearchOrder(
@@ -206,22 +210,40 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       currentState.visibleSections,
     );
 
+    var animals = const <AnimalEntity>[];
+    if (orders.contains(CombinedSearchType.animal)) {
+      try {
+        animals = await animalesTabBloc.ensureLoaded();
+      } catch (_) {
+        // Keep the loaded directory state intact if the animal source fails.
+        // The next search can retry the tab load.
+        if (!isClosed && searchGeneration == _searchGeneration) {
+          emit(currentState.copyWith(searchResults: [], searchQuery: query));
+        }
+        return;
+      }
+    }
+
+    if (isClosed || searchGeneration != _searchGeneration) return;
+
+    final latestState = state;
+    if (latestState is! DirectorioLoaded) return;
+    final results = <CombinedSearchResult>[];
+    final seen = <String>{};
+
     for (final order in orders) {
       if (order == CombinedSearchType.animal) {
-        final animalesState = animalesTabBloc.state;
-        if (animalesState is AnimalesTabLoaded) {
-          for (final animal in animalesState.animales) {
-            if (_matchesQuery(animal, query)) {
-              _addResultIfNew(
-                seen,
-                results,
-                CombinedSearchResult(
-                  type: CombinedSearchType.animal,
-                  id: _getId(animal),
-                  name: _getAnimalName(animal),
-                ),
-              );
-            }
+        for (final animal in animals) {
+          if (_matchesQuery(animal, query)) {
+            _addResultIfNew(
+              seen,
+              results,
+              CombinedSearchResult(
+                type: CombinedSearchType.animal,
+                id: _getId(animal),
+                name: _getAnimalName(animal),
+              ),
+            );
           }
         }
       } else if (order == CombinedSearchType.lote) {
@@ -261,13 +283,14 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       }
     }
 
-    emit(currentState.copyWith(searchResults: results, searchQuery: query));
+    emit(latestState.copyWith(searchResults: results, searchQuery: query));
   }
 
   void _onClearSearch(ClearSearch event, Emitter<DirectorioState> emit) {
     final currentState = state;
     if (currentState is! DirectorioLoaded) return;
 
+    _searchGeneration++;
     emit(
       currentState.copyWith(
         isSearching: false,
@@ -291,7 +314,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       if (config.visibleSections.contains(activeSection)) activeSection,
       ...config.orderedSections.where(
         (section) =>
-            config.visibleSections.contains(section) && section != activeSection,
+            config.visibleSections.contains(section) &&
+            section != activeSection,
       ),
     ];
     return searchSections
@@ -347,9 +371,9 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final nameLower = name.toLowerCase();
     if (nameLower.contains(normalized)) return true;
     if (item is AnimalEntity) {
-      return animalSearchPresentationText(item).toLowerCase().contains(
-        normalized,
-      );
+      return animalSearchPresentationText(
+        item,
+      ).toLowerCase().contains(normalized);
     }
     return false;
   }

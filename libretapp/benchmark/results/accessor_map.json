@@ -1,0 +1,23 @@
+{
+  "isarAgendaEntrys": "IsarAgendaEntry",
+  "isarAgendaRegistrations": "IsarAgendaRegistration",
+  "isarWorkerProfiles": "IsarWorkerProfile",
+  "isarWorkTeams": "IsarWorkTeam",
+  "isarAnimals": "IsarAnimal",
+  "isarCareRules": "IsarCareRule",
+  "isarCareRecords": "IsarCareRecord",
+  "isarScheduledCares": "IsarScheduledCare",
+  "isarCommercialRecords": "IsarCommercialRecord",
+  "isarCostRecords": "IsarCostRecord",
+  "isarHealthRecords": "IsarHealthRecord",
+  "isarMovementRecords": "IsarMovementRecord",
+  "isarProductionRecords": "IsarProductionRecord",
+  "isarReproductionRecords": "IsarReproductionRecord",
+  "isarWeightRecords": "IsarWeightRecord",
+  "isarLotes": "IsarLote",
+  "isarGeneralExpenseRecords": "IsarGeneralExpenseRecord",
+  "isarIncomeRecords": "IsarIncomeRecord",
+  "isarMilkingEntrys": "IsarMilkingEntry",
+  "isarMilkingSessions": "IsarMilkingSession",
+  "isarLocations": "IsarLocation"
+}

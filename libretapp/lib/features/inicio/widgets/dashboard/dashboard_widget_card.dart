@@ -33,6 +33,15 @@ class DashboardWidgetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final trailingWidget = trailing;
+    final isTablet = MediaQuery.sizeOf(context).width >= 600;
+    final cardPadding = isTablet ? AppSpacing.md : AppSpacing.sm;
+    final titleStyle =
+        (isTablet ? theme.textTheme.titleMedium : theme.textTheme.titleSmall)
+            ?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            );
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -45,8 +54,8 @@ class DashboardWidgetCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -56,24 +65,17 @@ class DashboardWidgetCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadii.lg),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.all(cardPadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    ?trailing,
+                    Expanded(child: Text(title, style: titleStyle)),
+                    ?trailingWidget,
                   ],
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: isTablet ? AppSpacing.sm : AppSpacing.xs),
                 switch (status) {
                   DashboardWidgetStatus.loading => const Padding(
                     padding: EdgeInsets.all(AppSpacing.md),

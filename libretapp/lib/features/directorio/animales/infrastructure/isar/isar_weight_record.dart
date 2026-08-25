@@ -24,6 +24,7 @@ class IsarWeightRecord implements StableRecordModel {
   late String method;
   String? measuredBy;
   String? notes;
+  DateTime? updatedAt;
 }
 
 extension IsarWeightRecordMapper on IsarWeightRecord {
@@ -35,6 +36,8 @@ extension IsarWeightRecordMapper on IsarWeightRecord {
       method: WeightMethod.values.byName(method),
       measuredBy: measuredBy,
       notes: notes,
+      recordUuid: recordUuid,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -47,7 +50,10 @@ extension WeightRecordToIsar on WeightRecord {
       ..weight = weight
       ..method = method.name
       ..measuredBy = measuredBy
-      ..notes = notes;
+      ..notes = notes
+      ..updatedAt = DateTime.now();
+
+    if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 
     if (id != null) {
       final parsed = int.tryParse(id!);

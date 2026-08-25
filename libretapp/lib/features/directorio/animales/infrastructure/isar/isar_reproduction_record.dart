@@ -45,6 +45,7 @@ class IsarReproductionRecord implements StableRecordModel {
 
   String? notes;
   String? servicedBy;
+  DateTime? updatedAt;
 }
 
 extension IsarReproductionRecordMapper on IsarReproductionRecord {
@@ -69,6 +70,8 @@ extension IsarReproductionRecordMapper on IsarReproductionRecord {
       calvingNotes: calvingNotes,
       notes: notes,
       servicedBy: servicedBy,
+      recordUuid: recordUuid,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -90,7 +93,10 @@ extension ReproductionRecordToIsar on ReproductionRecord {
       ..offspringUuids = List<String>.from(offspringUuids)
       ..calvingNotes = calvingNotes
       ..notes = notes
-      ..servicedBy = servicedBy;
+      ..servicedBy = servicedBy
+      ..updatedAt = DateTime.now();
+
+    if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 
     if (id != null) {
       final parsed = int.tryParse(id!);

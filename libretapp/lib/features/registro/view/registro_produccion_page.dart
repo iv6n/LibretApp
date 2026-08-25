@@ -184,13 +184,21 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormProductionTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormProductionTitle,
+            assetPath: AppAssetPaths.recordProduction,
+            fallbackIcon: Icons.agriculture_outlined,
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -208,7 +216,12 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
                   border: const OutlineInputBorder(),
                 ),
                 items: ProductionRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);

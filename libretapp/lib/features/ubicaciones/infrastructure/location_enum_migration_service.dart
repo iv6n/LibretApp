@@ -10,7 +10,7 @@
 /// • IsarInventoryItem.category (InventoryCategory) — inside each location
 /// • IsarWaterRecord.type    (WaterType) — inside each location
 ///
-/// Gate: SharedPreferences flag "locationEnumsMigrated_v1".
+/// Gate: SharedPreferences flag "locationEnumsMigrated_v2".
 ///       Migration runs once on first launch after the update; subsequent
 ///       launches skip it entirely.
 library;
@@ -24,7 +24,7 @@ import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
-const _kMigrationFlagKey = 'locationEnumsMigrated_v1';
+const _kMigrationFlagKey = 'locationEnumsMigrated_v2';
 
 class LocationEnumMigrationService {
   const LocationEnumMigrationService({
@@ -60,13 +60,7 @@ class LocationEnumMigrationService {
       var changed = false;
 
       // ── LocationType ────────────────────────────────────────────────────
-      final newType =
-          LocationTypeX.legacyNameMap[loc.type] ??
-          _verifyEnglish(
-            loc.type,
-            LocationType.values.map((e) => e.name).toSet(),
-            fallback: LocationType.ranch.name,
-          );
+      final newType = _migrateLocationType(loc.type, loc.name);
       if (newType != loc.type) {
         loc.type = newType;
         changed = true;
@@ -123,6 +117,30 @@ class LocationEnumMigrationService {
     await _isar.writeTxn(() async {
       await _isar.isarLocations.putAll(migratedLocations);
     });
+  }
+
+  String _migrateLocationType(String storedType, String locationName) {
+    final legacyType = LocationTypeX.legacyNameMap[storedType];
+    if (legacyType != null) return legacyType;
+
+    // Version 1 translated the legacy "aguada" value to "pond". Recover
+    // that intent for existing records without changing unrelated ponds.
+    if (storedType == LocationType.pond.name && _isAguadaName(locationName)) {
+      return LocationType.aguada.name;
+    }
+
+    return _verifyEnglish(
+      storedType,
+      LocationType.values.map((e) => e.name).toSet(),
+      fallback: LocationType.ranch.name,
+    );
+  }
+
+  bool _isAguadaName(String name) {
+    return RegExp(
+      r'^aguada(?:\s|\d|$)',
+      caseSensitive: false,
+    ).hasMatch(name.trim());
   }
 
   /// Returns [value] unchanged if it is already a valid English enum name;

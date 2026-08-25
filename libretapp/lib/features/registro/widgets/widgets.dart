@@ -4,3 +4,4 @@
 library;
 
 export 'animal_selector.dart';
+export 'registro_style.dart';

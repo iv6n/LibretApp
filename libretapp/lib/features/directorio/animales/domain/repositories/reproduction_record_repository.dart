@@ -17,9 +17,8 @@ abstract class ReproductionRecordRepository {
   ///
   /// Exists so building the indicators for a page of cards costs one round
   /// trip instead of one per card. Animals with no records are omitted.
-  Future<Map<String, List<ReproductionRecord>>> getReproductionRecordsForAnimals(
-    Set<String> animalUuids,
-  );
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids);
   Future<ReproductionRecord> addReproductionRecord(
     String animalUuid,
     ReproductionRecord record,
@@ -29,5 +28,11 @@ abstract class ReproductionRecordRepository {
   /// Returns records whose [expectedCalvingDate] falls within [from]..[to]
   /// and whose [actualCalvingDate] is null (birth hasn't happened yet).
   Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
-      getUpcomingCalvings(DateTime from, DateTime to);
+  getUpcomingCalvings(DateTime from, DateTime to);
+}
+
+abstract interface class ReproductionRecordUuidLookup {
+  Future<Map<String, ReproductionRecord>> getReproductionRecordsByRecordUuids(
+    Set<String> recordUuids,
+  );
 }

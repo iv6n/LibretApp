@@ -224,51 +224,51 @@ class AnimalTaxonomy {
       case LifeStage.calf:
       case LifeStage.calfMale:
       case LifeStage.calfFemale:
-        return 'assets/images/becerro.png';
+        return 'assets/images/becerro.webp';
       case LifeStage.heifer:
-        return 'assets/images/vaquilla.png';
+        return 'assets/images/vaquilla.webp';
       case LifeStage.youngBull:
       case LifeStage.bull:
-        return 'assets/images/toro.png';
+        return 'assets/images/toro.webp';
       case LifeStage.steer:
-        return 'assets/images/novillo.png';
+        return 'assets/images/novillo.webp';
       case LifeStage.cow:
-        return 'assets/images/vaca.png';
+        return 'assets/images/vaca.webp';
       case LifeStage.colt:
       case LifeStage.filly:
       case LifeStage.horse:
       case LifeStage.mare:
-        return 'assets/images/caballo.png';
+        return 'assets/images/caballo.webp';
       case LifeStage.donkey:
       case LifeStage.donkeyFemale:
-        return 'assets/images/burro.png';
+        return 'assets/images/burro.webp';
       case LifeStage.mule:
-        return 'assets/images/mula.png';
+        return 'assets/images/mula.webp';
       case LifeStage.kid:
       case LifeStage.youngGoat:
       case LifeStage.goat:
       case LifeStage.breedingBuck:
-        return 'assets/images/cabra.png';
+        return 'assets/images/cabra.webp';
       case LifeStage.lamb:
       case LifeStage.youngSheep:
       case LifeStage.ewe:
       case LifeStage.ram:
-        return 'assets/images/oveja.png';
+        return 'assets/images/oveja.webp';
       case LifeStage.piglet:
       case LifeStage.youngPig:
       case LifeStage.sow:
       case LifeStage.boar:
-        return 'assets/images/cerdo.png';
+        return 'assets/images/cerdo.webp';
       case LifeStage.chick:
       case LifeStage.pullet:
       case LifeStage.hen:
       case LifeStage.rooster:
-        return 'assets/images/ave.png';
+        return 'assets/images/ave.webp';
       case LifeStage.puppy:
       case LifeStage.youngDog:
       case LifeStage.workingDog:
       case LifeStage.guardDog:
-        return 'assets/images/canino.png';
+        return 'assets/images/canino.webp';
     }
   }
 

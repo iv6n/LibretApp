@@ -45,10 +45,14 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository_isar.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar_agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/agenda/domain/operational_planning_service.dart';
+import 'package:libretapp/features/agenda/domain/agenda_registration_coordinator.dart';
+import 'package:libretapp/features/agenda/domain/agenda_registration_read_service.dart';
 import 'package:libretapp/features/agenda/data/workforce_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_workforce_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
@@ -288,6 +292,17 @@ void _registerAgenda() {
         locator<SharedPrefsService>(),
       ),
     )
+    ..registerLazySingleton<AgendaRegistrationRepository>(
+      () => IsarAgendaRegistrationRepository(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<AgendaRegistrationReadService>(
+      () => AgendaRegistrationReadService(
+        healthRepository: locator<HealthRecordRepository>(),
+        weightRepository: locator<WeightRecordRepository>(),
+        movementRepository: locator<MovementRecordRepository>(),
+        reproductionRepository: locator<ReproductionRecordRepository>(),
+      ),
+    )
     ..registerLazySingleton<WorkforceRepository>(
       () => IsarWorkforceRepository(locator<IsarDatabase>()),
     )
@@ -306,6 +321,20 @@ void _registerAgenda() {
     ..registerLazySingleton<OperationalPlanningService>(
       () => OperationalPlanningService(
         agendaRepository: locator<AgendaRepository>(),
+      ),
+    )
+    ..registerLazySingleton<AgendaRegistrationCoordinator>(
+      () => AgendaRegistrationCoordinator(
+        agendaRepository: locator<AgendaRepository>(),
+        registrationRepository: locator<AgendaRegistrationRepository>(),
+        healthRepository: locator<HealthRecordRepository>(),
+        weightRepository: locator<WeightRecordRepository>(),
+        movementRepository: locator<MovementRecordRepository>(),
+        reproductionRepository: locator<ReproductionRecordRepository>(),
+        careRepository: locator<CareRepository>(),
+        lotesRepository: locator<LotesRepository>(),
+        reminderSyncService: locator<AgendaReminderSyncService>(),
+        refreshSignal: locator<AgendaRefreshSignal>(),
       ),
     );
 }

@@ -129,8 +129,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       _pendingDiagnosis = pending;
       // Landing here from the "parición" shortcut means the calving is the
       // reason the user opened the page.
-      _calvingMode =
-          open != null && widget.preset?.toLowerCase() == 'paricion';
+      _calvingMode = open != null && widget.preset?.toLowerCase() == 'paricion';
       if (open != null) {
         _calvingDate = DateTime.now();
         _calvingOutcome = CalvingOutcome.liveBirth;
@@ -323,9 +322,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
 
     await repository.addReproductionRecord(
       damUuid,
-      stored.copyWith(
-        offspringUuids: [...stored.offspringUuids, calfUuid],
-      ),
+      stored.copyWith(offspringUuids: [...stored.offspringUuids, calfUuid]),
     );
   }
 
@@ -389,17 +386,23 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
           );
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            widget.preset?.toLowerCase() == 'paricion'
+          title: GeneratedAssetTitle(
+            title: widget.preset?.toLowerCase() == 'paricion'
                 ? l10n.detailFormReproductionParicionTitle
                 : l10n.detailFormReproductionTitle,
+            assetPath: widget.preset?.toLowerCase() == 'paricion'
+                ? AppAssetPaths.healthBirth
+                : AppAssetPaths.recordService,
+            fallbackIcon: Icons.pregnant_woman,
           ),
         ),
         body: SingleChildScrollView(
@@ -457,7 +460,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                       setState(() => _calvingDate = value),
                   onOutcomeChanged: (value) =>
                       setState(() => _calvingOutcome = value),
-                  onEaseChanged: (value) => setState(() => _calvingEase = value),
+                  onEaseChanged: (value) =>
+                      setState(() => _calvingEase = value),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -471,112 +475,114 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                 const SizedBox(height: 24),
                 _SaveButton(onPressed: _save, label: 'Registrar parto'),
               ] else ...[
-              DropdownButtonFormField<ServiceType>(
-                initialValue: _serviceType,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionServiceType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: ServiceType.values
-                    .map(
-                      (s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(
-                          s == ServiceType.naturalService
-                              ? l10n.detailFormReproductionServiceNatural
-                              : s == ServiceType.artificialInsemination
-                              ? l10n.detailFormReproductionServiceAi
-                              : l10n.detailFormReproductionServiceIvf,
+                DropdownButtonFormField<ServiceType>(
+                  initialValue: _serviceType,
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormReproductionServiceType,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: ServiceType.values
+                      .map(
+                        (s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(
+                            s == ServiceType.naturalService
+                                ? l10n.detailFormReproductionServiceNatural
+                                : s == ServiceType.artificialInsemination
+                                ? l10n.detailFormReproductionServiceAi
+                                : l10n.detailFormReproductionServiceIvf,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) {
-                  if (v != null) setState(() => _serviceType = v);
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.event),
-                      label: Text(
-                        DateFormat('dd/MM/yyyy').format(_serviceDate),
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _serviceDate,
-                          firstDate: DateTime(_serviceDate.year - 5),
-                          lastDate: DateTime(_serviceDate.year + 1),
-                        );
-                        if (picked != null) {
-                          setState(() {
-                            _serviceDate = picked;
-                            _projectExpectedCalving();
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.child_friendly),
-                      label: Text(
-                        _expectedCalvingDate == null
-                            ? l10n.detailFormReproductionExpectedCalving
-                            : DateFormat('dd/MM/yyyy').format(_expectedCalvingDate!),
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _expectedCalvingDate ?? _serviceDate,
-                          firstDate: DateTime(_serviceDate.year - 1),
-                          lastDate: DateTime(_serviceDate.year + 2),
-                        );
-                        if (picked != null) {
-                          setState(() => _expectedCalvingDate = picked);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Picking the sire from the herd is what fills maleSireUuid, and
-              // that is what links the calf's paternal side, feeds the bull's
-              // own service history and lets the inbreeding check work.
-              AnimalSelector(
-                label: l10n.detailFormReproductionSire,
-                selectedAnimal: _selectedSire,
-                eligible: _isEligibleSire,
-                onSelected: (sire) => setState(() {
-                  _selectedSire = sire;
-                  if (sire != null) _externalSireCtrl.clear();
-                }),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _externalSireCtrl,
-                enabled: _selectedSire == null,
-                decoration: const InputDecoration(
-                  labelText: 'O semental externo al hato',
-                  border: OutlineInputBorder(),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _serviceType = v);
+                  },
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormReproductionNotes,
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.event),
+                        label: Text(
+                          DateFormat('dd/MM/yyyy').format(_serviceDate),
+                        ),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _serviceDate,
+                            firstDate: DateTime(_serviceDate.year - 5),
+                            lastDate: DateTime(_serviceDate.year + 1),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _serviceDate = picked;
+                              _projectExpectedCalving();
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.child_friendly),
+                        label: Text(
+                          _expectedCalvingDate == null
+                              ? l10n.detailFormReproductionExpectedCalving
+                              : DateFormat(
+                                  'dd/MM/yyyy',
+                                ).format(_expectedCalvingDate!),
+                        ),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _expectedCalvingDate ?? _serviceDate,
+                            firstDate: DateTime(_serviceDate.year - 1),
+                            lastDate: DateTime(_serviceDate.year + 2),
+                          );
+                          if (picked != null) {
+                            setState(() => _expectedCalvingDate = picked);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 2,
-                onChanged: (v) => _notes = v,
-              ),
-              const SizedBox(height: 24),
-              _SaveButton(onPressed: _save, label: l10n.actionSave),
+                const SizedBox(height: 12),
+                // Picking the sire from the herd is what fills maleSireUuid, and
+                // that is what links the calf's paternal side, feeds the bull's
+                // own service history and lets the inbreeding check work.
+                AnimalSelector(
+                  label: l10n.detailFormReproductionSire,
+                  selectedAnimal: _selectedSire,
+                  eligible: _isEligibleSire,
+                  onSelected: (sire) => setState(() {
+                    _selectedSire = sire;
+                    if (sire != null) _externalSireCtrl.clear();
+                  }),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _externalSireCtrl,
+                  enabled: _selectedSire == null,
+                  decoration: const InputDecoration(
+                    labelText: 'O semental externo al hato',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormReproductionNotes,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  onChanged: (v) => _notes = v,
+                ),
+                const SizedBox(height: 24),
+                _SaveButton(onPressed: _save, label: l10n.actionSave),
               ],
             ],
           ),
@@ -691,9 +697,7 @@ class _DiagnosisFields extends StatelessWidget {
       children: [
         OutlinedButton.icon(
           icon: const Icon(Icons.event),
-          label: Text(
-            'Chequeo: ${DateFormat('dd/MM/yyyy').format(checkDate)}',
-          ),
+          label: Text('Chequeo: ${DateFormat('dd/MM/yyyy').format(checkDate)}'),
           onPressed: () async {
             final picked = await showDatePicker(
               context: context,
@@ -713,10 +717,8 @@ class _DiagnosisFields extends StatelessWidget {
           ),
           items: PregnancyCheckResult.values
               .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(_label(value)),
-                ),
+                (value) =>
+                    DropdownMenuItem(value: value, child: Text(_label(value))),
               )
               .toList(),
           onChanged: (value) {

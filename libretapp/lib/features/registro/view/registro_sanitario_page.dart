@@ -20,6 +20,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the sanitary registration form.
@@ -141,13 +142,21 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.errorMessage ?? l10n.errorGenericSave)),
+            SnackBar(
+              content: Text(state.errorMessage ?? l10n.errorGenericSave),
+            ),
           );
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.detailFormHealthTitle)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: l10n.detailFormHealthTitle,
+            assetPath: assetForHealthRecordType(_type),
+            fallbackIcon: fallbackIconForHealthRecordType(_type),
+          ),
+        ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -165,7 +174,12 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
                   border: const OutlineInputBorder(),
                 ),
                 items: HealthRecordType.values
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+                    .map(
+                      (t) => DropdownMenuItem(
+                        value: t,
+                        child: Text(t.displayName),
+                      ),
+                    )
                     .toList(),
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);

@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_bloc \u2014 BLoC for the animals list.
+/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_bloc \u2014 BLoC for the animals list.
 library;
 
 import 'dart:async';
@@ -21,6 +21,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       super(const AnimalesInitial()) {
     on<LoadAnimales>(_onLoadAnimales);
     on<AnimalesLoadMore>(_onLoadMoreAnimals);
+    on<EnsureAllAnimalesLoaded>(_onEnsureAllAnimalesLoaded);
     on<AnimalesStreamUpdated>(_onStreamUpdated);
     on<AnimalesStreamFailed>(_onStreamFailed);
     on<AddAnimal>(_onAddAnimal);
@@ -51,6 +52,9 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   Set<String> _selectedAnimalUuids = const <String>{};
   int _currentOffset = 0;
   bool _hasMore = false;
+  bool _allAnimalsLoaded = false;
+  bool _allAnimalsLoadRequested = false;
+  Future<void>? _allAnimalsLoadFuture;
   int _herdTotal = 0;
   Map<LifeStage, int> _herdStageCounts = const {};
 
@@ -60,25 +64,48 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   ) async {
     emit(const AnimalesLoading());
     await _changesSubscription?.cancel();
+    final hasPendingAllLoad =
+        _allAnimalsLoadRequested || _allAnimalsLoadFuture != null;
+    _allAnimalsLoaded = false;
+    if (!hasPendingAllLoad) _allAnimalsLoadRequested = false;
     _currentOffset = 0;
-    final page = await repository.getPage(
-      offset: 0,
-      limit: AnimalesLoaded.pageSize,
-    );
-    _latest = page;
-    _currentOffset = page.length;
-    _hasMore = page.length == AnimalesLoaded.pageSize;
-    await _refreshHerdTotals();
-    emit(_buildLoadedState());
+    try {
+      final page = await repository.getPage(
+        offset: 0,
+        limit: AnimalesLoaded.pageSize,
+      );
+
+      // A search/filter can be requested while the initial page is still
+      // loading. Let that request win instead of publishing a stale page.
+      final shouldUseAllAnimals =
+          _allAnimalsLoaded ||
+          _allAnimalsLoadRequested ||
+          _allAnimalsLoadFuture != null;
+      if (shouldUseAllAnimals) {
+        await _ensureAllAnimalesLoaded();
+        if (!isClosed) emit(_buildLoadedState());
+      } else {
+        _latest = page;
+        _currentOffset = page.length;
+        _hasMore = page.length == AnimalesLoaded.pageSize;
+        await _refreshHerdTotals();
+        emit(_buildLoadedState());
+      }
+    } catch (e) {
+      emit(AnimalesError(e.toString()));
+      return;
+    }
 
     // Watch for any DB changes and reload from offset 0 to keep list fresh.
     _changesSubscription = repository.watchChanges().listen(
       (_) async {
         if (isClosed) return;
-        final refreshed = await repository.getPage(
-          offset: 0,
-          limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
-        );
+        final refreshed = _allAnimalsLoaded
+            ? await repository.getAll()
+            : await repository.getPage(
+                offset: 0,
+                limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
+              );
         if (!isClosed) add(AnimalesStreamUpdated(refreshed));
       },
       onError: (error, _) {
@@ -91,7 +118,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     AnimalesLoadMore event,
     Emitter<AnimalesState> emit,
   ) async {
-    if (!_hasMore) return;
+    if (!_hasMore || _allAnimalsLoaded) return;
     final currentState = state;
     if (currentState is AnimalesLoaded && currentState.isLoadingMore) return;
     if (currentState is AnimalesLoaded) {
@@ -111,12 +138,29 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     }
   }
 
+  Future<void> _onEnsureAllAnimalesLoaded(
+    EnsureAllAnimalesLoaded event,
+    Emitter<AnimalesState> emit,
+  ) async {
+    try {
+      await _ensureAllAnimalesLoaded();
+      if (!isClosed) emit(_buildLoadedState());
+    } catch (e) {
+      if (!isClosed) emit(AnimalesError(e.toString()));
+    }
+  }
+
   Future<void> _onStreamUpdated(
     AnimalesStreamUpdated event,
     Emitter<AnimalesState> emit,
   ) async {
     _latest = event.animales;
     _currentOffset = _latest.length;
+    if (_allAnimalsLoaded) {
+      _hasMore = false;
+    } else {
+      _hasMore = _latest.length == AnimalesLoaded.pageSize;
+    }
     final existingUuids = _latest.map((a) => a.uuid).toSet();
     _selectedAnimalUuids = _selectedAnimalUuids
         .where(existingUuids.contains)
@@ -187,7 +231,16 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   ) async {
     _searchQuery = event.query.trim();
     _isSearching = true;
-    emit(_buildLoadedState());
+    try {
+      if (_searchQuery.isNotEmpty ||
+          _searchFilterStages.isNotEmpty ||
+          _searchFilterSexes.isNotEmpty) {
+        await _ensureAllAnimalesLoaded();
+      }
+      if (!isClosed) emit(_buildLoadedState());
+    } catch (e) {
+      if (!isClosed) emit(AnimalesError(e.toString()));
+    }
   }
 
   void _onClearSearch(ClearSearch event, Emitter<AnimalesState> emit) {
@@ -198,13 +251,22 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     emit(_buildLoadedState());
   }
 
-  void _onSetSearchFilters(
+  Future<void> _onSetSearchFilters(
     SetSearchFilters event,
     Emitter<AnimalesState> emit,
-  ) {
-    _searchFilterStages = event.stages;
-    _searchFilterSexes = event.sexes;
-    emit(_buildLoadedState());
+  ) async {
+    _searchFilterStages = Set<LifeStage>.unmodifiable(event.stages);
+    _searchFilterSexes = Set<Sex>.unmodifiable(event.sexes);
+    try {
+      if (_searchFilterStages.isNotEmpty ||
+          _searchFilterSexes.isNotEmpty ||
+          _searchQuery.isNotEmpty) {
+        await _ensureAllAnimalesLoaded();
+      }
+      if (!isClosed) emit(_buildLoadedState());
+    } catch (e) {
+      if (!isClosed) emit(AnimalesError(e.toString()));
+    }
   }
 
   void _onToggleAnimalSelection(
@@ -375,6 +437,45 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     );
   }
 
+  /// Loads the complete active herd once so local search and filters do not
+  /// depend on the current scroll position.
+  Future<void> _ensureAllAnimalesLoaded() async {
+    if (_allAnimalsLoaded) return;
+
+    _allAnimalsLoadRequested = true;
+
+    final inFlight = _allAnimalsLoadFuture;
+    if (inFlight != null) {
+      await inFlight;
+      return;
+    }
+
+    final future = _loadAllAnimals();
+    _allAnimalsLoadFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_allAnimalsLoadFuture, future)) {
+        _allAnimalsLoadFuture = null;
+      }
+    }
+  }
+
+  Future<void> _loadAllAnimals() async {
+    final animals = await repository.getAll();
+    _latest = animals;
+    _currentOffset = animals.length;
+    _hasMore = false;
+    _allAnimalsLoaded = true;
+    _allAnimalsLoadRequested = false;
+
+    final existingUuids = animals.map((a) => a.uuid).toSet();
+    _selectedAnimalUuids = _selectedAnimalUuids
+        .where(existingUuids.contains)
+        .toSet();
+    await _refreshHerdTotals();
+  }
+
   /// Re-reads the whole-herd figures the list labels show.
   ///
   /// Counted in the database rather than over `_latest`, which only ever holds
@@ -393,11 +494,15 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   }
 
   Future<void> _refreshLoadedState(Emitter<AnimalesState> emit) async {
-    final animals = await repository.getPage(
-      offset: 0,
-      limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
-    );
+    final animals = _allAnimalsLoaded
+        ? await repository.getAll()
+        : await repository.getPage(
+            offset: 0,
+            limit: _currentOffset.clamp(AnimalesLoaded.pageSize, 10000),
+          );
     _latest = animals;
+    _currentOffset = animals.length;
+    _hasMore = !_allAnimalsLoaded && animals.length == AnimalesLoaded.pageSize;
     final existingUuids = _latest.map((a) => a.uuid).toSet();
     _selectedAnimalUuids = _selectedAnimalUuids
         .where(existingUuids.contains)

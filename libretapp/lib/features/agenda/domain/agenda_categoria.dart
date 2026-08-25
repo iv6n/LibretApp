@@ -12,7 +12,7 @@ enum AgendaCategoria {
 
 extension AgendaCategoriaX on AgendaCategoria {
   String get label => switch (this) {
-    AgendaCategoria.sanidad => 'Sanidad',
+    AgendaCategoria.sanidad => 'Sanitario',
     AgendaCategoria.reproduccion => 'Reproducción',
     AgendaCategoria.produccion => 'Producción',
     AgendaCategoria.movimientos => 'Movimientos',

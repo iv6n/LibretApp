@@ -505,6 +505,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get actionDelete => 'Eliminar';
 
   @override
+  String get uiSearch => 'Buscar';
+
+  @override
+  String get uiFilter => 'Filtrar';
+
+  @override
+  String get uiClear => 'Limpiar';
+
+  @override
+  String get uiClose => 'Cerrar';
+
+  @override
+  String get uiLoading => 'Cargando';
+
+  @override
+  String get uiQuickActions => 'Accesos rápidos';
+
+  @override
+  String get uiCustomize => 'Personalizar accesos rápidos';
+
+  @override
   String get errorGenericSave => 'Ocurrió un error al guardar';
 
   @override

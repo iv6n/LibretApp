@@ -12,6 +12,8 @@ class RecordTile extends StatelessWidget {
     required this.date,
     required this.amount,
     required this.amountColor,
+    this.assetPath,
+    this.fallbackIcon = Icons.receipt_long,
     this.subtitle,
     this.currency,
     this.onDelete,
@@ -22,6 +24,8 @@ class RecordTile extends StatelessWidget {
   final DateTime date;
   final String amount;
   final Color amountColor;
+  final String? assetPath;
+  final IconData fallbackIcon;
   final String? currency;
   final VoidCallback? onDelete;
 
@@ -31,6 +35,19 @@ class RecordTile extends StatelessWidget {
     final dateFmt = DateFormat('dd MMM yyyy', 'es');
     return Card(
       child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: amountColor.withValues(alpha: 0.15),
+          child: assetPath == null
+              ? Icon(fallbackIcon, color: amountColor, size: 20)
+              : Image.asset(
+                  assetPath!,
+                  fit: BoxFit.contain,
+                  width: 30,
+                  height: 30,
+                  errorBuilder: (_, _, _) =>
+                      Icon(fallbackIcon, color: amountColor, size: 20),
+                ),
+        ),
         title: Text(title, style: theme.textTheme.bodyMedium),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

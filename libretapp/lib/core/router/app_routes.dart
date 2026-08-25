@@ -29,6 +29,7 @@ class AppRoutes {
   static const loteEditar = '/directorio/lotes/:uuid/editar';
   static const agenda = '/agenda';
   static const agendaNuevo = '/agenda/nuevo';
+  static const agendaRegistro = '/agenda/registro';
   static const agendaTask = '/agenda/task/:id';
   static const reportes = '/reportes';
   static const ubicaciones = '/directorio?tab=ubicaciones';
@@ -74,6 +75,7 @@ class AppRoutes {
   static const nameLoteEditar = 'lote_editar';
   static const nameAgenda = 'agenda_page';
   static const nameAgendaNuevo = 'agenda_nuevo';
+  static const nameAgendaRegistro = 'agenda_registro';
   static const nameAgendaTask = 'agenda_task';
   static const nameReportes = 'reportes';
   static const nameUbicaciones = 'ubicaciones';
@@ -123,6 +125,7 @@ class AppRoutes {
   static String loteNuevoPath() => '/directorio/lotes/nuevo';
   static String loteDetallePath(String uuid) => '/directorio/lotes/$uuid';
   static String loteEditarPath(String uuid) => '/directorio/lotes/$uuid/editar';
+
   /// Builds a deep link into the animals tab of the directory, optionally
   /// pre-applying one of the list filters. There is no standalone `/animales`
   /// route: the list lives inside the directory shell branch.

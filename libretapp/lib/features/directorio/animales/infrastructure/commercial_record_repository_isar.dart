@@ -24,7 +24,7 @@ class CommercialRecordRepositoryIsar
   Future<List<IsarCommercialRecord>> queryByAnimal(
     IsarCollection<IsarCommercialRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
+  ) => collection.where().animalUuidEqualTo(animalUuid).sortByDateDesc().findAll();
 
   @override
   IsarCommercialRecord toIsarModel(CommercialRecord record, String animalUuid) =>

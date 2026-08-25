@@ -280,6 +280,10 @@ final router = GoRouter(
                           locator<AgendaRepository>(),
                           lotesRepository: locator<LotesRepository>(),
                           refreshSignal: locator<AgendaRefreshSignal>(),
+                          registrationRepository:
+                              locator<AgendaRegistrationRepository>(),
+                          registrationReadService:
+                              locator<AgendaRegistrationReadService>(),
                         )..add(const LoadAgenda()),
                         child: LocationDetailPage(locationUuid: uuid),
                       ),
@@ -312,6 +316,10 @@ final router = GoRouter(
                   lotesRepository: locator<LotesRepository>(),
                   syncService: locator<AgendaReminderSyncService>(),
                   refreshSignal: locator<AgendaRefreshSignal>(),
+                  registrationRepository:
+                      locator<AgendaRegistrationRepository>(),
+                  registrationReadService:
+                      locator<AgendaRegistrationReadService>(),
                 )..add(const LoadAgenda()),
                 child: const AgendaPage(),
               ),
@@ -330,8 +338,41 @@ final router = GoRouter(
                           locator<AgendaRepository>(),
                           lotesRepository: locator<LotesRepository>(),
                           refreshSignal: locator<AgendaRefreshSignal>(),
+                          registrationRepository:
+                              locator<AgendaRegistrationRepository>(),
+                          registrationReadService:
+                              locator<AgendaRegistrationReadService>(),
                         ),
                         child: AgendaEntryFormPage(initialDate: initialDate),
+                      ),
+                    );
+                  },
+                ),
+                GoRoute(
+                  path: 'registro',
+                  name: AppRoutes.nameAgendaRegistro,
+                  pageBuilder: (context, state) {
+                    final args = state.extra;
+                    if (args is! AgendaRegistrationRouteArgs) {
+                      return _buildOverlayDetailPage(
+                        state: state,
+                        child: const Scaffold(
+                          body: Center(
+                            child: Text('No se pudo abrir el registro.'),
+                          ),
+                        ),
+                      );
+                    }
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: BlocProvider.value(
+                        value: args.agendaBloc,
+                        child: AgendaRegistrationFlowPage(
+                          group: args.group,
+                          rows: args.rows,
+                          animalsById: args.animalsById,
+                          existingRegistration: args.existingRegistration,
+                        ),
                       ),
                     );
                   },
@@ -382,8 +423,7 @@ final router = GoRouter(
                       state: state,
                       child: BookDetailPage(
                         bookId: id,
-                        initialManifestBook:
-                            state.extra is LibraryManifestBook
+                        initialManifestBook: state.extra is LibraryManifestBook
                             ? state.extra! as LibraryManifestBook
                             : null,
                       ),

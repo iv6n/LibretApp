@@ -11,6 +11,7 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:libretapp/features/agenda/domain/operational_planning_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/default_care_rules.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
@@ -79,7 +80,8 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     try {
       if (!locator.isRegistered<AgendaReminderSyncService>()) return;
       final syncService = locator<AgendaReminderSyncService>();
-      final generated = await syncService.sync();
+      final generated = await locator<OperationalPlanningService>()
+          .reconcileAll(generator: syncService.sync);
       LoggerService.i(
         'Recordatorios automáticos sincronizados: $generated',
         tag: 'AppBloc',

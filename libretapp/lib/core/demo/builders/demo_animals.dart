@@ -1,4 +1,4 @@
-/// core › demo › builders › demo_animals — the 40-animal demo herd.
+/// core › demo › builders › demo_animals — the 35-animal demo herd.
 ///
 /// Every animal's `ageMonths`/`lifeStage`/`category` is derived from its
 /// `birthDate` through the same [AnimalLifecycleCalculator] /
@@ -32,7 +32,6 @@ const String aniPintaSlug = 'pinta';
 const String aniMiguelitaSlug = 'miguelita';
 const String aniBlanquitaSlug = 'blanquita';
 const String aniPrietitaSlug = 'prietita'; // in cuarentena, under observation
-const String aniWakaSlug = 'waka';
 const String aniBecerraNancySlug = 'becerra-de-nancy'; // linked calf
 const String aniBecerra2Slug = 'becerra-2';
 const String aniBecerra3Slug = 'becerra-3';
@@ -40,7 +39,6 @@ const String aniBecerra4Slug = 'becerra-4'; // no definitive ear tag
 const String aniNovillo1Slug = 'novillo-1';
 const String aniNovillo2Slug = 'novillo-2';
 const String aniNovillo3Slug = 'novillo-3';
-const String aniNovillo4Slug = 'novillo-4';
 const String aniVendidaSlug = 'vaca-vendida';
 const String aniMuertaSlug = 'vaca-muerta';
 const String aniArchivadaSlug = 'vaca-archivada';
@@ -58,11 +56,8 @@ const String aniYeguaSlug = 'yegua-1';
 const String aniCaballoSlug = 'caballo-1';
 
 const String aniCerda1Slug = 'cerda-1';
-const String aniLechonSlug = 'lechon-1';
 
 const String aniGallina1Slug = 'gallina-1';
-const String aniGallina2Slug = 'gallina-2';
-const String aniGallina3Slug = 'gallina-3';
 const String aniGalloSlug = 'gallo-1';
 
 const String aniPerroSlug = 'perro-1';
@@ -336,21 +331,6 @@ final List<_Spec> _specs = [
     coatColor: 'Blanco',
   ),
   _Spec(
-    slug: aniWakaSlug,
-    earTag: 'MZQ-0012',
-    name: 'Waka',
-    species: Species.cattle,
-    sex: Sex.female,
-    breed: 'Criollo',
-    birthMonthsAgo: 22,
-    batchSlug: loteVaquillasSlug,
-    locationSlug: locPotreroSurSlug,
-    reproductiveStatus: ReproductiveStatus.virgin,
-    productionPurpose: ProductionPurpose.breeding,
-    productionStage: ProductionStage.growth,
-    bodyConditionScore: 3,
-  ),
-  _Spec(
     slug: aniPrietitaSlug,
     earTag: 'MZQ-0013',
     name: 'Prietita',
@@ -494,21 +474,6 @@ final List<_Spec> _specs = [
     productionStage: ProductionStage.growth,
     bodyConditionScore: 3,
   ),
-  _Spec(
-    slug: aniNovillo4Slug,
-    earTag: 'MZQ-0020',
-    species: Species.cattle,
-    sex: Sex.male,
-    breed: 'Criollo',
-    birthMonthsAgo: 12,
-    batchSlug: loteEngordaSlug,
-    locationSlug: locMonteSlug,
-    reproductiveStatus: ReproductiveStatus.unknown,
-    productionPurpose: ProductionPurpose.meat,
-    productionStage: ProductionStage.growth,
-    bodyConditionScore: 3,
-  ),
-
   // ── Históricos (fuera del hato activo) ──────────────────────────────
   _Spec(
     slug: aniVendidaSlug,
@@ -718,24 +683,7 @@ final List<_Spec> _specs = [
     productionSystem: ProductionSystem.intensive,
     bodyConditionScore: 4,
   ),
-  _Spec(
-    slug: aniLechonSlug,
-    earTag: 'MZQ-0034',
-    species: Species.pig,
-    sex: Sex.male,
-    breed: 'Yorkshire',
-    crossBreed: 'Yorkshire x Landrace',
-    birthMonthsAgo: 3,
-    locationSlug: locCorralPrincipalSlug,
-    damSlug: aniCerda1Slug,
-    reproductiveStatus: ReproductiveStatus.unknown,
-    productionPurpose: ProductionPurpose.meat,
-    productionStage: ProductionStage.preWeaning,
-    productionSystem: ProductionSystem.intensive,
-    bodyConditionScore: 3,
-  ),
-
-  // ── Aves (4 activas, sin lote) ───────────────────────────────────────
+  // ── Aves (2 activas, sin lote) ───────────────────────────────────────
   _Spec(
     slug: aniGallina1Slug,
     earTag: 'MZQ-0035',
@@ -743,32 +691,6 @@ final List<_Spec> _specs = [
     sex: Sex.female,
     breed: 'Rhode Island Red',
     birthMonthsAgo: 10,
-    locationSlug: locCorralAvesSlug,
-    reproductiveStatus: ReproductiveStatus.active,
-    productionPurpose: ProductionPurpose.eggs,
-    productionStage: ProductionStage.reproductive,
-    productionSystem: ProductionSystem.intensive,
-  ),
-  _Spec(
-    slug: aniGallina2Slug,
-    earTag: 'MZQ-0036',
-    species: Species.poultry,
-    sex: Sex.female,
-    breed: 'Plymouth Rock',
-    birthMonthsAgo: 8,
-    locationSlug: locCorralAvesSlug,
-    reproductiveStatus: ReproductiveStatus.active,
-    productionPurpose: ProductionPurpose.eggs,
-    productionStage: ProductionStage.reproductive,
-    productionSystem: ProductionSystem.intensive,
-  ),
-  _Spec(
-    slug: aniGallina3Slug,
-    earTag: 'MZQ-0037',
-    species: Species.poultry,
-    sex: Sex.female,
-    breed: 'Rhode Island Red',
-    birthMonthsAgo: 6,
     locationSlug: locCorralAvesSlug,
     reproductiveStatus: ReproductiveStatus.active,
     productionPurpose: ProductionPurpose.eggs,
@@ -808,14 +730,14 @@ final List<_Spec> _specs = [
   ),
 ];
 
-/// Builds the 40 demo animals: 24 cattle (21 active + sold + dead +
-/// archived) + 4 goats + 3 sheep + 2 equines + 2 pigs + 4 poultry + 1 dog.
+/// Builds the 35 demo animals: 22 cattle (19 active + sold + dead +
+/// archived) + 4 goats + 3 sheep + 2 equines + 1 pig + 2 poultry + 1 dog.
 ///
 /// The external stud is deliberately text-only (see
 /// [externalSireIdentifier] in `demo_reproduction.dart`) — it does not back
-/// a 40th [AnimalEntity].
+/// a missing [AnimalEntity].
 List<AnimalEntity> buildDemoAnimals({required DateTime reference}) {
-  assert(_specs.length == 40, 'La demo debe tener exactamente 40 animales.');
+  assert(_specs.length == 35, 'La demo debe tener exactamente 35 animales.');
 
   final byUuid = <String, String>{
     for (final spec in _specs) spec.slug: demoId('animal', spec.slug),
@@ -912,6 +834,11 @@ List<AnimalEntity> buildDemoAnimals({required DateTime reference}) {
 /// Resolves a demo animal's uuid from its slug — used by the other builders
 /// so they never hardcode a `demoId('animal', ...)` call themselves.
 String demoAnimalUuid(String slug) => demoId('animal', slug);
+
+/// Stable slug list shared by builders that need to derive data for the full
+/// roster without duplicating the private specification table.
+List<String> get demoAnimalSlugs =>
+    _specs.map((spec) => spec.slug).toList(growable: false);
 
 /// Plausible adult/juvenile weight in kg for the ~35 demo animals that carry
 /// no explicit weighing history — a coarse species/sex/age curve, not a

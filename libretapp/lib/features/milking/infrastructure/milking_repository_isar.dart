@@ -4,6 +4,7 @@ import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entry.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 
@@ -18,7 +19,7 @@ class MilkingRepositoryIsar implements MilkingRepository {
   Future<MilkingSession?> getOpenDraft() async {
     final isar = await _isar;
     final records = await isar.isarMilkingSessions
-        .filter()
+        .where()
         .statusEqualTo(MilkingStatus.draft.name)
         .sortByUpdatedAtDesc()
         .findAll();
@@ -79,7 +80,7 @@ class MilkingRepositoryIsar implements MilkingRepository {
   Future<List<MilkingRecord>> getRecordsByAnimal(String animalUuid) async {
     final isar = await _isar;
     final storedEntries = await isar.isarMilkingEntrys
-        .filter()
+        .where()
         .animalUuidEqualTo(animalUuid)
         .findAll();
     if (storedEntries.isEmpty) return const [];
@@ -152,6 +153,16 @@ class MilkingRepositoryIsar implements MilkingRepository {
       final stored = session.toIsar();
       if (existing != null) stored.id = existing.id;
       await isar.isarMilkingSessions.put(stored);
+      if (session.status == MilkingStatus.completed) {
+        final activityAt = DateTime.now();
+        final entries = await isar.isarMilkingEntrys
+            .filter()
+            .sessionUuidEqualTo(session.uuid)
+            .findAll();
+        for (final entry in entries) {
+          await AnimalActivityTracker.touch(isar, entry.animalUuid, activityAt);
+        }
+      }
     });
   }
 
@@ -173,6 +184,18 @@ class MilkingRepositoryIsar implements MilkingRepository {
       final existing = existingByUuid ?? existingForAnimal;
       if (existing != null) stored.id = existing.id;
       await isar.isarMilkingEntrys.put(stored);
+
+      final session = await isar.isarMilkingSessions
+          .where()
+          .uuidEqualTo(entry.sessionUuid)
+          .findFirst();
+      if (session?.status == MilkingStatus.completed.name) {
+        await AnimalActivityTracker.touch(
+          isar,
+          entry.animalUuid,
+          DateTime.now(),
+        );
+      }
     });
     return entry;
   }
@@ -185,7 +208,15 @@ class MilkingRepositoryIsar implements MilkingRepository {
           .where()
           .uuidEqualTo(uuid)
           .findFirst();
-      if (stored != null) await isar.isarMilkingEntrys.delete(stored.id);
+      if (stored == null) return;
+      final session = await isar.isarMilkingSessions
+          .where()
+          .uuidEqualTo(stored.sessionUuid)
+          .findFirst();
+      await isar.isarMilkingEntrys.delete(stored.id);
+      if (session?.status == MilkingStatus.completed.name) {
+        await AnimalActivityTracker.recalculate(isar, stored.animalUuid);
+      }
     });
   }
 
@@ -209,6 +240,18 @@ class MilkingRepositoryIsar implements MilkingRepository {
         ..status = MilkingStatus.completed.name
         ..updatedAt = DateTime.now();
       await isar.isarMilkingSessions.put(session);
+
+      final entries = await isar.isarMilkingEntrys
+          .filter()
+          .sessionUuidEqualTo(sessionUuid)
+          .findAll();
+      for (final entry in entries) {
+        await AnimalActivityTracker.touch(
+          isar,
+          entry.animalUuid,
+          session.updatedAt,
+        );
+      }
     });
   }
 
@@ -227,6 +270,19 @@ class MilkingRepositoryIsar implements MilkingRepository {
       await isar.isarMilkingEntrys.putAll(
         entries.map((entry) => entry.toIsar()).toList(growable: false),
       );
+      final completedSessionUuids = sessions
+          .where((session) => session.status == MilkingStatus.completed)
+          .map((session) => session.uuid)
+          .toSet();
+      for (final entry in entries.where(
+        (entry) => completedSessionUuids.contains(entry.sessionUuid),
+      )) {
+        await AnimalActivityTracker.touch(
+          isar,
+          entry.animalUuid,
+          DateTime.now(),
+        );
+      }
     });
   }
 }

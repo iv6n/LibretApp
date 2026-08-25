@@ -8,4 +8,7 @@ library;
 /// in `SharedPreferences` (see `PrefsKeys.demoScenarioInstalledVersion`) and
 /// only re-runs the builders when the persisted value is behind, or when the
 /// caller explicitly asks for `reset: true`.
-const int demoScenarioVersion = 1;
+// v3 refreshes existing installations so their relative dates are rebuilt
+// from the current installation date instead of remaining anchored to the
+// previous demo snapshot.
+const int demoScenarioVersion = 3;

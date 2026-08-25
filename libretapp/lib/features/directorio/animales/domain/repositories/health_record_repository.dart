@@ -23,3 +23,9 @@ abstract class HealthRecordRepository {
   );
   Future<void> deleteHealthRecord(String recordId);
 }
+
+abstract interface class HealthRecordUuidLookup {
+  Future<Map<String, HealthRecord>> getHealthRecordsByRecordUuids(
+    Set<String> recordUuids,
+  );
+}

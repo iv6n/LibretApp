@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_event \u2014 events for AnimalesBloc.
+/// features \u203a directorio \u203a animales \u203a bloc \u203a animales_event \u2014 events for AnimalesBloc.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -130,6 +130,14 @@ class ClearAnimalSelection extends AnimalesEvent {
 
 class AnimalesLoadMore extends AnimalesEvent {
   const AnimalesLoadMore();
+}
+
+/// Ensures the complete active herd is available for local search/filtering.
+///
+/// The regular list is paginated for fast initial rendering. Narrowing the
+/// list must not, however, depend on how far the user has scrolled.
+class EnsureAllAnimalesLoaded extends AnimalesEvent {
+  const EnsureAllAnimalesLoaded();
 }
 
 class SetSearchFilters extends AnimalesEvent {

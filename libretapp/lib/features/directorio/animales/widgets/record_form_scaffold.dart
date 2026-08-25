@@ -2,6 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
+import 'package:libretapp/theme/theme.dart';
 
 /// Shared chrome for the 8 "add a record" form pages (health, movement,
 /// weight, cost, commercial, production, reproduction, bulk health): an
@@ -22,6 +24,8 @@ class RecordFormScaffold extends StatelessWidget {
     required this.onSave,
     required this.saveLabel,
     this.formKey,
+    this.assetPath,
+    this.fallbackIcon = Icons.description_outlined,
     super.key,
   });
 
@@ -34,6 +38,8 @@ class RecordFormScaffold extends StatelessWidget {
   /// When provided, [fields] are wrapped in a [Form] using this key (for
   /// pages that rely on [TextFormField] validators, e.g. bulk health).
   final GlobalKey<FormState>? formKey;
+  final String? assetPath;
+  final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -41,29 +47,31 @@ class RecordFormScaffold extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...fields,
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: saving ? null : onSave,
-            child: saving
-                ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(saveLabel),
-          ),
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          label: saveLabel,
+          icon: Icons.save_outlined,
+          expanded: true,
+          isLoading: saving,
+          onPressed: onSave,
         ),
       ],
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: assetPath == null
+            ? Text(title)
+            : GeneratedAssetTitle(
+                title: title,
+                assetPath: assetPath!,
+                fallbackIcon: fallbackIcon,
+              ),
+      ),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: formKey == null ? column : Form(key: formKey, child: column),
         ),
       ),

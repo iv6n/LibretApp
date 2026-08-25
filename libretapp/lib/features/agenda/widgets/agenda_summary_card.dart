@@ -33,7 +33,8 @@ class AgendaSummaryCard extends StatelessWidget {
     final isCompleted =
         entry.estado == AgendaEstado.completado ||
         entry.estado == AgendaEstado.verificado ||
-        entry.estado == AgendaEstado.cancelado;
+        entry.estado == AgendaEstado.cancelado ||
+        entry.estado == AgendaEstado.reprogramada;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -64,8 +65,9 @@ class AgendaSummaryCard extends StatelessWidget {
                           color: typeColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          iconForTipo(entry.tipo),
+                        child: AgendaAssetIcon(
+                          assetPath: assetForTipo(entry.tipo),
+                          fallbackIcon: iconForTipo(entry.tipo),
                           color: typeColor,
                           size: 20,
                         ),
@@ -147,7 +149,9 @@ class AgendaSummaryCard extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          '${entry.loteIds.isNotEmpty ? '${entry.loteIds.length} lote(s)' : ''}',
+                          entry.loteIds.isNotEmpty
+                              ? '${entry.loteIds.length} lote(s)'
+                              : '',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.outline,
                           ),
@@ -165,7 +169,9 @@ class AgendaSummaryCard extends StatelessWidget {
                           minHeight: 6,
                           backgroundColor:
                               theme.colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(estadoColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            estadoColor,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -259,7 +265,12 @@ class _EstadoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(iconForEstado(estado), size: 12, color: color),
+          AgendaAssetIcon(
+            assetPath: assetForEstado(estado),
+            fallbackIcon: iconForEstado(estado),
+            size: 12,
+            color: color,
+          ),
           const SizedBox(width: 4),
           Text(
             labelForEstado(estado),

@@ -830,6 +830,48 @@ abstract class AppLocalizations {
   /// **'Eliminar'**
   String get actionDelete;
 
+  /// No description provided for @uiSearch.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar'**
+  String get uiSearch;
+
+  /// No description provided for @uiFilter.
+  ///
+  /// In es, this message translates to:
+  /// **'Filtrar'**
+  String get uiFilter;
+
+  /// No description provided for @uiClear.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar'**
+  String get uiClear;
+
+  /// No description provided for @uiClose.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar'**
+  String get uiClose;
+
+  /// No description provided for @uiLoading.
+  ///
+  /// In es, this message translates to:
+  /// **'Cargando'**
+  String get uiLoading;
+
+  /// No description provided for @uiQuickActions.
+  ///
+  /// In es, this message translates to:
+  /// **'Accesos rápidos'**
+  String get uiQuickActions;
+
+  /// No description provided for @uiCustomize.
+  ///
+  /// In es, this message translates to:
+  /// **'Personalizar accesos rápidos'**
+  String get uiCustomize;
+
   /// No description provided for @errorGenericSave.
   ///
   /// In es, this message translates to:

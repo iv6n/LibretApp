@@ -9,6 +9,7 @@ export 'agenda_constants.dart';
 export 'agenda_form_sheet.dart';
 export 'agenda_legend.dart';
 export 'agenda_proximas_section.dart';
+export 'agenda_registration_table.dart';
 export 'agenda_style.dart';
 export 'agenda_summary_card.dart';
 export 'agenda_workforce_sheet.dart';

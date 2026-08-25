@@ -15,6 +15,11 @@ class LoadAgenda extends AgendaEvent {
   const LoadAgenda();
 }
 
+/// Recarga las ocurrencias persistidas después de un cambio externo.
+class RefreshAgenda extends AgendaEvent {
+  const RefreshAgenda();
+}
+
 class AddAgendaEntry extends AgendaEvent {
   const AddAgendaEntry(this.entry);
   final AgendaEntry entry;

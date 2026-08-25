@@ -131,6 +131,9 @@ class _InventoryItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final assetPath = item.isLowStock
+        ? AppAssetPaths.inventoryLowStock
+        : item.category.assetPath;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -142,11 +145,23 @@ class _InventoryItemTile extends StatelessWidget {
               color: theme.colorScheme.secondaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              item.category.icon,
-              size: 18,
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
+            child: assetPath == null
+                ? Icon(
+                    item.category.icon,
+                    size: 18,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  )
+                : Image.asset(
+                    assetPath,
+                    fit: BoxFit.contain,
+                    width: 30,
+                    height: 30,
+                    errorBuilder: (_, _, _) => Icon(
+                      item.category.icon,
+                      size: 18,
+                      color: theme.colorScheme.onSecondaryContainer,
+                    ),
+                  ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -246,4 +261,3 @@ class _Badge extends StatelessWidget {
     );
   }
 }
-

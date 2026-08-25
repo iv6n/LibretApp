@@ -97,8 +97,34 @@ void main() {
         expect(events, hasLength(1));
         expect(events.single.rows, hasLength(1));
         expect(events.first.primaryEntry.id, 'auto:care:v1:vac:20260801');
+        expect(events.single.totalAnimalCount, 1);
+        expect(events.single.completedAnimalCount, 0);
       },
     );
+
+    test('un pendiente mas urgente prevalece sobre un completado antiguo', () {
+      final entries = [
+        _entry(
+          id: 'auto:care:v1:vac:20260801',
+          tipo: 'Vacunación',
+          fecha: today.subtract(const Duration(days: 1)),
+          animalIds: ['vaca-1'],
+          completedAnimalIds: ['vaca-1'],
+        ),
+        _entry(
+          id: 'auto:care:v1:vac:20260807',
+          tipo: 'Vacunación',
+          fecha: today.add(const Duration(days: 5)),
+          animalIds: ['vaca-1'],
+        ),
+      ];
+
+      final event = grouper.group(entries, today: today).single.events.single;
+
+      expect(event.totalAnimalCount, 1);
+      expect(event.completedAnimalCount, 0);
+      expect(event.rows.single.entry.id, 'auto:care:v1:vac:20260807');
+    });
 
     test('groups the same task type across species, rules and dates', () {
       final entries = [
@@ -149,6 +175,8 @@ void main() {
 
       final rows = groups.single.subcategorias.single.rows;
       expect(rows.map((r) => r.animalId), ['vaca-2']);
+      expect(groups.single.events.single.totalAnimalCount, 2);
+      expect(groups.single.events.single.completedAnimalCount, 1);
     });
 
     test('lo atrasado siempre va antes que lo de mayor prioridad futura', () {

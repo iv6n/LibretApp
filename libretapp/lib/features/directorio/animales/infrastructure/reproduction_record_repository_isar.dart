@@ -13,24 +13,31 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar_recor
 
 class ReproductionRecordRepositoryIsar
     extends IsarRecordRepositoryBase<ReproductionRecord, IsarReproductionRecord>
-    implements ReproductionRecordRepository {
+    implements ReproductionRecordRepository, ReproductionRecordUuidLookup {
   ReproductionRecordRepositoryIsar(super.database);
 
   @override
   String get logTag => 'ReproductionRecordRepositoryIsar';
 
   @override
-  IsarCollection<IsarReproductionRecord> collection(Isar isar) => isar.isarReproductionRecords;
+  IsarCollection<IsarReproductionRecord> collection(Isar isar) =>
+      isar.isarReproductionRecords;
 
   @override
   Future<List<IsarReproductionRecord>> queryByAnimal(
     IsarCollection<IsarReproductionRecord> collection,
     String animalUuid,
-  ) => collection.filter().animalUuidEqualTo(animalUuid).sortByServiceDateDesc().findAll();
+  ) => collection
+      .where()
+      .animalUuidEqualTo(animalUuid)
+      .sortByServiceDateDesc()
+      .findAll();
 
   @override
-  IsarReproductionRecord toIsarModel(ReproductionRecord record, String animalUuid) =>
-      record.toIsar(animalUuid);
+  IsarReproductionRecord toIsarModel(
+    ReproductionRecord record,
+    String animalUuid,
+  ) => record.toIsar(animalUuid);
 
   @override
   ReproductionRecord toEntity(IsarReproductionRecord model) => model.toEntity();
@@ -45,6 +52,19 @@ class ReproductionRecordRepositoryIsar
   @override
   Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid) =>
       getRecordsFor(animalUuid);
+
+  @override
+  Future<Map<String, ReproductionRecord>> getReproductionRecordsByRecordUuids(
+    Set<String> recordUuids,
+  ) async {
+    if (recordUuids.isEmpty) return const {};
+    final db = await isar;
+    final records = await db.isarReproductionRecords
+        .filter()
+        .anyOf(recordUuids, (q, uuid) => q.recordUuidEqualTo(uuid))
+        .findAll();
+    return {for (final record in records) record.recordUuid: record.toEntity()};
+  }
 
   @override
   Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid) async {
@@ -206,11 +226,12 @@ class ReproductionRecordRepositoryIsar
   }
 
   @override
-  Future<void> deleteReproductionRecord(String recordId) => deleteRecordById(recordId);
+  Future<void> deleteReproductionRecord(String recordId) =>
+      deleteRecordById(recordId);
 
   @override
   Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
-      getUpcomingCalvings(DateTime from, DateTime to) async {
+  getUpcomingCalvings(DateTime from, DateTime to) async {
     final db = await isar;
     final records = await db.isarReproductionRecords
         .filter()

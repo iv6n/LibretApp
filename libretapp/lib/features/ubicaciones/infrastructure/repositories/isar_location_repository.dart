@@ -1,4 +1,4 @@
-﻿/// features \u203a ubicaciones \u203a infrastructure \u203a repositories \u203a isar_location_repository \u2014 Isar implementation of LocationRepository.
+/// features \u203a ubicaciones \u203a infrastructure \u203a repositories \u203a isar_location_repository \u2014 Isar implementation of LocationRepository.
 library;
 
 import 'package:isar/isar.dart';
@@ -568,7 +568,7 @@ class IsarLocationRepository implements LocationRepository {
       uuid: 'milpa-aguada-1',
       name: 'Aguada 1',
       parentUuid: 'milpa-prop',
-      type: LocationType.pond,
+      type: LocationType.aguada,
       surfaceArea: 0,
       capacity: 0,
       waterSource: 'Captación pluvial',
@@ -588,7 +588,7 @@ class IsarLocationRepository implements LocationRepository {
       uuid: 'milpa-aguada-2',
       name: 'Aguada 2',
       parentUuid: 'milpa-prop',
-      type: LocationType.pond,
+      type: LocationType.aguada,
       surfaceArea: 0,
       capacity: 0,
       waterSource: 'Captación pluvial',

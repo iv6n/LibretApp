@@ -26,6 +26,7 @@ import 'package:libretapp/features/ubicaciones/view/location_detail_widgets.dart
 import 'package:libretapp/features/ubicaciones/view/location_record_sheets.dart';
 import 'package:libretapp/features/ubicaciones/widgets/confirm_delete_location_dialog.dart';
 import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 
 class LocationDetailPage extends StatelessWidget {
   LocationDetailPage({
@@ -57,6 +58,9 @@ class LocationDetailPage extends StatelessWidget {
             locationRepository: _locationRepository,
             animalRepository: _animalRepository,
             movementRepository: _movementRepository,
+            onPlanningChanged: () async {
+              await locator<AgendaReminderSyncService>().sync();
+            },
           ),
       child: const _LocationDetailView(),
     );

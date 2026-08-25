@@ -21,6 +21,7 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
     required LocationRepository locationRepository,
     required AnimalRepository animalRepository,
     required MovementRecordRepository movementRepository,
+    this.onPlanningChanged,
   }) : _locationUuid = locationUuid,
        _locationRepository = locationRepository,
        _assignmentService = LocationAnimalAssignmentService(
@@ -49,6 +50,7 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   final String _locationUuid;
   final LocationRepository _locationRepository;
   final LocationAnimalAssignmentService _assignmentService;
+  final Future<void> Function()? onPlanningChanged;
   StreamSubscription<List<LocationEntity>>? _locationSub;
   StreamSubscription<List<AnimalEntity>>? _animalSub;
 
@@ -84,6 +86,7 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
         animals: state.allAnimals,
         selectedUuids: selectedUuids,
       );
+      await onPlanningChanged?.call();
     } finally {
       if (!isClosed) {
         emit(state.copyWith(isAssigning: false));
@@ -164,6 +167,7 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   Future<void> _mutate(Future<void> Function() action) async {
     try {
       await action();
+      await onPlanningChanged?.call();
     } catch (error) {
       if (!isClosed) {
         emit(state.copyWith(errorMessage: error.toString()));

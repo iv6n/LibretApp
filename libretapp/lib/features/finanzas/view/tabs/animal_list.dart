@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/finanzas/domain/entities/animal_profitability.dart';
 import 'package:libretapp/features/finanzas/widgets/finanzas_empty_state.dart';
 
@@ -38,10 +39,18 @@ class AnimalList extends StatelessWidget {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: color.withValues(alpha: 0.15),
-                  child: Icon(
-                    p.isProfitable ? Icons.trending_up : Icons.trending_down,
-                    color: color,
-                    size: 18,
+                  child: Image.asset(
+                    p.isProfitable
+                        ? AppAssetPaths.inventoryProfitability
+                        : AppAssetPaths.inventoryExpense,
+                    fit: BoxFit.contain,
+                    width: 32,
+                    height: 32,
+                    errorBuilder: (_, _, _) => Icon(
+                      p.isProfitable ? Icons.trending_up : Icons.trending_down,
+                      color: color,
+                      size: 18,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

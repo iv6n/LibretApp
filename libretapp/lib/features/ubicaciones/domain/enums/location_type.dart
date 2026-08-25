@@ -84,6 +84,7 @@ enum LocationType {
   dam,
   spring,
   pond,
+  aguada,
   trough,
   canal,
   reservoir,
@@ -177,6 +178,8 @@ extension LocationTypeX on LocationType {
         return 'Spring';
       case LocationType.pond:
         return 'Pond';
+      case LocationType.aguada:
+        return 'Aguada';
       case LocationType.trough:
         return 'Trough';
       case LocationType.canal:
@@ -237,6 +240,7 @@ extension LocationTypeX on LocationType {
       case LocationType.dam:
       case LocationType.spring:
       case LocationType.pond:
+      case LocationType.aguada:
       case LocationType.trough:
       case LocationType.canal:
       case LocationType.reservoir:
@@ -291,7 +295,7 @@ extension LocationTypeX on LocationType {
     'monte': 'monte',
     'corral': 'corral',
     'almacenamiento': 'warehouse',
-    'aguada': 'pond',
+    'aguada': 'aguada',
     'siembra': 'field',
     'casa': 'house',
   };

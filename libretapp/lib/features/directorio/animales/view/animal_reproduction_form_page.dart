@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -117,6 +118,8 @@ class _AnimalReproductionFormPageState
       saving: _saving,
       onSave: _save,
       saveLabel: l10n.actionSave,
+      assetPath: AppAssetPaths.healthReproduction,
+      fallbackIcon: Icons.pregnant_woman,
       fields: [
         DropdownButtonFormField<ServiceType>(
           initialValue: _serviceType,
@@ -149,9 +152,7 @@ class _AnimalReproductionFormPageState
             Expanded(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.event),
-                label: Text(
-                  DateFormat('dd/MM/yyyy').format(_serviceDate),
-                ),
+                label: Text(DateFormat('dd/MM/yyyy').format(_serviceDate)),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,

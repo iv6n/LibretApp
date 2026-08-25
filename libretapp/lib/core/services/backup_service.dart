@@ -300,12 +300,13 @@ class BackupService {
   }
 
   void _validateEnvelope(BackupEnvelope envelope) {
-    if (envelope.schemaVersion != BackupEnvelope.currentSchemaVersion) {
+    if (envelope.schemaVersion < 5 ||
+        envelope.schemaVersion > BackupEnvelope.currentSchemaVersion) {
       throw FormatException(
         'Versión de respaldo no compatible: ${envelope.schemaVersion}.',
       );
     }
-    const requiredCollections = <String>{
+    final requiredCollections = <String>{
       'animals',
       'weightRecords',
       'reproductionRecords',
@@ -321,6 +322,8 @@ class BackupService {
       'milkingSessions',
       'milkingEntries',
       'agendaEntries',
+      // Optional for backwards compatibility: backups from before traceable
+      // Agenda registrations simply restore with an empty collection.
       'workerProfiles',
       'workTeams',
       'careRules',

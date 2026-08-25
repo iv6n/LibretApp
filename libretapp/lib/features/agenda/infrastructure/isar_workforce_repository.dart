@@ -19,7 +19,7 @@ class IsarWorkforceRepository implements WorkforceRepository {
     final isar = await _isar;
     final records = includeInactive
         ? await isar.isarWorkerProfiles.where().sortByName().findAll()
-        : await isar.isarWorkerProfiles.filter().activeEqualTo(true).sortByName().findAll();
+        : await isar.isarWorkerProfiles.where().activeEqualTo(true).sortByName().findAll();
     return records.map((record) => record.toEntity()).toList(growable: false);
   }
 
@@ -28,7 +28,7 @@ class IsarWorkforceRepository implements WorkforceRepository {
     final isar = await _isar;
     final records = includeInactive
         ? await isar.isarWorkTeams.where().sortByName().findAll()
-        : await isar.isarWorkTeams.filter().activeEqualTo(true).sortByName().findAll();
+        : await isar.isarWorkTeams.where().activeEqualTo(true).sortByName().findAll();
     return records.map((record) => record.toEntity()).toList(growable: false);
   }
 

@@ -3,7 +3,11 @@ part of '../location_detail_widgets.dart';
 // ─── LocationHeader ───────────────────────────────────────────────────────────
 
 class LocationHeader extends StatelessWidget {
-  const LocationHeader({super.key, required this.location, required this.animalsHere});
+  const LocationHeader({
+    super.key,
+    required this.location,
+    required this.animalsHere,
+  });
 
   final LocationEntity location;
   final List<AnimalEntity> animalsHere;
@@ -192,6 +196,7 @@ String _systemLabel(BuildContext context, LocationType type) {
     case LocationType.office:
       return 'Almacén';
     case LocationType.pond:
+    case LocationType.aguada:
     case LocationType.well:
     case LocationType.dam:
     case LocationType.spring:
@@ -361,4 +366,3 @@ class _GalleryStrip extends StatelessWidget {
     );
   }
 }
-

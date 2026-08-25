@@ -4,6 +4,7 @@
 /// database, DI, extensions, models, performance, router, security,
 /// services, and shared widgets.
 export 'constants/constants.dart';
+export 'assets/app_asset_paths.dart';
 export 'backup/backup.dart';
 export 'database/database.dart';
 export 'di/di.dart';

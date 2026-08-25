@@ -1,11 +1,14 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a records_tab \u2014 records tab on the animal detail page.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a records_tab \u2014 records tab on the animal detail page.
 library;
 
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/assets/app_asset_paths.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
@@ -79,10 +82,13 @@ class RecordsTab extends StatelessWidget {
         children: [
           RecordSection(
             icon: Icons.monitor_weight,
+            assetPath: AppAssetPaths.healthWeight,
             title: l10n.detailRecordsWeights,
             children: data.weights
                 .map(
                   (r) => RecordTile(
+                    assetPath: AppAssetPaths.healthWeight,
+                    fallbackIcon: Icons.monitor_weight_outlined,
                     title:
                         '${fmtDate(r.date)} · ${r.weight.toStringAsFixed(1)} kg',
                     subtitle:
@@ -100,6 +106,8 @@ class RecordsTab extends StatelessWidget {
             children: data.productions
                 .map(
                   (r) => RecordTile(
+                    assetPath: assetForProductionRecordType(r.type),
+                    fallbackIcon: fallbackIconForProductionRecordType(r.type),
                     title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle: [
                       if (r.value != null)
@@ -114,10 +122,13 @@ class RecordsTab extends StatelessWidget {
           ),
           RecordSection(
             icon: Icons.water_drop,
+            assetPath: AppAssetPaths.healthMilkProduction,
             title: 'Ordeñas',
             children: data.milkingRecords
                 .map(
                   (record) => RecordTile(
+                    assetPath: AppAssetPaths.healthMilkProduction,
+                    fallbackIcon: Icons.water_drop_outlined,
                     title:
                         '${fmtDate(record.session.occurredAt)} · '
                         '${record.entry.liters.toStringAsFixed(2)} L',
@@ -131,10 +142,13 @@ class RecordsTab extends StatelessWidget {
           ),
           RecordSection(
             icon: Icons.medical_services,
+            assetPath: AppAssetPaths.healthVaccine,
             title: l10n.detailRecordsHealth,
             children: data.health
                 .map(
                   (r) => RecordTile(
+                    assetPath: assetForHealthRecordType(r.type),
+                    fallbackIcon: fallbackIconForHealthRecordType(r.type),
                     title: '${fmtDate(r.date)} · ${r.type.displayName}',
                     subtitle: [
                       r.product,
@@ -149,10 +163,15 @@ class RecordsTab extends StatelessWidget {
           ),
           RecordSection(
             icon: Icons.favorite,
+            assetPath: AppAssetPaths.healthReproduction,
             title: l10n.detailRecordsReproduction,
             children: data.reproductions
                 .map(
                   (r) => RecordTile(
+                    assetPath: r.hasCalved
+                        ? AppAssetPaths.healthBirth
+                        : AppAssetPaths.healthReproduction,
+                    fallbackIcon: Icons.favorite_outline,
                     title:
                         '${fmtDate(r.serviceDate)} · ${r.serviceType.displayName}',
                     subtitle: [
@@ -238,11 +257,15 @@ class RecordSection extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.children,
+    this.assetPath,
+    this.fallbackIcon = Icons.description_outlined,
   });
 
   final IconData icon;
   final String title;
   final List<Widget> children;
+  final String? assetPath;
+  final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -268,7 +291,13 @@ class RecordSection extends StatelessWidget {
                     color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: colorScheme.onPrimary, size: 20),
+                  child: assetPath == null
+                      ? Icon(icon, color: colorScheme.onPrimary, size: 20)
+                      : GeneratedAssetIcon(
+                          assetPath: assetPath!,
+                          fallbackIcon: fallbackIcon,
+                          size: 24,
+                        ),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -302,10 +331,18 @@ class RecordSection extends StatelessWidget {
 }
 
 class RecordTile extends StatelessWidget {
-  const RecordTile({super.key, required this.title, this.subtitle});
+  const RecordTile({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.assetPath,
+    this.fallbackIcon = Icons.description_outlined,
+  });
 
   final String title;
   final String? subtitle;
+  final String? assetPath;
+  final IconData fallbackIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -314,6 +351,13 @@ class RecordTile extends StatelessWidget {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
+      leading: assetPath == null
+          ? null
+          : GeneratedAssetIcon(
+              assetPath: assetPath!,
+              fallbackIcon: fallbackIcon,
+              size: 32,
+            ),
       title: Text(
         title,
         style: textTheme.titleMedium?.copyWith(

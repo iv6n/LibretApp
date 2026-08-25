@@ -13,6 +13,7 @@ class KpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
+    this.assetPath,
     this.large = false,
   });
 
@@ -20,6 +21,7 @@ class KpiCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final String? assetPath;
   final bool large;
 
   @override
@@ -33,7 +35,16 @@ class KpiCard extends StatelessWidget {
             CircleAvatar(
               radius: large ? 24 : 18,
               backgroundColor: color.withValues(alpha: 0.15),
-              child: Icon(icon, color: color, size: large ? 24 : 18),
+              child: assetPath == null
+                  ? Icon(icon, color: color, size: large ? 24 : 18)
+                  : Image.asset(
+                      assetPath!,
+                      fit: BoxFit.contain,
+                      width: large ? 32 : 26,
+                      height: large ? 32 : 26,
+                      errorBuilder: (_, _, _) =>
+                          Icon(icon, color: color, size: large ? 24 : 18),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(

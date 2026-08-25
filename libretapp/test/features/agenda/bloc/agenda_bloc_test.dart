@@ -4,6 +4,7 @@ import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 
@@ -78,7 +79,10 @@ class _FakeLotesRepository implements LotesRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-LoteEntity _buildLote({required String uuid, required List<String> animalUuids}) {
+LoteEntity _buildLote({
+  required String uuid,
+  required List<String> animalUuids,
+}) {
   final now = DateTime(2024, 6, 1);
   return LoteEntity(
     uuid: uuid,
@@ -155,6 +159,26 @@ void main() {
 
       expect(emitted.last, isA<AgendaError>());
     });
+
+    test('refreshes after an external agenda change signal', () async {
+      final repository = _FakeAgendaRepository([_buildEntry()]);
+      final signal = AgendaRefreshSignal();
+      final bloc = AgendaBloc(repository, refreshSignal: signal);
+      addTearDown(bloc.close);
+      addTearDown(signal.dispose);
+      final emitted = <AgendaState>[];
+      bloc.stream.listen(emitted.add);
+
+      bloc.add(const LoadAgenda());
+      await _flushEvents();
+
+      await repository.saveEntry(_buildEntry(id: 'external-entry'));
+      signal.notifyChanged();
+      await _flushEvents();
+
+      expect(emitted.last, isA<AgendaLoaded>());
+      expect((emitted.last as AgendaLoaded).entries, hasLength(2));
+    });
   });
 
   group('AgendaBloc — AddAgendaEntry', () {
@@ -197,7 +221,8 @@ void main() {
     });
 
     test('emits an error state when updating fails', () async {
-      final repository = _FakeAgendaRepository([_buildEntry()])..failUpdate = true;
+      final repository = _FakeAgendaRepository([_buildEntry()])
+        ..failUpdate = true;
       final bloc = AgendaBloc(repository);
       addTearDown(bloc.close);
 
@@ -251,28 +276,28 @@ void main() {
       expect(entry.completedAnimalIds, ['animal-1']);
       expect(entry.estado, AgendaEstado.completado);
       expect(entry.fechaCompletado, isNotNull);
-      expect(
-        entry.activities.any((a) => a.type == 'animal_completed'),
-        isTrue,
-      );
+      expect(entry.activities.any((a) => a.type == 'animal_completed'), isTrue);
     });
 
-    test('moves estado to en_progreso when only some animals are done', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(animalIds: const ['animal-1', 'animal-2']),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'moves estado to en_progreso when only some animals are done',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(animalIds: const ['animal-1', 'animal-2']),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
-      );
-      await _flushEvents();
+        bloc.add(
+          const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
+        );
+        await _flushEvents();
 
-      final entry = (bloc.state as AgendaLoaded).entries.single;
-      expect(entry.estado, AgendaEstado.enProgreso);
-      expect(entry.fechaCompletado, isNull);
-    });
+        final entry = (bloc.state as AgendaLoaded).entries.single;
+        expect(entry.estado, AgendaEstado.enProgreso);
+        expect(entry.fechaCompletado, isNull);
+      },
+    );
 
     test('does not duplicate an animal id marked done twice', () async {
       final repository = _FakeAgendaRepository([
@@ -293,32 +318,38 @@ void main() {
       expect(entry.completedAnimalIds, ['animal-1']);
     });
 
-    test('expands lote membership when checking whether all animals are done', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(loteIds: const ['lote-1']),
-      ]);
-      final lotesRepository = _FakeLotesRepository({
-        'lote-1': _buildLote(uuid: 'lote-1', animalUuids: ['animal-1', 'animal-2']),
-      });
-      final bloc = AgendaBloc(repository, lotesRepository: lotesRepository);
-      addTearDown(bloc.close);
+    test(
+      'expands lote membership when checking whether all animals are done',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(loteIds: const ['lote-1']),
+        ]);
+        final lotesRepository = _FakeLotesRepository({
+          'lote-1': _buildLote(
+            uuid: 'lote-1',
+            animalUuids: ['animal-1', 'animal-2'],
+          ),
+        });
+        final bloc = AgendaBloc(repository, lotesRepository: lotesRepository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
-      );
-      await _flushEvents();
+        bloc.add(
+          const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
+        );
+        await _flushEvents();
 
-      var entry = (bloc.state as AgendaLoaded).entries.single;
-      expect(entry.estado, AgendaEstado.enProgreso);
+        var entry = (bloc.state as AgendaLoaded).entries.single;
+        expect(entry.estado, AgendaEstado.enProgreso);
 
-      bloc.add(
-        const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-2'),
-      );
-      await _flushEvents();
+        bloc.add(
+          const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-2'),
+        );
+        await _flushEvents();
 
-      entry = (bloc.state as AgendaLoaded).entries.single;
-      expect(entry.estado, AgendaEstado.completado);
-    });
+        entry = (bloc.state as AgendaLoaded).entries.single;
+        expect(entry.estado, AgendaEstado.completado);
+      },
+    );
 
     test('emits an error state when the entry does not exist', () async {
       final repository = _FakeAgendaRepository();
@@ -333,25 +364,28 @@ void main() {
       expect(bloc.state, isA<AgendaError>());
     });
 
-    test('schedules the next occurrence when a recurring task becomes completado', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(animalIds: const ['animal-1'], recurrenceRule: 'weekly'),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'schedules the next occurrence when a recurring task becomes completado',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(animalIds: const ['animal-1'], recurrenceRule: 'weekly'),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
-      );
-      await _flushEvents();
+        bloc.add(
+          const MarkAnimalCompleted(entryId: 'entry-1', animalId: 'animal-1'),
+        );
+        await _flushEvents();
 
-      final entries = (bloc.state as AgendaLoaded).entries;
-      expect(entries, hasLength(2));
-      final next = entries.firstWhere((e) => e.id != 'entry-1');
-      expect(next.estado, AgendaEstado.pendiente);
-      expect(next.recurrenceRule, 'weekly');
-      expect(next.fecha, DateTime(2024, 6, 8));
-    });
+        final entries = (bloc.state as AgendaLoaded).entries;
+        expect(entries, hasLength(2));
+        final next = entries.firstWhere((e) => e.id != 'entry-1');
+        expect(next.estado, AgendaEstado.pendiente);
+        expect(next.recurrenceRule, 'weekly');
+        expect(next.fecha, DateTime(2024, 6, 8));
+      },
+    );
   });
 
   group('AgendaBloc — ChangeAgendaStatus', () {
@@ -398,50 +432,56 @@ void main() {
       expect(entry.fechaCompletado, isNotNull);
     });
 
-    test('schedules the next occurrence when a recurring task becomes completado', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(recurrenceRule: 'monthly'),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'schedules the next occurrence when a recurring task becomes completado',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(recurrenceRule: 'monthly'),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const ChangeAgendaStatus(
-          entryId: 'entry-1',
-          status: AgendaEstado.completado,
-        ),
-      );
-      await _flushEvents();
+        bloc.add(
+          const ChangeAgendaStatus(
+            entryId: 'entry-1',
+            status: AgendaEstado.completado,
+          ),
+        );
+        await _flushEvents();
 
-      final entries = (bloc.state as AgendaLoaded).entries;
-      expect(entries, hasLength(2));
-      final next = entries.firstWhere((e) => e.id != 'entry-1');
-      expect(next.estado, AgendaEstado.pendiente);
-      expect(next.recurrenceRule, 'monthly');
-      expect(next.fecha, DateTime(2024, 7, 1));
-    });
+        final entries = (bloc.state as AgendaLoaded).entries;
+        expect(entries, hasLength(2));
+        final next = entries.firstWhere((e) => e.id != 'entry-1');
+        expect(next.estado, AgendaEstado.pendiente);
+        expect(next.recurrenceRule, 'monthly');
+        expect(next.fecha, DateTime(2024, 7, 1));
+      },
+    );
 
-    test('does not schedule another occurrence when already completado', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(
-          estado: AgendaEstado.completado,
-          recurrenceRule: 'weekly',
-        ),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'does not schedule another occurrence when already completado',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(
+            estado: AgendaEstado.completado,
+            recurrenceRule: 'weekly',
+          ),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const ChangeAgendaStatus(
-          entryId: 'entry-1',
-          status: AgendaEstado.verificado,
-        ),
-      );
-      await _flushEvents();
+        bloc.add(
+          const ChangeAgendaStatus(
+            entryId: 'entry-1',
+            status: AgendaEstado.verificado,
+          ),
+        );
+        await _flushEvents();
 
-      final entries = (bloc.state as AgendaLoaded).entries;
-      expect(entries, hasLength(1));
-    });
+        final entries = (bloc.state as AgendaLoaded).entries;
+        expect(entries, hasLength(1));
+      },
+    );
 
     test('records the trimmed reason as blockedReason when blocking', () async {
       final repository = _FakeAgendaRepository([_buildEntry()]);
@@ -461,27 +501,30 @@ void main() {
       expect(entry.blockedReason, 'Falta insumo');
     });
 
-    test('clears a previous blockedReason when moving to a non-blocked status', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(
-          estado: AgendaEstado.bloqueado,
-          blockedReason: 'Falta insumo',
-        ),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'clears a previous blockedReason when moving to a non-blocked status',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(
+            estado: AgendaEstado.bloqueado,
+            blockedReason: 'Falta insumo',
+          ),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const ChangeAgendaStatus(
-          entryId: 'entry-1',
-          status: AgendaEstado.pendiente,
-        ),
-      );
-      await _flushEvents();
+        bloc.add(
+          const ChangeAgendaStatus(
+            entryId: 'entry-1',
+            status: AgendaEstado.pendiente,
+          ),
+        );
+        await _flushEvents();
 
-      final entry = (bloc.state as AgendaLoaded).entries.single;
-      expect(entry.blockedReason, isNull);
-    });
+        final entry = (bloc.state as AgendaLoaded).entries.single;
+        expect(entry.blockedReason, isNull);
+      },
+    );
 
     test('emits an error state when the entry does not exist', () async {
       final repository = _FakeAgendaRepository();
@@ -501,40 +544,45 @@ void main() {
   });
 
   group('AgendaBloc — ToggleAgendaChecklistItem', () {
-    test('marks the matching item completed and leaves others untouched', () async {
-      final repository = _FakeAgendaRepository([
-        _buildEntry(
-          checklist: const [
-            AgendaChecklistItem(id: 'item-1', label: 'Preparar dosis'),
-            AgendaChecklistItem(id: 'item-2', label: 'Aplicar dosis'),
-          ],
-        ),
-      ]);
-      final bloc = AgendaBloc(repository);
-      addTearDown(bloc.close);
+    test(
+      'marks the matching item completed and leaves others untouched',
+      () async {
+        final repository = _FakeAgendaRepository([
+          _buildEntry(
+            checklist: const [
+              AgendaChecklistItem(id: 'item-1', label: 'Preparar dosis'),
+              AgendaChecklistItem(id: 'item-2', label: 'Aplicar dosis'),
+            ],
+          ),
+        ]);
+        final bloc = AgendaBloc(repository);
+        addTearDown(bloc.close);
 
-      bloc.add(
-        const ToggleAgendaChecklistItem(
-          entryId: 'entry-1',
-          itemId: 'item-1',
-          completed: true,
-          actorId: 'worker-1',
-        ),
-      );
-      await _flushEvents();
+        bloc.add(
+          const ToggleAgendaChecklistItem(
+            entryId: 'entry-1',
+            itemId: 'item-1',
+            completed: true,
+            actorId: 'worker-1',
+          ),
+        );
+        await _flushEvents();
 
-      final entry = (bloc.state as AgendaLoaded).entries.single;
-      final item1 = entry.checklist.firstWhere((i) => i.id == 'item-1');
-      final item2 = entry.checklist.firstWhere((i) => i.id == 'item-2');
-      expect(item1.completed, isTrue);
-      expect(item1.completedById, 'worker-1');
-      expect(item1.completedAt, isNotNull);
-      expect(item2.completed, isFalse);
-      expect(
-        entry.activities.any((a) => a.type == 'checklist_completed' && a.note == 'item-1'),
-        isTrue,
-      );
-    });
+        final entry = (bloc.state as AgendaLoaded).entries.single;
+        final item1 = entry.checklist.firstWhere((i) => i.id == 'item-1');
+        final item2 = entry.checklist.firstWhere((i) => i.id == 'item-2');
+        expect(item1.completed, isTrue);
+        expect(item1.completedById, 'worker-1');
+        expect(item1.completedAt, isNotNull);
+        expect(item2.completed, isFalse);
+        expect(
+          entry.activities.any(
+            (a) => a.type == 'checklist_completed' && a.note == 'item-1',
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('reopening an item clears its completedAt', () async {
       final now = DateTime(2024, 6, 1);

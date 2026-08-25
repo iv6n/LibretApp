@@ -17,9 +17,14 @@ class ActivitiesSection extends StatelessWidget {
 
     return BlocBuilder<AgendaBloc, AgendaState>(
       builder: (context, state) {
+        final visibleLocationIds = _visibleLocationIds();
         final entries = state is AgendaLoaded
             ? state.entries
-                  .where((e) => e.locationUuid == location.uuid)
+                  .where(
+                    (e) =>
+                        e.locationUuid != null &&
+                        visibleLocationIds.contains(e.locationUuid),
+                  )
                   .toList()
             : <AgendaEntry>[];
 
@@ -69,6 +74,22 @@ class ActivitiesSection extends StatelessWidget {
         );
       },
     );
+  }
+
+  Set<String> _visibleLocationIds() {
+    final visible = <String>{location.uuid};
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (final candidate in allLocations) {
+        if (candidate.parentUuid != null &&
+            visible.contains(candidate.parentUuid) &&
+            visible.add(candidate.uuid)) {
+          changed = true;
+        }
+      }
+    }
+    return visible;
   }
 
   void _showAddActivity(BuildContext context) {

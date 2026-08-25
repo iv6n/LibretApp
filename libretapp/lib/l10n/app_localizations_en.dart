@@ -505,6 +505,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get actionDelete => 'Delete';
 
   @override
+  String get uiSearch => 'Search';
+
+  @override
+  String get uiFilter => 'Filter';
+
+  @override
+  String get uiClear => 'Clear';
+
+  @override
+  String get uiClose => 'Close';
+
+  @override
+  String get uiLoading => 'Loading';
+
+  @override
+  String get uiQuickActions => 'Quick actions';
+
+  @override
+  String get uiCustomize => 'Customize quick actions';
+
+  @override
   String get errorGenericSave => 'An error occurred while saving';
 
   @override

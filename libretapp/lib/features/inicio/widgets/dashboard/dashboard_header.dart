@@ -34,10 +34,10 @@ class DashboardHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(top: topPadding + AppSpacing.md),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface.withValues(alpha: 0.74),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
           ),
@@ -54,12 +54,12 @@ class DashboardHeader extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: tt.titleLarge?.copyWith(
-                      color: const Color(0xFF174332),
+                      color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w800,
                       height: 1.08,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     alertCount > 0 || calvingCount > 0
                         ? _statusLine(
@@ -69,20 +69,18 @@ class DashboardHeader extends StatelessWidget {
                           )
                         : 'Rancho en orden hoy',
                     style: tt.bodySmall?.copyWith(
-                      color: const Color(0xFF455A50),
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: AppSpacing.md),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 6,
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xxs,
                     children: [
                       _InlineMeta(
                         icon: Icons.location_on_outlined,
-                        label: data.farmName.isEmpty
-                            ? 'Rancho'
-                            : data.farmName,
+                        label: data.farmName.isEmpty ? 'Rancho' : data.farmName,
                       ),
                       _InlineMeta(
                         icon: Icons.calendar_today_outlined,
@@ -133,8 +131,12 @@ class _InlineMeta extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: const Color(0xFF455A50)),
-        const SizedBox(width: 4),
+        Icon(
+          icon,
+          size: 14,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AppSpacing.xxs),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 180),
           child: Text(
@@ -142,7 +144,7 @@ class _InlineMeta extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: const Color(0xFF455A50),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),

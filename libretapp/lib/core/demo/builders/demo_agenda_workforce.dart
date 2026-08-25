@@ -14,6 +14,7 @@ import 'package:libretapp/core/demo/builders/demo_locations.dart';
 import 'package:libretapp/core/demo/demo_dates.dart';
 import 'package:libretapp/core/demo/demo_identity.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/domain/operational_work.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
 
 String demoWorkerUuid(String slug) => demoId('worker', slug);
@@ -96,6 +97,9 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
     String notas = '',
     DateTime? fechaCompletado,
     String? blockedReason,
+    String? actionKind,
+    String sourceType = 'manual',
+    String? sourceId,
   }) {
     return AgendaEntry(
       id: demoId('agenda', slug),
@@ -121,6 +125,10 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       updatedAt: fecha,
       checklist: checklist,
       blockedReason: blockedReason,
+      actionKind: actionKind ?? WorkActionType.generic.name,
+      sourceType: sourceType,
+      sourceId: sourceId ?? demoId('agenda-source', slug),
+      originalFecha: fecha,
     );
   }
 
@@ -135,6 +143,7 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       locationSlug: locPotreroSurSlug,
       prioridad: AgendaPrioridad.alta,
       assigneeSlug: workerForemanSlug,
+      actionKind: WorkActionType.maintenance.name,
       notas: 'Registro de demostración.',
     ),
     // Hoy, con checklist.
@@ -147,6 +156,7 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       locationSlug: locRanchSlug,
       prioridad: AgendaPrioridad.normal,
       assigneeSlug: workerHandSlug,
+      actionKind: WorkActionType.locationInspection.name,
       checklist: [
         AgendaChecklistItem(
           id: demoId('checklist', 'recorrido-agua'),
@@ -166,18 +176,6 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       ],
       notas: 'Registro de demostración.',
     ),
-    // Próxima semana.
-    base(
-      slug: 'vacunacion-programada',
-      titulo: 'Preparar vacunación programada',
-      descripcion: 'Alistar insumos para la siguiente ronda de vacunación.',
-      fecha: daysAfter(reference, 3),
-      tipo: 'Sanidad',
-      locationSlug: locCorralPrincipalSlug,
-      prioridad: AgendaPrioridad.normal,
-      workTeamSlug: teamCuadrillaSlug,
-      notas: 'Registro de demostración.',
-    ),
     base(
       slug: 'siembra-milpa',
       titulo: 'Revisar riego de apoyo en milpa',
@@ -187,6 +185,7 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       locationSlug: locMilpaSlug,
       prioridad: AgendaPrioridad.baja,
       assigneeSlug: workerHandSlug,
+      actionKind: WorkActionType.cropTask.name,
       notas: 'Registro de demostración.',
     ),
     // Completada.
@@ -201,6 +200,7 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       fechaCompletado: daysBefore(reference, 10),
       prioridad: AgendaPrioridad.alta,
       assigneeSlug: workerOwnerSlug,
+      actionKind: WorkActionType.generic.name,
       notas: 'Registro de demostración.',
     ),
     // Verificada.
@@ -216,6 +216,7 @@ List<AgendaEntry> buildDemoAgendaEntries({required DateTime reference}) {
       fechaCompletado: daysBefore(reference, 14),
       prioridad: AgendaPrioridad.urgente,
       assigneeSlug: workerVetHelperSlug,
+      actionKind: WorkActionType.recordHealth.name,
       notas: 'Registro de demostración.',
     ),
     // Cancelada.
