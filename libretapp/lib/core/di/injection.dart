@@ -40,7 +40,12 @@ import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/eventos_export_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animales_export_sheet.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_records_export_sheets.dart';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/animal_record_bulk_reader.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/ubicaciones_export_sheet.dart';
+import 'package:libretapp/features/finanzas/infrastructure/finanzas_export_sheet.dart';
+import 'package:libretapp/features/milking/infrastructure/milking_export_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
@@ -76,7 +81,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
-import 'package:libretapp/features/directorio/animales/domain/services/health_care_cycle_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -417,14 +421,46 @@ void _registerBackupExport() {
       ),
     )
     ..registerLazySingleton<ExportService>(
-      () => ExportService(
-        animalsSheet: AnimalesExportSheet(locator<AnimalRepository>()),
-        ubicacionesSheet: UbicacionesExportSheet(locator<LocationRepository>()),
-        eventosSheet: EventosExportSheet(
+      () => ExportService([
+        AnimalesExportSheet(locator<AnimalRepository>()),
+        UbicacionesExportSheet(locator<LocationRepository>()),
+        EventosExportSheet(
           agendaRepository: locator<AgendaRepository>(),
           workforceRepository: locator<WorkforceRepository>(),
         ),
-      ),
+        ...buildAnimalRecordExportSheets(
+          animalRepository: locator<AnimalRepository>(),
+          weights:
+              locator<WeightRecordRepository>()
+                  as AnimalRecordBulkReader<WeightRecord>,
+          health:
+              locator<HealthRecordRepository>()
+                  as AnimalRecordBulkReader<HealthRecord>,
+          reproduction:
+              locator<ReproductionRecordRepository>()
+                  as AnimalRecordBulkReader<ReproductionRecord>,
+          movements:
+              locator<MovementRecordRepository>()
+                  as AnimalRecordBulkReader<MovementRecord>,
+          costs:
+              locator<CostRecordRepository>()
+                  as AnimalRecordBulkReader<CostRecord>,
+          commercial:
+              locator<CommercialRecordRepository>()
+                  as AnimalRecordBulkReader<CommercialRecord>,
+          production:
+              locator<ProductionRecordRepository>()
+                  as AnimalRecordBulkReader<ProductionRecord>,
+        ),
+        MilkingExportSheet(
+          milkingRepository: locator<MilkingRepository>(),
+          animalRepository: locator<AnimalRepository>(),
+        ),
+        FinanzasExportSheet(
+          finanzasRepository: locator<FinanzasRepository>(),
+          animalRepository: locator<AnimalRepository>(),
+        ),
+      ]),
     );
 }
 

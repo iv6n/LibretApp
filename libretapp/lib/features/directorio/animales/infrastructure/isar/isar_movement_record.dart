@@ -8,7 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/movement_
 part 'isar_movement_record.g.dart';
 
 @collection
-class IsarMovementRecord implements StableRecordModel {
+class IsarMovementRecord implements StableAnimalRecordModel {
   @override
   Id id = Isar.autoIncrement;
 
@@ -17,6 +17,7 @@ class IsarMovementRecord implements StableRecordModel {
   String recordUuid = '';
 
   @Index()
+  @override
   late String animalUuid;
 
   String? fromLocation;

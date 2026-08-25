@@ -6,6 +6,7 @@ import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/animal_record_bulk_reader.dart';
 import 'package:uuid/uuid.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_projection_recalculator.dart';
 
@@ -19,8 +20,9 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_pro
 /// parent `IsarAnimal` (health/movement/weight).
 abstract class IsarRecordRepositoryBase<
   TEntity,
-  TIsarModel extends StableRecordModel
-> {
+  TIsarModel extends StableAnimalRecordModel
+>
+    implements AnimalRecordBulkReader<TEntity> {
   IsarRecordRepositoryBase(this._database);
 
   final IsarDatabase _database;
@@ -49,6 +51,21 @@ abstract class IsarRecordRepositoryBase<
     final db = await isar;
     final models = await queryByAnimal(collection(db), animalUuid);
     return models.map(toEntity).toList(growable: false);
+  }
+
+  @override
+  Future<List<AnimalRecordExportItem<TEntity>>> getAllAnimalRecords() async {
+    final db = await isar;
+    final models = await collection(db).where().findAll();
+    return models
+        .map(
+          (model) => AnimalRecordExportItem<TEntity>(
+            animalUuid: model.animalUuid,
+            recordUuid: model.recordUuid,
+            record: toEntity(model),
+          ),
+        )
+        .toList(growable: false);
   }
 
   Future<TEntity> addRecordFor(
@@ -132,9 +149,7 @@ abstract class IsarRecordRepositoryBase<
     if (id == null) return;
     await db.writeTxn(() async {
       final stored = await collection(db).get(id);
-      final animalUuid = stored == null
-          ? null
-          : (stored as dynamic).animalUuid as String?;
+      final animalUuid = stored?.animalUuid;
       await collection(db).delete(id);
       if (animalUuid != null && animalUuid.isNotEmpty) {
         await AnimalActivityTracker.recalculate(db, animalUuid);

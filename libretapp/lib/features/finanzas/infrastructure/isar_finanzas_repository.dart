@@ -30,6 +30,15 @@ class IsarFinanzasRepository implements FinanzasRepository {
   }
 
   @override
+  Future<List<IncomeRecord>> getAllIncomes() async {
+    final records = await _isar.isarIncomeRecords
+        .where()
+        .sortByDateDesc()
+        .findAll();
+    return records.map((record) => record.toEntity()).toList(growable: false);
+  }
+
+  @override
   Future<IncomeRecord> addIncome(IncomeRecord record) async {
     final model = record.toIsar();
     await _isar.writeTxn(() async {
@@ -38,6 +47,8 @@ class IsarFinanzasRepository implements FinanzasRepository {
           : await _isar.isarIncomeRecords.get(model.id);
       model.recordUuid = existing?.recordUuid.isNotEmpty == true
           ? existing!.recordUuid
+          : record.recordUuid?.isNotEmpty == true
+          ? record.recordUuid!
           : const Uuid().v4();
       await _isar.isarIncomeRecords.put(model);
     });
@@ -67,6 +78,15 @@ class IsarFinanzasRepository implements FinanzasRepository {
   }
 
   @override
+  Future<List<GeneralExpenseRecord>> getAllExpenses() async {
+    final records = await _isar.isarGeneralExpenseRecords
+        .where()
+        .sortByDateDesc()
+        .findAll();
+    return records.map((record) => record.toEntity()).toList(growable: false);
+  }
+
+  @override
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async {
     final model = record.toIsar();
     await _isar.writeTxn(() async {
@@ -75,6 +95,8 @@ class IsarFinanzasRepository implements FinanzasRepository {
           : await _isar.isarGeneralExpenseRecords.get(model.id);
       model.recordUuid = existing?.recordUuid.isNotEmpty == true
           ? existing!.recordUuid
+          : record.recordUuid?.isNotEmpty == true
+          ? record.recordUuid!
           : const Uuid().v4();
       await _isar.isarGeneralExpenseRecords.put(model);
     });

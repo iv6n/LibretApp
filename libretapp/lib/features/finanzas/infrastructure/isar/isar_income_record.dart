@@ -35,6 +35,7 @@ extension IsarIncomeRecordMapper on IsarIncomeRecord {
       amount: amount,
       currency: currency,
       animalUuid: animalUuid,
+      recordUuid: recordUuid,
       notes: notes,
     );
   }
@@ -48,6 +49,7 @@ extension IncomeRecordToIsar on IncomeRecord {
       ..amount = amount
       ..currency = currency
       ..animalUuid = animalUuid
+      ..recordUuid = recordUuid ?? ''
       ..notes = notes;
 
     if (id != null) {

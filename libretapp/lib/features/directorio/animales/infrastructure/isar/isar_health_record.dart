@@ -8,7 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/health_re
 part 'isar_health_record.g.dart';
 
 @collection
-class IsarHealthRecord implements StableRecordModel {
+class IsarHealthRecord implements StableAnimalRecordModel {
   @override
   Id id = Isar.autoIncrement;
 
@@ -17,6 +17,7 @@ class IsarHealthRecord implements StableRecordModel {
   String recordUuid = '';
 
   @Index()
+  @override
   late String animalUuid;
 
   late DateTime date;

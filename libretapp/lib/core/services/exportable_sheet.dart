@@ -10,6 +10,15 @@ library;
 import 'package:excel/excel.dart';
 
 abstract class ExportableSheet {
+  /// Stable programmatic key used by saved selections and [ExportService].
+  String get key;
+
+  /// User-facing label shown by the export picker.
+  String get title;
+
+  /// Short user-facing description of the sheet contents.
+  String get description;
+
   /// Reads its feature's data and writes it into [excel] as a new sheet.
   Future<void> writeTo(Excel excel);
 }

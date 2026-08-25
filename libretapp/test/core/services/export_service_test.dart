@@ -7,7 +7,18 @@ import 'package:libretapp/core/services/export_service.dart';
 import 'package:libretapp/core/services/exportable_sheet.dart';
 
 class _SpySheet implements ExportableSheet {
+  _SpySheet(this.key);
+
   bool wasCalled = false;
+
+  @override
+  final String key;
+
+  @override
+  String get title => key;
+
+  @override
+  String get description => 'Test $key';
 
   @override
   Future<void> writeTo(Excel excel) async {
@@ -49,18 +60,18 @@ void main() {
   late ExportService service;
 
   setUp(() {
-    animalsSheet = _SpySheet();
-    ubicacionesSheet = _SpySheet();
-    eventosSheet = _SpySheet();
-    service = ExportService(
-      animalsSheet: animalsSheet,
-      ubicacionesSheet: ubicacionesSheet,
-      eventosSheet: eventosSheet,
-    );
+    animalsSheet = _SpySheet('animals');
+    ubicacionesSheet = _SpySheet('locations');
+    eventosSheet = _SpySheet('events');
+    service = ExportService([animalsSheet, ubicacionesSheet, eventosSheet]);
   });
 
-  test('writes every sheet when all flags default to true', () async {
-    final file = await service.exportToExcel();
+  test('writes every selected registry sheet', () async {
+    final file = await service.exportToExcel({
+      'animals',
+      'locations',
+      'events',
+    });
 
     expect(animalsSheet.wasCalled, isTrue);
     expect(ubicacionesSheet.wasCalled, isTrue);
@@ -68,42 +79,33 @@ void main() {
     expect(file.existsSync(), isTrue);
     expect(file.path, contains('libretapp_export_'));
     expect(file.path, endsWith('.xlsx'));
+    final workbook = Excel.decodeBytes(await file.readAsBytes());
+    expect(workbook.tables, isNot(contains('Sheet1')));
   });
 
-  test('only writes the animals sheet when the other flags are off', () async {
-    await service.exportToExcel(ubicaciones: false, eventos: false);
+  test('only writes selected keys', () async {
+    await service.exportToExcel({'animals'});
 
     expect(animalsSheet.wasCalled, isTrue);
     expect(ubicacionesSheet.wasCalled, isFalse);
     expect(eventosSheet.wasCalled, isFalse);
   });
 
-  test('only writes the ubicaciones sheet when the other flags are off', () async {
-    await service.exportToExcel(animals: false, eventos: false);
-
-    expect(animalsSheet.wasCalled, isFalse);
-    expect(ubicacionesSheet.wasCalled, isTrue);
-    expect(eventosSheet.wasCalled, isFalse);
+  test('rejects an empty selection', () async {
+    await expectLater(service.exportToExcel({}), throwsArgumentError);
   });
 
-  test('only writes the eventos sheet when the other flags are off', () async {
-    await service.exportToExcel(animals: false, ubicaciones: false);
-
-    expect(animalsSheet.wasCalled, isFalse);
-    expect(ubicacionesSheet.wasCalled, isFalse);
-    expect(eventosSheet.wasCalled, isTrue);
-  });
-
-  test('writes no sheets when every flag is off, but still produces a file', () async {
-    final file = await service.exportToExcel(
-      animals: false,
-      ubicaciones: false,
-      eventos: false,
+  test('rejects unknown keys', () async {
+    await expectLater(
+      service.exportToExcel({'animals', 'unknown'}),
+      throwsArgumentError,
     );
+  });
 
-    expect(animalsSheet.wasCalled, isFalse);
-    expect(ubicacionesSheet.wasCalled, isFalse);
-    expect(eventosSheet.wasCalled, isFalse);
-    expect(file.existsSync(), isTrue);
+  test('rejects duplicate registry keys', () {
+    expect(
+      () => ExportService([_SpySheet('same'), _SpySheet('same')]),
+      throwsArgumentError,
+    );
   });
 }

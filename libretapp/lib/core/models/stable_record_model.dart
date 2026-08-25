@@ -10,3 +10,12 @@ abstract interface class StableRecordModel {
   String get recordUuid;
   set recordUuid(String value);
 }
+
+/// Stable record that belongs to one animal.
+///
+/// Keeping this relationship in the type system lets shared repositories read
+/// every animal record for export without relying on runtime casts.
+abstract interface class StableAnimalRecordModel implements StableRecordModel {
+  String get animalUuid;
+  set animalUuid(String value);
+}

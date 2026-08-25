@@ -28,6 +28,9 @@ class _FakeFinanzasRepository implements FinanzasRepository {
   }
 
   @override
+  Future<List<IncomeRecord>> getAllIncomes() async => List.of(_incomes);
+
+  @override
   Future<IncomeRecord> addIncome(IncomeRecord record) async {
     _incomes.add(record);
     return record;
@@ -43,6 +46,10 @@ class _FakeFinanzasRepository implements FinanzasRepository {
     if (failOnGet) throw Exception('simulated repository error');
     return _expenses.where((r) => range.contains(r.date)).toList();
   }
+
+  @override
+  Future<List<GeneralExpenseRecord>> getAllExpenses() async =>
+      List.of(_expenses);
 
   @override
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async {
@@ -87,6 +94,14 @@ class _FakeAnimalRepository implements AnimalRepository {
     }
     return counts;
   }
+
+  @override
+  Future<Map<Species, Map<LifeStage, int>>> getActiveTaxonomyCounts() async =>
+      const {};
+
+  @override
+  Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) async =>
+      animal;
 
   @override
   Future<bool> refreshFromRemote({bool force = false}) =>

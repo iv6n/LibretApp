@@ -57,19 +57,24 @@ void main() {
 
     final rows = excel['Ubicaciones'].rows;
     expect(rows, hasLength(3)); // header + 2 locations
-    expect(_text(_row(excel, 0)[0]), 'Nombre');
-    expect(_text(_row(excel, 1)[0]), 'Potrero Norte');
-    expect(_text(_row(excel, 1)[1]), 'pasture');
-    expect(_text(_row(excel, 2)[0]), 'Corral');
-    expect(_text(_row(excel, 2)[1]), 'corral');
+    expect(_text(_row(excel, 0)[0]), 'UUID Ubicación');
+    expect(_text(_row(excel, 0)[1]), 'Nombre');
+    expect(_text(_row(excel, 1)[0]), 'u1');
+    expect(_text(_row(excel, 1)[1]), 'Potrero Norte');
+    expect(_text(_row(excel, 1)[2]), 'pasture');
+    expect(_text(_row(excel, 2)[1]), 'Corral');
+    expect(_text(_row(excel, 2)[2]), 'corral');
   });
 
-  test('writes an empty sheet (header only) when there are no locations', () async {
-    final sheet = UbicacionesExportSheet(_FakeLocationRepository(const []));
-    final excel = Excel.createExcel();
+  test(
+    'writes an empty sheet (header only) when there are no locations',
+    () async {
+      final sheet = UbicacionesExportSheet(_FakeLocationRepository(const []));
+      final excel = Excel.createExcel();
 
-    await sheet.writeTo(excel);
+      await sheet.writeTo(excel);
 
-    expect(excel['Ubicaciones'].rows, hasLength(1));
-  });
+      expect(excel['Ubicaciones'].rows, hasLength(1));
+    },
+  );
 }

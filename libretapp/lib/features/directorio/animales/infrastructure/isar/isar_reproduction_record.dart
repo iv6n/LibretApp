@@ -8,7 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/reproduct
 part 'isar_reproduction_record.g.dart';
 
 @collection
-class IsarReproductionRecord implements StableRecordModel {
+class IsarReproductionRecord implements StableAnimalRecordModel {
   @override
   Id id = Isar.autoIncrement;
 
@@ -17,6 +17,7 @@ class IsarReproductionRecord implements StableRecordModel {
   String recordUuid = '';
 
   @Index()
+  @override
   late String animalUuid;
 
   late DateTime serviceDate;

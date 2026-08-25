@@ -8,7 +8,7 @@ import 'package:libretapp/features/directorio/animales/domain/entities/weight_re
 part 'isar_weight_record.g.dart';
 
 @collection
-class IsarWeightRecord implements StableRecordModel {
+class IsarWeightRecord implements StableAnimalRecordModel {
   @override
   Id id = Isar.autoIncrement;
 
@@ -17,6 +17,7 @@ class IsarWeightRecord implements StableRecordModel {
   String recordUuid = '';
 
   @Index()
+  @override
   late String animalUuid;
 
   late DateTime date;

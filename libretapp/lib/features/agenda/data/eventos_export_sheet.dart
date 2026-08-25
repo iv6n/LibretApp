@@ -19,9 +19,19 @@ class EventosExportSheet implements ExportableSheet {
   final WorkforceRepository _workforceRepository;
 
   @override
+  String get key => 'events';
+
+  @override
+  String get title => 'Agenda';
+
+  @override
+  String get description => 'Eventos, fechas, responsables y progreso.';
+
+  @override
   Future<void> writeTo(Excel excel) async {
     final sheet = excel['Eventos'];
     writeExcelRow(sheet, 0, [
+      'ID Evento',
       'Título',
       'Descripción',
       'Fecha',
@@ -49,6 +59,7 @@ class EventosExportSheet implements ExportableSheet {
     for (var i = 0; i < eventList.length; i++) {
       final e = eventList[i];
       writeExcelRow(sheet, i + 1, [
+        e.id,
         e.titulo,
         e.descripcion,
         DateFormat('dd/MM/yyyy HH:mm').format(e.fecha),

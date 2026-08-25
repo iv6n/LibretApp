@@ -33,6 +33,7 @@ extension IsarGeneralExpenseRecordMapper on IsarGeneralExpenseRecord {
       type: GeneralExpenseType.values.byName(type),
       amount: amount,
       currency: currency,
+      recordUuid: recordUuid,
       notes: notes,
     );
   }
@@ -45,6 +46,7 @@ extension GeneralExpenseRecordToIsar on GeneralExpenseRecord {
       ..type = type.name
       ..amount = amount
       ..currency = currency
+      ..recordUuid = recordUuid ?? ''
       ..notes = notes;
 
     if (id != null) {

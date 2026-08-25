@@ -7,6 +7,19 @@ import 'package:libretapp/core/services/exportable_sheet.dart';
 import 'package:libretapp/features/exportar/view/exportar_page.dart';
 
 class _NoopExportableSheet implements ExportableSheet {
+  const _NoopExportableSheet({
+    required this.key,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  final String key;
+  @override
+  final String title;
+  @override
+  final String description;
+
   @override
   Future<void> writeTo(Excel excel) async {}
 }
@@ -17,11 +30,23 @@ void main() {
       locator.unregister<ExportService>();
     }
     locator.registerSingleton<ExportService>(
-      ExportService(
-        animalsSheet: _NoopExportableSheet(),
-        ubicacionesSheet: _NoopExportableSheet(),
-        eventosSheet: _NoopExportableSheet(),
-      ),
+      ExportService(const [
+        _NoopExportableSheet(
+          key: 'animals',
+          title: 'Animales',
+          description: 'Animales desc',
+        ),
+        _NoopExportableSheet(
+          key: 'locations',
+          title: 'Ubicaciones',
+          description: 'Ubicaciones desc',
+        ),
+        _NoopExportableSheet(
+          key: 'events',
+          title: 'Agenda',
+          description: 'Agenda desc',
+        ),
+      ]),
     );
   });
 
@@ -35,45 +60,55 @@ void main() {
     final tile = tester.widget<CheckboxListTile>(
       find.widgetWithText(CheckboxListTile, 'Seleccionar todo'),
     );
-    return Checkbox(value: tile.value, tristate: tile.tristate, onChanged: (_) {});
+    return Checkbox(
+      value: tile.value,
+      tristate: tile.tristate,
+      onChanged: (_) {},
+    );
   }
 
-  testWidgets('"Seleccionar todo" starts checked when every section defaults to selected', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    '"Seleccionar todo" starts checked when every section defaults to selected',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
+      await tester.pumpAndSettle();
 
-    expect(selectAllCheckbox(tester).value, isTrue);
-  });
+      expect(selectAllCheckbox(tester).value, isTrue);
+    },
+  );
 
-  testWidgets('"Seleccionar todo" shows the indeterminate state when the selection is mixed', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    '"Seleccionar todo" shows the indeterminate state when the selection is mixed',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Animales'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Animales'));
+      await tester.pumpAndSettle();
 
-    expect(
-      selectAllCheckbox(tester).value,
-      isNull,
-      reason: 'mixed selection must render the tristate dash, not look unchecked',
-    );
-  });
+      expect(
+        selectAllCheckbox(tester).value,
+        isNull,
+        reason:
+            'mixed selection must render the tristate dash, not look unchecked',
+      );
+    },
+  );
 
-  testWidgets('"Seleccionar todo" is unchecked once every section is deselected', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
-    await tester.pumpAndSettle();
+  testWidgets(
+    '"Seleccionar todo" is unchecked once every section is deselected',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: ExportarPage()));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Animales'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Ubicaciones'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Agenda'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Animales'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Ubicaciones'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(CheckboxListTile, 'Agenda'));
+      await tester.pumpAndSettle();
 
-    expect(selectAllCheckbox(tester).value, isFalse);
-  });
+      expect(selectAllCheckbox(tester).value, isFalse);
+    },
+  );
 }

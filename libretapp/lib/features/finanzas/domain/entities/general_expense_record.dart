@@ -1,4 +1,4 @@
-﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a general_expense_record \u2014 entity for a general farm expense.
+/// features \u203a finanzas \u203a domain \u203a entities \u203a general_expense_record \u2014 entity for a general farm expense.
 library;
 
 import 'package:libretapp/core/models/timestamped_record.dart';
@@ -43,6 +43,7 @@ class GeneralExpenseRecord extends TimestampedRecord {
     required this.type,
     required this.amount,
     this.currency,
+    this.recordUuid,
     super.notes,
     super.id,
   });
@@ -50,12 +51,14 @@ class GeneralExpenseRecord extends TimestampedRecord {
   final GeneralExpenseType type;
   final double amount;
   final String? currency;
+  final String? recordUuid;
 
   GeneralExpenseRecord copyWith({
     DateTime? date,
     GeneralExpenseType? type,
     double? amount,
     String? currency,
+    String? recordUuid,
     String? notes,
     String? id,
   }) {
@@ -64,11 +67,18 @@ class GeneralExpenseRecord extends TimestampedRecord {
       type: type ?? this.type,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
+      recordUuid: recordUuid ?? this.recordUuid,
       notes: notes ?? this.notes,
       id: id ?? this.id,
     );
   }
 
   @override
-  List<Object?> get props => [...super.props, type, amount, currency];
+  List<Object?> get props => [
+    ...super.props,
+    type,
+    amount,
+    currency,
+    recordUuid,
+  ];
 }

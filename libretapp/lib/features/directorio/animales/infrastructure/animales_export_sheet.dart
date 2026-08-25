@@ -13,9 +13,19 @@ class AnimalesExportSheet implements ExportableSheet {
   final AnimalRepository _animalRepository;
 
   @override
+  String get key => 'animals';
+
+  @override
+  String get title => 'Animales';
+
+  @override
+  String get description => 'UUID, caravana, especie, edad, peso y estado.';
+
+  @override
   Future<void> writeTo(Excel excel) async {
     final sheet = excel['Animales'];
     writeExcelRow(sheet, 0, [
+      'UUID Animal',
       'N° Caravana',
       'Nombre',
       'Especie',
@@ -30,10 +40,11 @@ class AnimalesExportSheet implements ExportableSheet {
       'Propietario',
     ], header: true);
 
-    final animals = await _animalRepository.getAll();
+    final animals = await _animalRepository.getAllIncludingInactive();
     for (var i = 0; i < animals.length; i++) {
       final a = animals[i];
       writeExcelRow(sheet, i + 1, [
+        a.uuid,
         a.earTagNumber,
         a.customName ?? '',
         a.species.name,

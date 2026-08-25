@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -73,15 +73,20 @@ void main() {
             type: IncomeType.milkSale,
             amount: 320.0,
             currency: 'USD',
+            recordUuid: 'income-stable-uuid',
             notes: 'Venta semanal de leche',
           ),
         );
 
         expect(saved.id, isNotNull);
+        expect(saved.recordUuid, 'income-stable-uuid');
 
         final records = await repo.getIncomes(range);
+        final allRecords = await repo.getAllIncomes();
 
         expect(records, hasLength(1));
+        expect(allRecords, hasLength(1));
+        expect(allRecords.single.recordUuid, 'income-stable-uuid');
         expect(records.first.type, IncomeType.milkSale);
         expect(records.first.amount, 320.0);
         expect(records.first.currency, 'USD');
@@ -179,15 +184,20 @@ void main() {
             type: GeneralExpenseType.fuel,
             amount: 85.0,
             currency: 'USD',
+            recordUuid: 'expense-stable-uuid',
             notes: 'Combustible para tractor',
           ),
         );
 
         expect(saved.id, isNotNull);
+        expect(saved.recordUuid, 'expense-stable-uuid');
 
         final records = await repo.getExpenses(range);
+        final allRecords = await repo.getAllExpenses();
 
         expect(records, hasLength(1));
+        expect(allRecords, hasLength(1));
+        expect(allRecords.single.recordUuid, 'expense-stable-uuid');
         expect(records.first.type, GeneralExpenseType.fuel);
         expect(records.first.amount, 85.0);
         expect(records.first.currency, 'USD');

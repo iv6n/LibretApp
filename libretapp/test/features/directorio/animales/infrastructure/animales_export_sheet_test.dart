@@ -14,6 +14,9 @@ class _FakeAnimalRepository implements AnimalRepository {
   Future<List<AnimalEntity>> getAll() async => _animals;
 
   @override
+  Future<List<AnimalEntity>> getAllIncludingInactive() async => _animals;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -65,7 +68,13 @@ String? _text(Data? cell) => cell?.value?.toString();
 void main() {
   test('writes the header row and one row per animal', () async {
     final repository = _FakeAnimalRepository([
-      _animal(uuid: 'a1', earTagNumber: '001', customName: 'Gorda', weight: 320.5, owner: 'Juan'),
+      _animal(
+        uuid: 'a1',
+        earTagNumber: '001',
+        customName: 'Gorda',
+        weight: 320.5,
+        owner: 'Juan',
+      ),
       _animal(uuid: 'a2', earTagNumber: '002'),
     ]);
     final sheet = AnimalesExportSheet(repository);
@@ -75,33 +84,38 @@ void main() {
 
     final rows = excel['Animales'].rows;
     expect(rows, hasLength(3));
-    expect(_text(_row(excel, 0)[0]), 'N° Caravana');
+    expect(_text(_row(excel, 0)[0]), 'UUID Animal');
+    expect(_text(_row(excel, 0)[1]), 'N° Caravana');
 
-    expect(_text(_row(excel, 1)[0]), '001');
-    expect(_text(_row(excel, 1)[1]), 'Gorda');
-    expect(_text(_row(excel, 1)[2]), 'cattle');
-    expect(_text(_row(excel, 1)[8]), '320.5');
-    expect(_text(_row(excel, 1)[11]), 'Juan');
+    expect(_text(_row(excel, 1)[0]), 'a1');
+    expect(_text(_row(excel, 1)[1]), '001');
+    expect(_text(_row(excel, 1)[2]), 'Gorda');
+    expect(_text(_row(excel, 1)[3]), 'cattle');
+    expect(_text(_row(excel, 1)[9]), '320.5');
+    expect(_text(_row(excel, 1)[12]), 'Juan');
 
-    expect(_text(_row(excel, 2)[0]), '002');
+    expect(_text(_row(excel, 2)[1]), '002');
     expect(
-      _text(_row(excel, 2)[1]),
+      _text(_row(excel, 2)[2]),
       '',
       reason: 'no custom name should render as an empty cell, not "null"',
     );
     expect(
-      _text(_row(excel, 2)[8]),
+      _text(_row(excel, 2)[9]),
       '',
       reason: 'no weight should render as an empty cell, not "null"',
     );
   });
 
-  test('writes an empty sheet (header only) when there are no animals', () async {
-    final sheet = AnimalesExportSheet(_FakeAnimalRepository(const []));
-    final excel = Excel.createExcel();
+  test(
+    'writes an empty sheet (header only) when there are no animals',
+    () async {
+      final sheet = AnimalesExportSheet(_FakeAnimalRepository(const []));
+      final excel = Excel.createExcel();
 
-    await sheet.writeTo(excel);
+      await sheet.writeTo(excel);
 
-    expect(excel['Animales'].rows, hasLength(1));
-  });
+      expect(excel['Animales'].rows, hasLength(1));
+    },
+  );
 }

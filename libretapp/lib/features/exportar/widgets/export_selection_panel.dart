@@ -25,9 +25,9 @@ class ExportResultListener extends StatelessWidget {
           Share.shareXFiles([XFile(state.filePath)]);
           context.read<ExportCubit>().reset();
         } else if (state is ExportError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
           context.read<ExportCubit>().reset();
         }
       },
@@ -46,26 +46,22 @@ class ExportSelectionPanel extends StatefulWidget {
 }
 
 class _ExportSelectionPanelState extends State<ExportSelectionPanel> {
-  bool _animals = true;
-  bool _ubicaciones = true;
-  bool _eventos = true;
+  Set<String>? _selectedKeys;
 
-  bool get _allSelected => _animals && _ubicaciones && _eventos;
+  bool _allSelected(int total) => _selectedKeys?.length == total;
 
   /// `true` when every section is selected, `false` when none are, and
   /// `null` (indeterminate) when the selection is mixed.
-  bool? get _allSelectedState {
-    if (_allSelected) return true;
-    if (!_animals && !_ubicaciones && !_eventos) return false;
+  bool? _allSelectedState(int total) {
+    if (_allSelected(total)) return true;
+    if (_selectedKeys?.isEmpty ?? true) return false;
     return null;
   }
 
-  void _toggleAll(bool? value) {
+  void _toggleAll(bool? value, Set<String> allKeys) {
     final checked = value ?? false;
     setState(() {
-      _animals = checked;
-      _ubicaciones = checked;
-      _eventos = checked;
+      _selectedKeys = checked ? Set.of(allKeys) : <String>{};
     });
   }
 
@@ -74,53 +70,42 @@ class _ExportSelectionPanelState extends State<ExportSelectionPanel> {
     return BlocBuilder<ExportCubit, ExportState>(
       builder: (context, state) {
         final loading = state is ExportLoading;
+        final exportCubit = context.read<ExportCubit>();
+        final sheets = exportCubit.sheets;
+        final allKeys = sheets.map((sheet) => sheet.key).toSet();
+        _selectedKeys ??= Set.of(allKeys);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             CheckboxListTile(
               title: const Text('Seleccionar todo'),
-              value: _allSelectedState,
+              value: _allSelectedState(sheets.length),
               tristate: true,
-              onChanged: loading ? null : _toggleAll,
+              onChanged: loading ? null : (value) => _toggleAll(value, allKeys),
             ),
             const Divider(height: 1),
-            CheckboxListTile(
-              secondary: const Icon(Icons.pets_outlined),
-              title: const Text('Animales'),
-              subtitle: const Text('Caravana, especie, edad, peso, estado…'),
-              value: _animals,
-              onChanged: loading
-                  ? null
-                  : (v) => setState(() => _animals = v ?? false),
-            ),
-            CheckboxListTile(
-              secondary: const Icon(Icons.map_outlined),
-              title: const Text('Ubicaciones'),
-              subtitle: const Text('Nombre, tipo, superficie, capacidad…'),
-              value: _ubicaciones,
-              onChanged: loading
-                  ? null
-                  : (v) => setState(() => _ubicaciones = v ?? false),
-            ),
-            CheckboxListTile(
-              secondary: const Icon(Icons.event_outlined),
-              title: const Text('Agenda'),
-              subtitle: const Text('Título, fecha, tipo, animal vinculado…'),
-              value: _eventos,
-              onChanged: loading
-                  ? null
-                  : (v) => setState(() => _eventos = v ?? false),
-            ),
+            for (final sheet in sheets)
+              CheckboxListTile(
+                secondary: Icon(_iconFor(sheet.key)),
+                title: Text(sheet.title),
+                subtitle: Text(sheet.description),
+                value: _selectedKeys!.contains(sheet.key),
+                onChanged: loading
+                    ? null
+                    : (value) => setState(() {
+                        if (value ?? false) {
+                          _selectedKeys!.add(sheet.key);
+                        } else {
+                          _selectedKeys!.remove(sheet.key);
+                        }
+                      }),
+              ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: loading || !(_animals || _ubicaciones || _eventos)
+              onPressed: loading || _selectedKeys!.isEmpty
                   ? null
-                  : () => context.read<ExportCubit>().export(
-                      animals: _animals,
-                      ubicaciones: _ubicaciones,
-                      eventos: _eventos,
-                    ),
+                  : () => exportCubit.export(Set.of(_selectedKeys!)),
               icon: loading
                   ? const SizedBox.square(
                       dimension: 16,
@@ -134,4 +119,19 @@ class _ExportSelectionPanelState extends State<ExportSelectionPanel> {
       },
     );
   }
+
+  IconData _iconFor(String key) => switch (key) {
+    'animals' => Icons.pets_outlined,
+    'locations' => Icons.map_outlined,
+    'events' => Icons.event_outlined,
+    'weights' => Icons.monitor_weight_outlined,
+    'health' => Icons.medical_services_outlined,
+    'reproduction' => Icons.favorite_outline,
+    'movements' => Icons.route_outlined,
+    'costs' || 'finances' => Icons.payments_outlined,
+    'commercial' => Icons.store_outlined,
+    'production' => Icons.insights_outlined,
+    'milking' => Icons.water_drop_outlined,
+    _ => Icons.table_chart_outlined,
+  };
 }

@@ -15,37 +15,53 @@ import 'package:libretapp/core/services/exportable_sheet.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ExportService {
-  ExportService({
-    required ExportableSheet animalsSheet,
-    required ExportableSheet ubicacionesSheet,
-    required ExportableSheet eventosSheet,
-  }) : _animalsSheet = animalsSheet,
-       _ubicacionesSheet = ubicacionesSheet,
-       _eventosSheet = eventosSheet;
+  ExportService(Iterable<ExportableSheet> sheets)
+    : sheets = _buildRegistry(sheets);
 
-  final ExportableSheet _animalsSheet;
-  final ExportableSheet _ubicacionesSheet;
-  final ExportableSheet _eventosSheet;
+  final Map<String, ExportableSheet> sheets;
+
+  static Map<String, ExportableSheet> _buildRegistry(
+    Iterable<ExportableSheet> sheets,
+  ) {
+    final registry = <String, ExportableSheet>{};
+    for (final sheet in sheets) {
+      final key = sheet.key.trim();
+      if (key.isEmpty) {
+        throw ArgumentError.value(sheet.key, 'sheet.key', 'Must not be empty');
+      }
+      if (registry.containsKey(key)) {
+        throw ArgumentError.value(key, 'sheets', 'Duplicate export key');
+      }
+      registry[key] = sheet;
+    }
+    return Map.unmodifiable(registry);
+  }
 
   /// Generates a .xlsx file with the selected sheets and returns its [File].
-  Future<File> exportToExcel({
-    bool animals = true,
-    bool ubicaciones = true,
-    bool eventos = true,
-  }) async {
-    final excel = Excel.createExcel();
-    // Remove the default empty sheet that excel package adds.
-    excel.delete('Sheet1');
+  Future<File> exportToExcel(Set<String> selectedKeys) async {
+    if (selectedKeys.isEmpty) {
+      throw ArgumentError.value(
+        selectedKeys,
+        'selectedKeys',
+        'Select at least one export sheet',
+      );
+    }
+    final unknown = selectedKeys.difference(sheets.keys.toSet());
+    if (unknown.isNotEmpty) {
+      throw ArgumentError.value(
+        unknown,
+        'selectedKeys',
+        'Unknown export sheet keys',
+      );
+    }
 
-    if (animals) {
-      await _animalsSheet.writeTo(excel);
+    final excel = Excel.createExcel();
+    for (final entry in sheets.entries) {
+      if (selectedKeys.contains(entry.key)) await entry.value.writeTo(excel);
     }
-    if (ubicaciones) {
-      await _ubicacionesSheet.writeTo(excel);
-    }
-    if (eventos) {
-      await _eventosSheet.writeTo(excel);
-    }
+    // The package refuses to delete its only sheet. Remove the placeholder
+    // after at least one real export sheet has been created.
+    excel.delete('Sheet1');
 
     final bytes = excel.save();
     if (bytes == null) {

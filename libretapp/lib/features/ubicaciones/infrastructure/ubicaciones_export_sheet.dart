@@ -12,9 +12,19 @@ class UbicacionesExportSheet implements ExportableSheet {
   final LocationRepository _locationRepository;
 
   @override
+  String get key => 'locations';
+
+  @override
+  String get title => 'Ubicaciones';
+
+  @override
+  String get description => 'UUID, nombre, tipo, superficie y capacidad.';
+
+  @override
   Future<void> writeTo(Excel excel) async {
     final sheet = excel['Ubicaciones'];
     writeExcelRow(sheet, 0, [
+      'UUID Ubicación',
       'Nombre',
       'Tipo',
       'Superficie (m²)',
@@ -28,6 +38,7 @@ class UbicacionesExportSheet implements ExportableSheet {
     for (var i = 0; i < locations.length; i++) {
       final l = locations[i];
       writeExcelRow(sheet, i + 1, [
+        l.uuid,
         l.name,
         l.type.name,
         l.surfaceArea,

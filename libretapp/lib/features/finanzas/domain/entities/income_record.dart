@@ -1,4 +1,4 @@
-﻿/// features \u203a finanzas \u203a domain \u203a entities \u203a income_record \u2014 entity for an income entry.
+/// features \u203a finanzas \u203a domain \u203a entities \u203a income_record \u2014 entity for an income entry.
 library;
 
 import 'package:libretapp/core/models/timestamped_record.dart';
@@ -32,6 +32,7 @@ class IncomeRecord extends TimestampedRecord {
     required this.amount,
     this.currency,
     this.animalUuid,
+    this.recordUuid,
     super.notes,
     super.id,
   });
@@ -42,6 +43,7 @@ class IncomeRecord extends TimestampedRecord {
 
   /// UUID del animal al que se asocia este ingreso (opcional).
   final String? animalUuid;
+  final String? recordUuid;
 
   IncomeRecord copyWith({
     DateTime? date,
@@ -49,6 +51,7 @@ class IncomeRecord extends TimestampedRecord {
     double? amount,
     String? currency,
     String? animalUuid,
+    String? recordUuid,
     String? notes,
     String? id,
   }) {
@@ -58,6 +61,7 @@ class IncomeRecord extends TimestampedRecord {
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       animalUuid: animalUuid ?? this.animalUuid,
+      recordUuid: recordUuid ?? this.recordUuid,
       notes: notes ?? this.notes,
       id: id ?? this.id,
     );
@@ -70,5 +74,6 @@ class IncomeRecord extends TimestampedRecord {
     amount,
     currency,
     animalUuid,
+    recordUuid,
   ];
 }
