@@ -822,85 +822,83 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required void Function(AnimalEntity) onOpenDetail,
   }) {
     return _CenteredSection(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Slidable(
-          key: ValueKey('slide_${animal.uuid}'),
-          enabled: !state.isSelectionMode,
-          startActionPane: ActionPane(
-            motion: const DrawerMotion(),
-            extentRatio: 0.22,
-            children: [
-              SlidableAction(
-                onPressed: (_) => context.push(
-                  AppRoutes.animalRegistroPesoPath(animal.uuid),
-                ),
-                backgroundColor: Colors.green.shade600,
-                foregroundColor: Colors.white,
-                icon: Icons.monitor_weight_outlined,
-                label: 'Pesar',
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(20),
-                ),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Slidable(
+        key: ValueKey('slide_${animal.uuid}'),
+        enabled: !state.isSelectionMode,
+        startActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.22,
+          children: [
+            SlidableAction(
+              onPressed: (_) =>
+                  context.push(AppRoutes.animalRegistroPesoPath(animal.uuid)),
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+              icon: Icons.monitor_weight_outlined,
+              label: 'Pesar',
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(20),
               ),
-            ],
-          ),
-          endActionPane: ActionPane(
-            motion: const DrawerMotion(),
-            extentRatio: 0.22,
-            children: [
-              SlidableAction(
-                onPressed: (_) => context.push(
-                  AppRoutes.animalRegistroSaludPath(animal.uuid),
-                ),
-                backgroundColor: Colors.blue.shade700,
-                foregroundColor: Colors.white,
-                icon: Icons.medical_services_outlined,
-                label: 'Salud',
-                borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(20),
-                ),
-              ),
-            ],
-          ),
-          child: AnimalCard(
-            key: ValueKey('card_${animal.uuid}'),
-            animal: animal,
-            location: locationResolver(animal),
-            indicatorSnapshot: snapshotResolver(animal),
-            isSelected: state.selectedAnimalUuids.contains(animal.uuid),
-            selectionEnabled: state.isSelectionMode,
-            onMenuAction: (action) => _handleAnimalCardMenuAction(
-              context,
-              animal: animal,
-              action: action,
-              onOpenDetail: () => onOpenDetail(animal),
             ),
-            onQuickMenuOpenChanged: (open) {
-              if (!mounted) return;
-              setState(() {
-                _quickMenuOpen = open;
-                if (!open) {
-                  _quickMenuExtraPadding = 0;
-                }
-              });
-            },
-            onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
-            onTap: () {
-              if (state.isSelectionMode) {
-                context.read<AnimalesBloc>().add(
-                  ToggleAnimalSelection(animal.uuid),
-                );
-                return;
+          ],
+        ),
+        endActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.22,
+          children: [
+            SlidableAction(
+              onPressed: (_) =>
+                  context.push(AppRoutes.animalRegistroSaludPath(animal.uuid)),
+              backgroundColor: Colors.blue.shade700,
+              foregroundColor: Colors.white,
+              icon: Icons.medical_services_outlined,
+              label: 'Salud',
+              borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(20),
+              ),
+            ),
+          ],
+        ),
+        child: AnimalCard(
+          key: ValueKey('card_${animal.uuid}'),
+          animal: animal,
+          location: locationResolver(animal),
+          indicatorSnapshot: snapshotResolver(animal),
+          isSelected: state.selectedAnimalUuids.contains(animal.uuid),
+          selectionEnabled: state.isSelectionMode,
+          onMenuAction: (action) => _handleAnimalCardMenuAction(
+            context,
+            animal: animal,
+            action: action,
+            onOpenDetail: () => onOpenDetail(animal),
+          ),
+          onQuickMenuOpenChanged: (open) {
+            if (!mounted) return;
+            setState(() {
+              _quickMenuOpen = open;
+              if (!open) {
+                _quickMenuExtraPadding = 0;
               }
-              onOpenDetail(animal);
-            },
-            onLongPress: () {
+            });
+          },
+          onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
+          onTap: () {
+            if (state.isSelectionMode) {
               context.read<AnimalesBloc>().add(
                 ToggleAnimalSelection(animal.uuid),
               );
-            },
-          ),
+              return;
+            }
+            onOpenDetail(animal);
+          },
+          onLongPress: () {
+            context.read<AnimalesBloc>().add(
+              ToggleAnimalSelection(animal.uuid),
+            );
+          },
         ),
+      ),
     );
   }
 }

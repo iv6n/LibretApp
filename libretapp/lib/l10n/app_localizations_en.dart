@@ -1055,4 +1055,33 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get detailNoRecordsHint =>
       'Use the + button to add the first record for this animal.';
+
+  @override
+  String get recordEditTitle => 'Correct record';
+
+  @override
+  String get recordEditSaved => 'Record corrected';
+
+  @override
+  String get recordEditNotFound =>
+      'The record you wanted to correct was not found.';
+
+  @override
+  String get recordDeleteTitle => 'Delete record';
+
+  @override
+  String get recordDeleteConfirm =>
+      'Delete this record? You can undo it right after.';
+
+  @override
+  String get recordDeleted => 'Record deleted';
+
+  @override
+  String get recordDeleteUndone => 'Record restored';
+
+  @override
+  String get actionUndo => 'Undo';
+
+  @override
+  String get actionEdit => 'Correct';
 }

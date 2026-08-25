@@ -9,15 +9,23 @@ import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalReproductionFormPage extends StatefulWidget {
-  const AnimalReproductionFormPage({required this.animalUuid, super.key});
+  const AnimalReproductionFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalReproductionFormPage> createState() =>
@@ -30,7 +38,9 @@ class _AnimalReproductionFormPageState
   DateTime _serviceDate = DateTime.now();
   DateTime? _expectedCalvingDate;
   bool _saving = false;
+  bool _loading = false;
   AnimalEntity? _animal;
+  ReproductionRecord? _editing;
   Map<String, AnimalEntity> _herd = const {};
 
   late final TextEditingController _sireController;
@@ -43,6 +53,7 @@ class _AnimalReproductionFormPageState
     _notesController = TextEditingController();
     _projectExpectedCalving();
     _loadAnimal();
+    if (widget.isEditing) _load();
   }
 
   /// Derives the expected calving from the service date using the standard
@@ -67,6 +78,34 @@ class _AnimalReproductionFormPageState
     });
   }
 
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<ReproductionRecordRepository>()
+        .getReproductionRecords(widget.animalUuid);
+    if (!mounted) return;
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+    setState(() {
+      _editing = record;
+      _serviceType = record.serviceType;
+      _serviceDate = record.serviceDate;
+      _expectedCalvingDate = record.expectedCalvingDate;
+      _sireController.text = record.maleSireIdentifier ?? '';
+      _notesController.text = record.notes ?? '';
+      _loading = false;
+    });
+  }
+
   @override
   void dispose() {
     _sireController.dispose();
@@ -75,31 +114,53 @@ class _AnimalReproductionFormPageState
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
     setState(() => _saving = true);
     try {
+      final edited = _editing;
       final record = ReproductionRecord(
-        id: null,
+        id: edited?.id,
         serviceDate: _serviceDate,
         serviceType: _serviceType,
+        maleSireUuid: edited?.maleSireUuid,
         maleSireIdentifier: _sireController.text.trim().isEmpty
             ? null
             : _sireController.text.trim(),
+        pregnancyCheckDate: edited?.pregnancyCheckDate,
+        pregnancyResult: edited?.pregnancyResult,
         expectedCalvingDate: _expectedCalvingDate,
+        actualCalvingDate: edited?.actualCalvingDate,
+        calvingOutcome: edited?.calvingOutcome,
+        calvingEase: edited?.calvingEase,
+        offspringUuids: edited?.offspringUuids ?? const <String>[],
+        calvingNotes: edited?.calvingNotes,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
+        servicedBy: edited?.servicedBy,
+        recordUuid: edited?.recordUuid,
+        updatedAt: edited?.updatedAt,
       );
-      await locator<ReproductionRecordRepository>().addReproductionRecord(
-        widget.animalUuid,
-        record,
-      );
+      final repository = locator<ReproductionRecordRepository>();
+      if (edited != null &&
+          repository is EditableRecordRepository<ReproductionRecord>) {
+        await (repository as EditableRecordRepository<ReproductionRecord>)
+            .updateRecord(widget.animalUuid, record);
+      } else {
+        await repository.addReproductionRecord(widget.animalUuid, record);
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormReproductionSaved)),
+        SnackBar(
+          content: Text(
+            edited != null
+                ? l10n.recordEditSaved
+                : l10n.detailFormReproductionSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -114,8 +175,11 @@ class _AnimalReproductionFormPageState
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormReproductionTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormReproductionTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.healthReproduction,

@@ -13,11 +13,21 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/movem
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalMovementFormPage extends StatefulWidget {
-  const AnimalMovementFormPage({required this.animalUuid, super.key});
+  const AnimalMovementFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the movement being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalMovementFormPage> createState() => _AnimalMovementFormPageState();
@@ -32,7 +42,9 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   MovementReason _reason = MovementReason.paddockRotation;
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _loading = false;
   AnimalEntity? _animal;
+  MovementRecord? _editing;
 
   @override
   void initState() {
@@ -42,6 +54,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
     _notesController = TextEditingController();
     _movedByController = TextEditingController();
     _loadAnimal();
+    if (widget.isEditing) _load();
   }
 
   Future<void> _loadAnimal() async {
@@ -50,6 +63,38 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
     );
     if (!mounted) return;
     setState(() => _animal = animal);
+  }
+
+  /// Hydrates the form from the movement being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<MovementRecordRepository>()
+        .getMovementRecords(widget.animalUuid);
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _fromController.text = record.fromLocation ?? '';
+      _toController.text = record.toLocation;
+      _notesController.text = record.notes ?? '';
+      _movedByController.text = record.movedBy ?? '';
+      _reason = record.reason;
+      _date = record.date;
+      _loading = false;
+    });
   }
 
   @override
@@ -62,7 +107,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     if (_toController.text.trim().isEmpty) {
@@ -74,28 +119,61 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
 
     setState(() => _saving = true);
     try {
-      final record = MovementRecord(
-        id: null,
-        fromLocation: _fromController.text.trim().isEmpty
-            ? null
-            : _fromController.text.trim(),
-        toLocation: _toController.text.trim(),
-        date: _date,
-        reason: _reason,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-        movedBy: _movedByController.text.trim().isEmpty
-            ? null
-            : _movedByController.text.trim(),
-      );
-      await locator<MovementRecordRepository>().addMovementRecord(
-        widget.animalUuid,
-        record,
-      );
+      final repository = locator<MovementRecordRepository>();
+      final edited = _editing;
+
+      if (edited != null &&
+          repository is EditableRecordRepository<MovementRecord>) {
+        await (repository as EditableRecordRepository<MovementRecord>)
+            .updateRecord(
+              widget.animalUuid,
+              MovementRecord(
+                id: edited.id,
+                fromLocation: _fromController.text.trim().isEmpty
+                    ? null
+                    : _fromController.text.trim(),
+                toLocation: _toController.text.trim(),
+                date: _date,
+                reason: _reason,
+                notes: _notesController.text.trim().isEmpty
+                    ? null
+                    : _notesController.text.trim(),
+                movedBy: _movedByController.text.trim().isEmpty
+                    ? null
+                    : _movedByController.text.trim(),
+                recordUuid: edited.recordUuid,
+                updatedAt: edited.updatedAt,
+              ),
+            );
+      } else {
+        await repository.addMovementRecord(
+          widget.animalUuid,
+          MovementRecord(
+            id: null,
+            fromLocation: _fromController.text.trim().isEmpty
+                ? null
+                : _fromController.text.trim(),
+            toLocation: _toController.text.trim(),
+            date: _date,
+            reason: _reason,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+            movedBy: _movedByController.text.trim().isEmpty
+                ? null
+                : _movedByController.text.trim(),
+          ),
+        );
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormMovementSaved)),
+        SnackBar(
+          content: Text(
+            edited != null
+                ? l10n.recordEditSaved
+                : l10n.detailFormMovementSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -110,8 +188,11 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormMovementTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormMovementTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.recordMovement,

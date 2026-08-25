@@ -92,6 +92,21 @@ class CareRepositoryIsar implements CareRepository {
   }
 
   @override
+  Future<void> deleteRecord(String recordId) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final stored = await isar.isarCareRecords
+          .where()
+          .recordUuidEqualTo(recordId)
+          .findFirst();
+      if (stored == null) return;
+      final animalUuid = stored.animalUuid;
+      await isar.isarCareRecords.delete(stored.id);
+      await AnimalActivityTracker.recalculate(isar, animalUuid);
+    });
+  }
+
+  @override
   Future<List<ScheduledCare>> getPending({DateTime? until}) async {
     final isar = await _isar;
     var query = isar.isarScheduledCares.filter().doneEqualTo(false);

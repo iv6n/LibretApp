@@ -1861,6 +1861,60 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Usa el botón + para agregar el primer registro de este animal.'**
   String get detailNoRecordsHint;
+
+  /// No description provided for @recordEditTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Corregir registro'**
+  String get recordEditTitle;
+
+  /// No description provided for @recordEditSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro corregido'**
+  String get recordEditSaved;
+
+  /// No description provided for @recordEditNotFound.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontró el registro que querías corregir.'**
+  String get recordEditNotFound;
+
+  /// No description provided for @recordDeleteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar registro'**
+  String get recordDeleteTitle;
+
+  /// No description provided for @recordDeleteConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Eliminar este registro? Podrás deshacerlo enseguida.'**
+  String get recordDeleteConfirm;
+
+  /// No description provided for @recordDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro eliminado'**
+  String get recordDeleted;
+
+  /// No description provided for @recordDeleteUndone.
+  ///
+  /// In es, this message translates to:
+  /// **'Registro restaurado'**
+  String get recordDeleteUndone;
+
+  /// No description provided for @actionUndo.
+  ///
+  /// In es, this message translates to:
+  /// **'Deshacer'**
+  String get actionUndo;
+
+  /// No description provided for @actionEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Corregir'**
+  String get actionEdit;
 }
 
 class _AppLocalizationsDelegate

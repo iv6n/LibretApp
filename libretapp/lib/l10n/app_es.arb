@@ -232,7 +232,9 @@
   "detailFormMilkingExcludedAnimals": "{count} animales del lote no se muestran porque no son vacas activas.",
   "@detailFormMilkingExcludedAnimals": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "detailFormMilkingSelectLotePrompt": "Selecciona un lote para cargar sus vacas.",
@@ -267,7 +269,9 @@
   "detailFormMilkingCowCount": "{count} vacas registradas",
   "@detailFormMilkingCowCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "registroReproSubtitleFemale": "Hembra: formulario reproductivo completo.",
@@ -275,8 +279,12 @@
   "registroReproAgeWarning": "Aviso: este animal tiene {ageMonths} meses. Se recomienda esperar al menos {minMonths} meses para servicio, pero este formulario no bloquea el registro.",
   "@registroReproAgeWarning": {
     "placeholders": {
-      "ageMonths": { "type": "int" },
-      "minMonths": { "type": "int" }
+      "ageMonths": {
+        "type": "int"
+      },
+      "minMonths": {
+        "type": "int"
+      }
     }
   },
   "registroReproSireMale": "Identificación del macho (opcional)",
@@ -329,5 +337,14 @@
   "animalFormSaveAnimal": "Guardar animal",
   "detailQuickActionsTitle": "Agregar registro",
   "detailNoRecordsYet": "Sin registros aún",
-  "detailNoRecordsHint": "Usa el botón + para agregar el primer registro de este animal."
+  "detailNoRecordsHint": "Usa el botón + para agregar el primer registro de este animal.",
+  "recordEditTitle": "Corregir registro",
+  "recordEditSaved": "Registro corregido",
+  "recordEditNotFound": "No se encontró el registro que querías corregir.",
+  "recordDeleteTitle": "Eliminar registro",
+  "recordDeleteConfirm": "¿Eliminar este registro? Podrás deshacerlo enseguida.",
+  "recordDeleted": "Registro eliminado",
+  "recordDeleteUndone": "Registro restaurado",
+  "actionUndo": "Deshacer",
+  "actionEdit": "Corregir"
 }

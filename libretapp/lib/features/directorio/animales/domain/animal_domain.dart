@@ -25,6 +25,7 @@ export 'services/animal_purpose_indicators.dart';
 export 'services/animal_registration_policy.dart';
 export 'services/animal_registration_normalizer.dart';
 export 'services/animal_taxonomy.dart';
+export 'services/health_care_cycle_service.dart';
 export 'services/animal_presentation.dart';
 export 'services/pedigree_service.dart';
 export 'services/reproduction_scheduler.dart';

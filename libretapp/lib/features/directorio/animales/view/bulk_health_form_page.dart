@@ -94,7 +94,9 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
             border: const OutlineInputBorder(),
           ),
           items: HealthRecordType.values
-              .map((t) => DropdownMenuItem(value: t, child: Text(t.displayName)))
+              .map(
+                (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+              )
               .toList(),
           onChanged: (value) {
             if (value == null) return;

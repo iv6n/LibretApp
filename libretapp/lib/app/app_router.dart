@@ -163,7 +163,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalWeightFormPage(animalUuid: uuid),
+                      child: AnimalWeightFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -174,7 +177,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalReproductionFormPage(animalUuid: uuid),
+                      child: AnimalReproductionFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -185,7 +191,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalHealthFormPage(animalUuid: uuid),
+                      child: AnimalHealthFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -196,7 +205,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalProductionFormPage(animalUuid: uuid),
+                      child: AnimalProductionFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -207,7 +219,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalMovementFormPage(animalUuid: uuid),
+                      child: AnimalMovementFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -218,7 +233,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalCommercialFormPage(animalUuid: uuid),
+                      child: AnimalCommercialFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),
@@ -229,7 +247,10 @@ final router = GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: AnimalCostFormPage(animalUuid: uuid),
+                      child: AnimalCostFormPage(
+                        animalUuid: uuid,
+                        recordId: state.uri.queryParameters['recordId'],
+                      ),
                     );
                   },
                 ),

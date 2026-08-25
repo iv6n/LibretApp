@@ -12,18 +12,25 @@ import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalHealthFormPage extends StatefulWidget {
-  const AnimalHealthFormPage({required this.animalUuid, super.key});
+  const AnimalHealthFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the health record being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalHealthFormPage> createState() => _AnimalHealthFormPageState();
@@ -40,8 +47,10 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   DateTime _date = DateTime.now();
   DateTime? _nextDate;
   bool _saving = false;
+  bool _loading = false;
   AnimalEntity? _animal;
   HealthRecord? _lastRecord;
+  HealthRecord? _editing;
 
   @override
   void initState() {
@@ -52,6 +61,42 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     _causeController = TextEditingController();
     _notesController = TextEditingController();
     _loadAnimal();
+    if (widget.isEditing) _load();
+  }
+
+  /// Hydrates the form from the record being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<HealthRecordRepository>().getHealthRecords(
+      widget.animalUuid,
+    );
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _productController.text = record.product;
+      _doseController.text = record.dose ?? '';
+      _appliedByController.text = record.appliedBy ?? '';
+      _causeController.text = record.cause ?? '';
+      _notesController.text = record.notes ?? '';
+      _type = record.type;
+      _date = record.date;
+      _nextDate = record.nextDueDate;
+      _loading = false;
+    });
   }
 
   Future<void> _loadAnimal() async {
@@ -93,7 +138,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     if (_productController.text.trim().isEmpty) {
@@ -105,8 +150,10 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
 
     setState(() => _saving = true);
     try {
+      final repository = locator<HealthRecordRepository>();
+      final edited = _editing;
       final record = HealthRecord(
-        id: null,
+        id: edited?.id,
         date: _date,
         type: _type,
         product: _productController.text.trim(),
@@ -123,14 +170,30 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
         cause: _causeController.text.trim().isEmpty
             ? null
             : _causeController.text.trim(),
+        medicineBatch: edited?.medicineBatch,
+        withdrawalDays: edited?.withdrawalDays,
+        withdrawalEndDate: edited?.withdrawalEndDate,
+        recordUuid: edited?.recordUuid,
+        updatedAt: edited?.updatedAt,
       );
-      await locator<HealthRecordRepository>().addHealthRecord(
-        widget.animalUuid,
-        record,
-      );
+
+      if (edited != null &&
+          repository is EditableRecordRepository<HealthRecord>) {
+        await (repository as EditableRecordRepository<HealthRecord>)
+            .updateRecord(widget.animalUuid, record);
+      } else {
+        await repository.addHealthRecord(widget.animalUuid, record);
+      }
       var agendaNeedsRetry = false;
       try {
-        await _registerMatchingCareCycle(record);
+        final animal = _animal;
+        if (animal != null) {
+          await locator<HealthCareCycleService>().replace(
+            animal: animal,
+            previous: edited,
+            current: record,
+          );
+        }
         // HealthRecord remains the source of truth; Agenda is reconciled from
         // it immediately so an explicit next date appears in both views.
         await locator<AgendaReminderSyncService>().sync();
@@ -151,6 +214,8 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
           content: Text(
             agendaNeedsRetry
                 ? 'Registro guardado; Agenda se actualizará al sincronizar.'
+                : edited != null
+                ? l10n.recordEditSaved
                 : l10n.detailFormHealthSaved,
           ),
         ),
@@ -163,56 +228,16 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     }
   }
 
-  Future<void> _registerMatchingCareCycle(HealthRecord record) async {
-    final animal = _animal;
-    final careType = switch (record.type) {
-      HealthRecordType.vaccine => CareType.vaccination,
-      HealthRecordType.deworming => CareType.deworming,
-      HealthRecordType.tickBath => CareType.tickBath,
-      HealthRecordType.vitamins => CareType.supplement,
-      _ => null,
-    };
-    if (animal == null || careType == null) return;
-
-    CareRule? rule;
-    for (final candidate in await locator<CareRepository>().getRules()) {
-      if (candidate.type != careType) continue;
-      if (candidate.species != null && candidate.species != animal.species) {
-        continue;
-      }
-      if (candidate.sex != null && candidate.sex != animal.sex) continue;
-      if (candidate.minAgeMonths != null &&
-          animal.ageMonths < candidate.minAgeMonths!) {
-        continue;
-      }
-      if (candidate.maxAgeMonths != null &&
-          animal.ageMonths > candidate.maxAgeMonths!) {
-        continue;
-      }
-      rule = candidate;
-      break;
-    }
-    if (rule == null) return;
-    await locator<CareRepository>().saveRecord(
-      CareRecord(
-        id: 'health-care:${animal.uuid}:${record.type.name}:${record.date.millisecondsSinceEpoch}',
-        animalId: animal.uuid,
-        ruleId: rule.id,
-        type: rule.type,
-        performedAt: record.date,
-        notes: record.notes,
-        performedBy: record.appliedBy,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormHealthTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormHealthTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: assetForHealthRecordType(_type) ?? AppAssetPaths.healthVaccine,

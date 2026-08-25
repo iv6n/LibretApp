@@ -7,14 +7,24 @@ import 'package:intl/intl.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalWeightFormPage extends StatefulWidget {
-  const AnimalWeightFormPage({required this.animalUuid, super.key});
+  const AnimalWeightFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the weighing being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalWeightFormPage> createState() => _AnimalWeightFormPageState();
@@ -27,12 +37,47 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
   WeightMethod _method = WeightMethod.scale;
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _loading = false;
+  WeightRecord? _editing;
 
   @override
   void initState() {
     super.initState();
     _weightController = TextEditingController();
     _notesController = TextEditingController();
+    if (widget.isEditing) _load();
+  }
+
+  /// Hydrates the form from the record being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<WeightRecordRepository>().getWeightRecords(
+      widget.animalUuid,
+    );
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      // Deleted from another screen while this one was opening.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _weightController.text = record.weight.toString();
+      _notesController.text = record.notes ?? '';
+      _method = record.method;
+      _date = record.date;
+      _loading = false;
+    });
   }
 
   @override
@@ -43,7 +88,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final parsed = double.tryParse(_weightController.text.trim());
@@ -56,22 +101,45 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
 
     setState(() => _saving = true);
     try {
-      final record = WeightRecord(
-        id: null,
-        date: _date,
-        weight: parsed,
-        method: _method,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-      await locator<WeightRecordRepository>().addWeightRecord(
-        widget.animalUuid,
-        record,
-      );
+      final notes = _notesController.text.trim();
+      final repository = locator<WeightRecordRepository>();
+      final edited = _editing;
+
+      if (edited != null &&
+          repository is EditableRecordRepository<WeightRecord>) {
+        await (repository as EditableRecordRepository<WeightRecord>)
+            .updateRecord(
+              widget.animalUuid,
+              WeightRecord(
+                id: edited.id,
+                date: _date,
+                weight: parsed,
+                method: _method,
+                notes: notes.isEmpty ? null : notes,
+                measuredBy: edited.measuredBy,
+                recordUuid: edited.recordUuid,
+                updatedAt: edited.updatedAt,
+              ),
+            );
+      } else {
+        await repository.addWeightRecord(
+          widget.animalUuid,
+          WeightRecord(
+            id: null,
+            date: _date,
+            weight: parsed,
+            method: _method,
+            notes: notes.isEmpty ? null : notes,
+          ),
+        );
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormWeightSaved)),
+        SnackBar(
+          content: Text(
+            edited != null ? l10n.recordEditSaved : l10n.detailFormWeightSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -86,8 +154,11 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormWeightTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormWeightTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.healthWeight,

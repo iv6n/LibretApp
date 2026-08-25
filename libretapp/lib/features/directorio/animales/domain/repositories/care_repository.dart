@@ -31,6 +31,9 @@ abstract class CareRepository {
 
   Future<void> saveRecord(CareRecord record);
 
+  /// Removes one performed-care row by its stable record id.
+  Future<void> deleteRecord(String recordId);
+
   /// Pending tasks due on or before [until], soonest first.
   Future<List<ScheduledCare>> getPending({DateTime? until});
 

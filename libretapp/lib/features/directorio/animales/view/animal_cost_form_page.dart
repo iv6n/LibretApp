@@ -10,11 +10,21 @@ import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalCostFormPage extends StatefulWidget {
-  const AnimalCostFormPage({required this.animalUuid, super.key});
+  const AnimalCostFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the record being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalCostFormPage> createState() => _AnimalCostFormPageState();
@@ -28,6 +38,8 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
   CostType _type = CostType.medication;
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _loading = false;
+  CostRecord? _editing;
 
   @override
   void initState() {
@@ -35,6 +47,39 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
     _amountController = TextEditingController();
     _currencyController = TextEditingController(text: 'USD');
     _notesController = TextEditingController();
+    if (widget.isEditing) _load();
+  }
+
+  /// Hydrates the form from the record being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<CostRecordRepository>().getCostRecords(
+      widget.animalUuid,
+    );
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _amountController.text = record.amount.toString();
+      _currencyController.text = record.currency ?? '';
+      _notesController.text = record.notes ?? '';
+      _type = record.type;
+      _date = record.date;
+      _loading = false;
+    });
   }
 
   @override
@@ -46,7 +91,7 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final amount = double.tryParse(_amountController.text.trim());
@@ -59,24 +104,51 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
 
     setState(() => _saving = true);
     try {
-      final record = CostRecord(
-        id: null,
-        date: _date,
-        type: _type,
-        amount: amount,
-        currency: _currencyController.text.trim().isEmpty
-            ? null
-            : _currencyController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-      await locator<CostRecordRepository>().addCostRecord(
-        widget.animalUuid,
-        record,
-      );
+      final repository = locator<CostRecordRepository>();
+      final edited = _editing;
+
+      if (edited != null &&
+          repository is EditableRecordRepository<CostRecord>) {
+        await (repository as EditableRecordRepository<CostRecord>).updateRecord(
+          widget.animalUuid,
+          CostRecord(
+            id: edited.id,
+            date: _date,
+            type: _type,
+            amount: amount,
+            currency: _currencyController.text.trim().isEmpty
+                ? null
+                : _currencyController.text.trim(),
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
+        );
+      } else {
+        await repository.addCostRecord(
+          widget.animalUuid,
+          CostRecord(
+            id: null,
+            date: _date,
+            type: _type,
+            amount: amount,
+            currency: _currencyController.text.trim().isEmpty
+                ? null
+                : _currencyController.text.trim(),
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
+        );
+      }
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(l10n.detailFormCostSaved)));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            edited != null ? l10n.recordEditSaved : l10n.detailFormCostSaved,
+          ),
+        ),
+      );
       context.pop(true);
     } catch (_) {
       if (!mounted) return;
@@ -90,8 +162,9 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormCostTitle,
+      title: widget.isEditing ? l10n.recordEditTitle : l10n.detailFormCostTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.recordCost,

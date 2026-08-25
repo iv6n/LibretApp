@@ -97,6 +97,11 @@ class _InMemoryCareRepository implements CareRepository {
   Future<void> saveRecord(CareRecord record) async => _records.add(record);
 
   @override
+  Future<void> deleteRecord(String recordId) async {
+    _records.removeWhere((record) => record.id == recordId);
+  }
+
+  @override
   Future<List<ScheduledCare>> getPending({DateTime? until}) async {
     final tasks = _schedules.values.where((s) => !s.done);
     if (until == null) return tasks.toList();

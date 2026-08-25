@@ -1061,4 +1061,33 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get detailNoRecordsHint =>
       'Usa el botón + para agregar el primer registro de este animal.';
+
+  @override
+  String get recordEditTitle => 'Corregir registro';
+
+  @override
+  String get recordEditSaved => 'Registro corregido';
+
+  @override
+  String get recordEditNotFound =>
+      'No se encontró el registro que querías corregir.';
+
+  @override
+  String get recordDeleteTitle => 'Eliminar registro';
+
+  @override
+  String get recordDeleteConfirm =>
+      '¿Eliminar este registro? Podrás deshacerlo enseguida.';
+
+  @override
+  String get recordDeleted => 'Registro eliminado';
+
+  @override
+  String get recordDeleteUndone => 'Registro restaurado';
+
+  @override
+  String get actionUndo => 'Deshacer';
+
+  @override
+  String get actionEdit => 'Corregir';
 }

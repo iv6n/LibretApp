@@ -10,11 +10,21 @@ import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalCommercialFormPage extends StatefulWidget {
-  const AnimalCommercialFormPage({required this.animalUuid, super.key});
+  const AnimalCommercialFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the record being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalCommercialFormPage> createState() =>
@@ -30,6 +40,8 @@ class _AnimalCommercialFormPageState extends State<AnimalCommercialFormPage> {
   CommercialRecordType _type = CommercialRecordType.purchase;
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _loading = false;
+  CommercialRecord? _editing;
 
   @override
   void initState() {
@@ -38,6 +50,39 @@ class _AnimalCommercialFormPageState extends State<AnimalCommercialFormPage> {
     _currencyController = TextEditingController(text: 'USD');
     _counterpartyController = TextEditingController();
     _notesController = TextEditingController();
+    if (widget.isEditing) _load();
+  }
+
+  /// Hydrates the form from the record being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<CommercialRecordRepository>()
+        .getCommercialRecords(widget.animalUuid);
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _amountController.text = record.amount?.toString() ?? '';
+      _currencyController.text = record.currency ?? '';
+      _counterpartyController.text = record.counterparty ?? '';
+      _notesController.text = record.notes ?? '';
+      _type = record.type;
+      _date = record.date;
+      _loading = false;
+    });
   }
 
   @override
@@ -50,35 +95,66 @@ class _AnimalCommercialFormPageState extends State<AnimalCommercialFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
     setState(() => _saving = true);
     try {
       final amount = double.tryParse(_amountController.text.trim());
-      final record = CommercialRecord(
-        id: null,
-        date: _date,
-        type: _type,
-        amount: amount,
-        currency: _currencyController.text.trim().isEmpty
-            ? null
-            : _currencyController.text.trim(),
-        counterparty: _counterpartyController.text.trim().isEmpty
-            ? null
-            : _counterpartyController.text.trim(),
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-      await locator<CommercialRecordRepository>().addCommercialRecord(
-        widget.animalUuid,
-        record,
-      );
+      final repository = locator<CommercialRecordRepository>();
+      final edited = _editing;
+
+      if (edited != null &&
+          repository is EditableRecordRepository<CommercialRecord>) {
+        await (repository as EditableRecordRepository<CommercialRecord>)
+            .updateRecord(
+              widget.animalUuid,
+              CommercialRecord(
+                id: edited.id,
+                date: _date,
+                type: _type,
+                amount: amount,
+                currency: _currencyController.text.trim().isEmpty
+                    ? null
+                    : _currencyController.text.trim(),
+                counterparty: _counterpartyController.text.trim().isEmpty
+                    ? null
+                    : _counterpartyController.text.trim(),
+                notes: _notesController.text.trim().isEmpty
+                    ? null
+                    : _notesController.text.trim(),
+              ),
+            );
+      } else {
+        await repository.addCommercialRecord(
+          widget.animalUuid,
+          CommercialRecord(
+            id: null,
+            date: _date,
+            type: _type,
+            amount: amount,
+            currency: _currencyController.text.trim().isEmpty
+                ? null
+                : _currencyController.text.trim(),
+            counterparty: _counterpartyController.text.trim().isEmpty
+                ? null
+                : _counterpartyController.text.trim(),
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
+        );
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormCommercialSaved)),
+        SnackBar(
+          content: Text(
+            edited != null
+                ? l10n.recordEditSaved
+                : l10n.detailFormCommercialSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -93,8 +169,11 @@ class _AnimalCommercialFormPageState extends State<AnimalCommercialFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormCommercialTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormCommercialTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.recordSale,

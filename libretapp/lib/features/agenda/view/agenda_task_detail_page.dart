@@ -14,21 +14,14 @@ import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_event.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_state.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
-import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
-import 'package:libretapp/features/agenda/domain/agenda_realize_strategy.dart';
 import 'package:libretapp/features/agenda/domain/agenda_registration.dart';
 import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
 import 'package:libretapp/features/agenda/view/agenda_registration_flow_page.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_registration_table.dart';
-import 'package:libretapp/features/agenda/widgets/agenda_bulk_movement_sheet.dart';
-import 'package:libretapp/features/agenda/widgets/agenda_form_queue.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
-import 'package:libretapp/features/registro/view/bulk_health_registro_page.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AgendaTaskDetailPage extends StatefulWidget {
@@ -225,118 +218,6 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     return values;
   }
 
-  Future<void> _markCompleted(String animalUuid) async {
-    final entryIds = _entryIdsByAnimal[animalUuid] ?? const <String>{};
-    final bloc = context.read<AgendaBloc>();
-    for (final entryId in entryIds) {
-      if (!mounted) return;
-      final source = _entriesById[entryId];
-      if (source == null ||
-          source.completedAnimalIds.contains(animalUuid) ||
-          _entryIsTerminal(source)) {
-        continue;
-      }
-
-      // Saving the domain record can reconcile an automatic occurrence before
-      // this event reaches the bloc. The domain operation already succeeded;
-      // there is simply no Agenda row left to mark as completed.
-      try {
-        final current = await bloc.repository.getEntry(entryId);
-        if (current.completedAnimalIds.contains(animalUuid) ||
-            _entryIsTerminal(current)) {
-          continue;
-        }
-      } on StateError {
-        continue;
-      }
-      bloc.add(MarkAnimalCompleted(entryId: entryId, animalId: animalUuid));
-    }
-    if (!mounted) return;
-    setState(() {
-      final now = DateTime.now();
-      for (final entryId in entryIds) {
-        final source = _entriesById[entryId];
-        if (source == null) continue;
-        final completed = {...source.completedAnimalIds, animalUuid}.toList();
-        final allDone =
-            source.animalIds.isNotEmpty &&
-            source.animalIds.every(completed.contains);
-        _entriesById[entryId] = source.copyWith(
-          completedAnimalIds: completed,
-          estado: allDone ? AgendaEstado.completado : AgendaEstado.enProgreso,
-          fechaCompletado: allDone ? now : source.fechaCompletado,
-        );
-      }
-      _entry = _entriesById[_entry.id] ?? _entriesById.values.first;
-      _selectedAnimalIds.remove(animalUuid);
-    });
-    await _closeIfGroupConsumed();
-  }
-
-  Future<void> _closeIfGroupConsumed() async {
-    if (!mounted || _entriesById.isEmpty) return;
-    List<AgendaEntry> currentEntries;
-    try {
-      currentEntries = await context
-          .read<AgendaBloc>()
-          .repository
-          .fetchEntries();
-    } catch (_) {
-      return;
-    }
-    final stillRepresented = currentEntries.any(
-      (entry) => _entriesById.containsKey(entry.id),
-    );
-    if (!stillRepresented && mounted) Navigator.of(context).pop();
-  }
-
-  /// Advances the care calendar when an automatic care reminder is executed.
-  /// Without this record, the completed card would disappear but the next
-  /// occurrence of the vaccination/deworming protocol would never be dated.
-  Future<void> _recordCareExecution(String animalUuid) async {
-    final careEntries = (_entryIdsByAnimal[animalUuid] ?? const <String>{})
-        .map((id) => _entriesById[id])
-        .whereType<AgendaEntry>()
-        .where((entry) => entry.id.startsWith('auto:care:'))
-        .toList(growable: false);
-    if (careEntries.isEmpty) return;
-
-    try {
-      final repository = locator<CareRepository>();
-      final rules = {
-        for (final rule in await repository.getRules()) rule.id: rule,
-      };
-      final performedAt = DateTime.now();
-      for (final source in careEntries) {
-        final parts = source.id.split(':');
-        if (parts.length < 5) continue;
-        final rule = rules[parts[3]];
-        if (rule == null) continue;
-        await repository.saveRecord(
-          CareRecord(
-            id: 'agenda-care:${source.id}',
-            animalId: animalUuid,
-            ruleId: rule.id,
-            type: rule.type,
-            performedAt: performedAt,
-            notes: 'Registrado desde Agenda: ${widget.group.titulo}',
-          ),
-        );
-      }
-      await locator<AgendaReminderSyncService>().sync();
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'La tarea se completó, pero no se pudo actualizar el calendario '
-            'de cuidados.',
-          ),
-        ),
-      );
-    }
-  }
-
   void _changeStatus(String status, {String reason = ''}) {
     final bloc = context.read<AgendaBloc>();
     for (final source in _sourceEntries) {
@@ -498,73 +379,6 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     setState(() => _entry = updated);
   }
 
-  Future<void> _openRegistroForm(
-    BuildContext context,
-    AnimalEntity animal,
-  ) async {
-    final tipo = _entry.tipo.toLowerCase();
-
-    Future<void> onSaved() async {
-      await _recordCareExecution(animal.uuid);
-      if (!mounted) return;
-      await _markCompleted(animal.uuid);
-      if (mounted) {
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(
-            content: Text('Registro guardado para ${_animalLabel(animal)}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-
-    if (tipo == 'vacunación' ||
-        tipo == 'desparasitación' ||
-        tipo == 'revisión veterinaria' ||
-        tipo == 'mantenimiento') {
-      final saved = await context.pushNamed(
-        AppRoutes.nameAnimalRegistroSalud,
-        pathParameters: {'uuid': animal.uuid},
-      );
-      if (saved == true) await onSaved();
-    } else if (tipo == 'pesaje') {
-      final saved = await context.pushNamed(
-        AppRoutes.nameAnimalRegistroPeso,
-        pathParameters: {'uuid': animal.uuid},
-      );
-      if (saved == true) await onSaved();
-    } else if (tipo == 'inseminación' || tipo == 'parto') {
-      final saved = await context.pushNamed(
-        AppRoutes.nameAnimalRegistroReproduccion,
-        pathParameters: {'uuid': animal.uuid},
-      );
-      if (saved == true) await onSaved();
-    } else {
-      // Generic: just mark as completed with a confirm dialog
-      final confirmed = await showDialog<bool>(
-        context: context,
-        useRootNavigator: true,
-        builder: (ctx) => AlertDialog(
-          title: Text('Registrar: ${_animalLabel(animal)}'),
-          content: Text(
-            '¿Confirmar que se realizó "${_entry.tipo}" para este animal?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed == true) await onSaved();
-    }
-  }
-
   AgendaTaskRow _rowForAnimal(String animalId) {
     for (final row in widget.group.rows) {
       if (row.animalId == animalId) return row;
@@ -670,108 +484,6 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     if (result != null && mounted) {
       context.read<AgendaBloc>().add(const RefreshAgenda());
     }
-  }
-
-  Future<void> _realizeSelected() async {
-    final ids = _selectedAnimalIds
-        .where((id) => !_isAnimalCompleted(id))
-        .toList(growable: false);
-    if (ids.isEmpty) return;
-
-    switch (realizeStrategyForCategoria(widget.group.categoria)) {
-      case AgendaRealizeStrategy.bulkHealth:
-        final result = await Navigator.of(context).push<List<String>>(
-          MaterialPageRoute(
-            builder: (_) => BulkHealthRegistroPage(
-              initialAnimalUuids: ids,
-              initialType: healthRecordTypeForAgendaTipo(widget.group.tipo),
-            ),
-          ),
-        );
-        if (result == null || !mounted) return;
-        for (final animalId in result) {
-          await _recordCareExecution(animalId);
-          if (!mounted) return;
-          await _markCompleted(animalId);
-        }
-      case AgendaRealizeStrategy.bulkMovement:
-        final animals = ids
-            .map(
-              (id) =>
-                  _allAnimals.where((animal) => animal.uuid == id).firstOrNull,
-            )
-            .whereType<AnimalEntity>()
-            .toList(growable: false);
-        final saved = await showAgendaBulkMovementSheet(
-          context,
-          animals: animals,
-        );
-        if (saved == true && mounted) {
-          for (final animalId in ids) {
-            await _markCompleted(animalId);
-          }
-        }
-      case AgendaRealizeStrategy.queuedReproduction:
-        await _runQueuedForms(
-          ids,
-          routeName: AppRoutes.nameAnimalRegistroReproduccion,
-        );
-      case AgendaRealizeStrategy.queuedWeight:
-        await _runQueuedForms(ids, routeName: AppRoutes.nameAnimalRegistroPeso);
-      case AgendaRealizeStrategy.none:
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text('Completar ${widget.group.titulo}'),
-            content: Text(
-              '¿Confirmar la tarea para ${ids.length} '
-              '${ids.length == 1 ? 'animal' : 'animales'}?',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Confirmar'),
-              ),
-            ],
-          ),
-        );
-        if (confirmed == true && mounted) {
-          for (final animalId in ids) {
-            await _markCompleted(animalId);
-          }
-        }
-    }
-  }
-
-  Future<void> _runQueuedForms(
-    List<String> animalUuids, {
-    required String routeName,
-  }) async {
-    await runAgendaFormQueue<bool>(
-      animalUuids: animalUuids,
-      shouldContinue: () => mounted,
-      isSuccess: (result) => result == true,
-      pushStep: (uuid, index, total) async {
-        if (!mounted) return null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Animal ${index + 1} de $total'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return context.pushNamed<bool>(
-          routeName,
-          pathParameters: {'uuid': uuid},
-        );
-      },
-      onStepSuccess: (animalUuid) async {
-        await _markCompleted(animalUuid);
-      },
-    );
   }
 
   @override

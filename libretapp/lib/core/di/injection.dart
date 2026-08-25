@@ -75,6 +75,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/health_care_cycle_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -251,6 +252,9 @@ void _registerDirectorioAnimales() {
     )
     ..registerLazySingleton<CareCalendarService>(
       () => CareCalendarService(locator<CareRepository>()),
+    )
+    ..registerLazySingleton<HealthCareCycleService>(
+      () => HealthCareCycleService(locator<CareRepository>()),
     )
     ..registerLazySingleton<AnimalEditService>(
       () => AnimalEditService(

@@ -11,11 +11,21 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalProductionFormPage extends StatefulWidget {
-  const AnimalProductionFormPage({required this.animalUuid, super.key});
+  const AnimalProductionFormPage({
+    required this.animalUuid,
+    this.recordId,
+    super.key,
+  });
 
   final String animalUuid;
+
+  /// Id of the record being corrected, or null to add a new one.
+  final String? recordId;
+
+  bool get isEditing => recordId != null;
 
   @override
   State<AnimalProductionFormPage> createState() =>
@@ -31,6 +41,8 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
   ProductionRecordType _type = ProductionRecordType.weighing;
   DateTime _date = DateTime.now();
   bool _saving = false;
+  bool _loading = false;
+  ProductionRecord? _editing;
 
   @override
   void initState() {
@@ -39,6 +51,39 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
     _unitController = TextEditingController();
     _scoreController = TextEditingController();
     _notesController = TextEditingController();
+    if (widget.isEditing) _load();
+  }
+
+  /// Hydrates the form from the record being corrected.
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final records = await locator<ProductionRecordRepository>()
+        .getProductionRecords(widget.animalUuid);
+    if (!mounted) return;
+
+    final record = records
+        .where((candidate) => candidate.id == widget.recordId)
+        .firstOrNull;
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).recordEditNotFound),
+        ),
+      );
+      context.pop(false);
+      return;
+    }
+
+    setState(() {
+      _editing = record;
+      _valueController.text = record.value?.toString() ?? '';
+      _unitController.text = record.unit ?? '';
+      _scoreController.text = record.score?.toString() ?? '';
+      _notesController.text = record.notes ?? '';
+      _type = record.type;
+      _date = record.date;
+      _loading = false;
+    });
   }
 
   @override
@@ -51,7 +96,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving) return;
+    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -88,26 +133,55 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
 
     setState(() => _saving = true);
     try {
-      final record = ProductionRecord(
-        id: null,
-        date: _date,
-        type: _type,
-        value: value,
-        unit: _unitController.text.trim().isEmpty
-            ? null
-            : _unitController.text.trim(),
-        score: score,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-      await locator<ProductionRecordRepository>().addProductionRecord(
-        widget.animalUuid,
-        record,
-      );
+      final repository = locator<ProductionRecordRepository>();
+      final edited = _editing;
+
+      if (edited != null &&
+          repository is EditableRecordRepository<ProductionRecord>) {
+        await (repository as EditableRecordRepository<ProductionRecord>)
+            .updateRecord(
+              widget.animalUuid,
+              ProductionRecord(
+                id: edited.id,
+                date: _date,
+                type: _type,
+                value: value,
+                unit: _unitController.text.trim().isEmpty
+                    ? null
+                    : _unitController.text.trim(),
+                score: score,
+                notes: _notesController.text.trim().isEmpty
+                    ? null
+                    : _notesController.text.trim(),
+              ),
+            );
+      } else {
+        await repository.addProductionRecord(
+          widget.animalUuid,
+          ProductionRecord(
+            id: null,
+            date: _date,
+            type: _type,
+            value: value,
+            unit: _unitController.text.trim().isEmpty
+                ? null
+                : _unitController.text.trim(),
+            score: score,
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
+        );
+      }
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormProductionSaved)),
+        SnackBar(
+          content: Text(
+            edited != null
+                ? l10n.recordEditSaved
+                : l10n.detailFormProductionSaved,
+          ),
+        ),
       );
       context.pop(true);
     } catch (_) {
@@ -122,8 +196,11 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return RecordFormScaffold(
-      title: l10n.detailFormProductionTitle,
+      title: widget.isEditing
+          ? l10n.recordEditTitle
+          : l10n.detailFormProductionTitle,
       saving: _saving,
+      loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath:

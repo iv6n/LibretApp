@@ -13,12 +13,12 @@
   "animalsEmptyTitle": "No animals found",
   "animalsEmptySubtitle": "Adjust filters or search",
   "animalsSearchHint": "Search by ear tag, name or breed",
-    "animalsAdvancedSearch": "Advanced search",
-    "animalsRecentSearches": "Recent searches",
-    "animalsRecentActivity": "Recent activity",
-    "animalsClearHistory": "Clear history",
-    "animalsFilters": "Filters",
-    "animalsNoResults": "No results",
+  "animalsAdvancedSearch": "Advanced search",
+  "animalsRecentSearches": "Recent searches",
+  "animalsRecentActivity": "Recent activity",
+  "animalsClearHistory": "Clear history",
+  "animalsFilters": "Filters",
+  "animalsNoResults": "No results",
   "animalsStageFilterLabel": "Stage filters",
   "animalsOnlyAttention": "Only attention",
   "animalsOnlyPendingTag": "Pending tag",
@@ -232,7 +232,9 @@
   "detailFormMilkingExcludedAnimals": "{count} animals in the lot aren't shown because they aren't active cows.",
   "@detailFormMilkingExcludedAnimals": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "detailFormMilkingSelectLotePrompt": "Select a lot to load its cows.",
@@ -267,7 +269,9 @@
   "detailFormMilkingCowCount": "{count} cows registered",
   "@detailFormMilkingCowCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "registroReproSubtitleFemale": "Female: full reproductive form.",
@@ -275,8 +279,12 @@
   "registroReproAgeWarning": "Notice: this animal is {ageMonths} months old. Minimum recommended age is {minMonths} months, but this form does not block registration.",
   "@registroReproAgeWarning": {
     "placeholders": {
-      "ageMonths": { "type": "int" },
-      "minMonths": { "type": "int" }
+      "ageMonths": {
+        "type": "int"
+      },
+      "minMonths": {
+        "type": "int"
+      }
     }
   },
   "registroReproSireMale": "Male identifier (optional)",
@@ -329,5 +337,14 @@
   "animalFormSaveAnimal": "Save animal",
   "detailQuickActionsTitle": "Add record",
   "detailNoRecordsYet": "No records yet",
-  "detailNoRecordsHint": "Use the + button to add the first record for this animal."
+  "detailNoRecordsHint": "Use the + button to add the first record for this animal.",
+  "recordEditTitle": "Correct record",
+  "recordEditSaved": "Record corrected",
+  "recordEditNotFound": "The record you wanted to correct was not found.",
+  "recordDeleteTitle": "Delete record",
+  "recordDeleteConfirm": "Delete this record? You can undo it right after.",
+  "recordDeleted": "Record deleted",
+  "recordDeleteUndone": "Record restored",
+  "actionUndo": "Undo",
+  "actionEdit": "Correct"
 }

@@ -26,12 +26,14 @@ class RecordFormScaffold extends StatelessWidget {
     this.formKey,
     this.assetPath,
     this.fallbackIcon = Icons.description_outlined,
+    this.loading = false,
     super.key,
   });
 
   final String title;
   final List<Widget> fields;
   final bool saving;
+  final bool loading;
   final VoidCallback onSave;
   final String saveLabel;
 
@@ -68,13 +70,17 @@ class RecordFormScaffold extends StatelessWidget {
                 fallbackIcon: fallbackIcon,
               ),
       ),
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: formKey == null ? column : Form(key: formKey, child: column),
-        ),
-      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: formKey == null
+                    ? column
+                    : Form(key: formKey, child: column),
+              ),
+            ),
     );
   }
 }
