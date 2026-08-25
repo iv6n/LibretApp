@@ -5,6 +5,7 @@ library;
 class AppRoutes {
   static const directorio = '/directorio';
   static const inicio = '/';
+  static const onboarding = '/bienvenida';
   static const animales = '/directorio?tab=animales';
   static const animalNuevo = '/directorio/animales/nuevo';
   static const animalNuevoRapido = '/directorio/animales/nuevo-rapido';
@@ -57,6 +58,7 @@ class AppRoutes {
 
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
+  static const nameOnboarding = 'onboarding';
   static const nameAnimalNuevo = 'animal_nuevo';
   static const nameAnimalNuevoRapido = 'animal_nuevo_rapido';
   static const nameAnimalDetalle = 'animal_detalle';

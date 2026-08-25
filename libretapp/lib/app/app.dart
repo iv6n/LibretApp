@@ -7,15 +7,17 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_bloc.dart';
-import 'package:libretapp/app/app_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/theme.dart';
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.router});
+
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {

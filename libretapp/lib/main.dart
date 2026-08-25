@@ -12,6 +12,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/app/app_index.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Opt-in gate for `DemoScenarioService.install()` at startup — never set in
@@ -98,6 +100,14 @@ void main() async {
     }
     startupSpan.stop(context: {'phase': 'bootstrap'});
 
+    final showWelcome = await OnboardingStartupService(
+      preferences: locator<SharedPrefsService>(),
+      animalRepository: locator<AnimalRepository>(),
+    ).shouldShowWelcome();
+    final appRouter = createAppRouter(
+      initialLocation: showWelcome ? AppRoutes.onboarding : AppRoutes.inicio,
+    );
+
     runApp(
       MultiBlocProvider(
         providers: [
@@ -114,7 +124,7 @@ void main() async {
                   ..add(const AppStarted()),
           ),
         ],
-        child: const LibretApp(),
+        child: LibretApp(router: appRouter),
       ),
     );
   } catch (e, st) {
@@ -124,11 +134,15 @@ void main() async {
 }
 
 class LibretApp extends StatelessWidget {
-  const LibretApp({super.key});
+  const LibretApp({super.key, this.router});
+
+  final GoRouter? router;
 
   @override
   Widget build(BuildContext context) {
-    return const MyApp();
+    return MyApp(
+      router: router ?? createAppRouter(initialLocation: AppRoutes.inicio),
+    );
   }
 }
 

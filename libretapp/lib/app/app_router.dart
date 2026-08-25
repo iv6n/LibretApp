@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -29,15 +30,35 @@ import 'package:libretapp/features/biblioteca/biblioteca.dart';
 import 'package:libretapp/features/finanzas/finanzas.dart';
 import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/milking/milking.dart';
+import 'package:libretapp/features/onboarding/onboarding_page.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
 import 'package:libretapp/features/reportes/reportes.dart';
 import 'package:libretapp/features/registro/registro.dart';
 import 'package:libretapp/features/exportar/exportar.dart';
 import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
 
-final router = GoRouter(
+GoRouter createAppRouter({required String initialLocation}) => GoRouter(
+  initialLocation: initialLocation,
+  overridePlatformDefaultLocation: initialLocation == AppRoutes.onboarding,
   observers: [NavigationTracer.observer],
   routes: [
+    GoRoute(
+      path: AppRoutes.onboarding,
+      name: AppRoutes.nameOnboarding,
+      builder: (context, state) => OnboardingPage(
+        onStartEmpty: () => OnboardingStartupService(
+          preferences: locator<SharedPrefsService>(),
+          animalRepository: locator<AnimalRepository>(),
+        ).markCompleted(),
+        onInstallDemo: () async {
+          await locator<DemoScenarioService>().install(reset: false);
+          await OnboardingStartupService(
+            preferences: locator<SharedPrefsService>(),
+            animalRepository: locator<AnimalRepository>(),
+          ).markCompleted();
+        },
+      ),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           AppShell(navigationShell: navigationShell),

@@ -14,6 +14,7 @@ class PrefsKeys {
   static const appLanguage = 'app.language';
   static const appTheme = 'app.theme';
   static const animalWizardDraft = 'animal.wizard.draft';
+  static const onboardingCompletedV1 = 'onboarding.completed.v1';
 
   /// Versioned so a rule-set change (`DefaultCareRules.version`) reaches
   /// herds that already ran an earlier preload, without resurrecting rules
