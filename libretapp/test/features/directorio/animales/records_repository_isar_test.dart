@@ -345,6 +345,66 @@ void main() {
 
   // ─── ProductionRecord ─────────────────────────────────────────────────────
 
+  group('recent-activity lookups', () {
+    test('devuelven los mas recientes de todo el hato, con su animal', () async {
+      final movements = MovementRecordRepositoryIsar(IsarDatabase());
+      final health = HealthRecordRepositoryIsar(IsarDatabase());
+
+      // Three animals, interleaved dates, so "most recent" cannot be
+      // satisfied by reading one animal's records in isolation.
+      for (final (animal, day) in [
+        ('animal-recent-a', 1),
+        ('animal-recent-b', 5),
+        ('animal-recent-c', 3),
+      ]) {
+        await movements.addMovementRecord(
+          animal,
+          MovementRecord(
+            date: DateTime(2025, 7, day),
+            toLocation: 'Potrero $day',
+            reason: MovementReason.paddockRotation,
+          ),
+        );
+        await health.addHealthRecord(
+          animal,
+          HealthRecord(
+            date: DateTime(2025, 7, day),
+            type: HealthRecordType.vaccine,
+            product: 'Producto $day',
+          ),
+        );
+      }
+
+      final recentMovements = await movements.getRecentMovementRecords(
+        limit: 2,
+      );
+      expect(recentMovements, hasLength(2));
+      expect(recentMovements.first.animalUuid, 'animal-recent-b');
+      expect(recentMovements.first.record.date, DateTime(2025, 7, 5));
+      expect(recentMovements.last.animalUuid, 'animal-recent-c');
+
+      final recentHealth = await health.getRecentHealthRecords(limit: 2);
+      expect(recentHealth, hasLength(2));
+      expect(recentHealth.first.animalUuid, 'animal-recent-b');
+      expect(recentHealth.last.animalUuid, 'animal-recent-c');
+    });
+
+    test('respetan el limite pedido', () async {
+      final movements = MovementRecordRepositoryIsar(IsarDatabase());
+      for (var i = 0; i < 4; i++) {
+        await movements.addMovementRecord(
+          'animal-limit',
+          MovementRecord(
+            date: DateTime(2025, 8, i + 1),
+            toLocation: 'Potrero $i',
+            reason: MovementReason.paddockRotation,
+          ),
+        );
+      }
+      expect(await movements.getRecentMovementRecords(limit: 3), hasLength(3));
+    });
+  });
+
   group('ProductionRecordRepositoryIsar', () {
     test(
       'guarda y lee un registro productivo con todos sus campos',

@@ -13,7 +13,10 @@ import 'package:uuid/uuid.dart';
 
 class HealthRecordRepositoryIsar
     extends IsarRecordRepositoryBase<HealthRecord, IsarHealthRecord>
-    implements HealthRecordRepository, HealthRecordUuidLookup {
+    implements
+        HealthRecordRepository,
+        HealthRecordUuidLookup,
+        HealthRecordRecentLookup {
   HealthRecordRepositoryIsar(super.database);
 
   @override
@@ -50,6 +53,20 @@ class HealthRecordRepositoryIsar
   @override
   Future<List<HealthRecord>> getHealthRecords(String animalUuid) =>
       getRecordsFor(animalUuid);
+
+  @override
+  Future<List<({String animalUuid, HealthRecord record})>>
+  getRecentHealthRecords({int limit = 5}) async {
+    final db = await isar;
+    final models = await db.isarHealthRecords
+        .where()
+        .sortByDateDesc()
+        .limit(limit)
+        .findAll();
+    return models
+        .map((m) => (animalUuid: m.animalUuid, record: m.toEntity()))
+        .toList(growable: false);
+  }
 
   @override
   Future<Map<String, HealthRecord>> getHealthRecordsByRecordUuids(

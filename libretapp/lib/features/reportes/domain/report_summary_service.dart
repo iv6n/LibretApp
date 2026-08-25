@@ -3,6 +3,8 @@ library;
 
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -27,6 +29,29 @@ class ReportSummaryService {
   final ReproductionRecordRepository _reproductionRepository;
   final HealthRecordRepository _healthRepository;
   final MovementRecordRepository _movementRepository;
+
+  Future<List<({String animalUuid, MovementRecord record})>> _recentMovements(
+    int limit,
+  ) async {
+    final repository = _movementRepository;
+    if (repository is MovementRecordRecentLookup) {
+      return (repository as MovementRecordRecentLookup)
+          .getRecentMovementRecords(limit: limit);
+    }
+    return const [];
+  }
+
+  Future<List<({String animalUuid, HealthRecord record})>> _recentHealth(
+    int limit,
+  ) async {
+    final repository = _healthRepository;
+    if (repository is HealthRecordRecentLookup) {
+      return (repository as HealthRecordRecentLookup).getRecentHealthRecords(
+        limit: limit,
+      );
+    }
+    return const [];
+  }
 
   Future<ReportSummary> loadSummary() async {
     final now = DateTime.now();
@@ -78,41 +103,49 @@ class ReportSummaryService {
             .toList(growable: false)
           ..sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
 
-    final recentMovements = <RecentRecordItem>[];
-    final recentRecords = <RecentRecordItem>[];
+    // Two queries for the whole herd rather than two per animal. The old
+    // loop asked each animal for its movements and its health records, built
+    // a RecentRecordItem for every row in the herd, sorted both lists, and
+    // then kept five of each.
+    const recentLimit = 5;
+    final recentRaw = await Future.wait([
+      _recentMovements(recentLimit),
+      _recentHealth(recentLimit),
+    ]);
 
-    for (final animal in animals) {
-      final movements = await _movementRepository.getMovementRecords(
-        animal.uuid,
-      );
-      for (final m in movements) {
-        recentMovements.add(
-          RecentRecordItem(
-            title: 'Movimiento',
-            subtitle: m.notes ?? '${m.reason.displayName} → ${m.toLocation}',
-            date: m.date,
-            animalTag: animal.earTagNumber,
-            route: AppRoutes.animalDetallePath(animal.uuid),
-          ),
-        );
-      }
+    final recentMovements =
+        (recentRaw[0] as List<({String animalUuid, MovementRecord record})>)
+            .map((entry) {
+              final animal = animalMap[entry.animalUuid];
+              if (animal == null) return null;
+              final m = entry.record;
+              return RecentRecordItem(
+                title: 'Movimiento',
+                subtitle: m.notes ?? '${m.reason.displayName} → ${m.toLocation}',
+                date: m.date,
+                animalTag: animal.earTagNumber,
+                route: AppRoutes.animalDetallePath(animal.uuid),
+              );
+            })
+            .whereType<RecentRecordItem>()
+            .toList(growable: false);
 
-      final health = await _healthRepository.getHealthRecords(animal.uuid);
-      for (final h in health) {
-        recentRecords.add(
-          RecentRecordItem(
-            title: h.type.displayName,
-            subtitle: h.notes ?? animal.displayLabel,
-            date: h.date,
-            animalTag: animal.earTagNumber,
-            route: AppRoutes.animalDetallePath(animal.uuid),
-          ),
-        );
-      }
-    }
-
-    recentMovements.sort((a, b) => b.date.compareTo(a.date));
-    recentRecords.sort((a, b) => b.date.compareTo(a.date));
+    final recentRecords =
+        (recentRaw[1] as List<({String animalUuid, HealthRecord record})>)
+            .map((entry) {
+              final animal = animalMap[entry.animalUuid];
+              if (animal == null) return null;
+              final h = entry.record;
+              return RecentRecordItem(
+                title: h.type.displayName,
+                subtitle: h.notes ?? animal.displayLabel,
+                date: h.date,
+                animalTag: animal.earTagNumber,
+                route: AppRoutes.animalDetallePath(animal.uuid),
+              );
+            })
+            .whereType<RecentRecordItem>()
+            .toList(growable: false);
 
     return ReportSummary(
       totalAnimals: animals.length,
@@ -122,8 +155,8 @@ class ReportSummaryService {
       healthAlertsCount: unvaccinated + underObservation,
       unvaccinatedCount: unvaccinated,
       underObservationCount: underObservation,
-      recentMovements: recentMovements.take(5).toList(growable: false),
-      recentRecords: recentRecords.take(5).toList(growable: false),
+      recentMovements: recentMovements,
+      recentRecords: recentRecords,
       generatedAt: now,
     );
   }

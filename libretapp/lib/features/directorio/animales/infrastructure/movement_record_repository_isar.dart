@@ -11,7 +11,10 @@ import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location
 
 class MovementRecordRepositoryIsar
     extends IsarRecordRepositoryBase<MovementRecord, IsarMovementRecord>
-    implements MovementRecordRepository, MovementRecordUuidLookup {
+    implements
+        MovementRecordRepository,
+        MovementRecordUuidLookup,
+        MovementRecordRecentLookup {
   MovementRecordRepositoryIsar(super.database);
 
   @override
@@ -48,6 +51,20 @@ class MovementRecordRepositoryIsar
   @override
   Future<List<MovementRecord>> getMovementRecords(String animalUuid) =>
       getRecordsFor(animalUuid);
+
+  @override
+  Future<List<({String animalUuid, MovementRecord record})>>
+  getRecentMovementRecords({int limit = 5}) async {
+    final db = await isar;
+    final models = await db.isarMovementRecords
+        .where()
+        .sortByDateDesc()
+        .limit(limit)
+        .findAll();
+    return models
+        .map((m) => (animalUuid: m.animalUuid, record: m.toEntity()))
+        .toList(growable: false);
+  }
 
   @override
   Future<Map<String, MovementRecord>> getMovementRecordsByRecordUuids(

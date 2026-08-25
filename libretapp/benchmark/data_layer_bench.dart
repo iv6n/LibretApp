@@ -16,10 +16,12 @@ import 'package:isar/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_activity_tracker.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
@@ -51,6 +53,7 @@ void main() {
   late AnimalRepositoryIsar animals;
   late HealthRecordRepositoryIsar healthRepo;
   late WeightRecordRepositoryIsar weightRepo;
+  late MovementRecordRepositoryIsar movementRepo;
   final suite = BenchSuite(shape.label);
 
   setUpAll(() async {
@@ -67,6 +70,7 @@ void main() {
     animals = AnimalRepositoryIsar(db, prefs, _NoRemote());
     healthRepo = HealthRecordRepositoryIsar(db);
     weightRepo = WeightRecordRepositoryIsar(db);
+    movementRepo = MovementRecordRepositoryIsar(db);
   });
 
   tearDownAll(() async {
@@ -141,6 +145,40 @@ void main() {
         await healthRepo.getActiveWithdrawals(pageUuids);
       },
       iterations: 10,
+    );
+
+    // ── Reportes "recent activity" ──────────────────────────────────────
+    // The screen shows five movements and five health records. It used to ask
+    // every animal in the herd for both, then keep five of each.
+    await suite.measure(
+      'Reportes recent activity — per-animal loop (old)',
+      scale: shape.label,
+      body: () async {
+        final all = await animals.getAll();
+        final movements = <MovementRecord>[];
+        final health = <HealthRecord>[];
+        for (final animal in all) {
+          movements.addAll(await movementRepo.getMovementRecords(animal.uuid));
+          health.addAll(await healthRepo.getHealthRecords(animal.uuid));
+        }
+        movements.sort((a, b) => b.date.compareTo(a.date));
+        health.sort((a, b) => b.date.compareTo(a.date));
+        movements.take(5).toList();
+        health.take(5).toList();
+      },
+      iterations: 3,
+      warmup: 1,
+    );
+
+    await suite.measure(
+      'Reportes recent activity — two batch queries (new)',
+      scale: shape.label,
+      body: () async {
+        await movementRepo.getRecentMovementRecords(limit: 5);
+        await healthRepo.getRecentHealthRecords(limit: 5);
+      },
+      iterations: 3,
+      warmup: 1,
     );
 
     // ── Writes ──────────────────────────────────────────────────────────

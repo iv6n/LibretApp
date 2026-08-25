@@ -24,6 +24,14 @@ abstract class HealthRecordRepository {
   Future<void> deleteHealthRecord(String recordId);
 }
 
+/// Herd-wide "what happened lately" lookup. See [HealthRecordUuidLookup].
+abstract interface class HealthRecordRecentLookup {
+  /// The [limit] most recent health records across the whole herd, newest
+  /// first, each paired with the animal it belongs to.
+  Future<List<({String animalUuid, HealthRecord record})>>
+  getRecentHealthRecords({int limit = 5});
+}
+
 abstract interface class HealthRecordUuidLookup {
   Future<Map<String, HealthRecord>> getHealthRecordsByRecordUuids(
     Set<String> recordUuids,

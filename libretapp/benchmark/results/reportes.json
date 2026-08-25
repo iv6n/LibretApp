@@ -1,0 +1,116 @@
+{
+  "label": "2000a/46000r",
+  "recorded_at": "2026-08-24T21:04:26.429064",
+  "results": [
+    {
+      "name": "AnimalRepository.getAll (directory open)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 85247,
+      "mean_us": 84298,
+      "p90_us": 115429,
+      "min_us": 55245,
+      "max_us": 115429
+    },
+    {
+      "name": "AnimalRepository.getActiveTaxonomyCounts (filter chips)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 57077,
+      "mean_us": 57579,
+      "p90_us": 64112,
+      "min_us": 52718,
+      "max_us": 64112
+    },
+    {
+      "name": "AnimalRepository.getByUuid x50",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 49638,
+      "mean_us": 49182,
+      "p90_us": 54741,
+      "min_us": 44516,
+      "max_us": 54741
+    },
+    {
+      "name": "HealthRepository.getRecordsFor x50 (animal detail)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 55185,
+      "mean_us": 55534,
+      "p90_us": 62990,
+      "min_us": 49171,
+      "max_us": 62990
+    },
+    {
+      "name": "WeightRepository.getRecordsFor x50 (animal detail)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 52077,
+      "mean_us": 51618,
+      "p90_us": 68067,
+      "min_us": 41541,
+      "max_us": 68067
+    },
+    {
+      "name": "Batch indicators for a 30-card page",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 19395,
+      "mean_us": 19740,
+      "p90_us": 25541,
+      "min_us": 17194,
+      "max_us": 25541
+    },
+    {
+      "name": "Reportes recent activity — per-animal loop (old)",
+      "scale": "2000a/46000r",
+      "iterations": 3,
+      "median_us": 2544723,
+      "mean_us": 2697537,
+      "p90_us": 3035675,
+      "min_us": 2512212,
+      "max_us": 3035675
+    },
+    {
+      "name": "Reportes recent activity — two batch queries (new)",
+      "scale": "2000a/46000r",
+      "iterations": 3,
+      "median_us": 3841,
+      "mean_us": 4688,
+      "p90_us": 6507,
+      "min_us": 3716,
+      "max_us": 6507
+    },
+    {
+      "name": "AnimalActivityTracker.touch x25 (every record save)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 15068,
+      "mean_us": 14846,
+      "p90_us": 17501,
+      "min_us": 11900,
+      "max_us": 17501
+    },
+    {
+      "name": "AnimalActivityTracker.recalculate x5 (record delete)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 31437,
+      "mean_us": 32293,
+      "p90_us": 42935,
+      "min_us": 25209,
+      "max_us": 42935
+    },
+    {
+      "name": "HealthRepository.addHealthRecord (save a treatment)",
+      "scale": "2000a/46000r",
+      "iterations": 10,
+      "median_us": 5195,
+      "mean_us": 5759,
+      "p90_us": 7664,
+      "min_us": 4302,
+      "max_us": 7664
+    }
+  ]
+}
