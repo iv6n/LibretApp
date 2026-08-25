@@ -6,6 +6,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 
 class AnimalEditPage extends StatefulWidget {
   const AnimalEditPage({super.key, required this.animalUuid});
@@ -43,6 +44,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   RiskLevel _riskLevel = RiskLevel.low;
   bool _underObservation = false;
   bool _requiresAttention = false;
+  String? _profilePhoto;
   bool _loading = true;
   bool _saving = false;
 
@@ -117,6 +119,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
     _riskLevel = animal.riskLevel;
     _underObservation = animal.underObservation;
     _requiresAttention = animal.requiresAttention;
+    _profilePhoto = animal.profilePhoto;
   }
 
   Future<void> _save() async {
@@ -174,6 +177,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
           riskLevel: _riskLevel,
           underObservation: _underObservation,
           requiresAttention: _requiresAttention,
+          profilePhoto: _profilePhoto,
           synced: false,
           lastUpdateDate: DateTime.now(),
         ),
@@ -236,6 +240,13 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
                     title: 'Identificacion',
                     icon: Icons.badge_outlined,
                   ),
+                  AnimalPhotoField(
+                    photoPath: _profilePhoto,
+                    species: _species,
+                    enabled: !_saving,
+                    onChanged: (path) => setState(() => _profilePhoto = path),
+                  ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: _earTagCtrl,
                     decoration: InputDecoration(

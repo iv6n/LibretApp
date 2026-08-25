@@ -17,6 +17,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class QuickRegisterAnimalPage extends StatefulWidget {
@@ -38,6 +39,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   Sex _sex = Sex.female;
   ApproximateAge _age = const ApproximateAge(years: 1, months: 0);
   ProductionPurpose? _purpose;
+  String? _profilePhoto;
   bool _saving = false;
 
   AnimalRegistrationPolicy get _policy =>
@@ -79,6 +81,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     breed: _nullableText(_breedCtrl.text),
     weight: parseFormDouble(_weightCtrl.text),
     productionPurpose: _purpose,
+    profilePhoto: _profilePhoto,
   );
 
   Future<void> _openFullRegistration() async {
@@ -195,7 +198,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           underObservation: false,
           requiresAttention: false,
           riskLevel: RiskLevel.low,
-          profilePhoto: null,
+          profilePhoto: _profilePhoto,
           gallery: const [],
           owner: null,
           purchasePrice: null,
@@ -391,6 +394,13 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               AnimalSpeciesSelector(
                 value: _species,
                 onChanged: _onSpeciesSelected,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AnimalPhotoField(
+                photoPath: _profilePhoto,
+                species: _species,
+                enabled: !_saving,
+                onChanged: (path) => setState(() => _profilePhoto = path),
               ),
               const SizedBox(height: AppSpacing.lg),
               TextField(

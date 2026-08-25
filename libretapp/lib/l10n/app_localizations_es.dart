@@ -1107,4 +1107,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get mediaSaveError => 'No se pudo guardar la imagen';
+
+  @override
+  String get animalPhotoTitle => 'Fotografía del animal';
+
+  @override
+  String get animalPhotoAdd => 'Agregar foto';
+
+  @override
+  String get animalPhotoReplace => 'Reemplazar foto';
+
+  @override
+  String get animalPhotoRemove => 'Quitar foto';
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -553,12 +554,6 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avatarBackgroundColor = AnimalPalette.avatarBackgroundLight;
-    final hasPhoto = (profilePhoto ?? '').trim().isNotEmpty;
-    final photoUri = Uri.tryParse((profilePhoto ?? '').trim());
-    final canLoadNetworkPhoto =
-        hasPhoto &&
-        photoUri != null &&
-        (photoUri.scheme == 'http' || photoUri.scheme == 'https');
 
     return Material(
       elevation: 2.2,
@@ -577,14 +572,10 @@ class _Avatar extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           child: Padding(
             padding: const EdgeInsets.all(7),
-            child: canLoadNetworkPhoto
-                ? Image.network(
-                    profilePhoto!.trim(),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildProfileAsset(),
-                  )
-                : _buildProfileAsset(),
+            child: AnimalPhotoImage(
+              path: profilePhoto,
+              fallback: _buildProfileAsset(),
+            ),
           ),
         ),
       ),
@@ -1021,4 +1012,3 @@ String _purposeShortLabel(ProductionPurpose purpose) {
       return 'Otro';
   }
 }
-

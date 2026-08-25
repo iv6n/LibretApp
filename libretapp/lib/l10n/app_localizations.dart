@@ -1945,6 +1945,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No se pudo guardar la imagen'**
   String get mediaSaveError;
+
+  /// No description provided for @animalPhotoTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Fotografía del animal'**
+  String get animalPhotoTitle;
+
+  /// No description provided for @animalPhotoAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar foto'**
+  String get animalPhotoAdd;
+
+  /// No description provided for @animalPhotoReplace.
+  ///
+  /// In es, this message translates to:
+  /// **'Reemplazar foto'**
+  String get animalPhotoReplace;
+
+  /// No description provided for @animalPhotoRemove.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar foto'**
+  String get animalPhotoRemove;
 }
 
 class _AppLocalizationsDelegate

@@ -453,7 +453,7 @@ void main() {
           uuid: 'edit-1',
           sex: Sex.female,
           updatedAt: now,
-        );
+        ).copyWith(profilePhoto: 'C:/existing/full-form-photo.jpg');
 
         final animalRepo = _FakeAnimalRepository(
           allAnimals: [editingAnimal],
@@ -479,7 +479,9 @@ void main() {
         expect(
           animalRepo.updatedAnimals.any(
             (animal) =>
-                animal.uuid == 'edit-1' && animal.earTagNumber == '3002',
+                animal.uuid == 'edit-1' &&
+                animal.earTagNumber == '3002' &&
+                animal.profilePhoto == 'C:/existing/full-form-photo.jpg',
           ),
           isTrue,
         );
@@ -624,7 +626,7 @@ void main() {
         uuid: 'edit-direct',
         sex: Sex.female,
         updatedAt: now,
-      );
+      ).copyWith(profilePhoto: 'C:/existing/animal-photo.jpg');
       final animalRepo = _FakeAnimalRepository(
         allAnimals: [editingAnimal],
         byUuid: {'edit-direct': editingAnimal},
@@ -646,15 +648,22 @@ void main() {
         '900',
       );
       await tester.enterText(_editFieldByLabel('Nombre o alias'), 'Paloma');
+      await tester.drag(find.byType(Scrollable).last, const Offset(0, -360));
+      await tester.pumpAndSettle();
       await tester.enterText(_editFieldByLabel('Raza — opcional'), 'Simmental');
       await tester.pump();
 
-      await _tapFilledButtonByLabel(tester, 'Guardar cambios');
+      await tester.tap(find.widgetWithText(TextButton, 'Guardar'));
+      await tester.pumpAndSettle();
 
       expect(animalRepo.updateCallCount, 1);
       expect(animalRepo.updatedAnimals.single.earTagNumber, '900');
       expect(animalRepo.updatedAnimals.single.customName, 'Paloma');
       expect(animalRepo.updatedAnimals.single.breed, 'Simmental');
+      expect(
+        animalRepo.updatedAnimals.single.profilePhoto,
+        'C:/existing/animal-photo.jpg',
+      );
       expect(tester.takeException(), isNull);
     });
   });

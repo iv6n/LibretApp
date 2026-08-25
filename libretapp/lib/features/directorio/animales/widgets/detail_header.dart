@@ -1,12 +1,12 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_header \u2014 header section of the animal detail page.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a detail_header \u2014 header section of the animal detail page.
 library;
 
-import 'dart:io';
 import 'dart:math' show max;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
@@ -287,13 +287,10 @@ class _AnimalPhoto extends StatelessWidget {
             child: SizedBox(
               width: size,
               height: size,
-              child: hasPhoto
-                  ? Image.file(
-                      File(photoPath!),
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => _assetFallback(),
-                    )
-                  : _assetFallback(),
+              child: AnimalPhotoImage(
+                path: hasPhoto ? photoPath : null,
+                fallback: _assetFallback(),
+              ),
             ),
           ),
           if (size > 64)

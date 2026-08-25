@@ -18,6 +18,7 @@ class AnimalRegistrationSeed {
     this.sireUuid,
     this.damUuid,
     this.birthDate,
+    this.profilePhoto,
   });
 
   final Species species;
@@ -37,4 +38,5 @@ class AnimalRegistrationSeed {
   /// Known exactly when seeded from a calving; otherwise the wizard derives it
   /// from [ageMonths].
   final DateTime? birthDate;
+  final String? profilePhoto;
 }

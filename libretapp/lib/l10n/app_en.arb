@@ -351,5 +351,9 @@
   "actionEdit": "Correct",
   "mediaTakePhoto": "Take photo",
   "mediaChooseGallery": "Choose from gallery",
-  "mediaSaveError": "The image could not be saved"
+  "mediaSaveError": "The image could not be saved",
+  "animalPhotoTitle": "Animal photo",
+  "animalPhotoAdd": "Add photo",
+  "animalPhotoReplace": "Replace photo",
+  "animalPhotoRemove": "Remove photo"
 }

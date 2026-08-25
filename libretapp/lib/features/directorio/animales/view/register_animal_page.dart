@@ -17,6 +17,7 @@ import 'package:libretapp/features/directorio/animales/domain/services/animal_ed
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
@@ -87,6 +88,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   bool _loading = true;
   bool _saving = false;
   AnimalEntity? _editingAnimal;
+  String? _profilePhoto;
   Timer? _draftDebounce;
 
   Species _species = Species.cattle;
@@ -242,6 +244,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _distinguishingMarksCtrl.text = animal.distinguishingMarks ?? '';
     _visualIdCtrl.text = animal.visualId ?? '';
     _healthNotesCtrl.text = animal.chronicNotes ?? '';
+    _profilePhoto = animal.profilePhoto;
     _feedTypeCtrl.text = animal.feedType ?? '';
     _crossBreedTypeCtrl.text = animal.crossBreedType ?? '';
     _sireBreedCtrl.text = animal.sireBreed ?? '';
@@ -337,6 +340,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _nameCtrl.text = seed.name ?? '';
     _breedCtrl.text = seed.breed ?? '';
     _weightCtrl.text = seed.weight?.toString() ?? '';
+    _profilePhoto = seed.profilePhoto;
     _productionPurpose = seed.productionPurpose ?? ProductionPurpose.undefined;
     _category = AnimalTaxonomy.defaultCategory(
       species: _species,
@@ -542,6 +546,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               'Informacion basica',
               Icons.badge_outlined,
               subtitle: 'Ingresa los datos generales del animal.',
+            ),
+            const SizedBox(height: 16),
+            AnimalPhotoField(
+              photoPath: _profilePhoto,
+              species: _species,
+              enabled: !_saving,
+              onChanged: (path) => setState(() => _profilePhoto = path),
             ),
             const SizedBox(height: 16),
             AppFormSection(
@@ -2791,6 +2802,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               underObservation: healthTuple.underObservation,
               requiresAttention: healthTuple.requiresAttention,
               riskLevel: healthTuple.riskLevel,
+              profilePhoto: _profilePhoto,
               status: _status,
               synced: false,
               lastUpdateDate: now,
@@ -2870,7 +2882,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               underObservation: healthTuple.underObservation,
               requiresAttention: healthTuple.requiresAttention,
               riskLevel: healthTuple.riskLevel,
-              profilePhoto: null,
+              profilePhoto: _profilePhoto,
               gallery: const [],
               owner: null,
               purchasePrice: null,

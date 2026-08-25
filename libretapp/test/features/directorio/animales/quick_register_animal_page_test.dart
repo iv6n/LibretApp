@@ -4,6 +4,14 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
+
+Widget _testApp() => const MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  locale: Locale('es'),
+  home: QuickRegisterAnimalPage(),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +30,7 @@ void main() {
   testWidgets('uses compact sex controls and a two-wheel age picker', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: QuickRegisterAnimalPage()));
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
     final sexChips = find.byType(ChoiceChip).evaluate().where((element) {
@@ -48,7 +56,7 @@ void main() {
   testWidgets('persists optional name and confirms a pending cattle tag', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: QuickRegisterAnimalPage()));
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
     await tester.enterText(_fieldByLabel('Nombre o alias — opcional'), 'Luna');
@@ -69,7 +77,7 @@ void main() {
   });
 
   testWidgets('adapts identification and purposes for equines', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: QuickRegisterAnimalPage()));
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Équido'));
@@ -88,7 +96,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MaterialApp(home: QuickRegisterAnimalPage()));
+    await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));

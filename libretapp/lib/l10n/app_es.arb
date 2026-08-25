@@ -351,5 +351,9 @@
   "actionEdit": "Corregir",
   "mediaTakePhoto": "Tomar foto",
   "mediaChooseGallery": "Elegir de galería",
-  "mediaSaveError": "No se pudo guardar la imagen"
+  "mediaSaveError": "No se pudo guardar la imagen",
+  "animalPhotoTitle": "Fotografía del animal",
+  "animalPhotoAdd": "Agregar foto",
+  "animalPhotoReplace": "Reemplazar foto",
+  "animalPhotoRemove": "Quitar foto"
 }
