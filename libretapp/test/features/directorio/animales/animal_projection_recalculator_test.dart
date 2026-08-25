@@ -23,8 +23,21 @@ import 'package:libretapp/features/directorio/animales/infrastructure/commercial
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/reproduction_record_repository_isar.dart';
 
 const _uuid = 'projection-subject';
+const _sireUuid = 'projection-sire';
+
+Future<AnimalEntity> _read(String uuid) async {
+  final repo = AnimalRepositoryIsar(
+    IsarDatabase(),
+    SharedPrefsService(await SharedPreferences.getInstance()),
+    _NoRemote(),
+  );
+  final animal = await repo.getByUuid(uuid);
+  expect(animal, isNotNull, reason: 'expected $uuid to exist');
+  return animal!;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -70,38 +83,41 @@ void main() {
   }
 
   group('weight', () {
-    test('follows the newest weighing, and falls back when one is removed', () async {
-      final repo = WeightRecordRepositoryIsar(IsarDatabase());
+    test(
+      'follows the newest weighing, and falls back when one is removed',
+      () async {
+        final repo = WeightRecordRepositoryIsar(IsarDatabase());
 
-      await repo.addWeightRecord(
-        _uuid,
-        WeightRecord(
-          date: DateTime(2025, 1, 10),
-          weight: 300,
-          method: WeightMethod.scale,
-        ),
-      );
-      final newer = await repo.addWeightRecord(
-        _uuid,
-        WeightRecord(
-          date: DateTime(2025, 6, 10),
-          weight: 380,
-          method: WeightMethod.scale,
-        ),
-      );
+        await repo.addWeightRecord(
+          _uuid,
+          WeightRecord(
+            date: DateTime(2025, 1, 10),
+            weight: 300,
+            method: WeightMethod.scale,
+          ),
+        );
+        final newer = await repo.addWeightRecord(
+          _uuid,
+          WeightRecord(
+            date: DateTime(2025, 6, 10),
+            weight: 380,
+            method: WeightMethod.scale,
+          ),
+        );
 
-      expect((await subject()).weight, 380);
+        expect((await subject()).weight, 380);
 
-      await repo.deleteWeightRecord(newer.id!);
+        await repo.deleteWeightRecord(newer.id!);
 
-      expect(
-        (await subject()).weight,
-        300,
-        reason:
-            'with the June weighing gone the January one is the latest; the '
-            'animal used to keep 380 forever',
-      );
-    });
+        expect(
+          (await subject()).weight,
+          300,
+          reason:
+              'with the June weighing gone the January one is the latest; the '
+              'animal used to keep 380 forever',
+        );
+      },
+    );
 
     test('an older weighing does not overwrite a newer one', () async {
       final repo = WeightRecordRepositoryIsar(IsarDatabase());
@@ -131,29 +147,32 @@ void main() {
   });
 
   group('herd status', () {
-    test('a death record removes the animal, deleting it brings it back', () async {
-      final repo = HealthRecordRepositoryIsar(IsarDatabase());
+    test(
+      'a death record removes the animal, deleting it brings it back',
+      () async {
+        final repo = HealthRecordRepositoryIsar(IsarDatabase());
 
-      final death = await repo.addHealthRecord(
-        _uuid,
-        HealthRecord(
-          date: DateTime(2025, 3, 1),
-          type: HealthRecordType.death,
-          product: 'Muerte',
-        ),
-      );
-      expect((await subject()).status, AnimalStatus.dead);
+        final death = await repo.addHealthRecord(
+          _uuid,
+          HealthRecord(
+            date: DateTime(2025, 3, 1),
+            type: HealthRecordType.death,
+            product: 'Muerte',
+          ),
+        );
+        expect((await subject()).status, AnimalStatus.dead);
 
-      await repo.deleteHealthRecord(death.id!);
+        await repo.deleteHealthRecord(death.id!);
 
-      expect(
-        (await subject()).status,
-        AnimalStatus.active,
-        reason:
-            'a death recorded on the wrong animal was previously impossible '
-            'to take back',
-      );
-    });
+        expect(
+          (await subject()).status,
+          AnimalStatus.active,
+          reason:
+              'a death recorded on the wrong animal was previously impossible '
+              'to take back',
+        );
+      },
+    );
   });
 
   group('health flags', () {
@@ -179,9 +198,74 @@ void main() {
       );
     });
   });
+  group('reproduction', () {
+    test(
+      'the newest record decides the cycle, not the last one saved',
+      () async {
+        final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
+
+        await repo.addReproductionRecord(
+          _uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2025, 5, 1),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        );
+        expect(
+          (await subject()).reproductiveStatus,
+          ReproductiveStatus.pregnant,
+        );
+
+        // Backfilling an older, negative service must not undo the newer
+        // positive diagnosis.
+        await repo.addReproductionRecord(
+          _uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2024, 9, 1),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.negative,
+          ),
+        );
+
+        final after = await subject();
+        expect(after.reproductiveStatus, ReproductiveStatus.pregnant);
+        expect(after.firstServiceDate, DateTime(2024, 9, 1));
+        expect(after.lastServiceDate, DateTime(2025, 5, 1));
+      },
+    );
+
+    test(
+      'the sire keeps his own service dates, and loses them on delete',
+      () async {
+        final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
+        await _seedAnimal(uuid: _sireUuid, sex: Sex.male);
+
+        final service = await repo.addReproductionRecord(
+          _uuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2025, 4, 20),
+            serviceType: ServiceType.naturalService,
+            maleSireUuid: _sireUuid,
+          ),
+        );
+
+        final sire = await _read(_sireUuid);
+        expect(sire.lastServiceDate, DateTime(2025, 4, 20));
+
+        await repo.deleteReproductionRecord(service.id!);
+
+        expect(
+          (await _read(_sireUuid)).lastServiceDate,
+          isNull,
+          reason: 'the deleted service was his only one',
+        );
+      },
+    );
+  });
 }
 
-Future<void> _seedAnimal() async {
+Future<void> _seedAnimal({String uuid = _uuid, Sex sex = Sex.female}) async {
   final repo = AnimalRepositoryIsar(
     IsarDatabase(),
     SharedPrefsService(await SharedPreferences.getInstance()),
@@ -190,12 +274,12 @@ Future<void> _seedAnimal() async {
   final now = DateTime(2025, 1, 1);
   await repo.save(
     AnimalEntity(
-      uuid: _uuid,
-      earTagNumber: 'TAG-PROJ-1',
+      uuid: uuid,
+      earTagNumber: 'TAG-$uuid',
       species: Species.cattle,
-      category: Category.cow,
-      lifeStage: LifeStage.cow,
-      sex: Sex.female,
+      category: sex == Sex.female ? Category.cow : Category.bull,
+      lifeStage: sex == Sex.female ? LifeStage.cow : LifeStage.bull,
+      sex: sex,
       breed: 'Cebu',
       birthDate: DateTime(2021, 1, 1),
       ageMonths: 48,

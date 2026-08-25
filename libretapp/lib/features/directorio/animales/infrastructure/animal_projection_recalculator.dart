@@ -31,6 +31,10 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/reproductive_status.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 
 class AnimalProjectionRecalculator {
   const AnimalProjectionRecalculator._();
@@ -49,6 +53,7 @@ class AnimalProjectionRecalculator {
     await _applyBodyCondition(isar, animal, animalUuid);
     await _applyLocation(isar, animal, animalUuid);
     await _applyHealthFlags(isar, animal, animalUuid);
+    await _applyReproduction(isar, animal, animalUuid);
     await _applyHerdStatus(isar, animal, animalUuid);
 
     animal
@@ -82,14 +87,13 @@ class AnimalProjectionRecalculator {
     IsarAnimal animal,
     String animalUuid,
   ) async {
-    final scored =
-        await isar.isarProductionRecords
-            .where()
-            .animalUuidEqualTo(animalUuid)
-            .filter()
-            .typeEqualTo(ProductionRecordType.bodyConditionScore.name)
-            .sortByDateDesc()
-            .findAll();
+    final scored = await isar.isarProductionRecords
+        .where()
+        .animalUuidEqualTo(animalUuid)
+        .filter()
+        .typeEqualTo(ProductionRecordType.bodyConditionScore.name)
+        .sortByDateDesc()
+        .findAll();
     for (final record in scored) {
       if (record.score != null) {
         animal.bodyConditionScore = record.score;
@@ -155,6 +159,91 @@ class AnimalProjectionRecalculator {
     }
   }
 
+  /// Service dates and reproductive state, from the records that remain.
+  ///
+  /// An animal appears in this collection two ways: as the dam a record is
+  /// filed under, and as the sire named on someone else's record. Both move
+  /// her/his service dates, so both are read here — which is why saving or
+  /// deleting a reproduction record recalculates the sire as well as the dam.
+  static Future<void> _applyReproduction(
+    Isar isar,
+    IsarAnimal animal,
+    String animalUuid,
+  ) async {
+    final asDam = await isar.isarReproductionRecords
+        .where()
+        .animalUuidEqualTo(animalUuid)
+        .sortByServiceDateDesc()
+        .findAll();
+    final asSire = await isar.isarReproductionRecords
+        .where()
+        .maleSireUuidEqualTo(animalUuid)
+        .findAll();
+
+    final serviceDates = [
+      ...asDam.map((record) => record.serviceDate),
+      ...asSire.map((record) => record.serviceDate),
+    ];
+    if (serviceDates.isNotEmpty) {
+      serviceDates.sort();
+      animal
+        ..firstServiceDate = serviceDates.first
+        ..lastServiceDate = serviceDates.last;
+    } else {
+      animal
+        ..firstServiceDate = null
+        ..lastServiceDate = null;
+    }
+
+    // A male carries no reproductive state from a service record, and
+    // neutered/retired are management decisions rather than evidence of an
+    // event, so neither is overwritten.
+    if (animal.sex != Sex.female.name) return;
+    const untouchable = {'neutered', 'retired'};
+    if (untouchable.contains(animal.reproductiveStatus)) return;
+
+    // Only the newest record still on file decides where she is in the cycle.
+    // Applying every record in turn, as the old projection effectively did,
+    // let a superseded service overwrite the result of a later one.
+    final latest = asDam.firstOrNull;
+    if (latest == null) {
+      animal.expectedCalvingDate = null;
+      return;
+    }
+
+    if (latest.actualCalvingDate != null) {
+      animal
+        ..reproductiveStatus = ReproductiveStatus.lactating.name
+        ..expectedCalvingDate = null;
+      return;
+    }
+
+    switch (latest.pregnancyResult) {
+      case 'positive':
+        animal
+          ..reproductiveStatus = ReproductiveStatus.pregnant.name
+          ..expectedCalvingDate = _expectedCalving(latest);
+      case 'negative':
+        animal
+          ..reproductiveStatus = ReproductiveStatus.active.name
+          ..expectedCalvingDate = null;
+      default:
+        // Served but not yet diagnosed: she is in the breeding cycle, and the
+        // projected date gives the dashboard something to count down to.
+        animal
+          ..reproductiveStatus = ReproductiveStatus.active.name
+          ..expectedCalvingDate = _expectedCalving(latest);
+    }
+  }
+
+  /// The date the breeder typed, or the standard gestation projected from the
+  /// service when they left it empty.
+  static DateTime _expectedCalving(IsarReproductionRecord record) =>
+      record.expectedCalvingDate ??
+      const ReproductionScheduler()
+          .estimate(serviceDate: record.serviceDate)
+          .dueDate;
+
   /// Whether the animal is still in the herd.
   ///
   /// Both a death record and a sale/write-off take it out, so the answer is the
@@ -179,12 +268,11 @@ class AnimalProjectionRecalculator {
         .sortByDateDesc()
         .findFirst();
 
-    final commercial =
-        await isar.isarCommercialRecords
-            .where()
-            .animalUuidEqualTo(animalUuid)
-            .sortByDateDesc()
-            .findAll();
+    final commercial = await isar.isarCommercialRecords
+        .where()
+        .animalUuidEqualTo(animalUuid)
+        .sortByDateDesc()
+        .findAll();
     IsarCommercialRecord? leaving;
     for (final record in commercial) {
       if (_statusFor(record.type) != null) {
