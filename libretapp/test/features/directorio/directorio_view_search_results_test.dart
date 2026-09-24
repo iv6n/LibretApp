@@ -87,44 +87,39 @@ void main() {
   });
 
   group('Directorio tabs inline menu', () {
-    testWidgets('shows tab rows with lotes hidden by default', (tester) async {
+    testWidgets('shows all four tab rows enabled by default', (tester) async {
       await tester.pumpWidget(_tabsMenuHost());
 
       expect(find.text('Animales'), findsOneWidget);
       expect(find.text('Ubicaciones'), findsOneWidget);
       expect(find.text('Lotes'), findsOneWidget);
+      expect(find.text('Cultivos'), findsOneWidget);
 
       final lotesCheckbox = tester.widget<Checkbox>(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_visible_lotes'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_visible_lotes')),
       );
-      expect(lotesCheckbox.value, isFalse);
+      expect(lotesCheckbox.value, isTrue);
     });
 
-    testWidgets('can show lotes directly from the menu', (tester) async {
+    testWidgets('can hide lotes directly from the menu', (tester) async {
       Set<DirectorioSection>? latestVisible;
       await tester.pumpWidget(
         _tabsMenuHost(onChanged: (_, visible) => latestVisible = visible),
       );
 
       await tester.tap(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_visible_lotes'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_visible_lotes')),
       );
       await tester.pumpAndSettle();
 
-      expect(latestVisible, contains(DirectorioSection.lotes));
+      expect(latestVisible, isNot(contains(DirectorioSection.lotes)));
       final lotesCheckbox = tester.widget<Checkbox>(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_visible_lotes'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_visible_lotes')),
       );
-      expect(lotesCheckbox.value, isTrue);
+      expect(lotesCheckbox.value, isFalse);
     });
 
-    testWidgets('moves ubicaciones before animales with the up arrow', (
+    testWidgets('moves cultivos before lotes with the up arrow', (
       tester,
     ) async {
       List<DirectorioSection>? latestOrder;
@@ -133,16 +128,14 @@ void main() {
       );
 
       await tester.tap(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_move_up_ubicaciones'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_move_up_cultivos')),
       );
       await tester.pumpAndSettle();
 
       expect(latestOrder, isNotNull);
       expect(latestOrder!.take(2), [
-        DirectorioSection.ubicaciones,
         DirectorioSection.animales,
+        DirectorioSection.cultivos,
       ]);
     });
 
@@ -155,9 +148,7 @@ void main() {
       );
 
       await tester.tap(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_visible_animales'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_visible_animales')),
       );
       await tester.pumpAndSettle();
 
@@ -166,9 +157,7 @@ void main() {
         findsOneWidget,
       );
       final animalesCheckbox = tester.widget<Checkbox>(
-        find.byKey(
-          const ValueKey<String>('directorio_menu_visible_animales'),
-        ),
+        find.byKey(const ValueKey<String>('directorio_menu_visible_animales')),
       );
       expect(animalesCheckbox.value, isTrue);
     });
@@ -244,6 +233,8 @@ String _labelForSection(DirectorioSection section) {
       return 'Animales';
     case DirectorioSection.lotes:
       return 'Lotes';
+    case DirectorioSection.cultivos:
+      return 'Cultivos';
     case DirectorioSection.ubicaciones:
       return 'Ubicaciones';
   }
@@ -255,6 +246,8 @@ IconData _iconForSection(DirectorioSection section) {
       return Icons.pets;
     case DirectorioSection.lotes:
       return Icons.fence;
+    case DirectorioSection.cultivos:
+      return Icons.eco_outlined;
     case DirectorioSection.ubicaciones:
       return Icons.location_on_outlined;
   }

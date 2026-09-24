@@ -3,17 +3,18 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/location/gps_capture_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AnimalMovementFormPage extends StatefulWidget {
   const AnimalMovementFormPage({
@@ -43,6 +44,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   bool _loading = false;
+  bool _captureGps = false;
   AnimalEntity? _animal;
   MovementRecord? _editing;
 
@@ -119,6 +121,9 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
 
     setState(() => _saving = true);
     try {
+      final geo = _captureGps
+          ? await locator<GpsCaptureService>().tryCapture()
+          : null;
       final repository = locator<MovementRecordRepository>();
       final edited = _editing;
 
@@ -143,6 +148,9 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
                     : _movedByController.text.trim(),
                 recordUuid: edited.recordUuid,
                 updatedAt: edited.updatedAt,
+                latitude: geo?.latitude ?? edited.latitude,
+                longitude: geo?.longitude ?? edited.longitude,
+                accuracyMeters: geo?.accuracyMeters ?? edited.accuracyMeters,
               ),
             );
       } else {
@@ -162,6 +170,9 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
             movedBy: _movedByController.text.trim().isEmpty
                 ? null
                 : _movedByController.text.trim(),
+            latitude: geo?.latitude,
+            longitude: geo?.longitude,
+            accuracyMeters: geo?.accuracyMeters,
           ),
         );
       }
@@ -187,7 +198,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return RecordFormScaffold(
+    return AppFormScaffold(
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormMovementTitle,
@@ -198,77 +209,59 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
       assetPath: AppAssetPaths.recordMovement,
       fallbackIcon: Icons.swap_horiz,
       fields: [
-        DropdownButtonFormField<MovementReason>(
-          initialValue: _reason,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormMovementReason,
-            border: const OutlineInputBorder(),
-          ),
-          items: MovementReason.values
-              .map(
-                (r) => DropdownMenuItem(value: r, child: Text(r.displayName)),
-              )
-              .toList(),
+        AppSelectField<MovementReason>(
+          value: _reason,
+          items: MovementReason.values,
+          itemLabel: (reason) => reason.displayName,
+          labelText: l10n.detailFormMovementReason,
           onChanged: (value) {
             if (value == null) return;
             setState(() => _reason = value);
           },
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _fromController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormMovementFrom,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _toController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormMovementTo,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _fromController,
+          labelText: l10n.detailFormMovementFrom,
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.today),
-          label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-          onPressed: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: _date,
-              firstDate: DateTime(_date.year - 5),
-              lastDate: DateTime(_date.year + 1),
-            );
-            if (picked == null) return;
-            setState(() => _date = picked);
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _toController,
+          labelText: l10n.detailFormMovementTo,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(_date.year - 5),
+          lastDate: DateTime(_date.year + 1),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
           },
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _notesController,
-          decoration: InputDecoration(
-            labelText: l10n.fieldNotes,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.fieldNotes,
           maxLines: 2,
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _movedByController,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormMovementMovedBy,
-            border: const OutlineInputBorder(),
+          labelText: l10n.detailFormMovementMovedBy,
+        ),
+        const SizedBox(height: 16),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _captureGps,
+          onChanged: _saving
+              ? null
+              : (value) => setState(() => _captureGps = value),
+          title: const Text('Capturar ubicación GPS'),
+          subtitle: const Text(
+            'Opcional; si falla, el movimiento se guarda manualmente.',
           ),
+          secondary: const Icon(Icons.gps_fixed_outlined),
         ),
         const SizedBox(height: 16),
         if (_animal != null) ...[

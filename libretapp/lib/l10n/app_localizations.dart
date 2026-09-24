@@ -860,6 +860,90 @@ abstract class AppLocalizations {
   /// **'Cargando'**
   String get uiLoading;
 
+  /// No description provided for @fieldDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha'**
+  String get fieldDate;
+
+  /// No description provided for @actionClearDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrar fecha'**
+  String get actionClearDate;
+
+  /// No description provided for @financeRegisterIncome.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar ingreso'**
+  String get financeRegisterIncome;
+
+  /// No description provided for @financeRegisterExpense.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar gasto general'**
+  String get financeRegisterExpense;
+
+  /// No description provided for @financeIncomeType.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de ingreso'**
+  String get financeIncomeType;
+
+  /// No description provided for @financeExpenseType.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de gasto'**
+  String get financeExpenseType;
+
+  /// No description provided for @financeAmount.
+  ///
+  /// In es, this message translates to:
+  /// **'Monto'**
+  String get financeAmount;
+
+  /// No description provided for @financeCurrency.
+  ///
+  /// In es, this message translates to:
+  /// **'Moneda'**
+  String get financeCurrency;
+
+  /// No description provided for @financeOptionalAnimal.
+  ///
+  /// In es, this message translates to:
+  /// **'Animal (opcional)'**
+  String get financeOptionalAnimal;
+
+  /// No description provided for @financeDescriptionHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Descripción adicional...'**
+  String get financeDescriptionHint;
+
+  /// No description provided for @financeAmountInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingresa un monto válido.'**
+  String get financeAmountInvalid;
+
+  /// No description provided for @financeAmountPositive.
+  ///
+  /// In es, this message translates to:
+  /// **'El monto debe ser mayor a cero.'**
+  String get financeAmountPositive;
+
+  /// No description provided for @financeIncomeSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Ingreso guardado.'**
+  String get financeIncomeSaved;
+
+  /// No description provided for @financeExpenseSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Gasto guardado.'**
+  String get financeExpenseSaved;
+
   /// No description provided for @uiQuickActions.
   ///
   /// In es, this message translates to:
@@ -1969,6 +2053,192 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Quitar foto'**
   String get animalPhotoRemove;
+
+  /// No description provided for @loteWeightTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar pesaje'**
+  String get loteWeightTitle;
+
+  /// No description provided for @loteWeightCaptured.
+  ///
+  /// In es, this message translates to:
+  /// **'{captured} de {total} capturados'**
+  String loteWeightCaptured(int captured, int total);
+
+  /// No description provided for @loteWeightDate.
+  ///
+  /// In es, this message translates to:
+  /// **'Fecha del pesaje'**
+  String get loteWeightDate;
+
+  /// No description provided for @loteWeightKg.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso kg'**
+  String get loteWeightKg;
+
+  /// No description provided for @loteWeightPrevious.
+  ///
+  /// In es, this message translates to:
+  /// **'Anterior'**
+  String get loteWeightPrevious;
+
+  /// No description provided for @loteWeightGain.
+  ///
+  /// In es, this message translates to:
+  /// **'Diferencia'**
+  String get loteWeightGain;
+
+  /// No description provided for @loteWeightAdg.
+  ///
+  /// In es, this message translates to:
+  /// **'ADG'**
+  String get loteWeightAdg;
+
+  /// No description provided for @loteWeightSave.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar pesaje del lote'**
+  String get loteWeightSave;
+
+  /// No description provided for @loteWeightSaving.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardando...'**
+  String get loteWeightSaving;
+
+  /// No description provided for @loteWeightNoActiveAnimals.
+  ///
+  /// In es, this message translates to:
+  /// **'Este lote no tiene animales activos.'**
+  String get loteWeightNoActiveAnimals;
+
+  /// No description provided for @loteWeightLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el lote.'**
+  String get loteWeightLoadError;
+
+  /// No description provided for @loteWeightAtLeastOne.
+  ///
+  /// In es, this message translates to:
+  /// **'Captura al menos un peso.'**
+  String get loteWeightAtLeastOne;
+
+  /// No description provided for @loteWeightInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso inválido'**
+  String get loteWeightInvalid;
+
+  /// No description provided for @lotePerformanceTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rendimiento'**
+  String get lotePerformanceTitle;
+
+  /// No description provided for @lotePerformanceEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra un pesaje para ver el rendimiento del lote.'**
+  String get lotePerformanceEmpty;
+
+  /// No description provided for @lotePerformanceLoadError.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar el rendimiento.'**
+  String get lotePerformanceLoadError;
+
+  /// No description provided for @lotePerformanceTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'Peso total'**
+  String get lotePerformanceTotal;
+
+  /// No description provided for @lotePerformanceAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'Promedio'**
+  String get lotePerformanceAverage;
+
+  /// No description provided for @lotePerformanceAdgAverage.
+  ///
+  /// In es, this message translates to:
+  /// **'ADG promedio'**
+  String get lotePerformanceAdgAverage;
+
+  /// No description provided for @lotePerformanceGain.
+  ///
+  /// In es, this message translates to:
+  /// **'Ganancia lote'**
+  String get lotePerformanceGain;
+
+  /// No description provided for @lotePerformancePrevious.
+  ///
+  /// In es, this message translates to:
+  /// **'Vs. pesaje anterior'**
+  String get lotePerformancePrevious;
+
+  /// No description provided for @lotePerformanceGood.
+  ///
+  /// In es, this message translates to:
+  /// **'Buen rendimiento'**
+  String get lotePerformanceGood;
+
+  /// No description provided for @lotePerformanceBelow.
+  ///
+  /// In es, this message translates to:
+  /// **'Debajo promedio'**
+  String get lotePerformanceBelow;
+
+  /// No description provided for @lotePerformanceNoGain.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin ganancia'**
+  String get lotePerformanceNoGain;
+
+  /// No description provided for @lotePerformanceNoReference.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin referencia'**
+  String get lotePerformanceNoReference;
+
+  /// No description provided for @lotePerformanceUnmeasured.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} animal(es) aún sin pesaje en esta sesión.'**
+  String lotePerformanceUnmeasured(int count);
+
+  /// No description provided for @lotePerformanceSessions.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial de pesajes'**
+  String get lotePerformanceSessions;
+
+  /// No description provided for @lotePerformanceEconomics.
+  ///
+  /// In es, this message translates to:
+  /// **'Economía estimada'**
+  String get lotePerformanceEconomics;
+
+  /// No description provided for @lotePerformanceFeedPerDay.
+  ///
+  /// In es, this message translates to:
+  /// **'Alimento/día'**
+  String get lotePerformanceFeedPerDay;
+
+  /// No description provided for @lotePerformanceCostPerKg.
+  ///
+  /// In es, this message translates to:
+  /// **'Costo/kg ganado'**
+  String get lotePerformanceCostPerKg;
+
+  /// No description provided for @lotePerformanceMargin.
+  ///
+  /// In es, this message translates to:
+  /// **'Margen alimentación'**
+  String get lotePerformanceMargin;
 }
 
 class _AppLocalizationsDelegate

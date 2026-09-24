@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a domain \u203a entities \u203a lote_entity \u2014 Lote domain entity.
+/// features \u203a directorio \u203a lotes \u203a domain \u203a entities \u203a lote_entity \u2014 Lote domain entity.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -19,6 +19,9 @@ class LoteEntity extends Equatable {
     this.active = true,
     this.notes,
     this.currentLocationId,
+    this.feedPricePerKg,
+    this.dailyFeedKgPerHead,
+    this.liveWeightPricePerKg,
     required this.lastUpdateDate,
     this.synced = false,
     this.remoteId,
@@ -36,6 +39,9 @@ class LoteEntity extends Equatable {
 
   /// UUID of the LocationEntity where this batch is currently located.
   final String? currentLocationId;
+  final double? feedPricePerKg;
+  final double? dailyFeedKgPerHead;
+  final double? liveWeightPricePerKg;
   final DateTime lastUpdateDate;
   final bool synced;
   final String? remoteId;
@@ -52,6 +58,9 @@ class LoteEntity extends Equatable {
     bool? active,
     String? notes,
     Object? currentLocationId = _sentinel,
+    Object? feedPricePerKg = _sentinel,
+    Object? dailyFeedKgPerHead = _sentinel,
+    Object? liveWeightPricePerKg = _sentinel,
     DateTime? lastUpdateDate,
     bool? synced,
     String? remoteId,
@@ -70,6 +79,15 @@ class LoteEntity extends Equatable {
       currentLocationId: currentLocationId == _sentinel
           ? this.currentLocationId
           : currentLocationId as String?,
+      feedPricePerKg: feedPricePerKg == _sentinel
+          ? this.feedPricePerKg
+          : feedPricePerKg as double?,
+      dailyFeedKgPerHead: dailyFeedKgPerHead == _sentinel
+          ? this.dailyFeedKgPerHead
+          : dailyFeedKgPerHead as double?,
+      liveWeightPricePerKg: liveWeightPricePerKg == _sentinel
+          ? this.liveWeightPricePerKg
+          : liveWeightPricePerKg as double?,
       lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
       synced: synced ?? this.synced,
       remoteId: remoteId ?? this.remoteId,
@@ -89,6 +107,9 @@ class LoteEntity extends Equatable {
     active,
     notes,
     currentLocationId,
+    feedPricePerKg,
+    dailyFeedKgPerHead,
+    liveWeightPricePerKg,
     lastUpdateDate,
     synced,
     remoteId,

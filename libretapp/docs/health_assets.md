@@ -1,8 +1,9 @@
 # Animal Health Image Assets
 
-Health-record illustrations use the same soft 2.5D raster language as the
-task, status and location assets: centered square WEBPs, warm agricultural
-colors, simple silhouettes, no text or watermarks, and real RGBA transparency.
+Health-record illustrations use the shared 2.5D language: centered square
+WEBPs with short gradients, soft contact shadows and integrated highlights,
+warm agricultural colors, simple silhouettes, no text or watermarks, and real
+RGBA transparency.
 
 ## Tanda 8 — Health records
 

@@ -96,6 +96,9 @@ class _BlocFakeLocationRepository implements LocationRepository {
   Future<void> addRain(String uuid, RainRecord record) async {}
 
   @override
+  Future<void> addMaintenance(String uuid, MaintenanceRecord record) async {}
+
+  @override
   Future<void> addCost(String uuid, LocationCostRecord record) async {}
 
   @override
@@ -256,7 +259,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 20));
 
       final loaded = bloc.state as UbicacionesLoaded;
-      expect(loaded.selectedCategoryFilters, contains(LocationCategory.livestock));
+      expect(
+        loaded.selectedCategoryFilters,
+        contains(LocationCategory.livestock),
+      );
       expect(loaded.visibleUbicaciones, hasLength(1));
       expect(loaded.visibleUbicaciones.first.uuid, 'u1');
 
@@ -293,5 +299,95 @@ void main() {
       await repository.dispose();
     });
 
+    test(
+      'solo las ubicaciones sin padre aparecen como raíces filtrables',
+      () async {
+        final repository = _BlocFakeLocationRepository([
+          _location(uuid: 'rootA', name: 'Raíz A', type: LocationType.ranch),
+          _location(
+            uuid: 'nestedMacro',
+            name: 'Macro anidada',
+            parentUuid: 'rootA',
+            type: LocationType.farm,
+          ),
+          _location(uuid: 'rootB', name: 'Raíz B', type: LocationType.pasture),
+        ]);
+        final bloc = UbicacionesBloc(repository);
+
+        bloc.add(const LoadUbicaciones());
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+
+        bloc.add(const SelectParentFilter('nestedMacro'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect((bloc.state as UbicacionesLoaded).selectedRanchoUuid, isNull);
+
+        bloc.add(const SelectParentFilter('rootA'));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        final loaded = bloc.state as UbicacionesLoaded;
+        expect(loaded.selectedRanchoUuid, 'rootA');
+        expect(
+          loaded.visibleUbicaciones.map((location) => location.uuid),
+          containsAll(<String>['rootA', 'nestedMacro']),
+        );
+        expect(
+          loaded.visibleUbicaciones.map((location) => location.uuid),
+          isNot(contains('rootB')),
+        );
+
+        await bloc.close();
+        await repository.dispose();
+      },
+    );
+
+    test('una sola raíz no conserva un filtro de raíz', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(uuid: 'root', name: 'Única raíz', type: LocationType.ranch),
+        _location(
+          uuid: 'child',
+          name: 'Sub ubicación',
+          parentUuid: 'root',
+          type: LocationType.pasture,
+        ),
+      ]);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      bloc.add(const SelectParentFilter('root'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final loaded = bloc.state as UbicacionesLoaded;
+      expect(loaded.selectedRanchoUuid, isNull);
+      expect(loaded.visibleUbicaciones, hasLength(2));
+
+      await bloc.close();
+      await repository.dispose();
+    });
+
+    test('limpia la raíz seleccionada cuando deja de existir', () async {
+      final repository = _BlocFakeLocationRepository([
+        _location(uuid: 'rootA', name: 'Raíz A', type: LocationType.ranch),
+        _location(uuid: 'rootB', name: 'Raíz B', type: LocationType.ranch),
+      ]);
+      final bloc = UbicacionesBloc(repository);
+
+      bloc.add(const LoadUbicaciones());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      bloc.add(const SelectParentFilter('rootA'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect((bloc.state as UbicacionesLoaded).selectedRanchoUuid, 'rootA');
+
+      await repository.deleteByUuid('rootA');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final loaded = bloc.state as UbicacionesLoaded;
+      expect(loaded.selectedRanchoUuid, isNull);
+      expect(loaded.visibleUbicaciones.map((location) => location.uuid), [
+        'rootB',
+      ]);
+
+      await bloc.close();
+      await repository.dispose();
+    });
   });
 }

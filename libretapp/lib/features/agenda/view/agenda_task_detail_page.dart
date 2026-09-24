@@ -479,7 +479,8 @@ class _AgendaTaskDetailPageState extends State<AgendaTaskDetailPage> {
     final typeColor = colorForTipo(_entry.tipo);
     final groupStatus = _groupStatus;
     final estadoColor = colorForEstado(groupStatus);
-    final dateFormatter = DateFormat('d MMMM yyyy');
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final dateFormatter = DateFormat('d MMMM yyyy', locale);
     final allAnimals = _allAnimals;
     final completedCount = allAnimals
         .where((animal) => _isAnimalCompleted(animal.uuid))

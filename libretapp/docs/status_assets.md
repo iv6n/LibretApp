@@ -1,8 +1,9 @@
 # Status Image Assets
 
-Status illustrations use the shared LibretApp 2.5D raster language: centered
-rounded badges, warm agricultural colors, simple symbols, no text or
-watermarks, and real RGBA transparency.
+Status illustrations use the shared LibretApp 2.5D language: centered rounded
+badges, short gradients, soft contact shadows, integrated highlights, warm
+agricultural colors, simple symbols, no text or watermarks, and real RGBA
+transparency.
 
 ## Tanda 7 — Estados operativos
 
@@ -22,6 +23,9 @@ All Tanda 7 assets are compressed 256×256 WEBPs with real RGBA transparency.
 - `assets/images/status_offline.webp`
 
 These assets are also compressed 256×256 WEBPs with real RGBA transparency.
+
+The complete Agenda state set also includes `status_verified.webp`,
+`status_reprogrammed.webp`, `status_draft.webp` and `status_blocked.webp`.
 
 ## Naming convention
 

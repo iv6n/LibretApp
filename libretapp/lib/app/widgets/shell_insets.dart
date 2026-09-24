@@ -5,7 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:libretapp/app/widgets/shell_chrome.dart';
 
 class ShellInsets {
-  static const double defaultBarHeight = 67;
+  // Compact dock that keeps the five destinations visible without taking
+  // unnecessary space from the working area.
+  static const double defaultBarHeight = 65;
   static const double defaultBarBottomGap = 6;
 
   /// Computes bottom padding needed to keep content above the nav bar or keyboard.

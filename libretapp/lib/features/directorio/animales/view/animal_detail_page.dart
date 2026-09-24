@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
@@ -371,6 +372,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
           // pinned app bar, giving a nice depth cue.
           forceElevated: innerBoxIsScrolled,
           actions: [
+            if (ReleaseFeatures.hardwareIntegrationsEnabled)
+              IconButton(
+                tooltip: 'Asignar RFID',
+                onPressed: () => context.pushNamed(
+                  AppRoutes.nameRfid,
+                  queryParameters: {'animalUuid': widget.animalUuid},
+                ),
+                icon: const Icon(Icons.sensors_outlined),
+              ),
             IconButton(
               tooltip: 'Editar',
               onPressed: () async {

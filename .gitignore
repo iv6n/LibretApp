@@ -1,0 +1,12 @@
+# Generated audit and delivery artifacts kept outside the source tree.
+/outputs/
+/libretapp/artifacts/
+/libretapp/outputs/
+/libretapp/build/
+/libretapp/.dart_tool/
+/libretapp/android/.gradle/
+/libretapp/android/build/
+/libretapp/.codex-*.png
+/libretapp/.codex-ui.xml
+/.codex-remote-attachments/
+/work/

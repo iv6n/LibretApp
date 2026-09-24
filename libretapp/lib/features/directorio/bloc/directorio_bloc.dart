@@ -12,6 +12,8 @@ import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_state.dart';
 import 'package:libretapp/features/directorio/data/directorio_config_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_state.dart';
@@ -22,6 +24,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     required this.animalesTabBloc,
     required this.lotesTabBloc,
     required this.ubicacionesTabBloc,
+    this.cultivationRepository,
     DirectorioConfigRepository? configRepository,
   }) : _configRepository = configRepository,
        super(const DirectorioInitial()) {
@@ -37,6 +40,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   final AnimalesTabBloc animalesTabBloc;
   final LotesTabBloc lotesTabBloc;
   final UbicacionesTabBloc ubicacionesTabBloc;
+  final CultivationRepository? cultivationRepository;
   final DirectorioConfigRepository? _configRepository;
   int _searchGeneration = 0;
 
@@ -226,6 +230,18 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
 
     if (isClosed || searchGeneration != _searchGeneration) return;
 
+    var cultivations = const <CultivationEntity>[];
+    if (orders.contains(CombinedSearchType.cultivo) &&
+        cultivationRepository != null) {
+      try {
+        cultivations = await cultivationRepository!.getAll();
+      } catch (_) {
+        cultivations = const [];
+      }
+    }
+
+    if (isClosed || searchGeneration != _searchGeneration) return;
+
     final latestState = state;
     if (latestState is! DirectorioLoaded) return;
     final results = <CombinedSearchResult>[];
@@ -261,6 +277,20 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
                 ),
               );
             }
+          }
+        }
+      } else if (order == CombinedSearchType.cultivo) {
+        for (final cultivation in cultivations) {
+          if (_matchesQuery(cultivation, query)) {
+            _addResultIfNew(
+              seen,
+              results,
+              CombinedSearchResult(
+                type: CombinedSearchType.cultivo,
+                id: cultivation.uuid,
+                name: cultivation.name,
+              ),
+            );
           }
         }
       } else if (order == CombinedSearchType.ubicacion) {
@@ -395,6 +425,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     final lote = _getLoteName(item);
     if (lote.isNotEmpty) return lote;
 
+    if (item is CultivationEntity) return item.name;
+
     return _getUbicacionName(item);
   }
 
@@ -424,6 +456,9 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       return item.uuid;
     }
     if (item is LoteEntity) {
+      return item.uuid;
+    }
+    if (item is CultivationEntity) {
       return item.uuid;
     }
     if (item is LocationEntity) {

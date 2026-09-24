@@ -12,6 +12,7 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_records.
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
@@ -23,11 +24,13 @@ class IsarLocationRepository implements LocationRepository {
   final IsarDatabase _database;
 
   @override
-  Stream<List<LocationEntity>> watchAll() async* {
+  Stream<List<LocationEntity>> watchAll() => _watchAll().asBroadcastStream();
+
+  Stream<List<LocationEntity>> _watchAll() async* {
     final isar = await _database.initialize();
-    await _ensureSeed(isar);
     yield* isar.isarLocations
-        .where()
+        .filter()
+        .archivedAtIsNull()
         .watch(fireImmediately: true)
         .map((items) => items.map((e) => e.toEntity()).toList());
   }
@@ -35,8 +38,7 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Future<List<LocationEntity>> getAll() async {
     final isar = await _database.initialize();
-    await _ensureSeed(isar);
-    final items = await isar.isarLocations.where().findAll();
+    final items = await isar.isarLocations.filter().archivedAtIsNull().findAll();
     return items.map((e) => e.toEntity()).toList(growable: false);
   }
 
@@ -55,7 +57,13 @@ class IsarLocationRepository implements LocationRepository {
           .where()
           .uuidEqualTo(location.uuid)
           .findFirst();
-      final model = location.toIsar(existing?.id);
+      final now = DateTime.now().toUtc();
+      final model = location
+          .copyWith(
+            createdAt: location.createdAt ?? existing?.createdAt ?? now,
+            updatedAt: now,
+          )
+          .toIsar(existing?.id);
       await isar.isarLocations.put(model);
     });
   }
@@ -64,9 +72,17 @@ class IsarLocationRepository implements LocationRepository {
   Future<void> deleteByUuid(String uuid) async {
     final isar = await _database.initialize();
     await isar.writeTxn(() async {
-      final deleted = await isar.isarLocations.deleteByUuid(uuid);
+      final location = await isar.isarLocations
+          .where()
+          .uuidEqualTo(uuid)
+          .findFirst();
+      if (location == null) return;
+      location.archivedAt = DateTime.now().toUtc();
+      location.updatedAt = DateTime.now().toUtc();
+      location.status = LocationStatus.closed.name;
+      await isar.isarLocations.put(location);
       LoggerService.i(
-        'Ubicacion borrada: $uuid -> $deleted',
+        'Ubicacion archivada: $uuid',
         tag: 'IsarLocation',
       );
     });
@@ -156,7 +172,11 @@ class IsarLocationRepository implements LocationRepository {
   @override
   Future<void> deleteCrop(String locationUuid, String cropUuid) async {
     await _modify(locationUuid, (location) {
-      location.crops.removeWhere((c) => c.uuid == cropUuid);
+      final index = location.crops.indexWhere((c) => c.uuid == cropUuid);
+      if (index == -1) {
+        throw StateError('Cultivo $cropUuid no encontrado');
+      }
+      location.crops[index].status = CropStatus.archived.name;
     });
   }
 
@@ -168,6 +188,19 @@ class IsarLocationRepository implements LocationRepository {
   ) async {
     await _modifyCrop(locationUuid, cropUuid, (crop) {
       crop.harvests.add(IsarHarvestRecord.fromEntity(record));
+      if (record.isFinal) {
+        crop.status = CropStatus.harvested.name;
+      }
+    });
+  }
+
+  @override
+  Future<void> addMaintenance(
+    String uuid,
+    MaintenanceRecord record,
+  ) async {
+    await _modify(uuid, (location) {
+      location.maintenances.add(IsarMaintenanceRecord.fromEntity(record));
     });
   }
 
@@ -275,6 +308,7 @@ class IsarLocationRepository implements LocationRepository {
         throw StateError('Ubicacion $uuid no encontrada');
       }
       updater(location);
+      location.updatedAt = DateTime.now().toUtc();
       await isar.isarLocations.put(location);
     });
   }

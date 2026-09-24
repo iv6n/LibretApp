@@ -520,6 +520,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uiLoading => 'Loading';
 
   @override
+  String get fieldDate => 'Date';
+
+  @override
+  String get actionClearDate => 'Clear date';
+
+  @override
+  String get financeRegisterIncome => 'Record income';
+
+  @override
+  String get financeRegisterExpense => 'Record general expense';
+
+  @override
+  String get financeIncomeType => 'Income type';
+
+  @override
+  String get financeExpenseType => 'Expense type';
+
+  @override
+  String get financeAmount => 'Amount';
+
+  @override
+  String get financeCurrency => 'Currency';
+
+  @override
+  String get financeOptionalAnimal => 'Animal (optional)';
+
+  @override
+  String get financeDescriptionHint => 'Additional description...';
+
+  @override
+  String get financeAmountInvalid => 'Enter a valid amount.';
+
+  @override
+  String get financeAmountPositive => 'The amount must be greater than zero.';
+
+  @override
+  String get financeIncomeSaved => 'Income saved.';
+
+  @override
+  String get financeExpenseSaved => 'Expense saved.';
+
+  @override
   String get uiQuickActions => 'Quick actions';
 
   @override
@@ -1113,4 +1155,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get animalPhotoRemove => 'Remove photo';
+
+  @override
+  String get loteWeightTitle => 'Record weighing';
+
+  @override
+  String loteWeightCaptured(int captured, int total) {
+    return '$captured of $total captured';
+  }
+
+  @override
+  String get loteWeightDate => 'Weighing date';
+
+  @override
+  String get loteWeightKg => 'Weight kg';
+
+  @override
+  String get loteWeightPrevious => 'Previous';
+
+  @override
+  String get loteWeightGain => 'Difference';
+
+  @override
+  String get loteWeightAdg => 'ADG';
+
+  @override
+  String get loteWeightSave => 'Save lot weighing';
+
+  @override
+  String get loteWeightSaving => 'Saving...';
+
+  @override
+  String get loteWeightNoActiveAnimals => 'This lot has no active animals.';
+
+  @override
+  String get loteWeightLoadError => 'The lot could not be loaded.';
+
+  @override
+  String get loteWeightAtLeastOne => 'Capture at least one weight.';
+
+  @override
+  String get loteWeightInvalid => 'Invalid weight';
+
+  @override
+  String get lotePerformanceTitle => 'Performance';
+
+  @override
+  String get lotePerformanceEmpty =>
+      'Record a weighing to see lot performance.';
+
+  @override
+  String get lotePerformanceLoadError => 'Performance could not be loaded.';
+
+  @override
+  String get lotePerformanceTotal => 'Total weight';
+
+  @override
+  String get lotePerformanceAverage => 'Average';
+
+  @override
+  String get lotePerformanceAdgAverage => 'Average ADG';
+
+  @override
+  String get lotePerformanceGain => 'Lot gain';
+
+  @override
+  String get lotePerformancePrevious => 'Vs. previous weighing';
+
+  @override
+  String get lotePerformanceGood => 'Good performance';
+
+  @override
+  String get lotePerformanceBelow => 'Below average';
+
+  @override
+  String get lotePerformanceNoGain => 'No gain';
+
+  @override
+  String get lotePerformanceNoReference => 'No reference';
+
+  @override
+  String lotePerformanceUnmeasured(int count) {
+    return '$count animal(s) still unweighed in this session.';
+  }
+
+  @override
+  String get lotePerformanceSessions => 'Weighing history';
+
+  @override
+  String get lotePerformanceEconomics => 'Estimated economics';
+
+  @override
+  String get lotePerformanceFeedPerDay => 'Feed/day';
+
+  @override
+  String get lotePerformanceCostPerKg => 'Cost/kg gained';
+
+  @override
+  String get lotePerformanceMargin => 'Feed margin';
 }

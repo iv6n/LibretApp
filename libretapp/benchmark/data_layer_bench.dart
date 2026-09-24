@@ -22,7 +22,6 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rem
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/movement_record_repository_isar.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_health_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';

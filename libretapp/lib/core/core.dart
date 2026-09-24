@@ -16,3 +16,8 @@ export 'router/router.dart';
 export 'security/security.dart';
 export 'services/services.dart';
 export 'widgets/widgets.dart';
+export 'persistence/persistence.dart';
+export 'tenancy/tenancy.dart';
+export 'sync/sync.dart';
+export 'platform/platform.dart';
+export '../features/rfid/rfid.dart';

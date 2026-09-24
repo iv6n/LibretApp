@@ -17,6 +17,18 @@ abstract final class AppAssetPaths {
   static const recordSale = 'assets/images/record_sale.webp';
   static const recordReproduction = 'assets/images/record_reproduction.webp';
   static const recordService = 'assets/images/record_service.webp';
+  static const recordAnimal = 'assets/images/record_animal.webp';
+  static const recordLot = 'assets/images/record_lot.webp';
+  static const recordRfid = 'assets/images/record_rfid.webp';
+  static const recordLocation = 'assets/images/record_location.webp';
+  static const recordIrrigation = 'assets/images/record_irrigation.webp';
+  static const recordCropHealth = 'assets/images/record_crop_health.webp';
+  static const recordTask = 'assets/images/record_task.webp';
+  static const recordAdministration =
+      'assets/images/record_administration.webp';
+  static const recordReminder = 'assets/images/record_reminder.webp';
+  static const recordCare = 'assets/images/record_care.webp';
+  static const recordAlert = 'assets/images/record_alert.webp';
   static const cropField = 'assets/images/crop_field.webp';
   static const cropGerminating = 'assets/images/crop_germinating.webp';
   static const cropVegetative = 'assets/images/crop_vegetative.webp';
@@ -48,6 +60,10 @@ abstract final class AppAssetPaths {
   static const statusQuarantine = 'assets/images/status_quarantine.webp';
   static const statusSynced = 'assets/images/status_synced.webp';
   static const statusOffline = 'assets/images/status_offline.webp';
+  static const statusVerified = 'assets/images/status_verified.webp';
+  static const statusReprogrammed = 'assets/images/status_reprogrammed.webp';
+  static const statusDraft = 'assets/images/status_draft.webp';
+  static const statusBlocked = 'assets/images/status_blocked.webp';
 
   static const healthVaccine = 'assets/images/health_vaccine.webp';
   static const healthTreatment = 'assets/images/health_treatment.webp';

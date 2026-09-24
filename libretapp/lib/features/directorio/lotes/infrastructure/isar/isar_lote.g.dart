@@ -32,53 +32,68 @@ const IsarLoteSchema = CollectionSchema(
       name: r'currentLocationId',
       type: IsarType.string,
     ),
-    r'descripcion': PropertySchema(
+    r'dailyFeedKgPerHead': PropertySchema(
       id: 3,
+      name: r'dailyFeedKgPerHead',
+      type: IsarType.double,
+    ),
+    r'descripcion': PropertySchema(
+      id: 4,
       name: r'descripcion',
       type: IsarType.string,
     ),
     r'fechaCierre': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'fechaCierre',
       type: IsarType.dateTime,
     ),
     r'fechaCreacion': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'fechaCreacion',
       type: IsarType.dateTime,
     ),
+    r'feedPricePerKg': PropertySchema(
+      id: 7,
+      name: r'feedPricePerKg',
+      type: IsarType.double,
+    ),
     r'lastUpdateDate': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'lastUpdateDate',
       type: IsarType.dateTime,
     ),
+    r'liveWeightPricePerKg': PropertySchema(
+      id: 9,
+      name: r'liveWeightPricePerKg',
+      type: IsarType.double,
+    ),
     r'nombre': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'nombre',
       type: IsarType.string,
     ),
     r'notas': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'notas',
       type: IsarType.string,
     ),
     r'remoteId': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'remoteId',
       type: IsarType.string,
     ),
     r'syncDate': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'syncDate',
       type: IsarType.dateTime,
     ),
     r'synced': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'synced',
       type: IsarType.bool,
     ),
     r'uuid': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'uuid',
       type: IsarType.string,
     )
@@ -162,16 +177,19 @@ void _isarLoteSerialize(
   writer.writeBool(offsets[0], object.active);
   writer.writeStringList(offsets[1], object.animalUuids);
   writer.writeString(offsets[2], object.currentLocationId);
-  writer.writeString(offsets[3], object.description);
-  writer.writeDateTime(offsets[4], object.closedAt);
-  writer.writeDateTime(offsets[5], object.createdAt);
-  writer.writeDateTime(offsets[6], object.lastUpdateDate);
-  writer.writeString(offsets[7], object.name);
-  writer.writeString(offsets[8], object.notes);
-  writer.writeString(offsets[9], object.remoteId);
-  writer.writeDateTime(offsets[10], object.syncDate);
-  writer.writeBool(offsets[11], object.synced);
-  writer.writeString(offsets[12], object.uuid);
+  writer.writeDouble(offsets[3], object.dailyFeedKgPerHead);
+  writer.writeString(offsets[4], object.description);
+  writer.writeDateTime(offsets[5], object.closedAt);
+  writer.writeDateTime(offsets[6], object.createdAt);
+  writer.writeDouble(offsets[7], object.feedPricePerKg);
+  writer.writeDateTime(offsets[8], object.lastUpdateDate);
+  writer.writeDouble(offsets[9], object.liveWeightPricePerKg);
+  writer.writeString(offsets[10], object.name);
+  writer.writeString(offsets[11], object.notes);
+  writer.writeString(offsets[12], object.remoteId);
+  writer.writeDateTime(offsets[13], object.syncDate);
+  writer.writeBool(offsets[14], object.synced);
+  writer.writeString(offsets[15], object.uuid);
 }
 
 IsarLote _isarLoteDeserialize(
@@ -184,17 +202,20 @@ IsarLote _isarLoteDeserialize(
   object.active = reader.readBool(offsets[0]);
   object.animalUuids = reader.readStringList(offsets[1]) ?? [];
   object.currentLocationId = reader.readStringOrNull(offsets[2]);
-  object.description = reader.readStringOrNull(offsets[3]);
-  object.closedAt = reader.readDateTimeOrNull(offsets[4]);
-  object.createdAt = reader.readDateTime(offsets[5]);
+  object.dailyFeedKgPerHead = reader.readDoubleOrNull(offsets[3]);
+  object.description = reader.readStringOrNull(offsets[4]);
+  object.closedAt = reader.readDateTimeOrNull(offsets[5]);
+  object.createdAt = reader.readDateTime(offsets[6]);
+  object.feedPricePerKg = reader.readDoubleOrNull(offsets[7]);
   object.id = id;
-  object.lastUpdateDate = reader.readDateTime(offsets[6]);
-  object.name = reader.readString(offsets[7]);
-  object.notes = reader.readStringOrNull(offsets[8]);
-  object.remoteId = reader.readStringOrNull(offsets[9]);
-  object.syncDate = reader.readDateTimeOrNull(offsets[10]);
-  object.synced = reader.readBool(offsets[11]);
-  object.uuid = reader.readString(offsets[12]);
+  object.lastUpdateDate = reader.readDateTime(offsets[8]);
+  object.liveWeightPricePerKg = reader.readDoubleOrNull(offsets[9]);
+  object.name = reader.readString(offsets[10]);
+  object.notes = reader.readStringOrNull(offsets[11]);
+  object.remoteId = reader.readStringOrNull(offsets[12]);
+  object.syncDate = reader.readDateTimeOrNull(offsets[13]);
+  object.synced = reader.readBool(offsets[14]);
+  object.uuid = reader.readString(offsets[15]);
   return object;
 }
 
@@ -212,24 +233,30 @@ P _isarLoteDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 6:
       return (reader.readDateTime(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 9:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 11:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 14:
+      return (reader.readBool(offset)) as P;
+    case 15:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -811,6 +838,90 @@ extension IsarLoteQueryFilter
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'dailyFeedKgPerHead',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'dailyFeedKgPerHead',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'dailyFeedKgPerHead',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'dailyFeedKgPerHead',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'dailyFeedKgPerHead',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      dailyFeedKgPerHeadBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'dailyFeedKgPerHead',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> descriptionIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1082,6 +1193,88 @@ extension IsarLoteQueryFilter
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      feedPricePerKgIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'feedPricePerKg',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      feedPricePerKgIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'feedPricePerKg',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> feedPricePerKgEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'feedPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      feedPricePerKgGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'feedPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      feedPricePerKgLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'feedPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> feedPricePerKgBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'feedPricePerKg',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1185,6 +1378,90 @@ extension IsarLoteQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'liveWeightPricePerKg',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'liveWeightPricePerKg',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'liveWeightPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'liveWeightPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'liveWeightPricePerKg',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterFilterCondition>
+      liveWeightPricePerKgBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'liveWeightPricePerKg',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }
@@ -1852,6 +2129,19 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDailyFeedKgPerHead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyFeedKgPerHead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy>
+      sortByDailyFeedKgPerHeadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyFeedKgPerHead', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.asc);
@@ -1888,6 +2178,18 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFeedPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'feedPricePerKg', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByFeedPricePerKgDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'feedPricePerKg', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByLastUpdateDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdateDate', Sort.asc);
@@ -1897,6 +2199,19 @@ extension IsarLoteQuerySortBy on QueryBuilder<IsarLote, IsarLote, QSortBy> {
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByLastUpdateDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdateDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> sortByLiveWeightPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liveWeightPricePerKg', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy>
+      sortByLiveWeightPricePerKgDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liveWeightPricePerKg', Sort.desc);
     });
   }
 
@@ -1999,6 +2314,19 @@ extension IsarLoteQuerySortThenBy
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDailyFeedKgPerHead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyFeedKgPerHead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy>
+      thenByDailyFeedKgPerHeadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'dailyFeedKgPerHead', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'descripcion', Sort.asc);
@@ -2035,6 +2363,18 @@ extension IsarLoteQuerySortThenBy
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFeedPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'feedPricePerKg', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByFeedPricePerKgDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'feedPricePerKg', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -2056,6 +2396,19 @@ extension IsarLoteQuerySortThenBy
   QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByLastUpdateDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdateDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy> thenByLiveWeightPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liveWeightPricePerKg', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QAfterSortBy>
+      thenByLiveWeightPricePerKgDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'liveWeightPricePerKg', Sort.desc);
     });
   }
 
@@ -2154,6 +2507,12 @@ extension IsarLoteQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByDailyFeedKgPerHead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'dailyFeedKgPerHead');
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByDescription(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2173,9 +2532,21 @@ extension IsarLoteQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByFeedPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'feedPricePerKg');
+    });
+  }
+
   QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByLastUpdateDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdateDate');
+    });
+  }
+
+  QueryBuilder<IsarLote, IsarLote, QDistinct> distinctByLiveWeightPricePerKg() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'liveWeightPricePerKg');
     });
   }
 
@@ -2247,6 +2618,13 @@ extension IsarLoteQueryProperty
     });
   }
 
+  QueryBuilder<IsarLote, double?, QQueryOperations>
+      dailyFeedKgPerHeadProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'dailyFeedKgPerHead');
+    });
+  }
+
   QueryBuilder<IsarLote, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'descripcion');
@@ -2265,9 +2643,22 @@ extension IsarLoteQueryProperty
     });
   }
 
+  QueryBuilder<IsarLote, double?, QQueryOperations> feedPricePerKgProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'feedPricePerKg');
+    });
+  }
+
   QueryBuilder<IsarLote, DateTime, QQueryOperations> lastUpdateDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdateDate');
+    });
+  }
+
+  QueryBuilder<IsarLote, double?, QQueryOperations>
+      liveWeightPricePerKgProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'liveWeightPricePerKg');
     });
   }
 

@@ -49,8 +49,23 @@ class WeightRecordRepositoryIsar
       'Peso registrado para $animalUuid (${saved.id})';
 
   @override
-  Future<List<WeightRecord>> getWeightRecords(String animalUuid) =>
-      getRecordsFor(animalUuid);
+  Future<List<WeightRecord>> getWeightRecords(String animalUuid) async {
+    final records = (await getRecordsFor(animalUuid)).toList();
+    _sortNewestFirst(records);
+    return records;
+  }
+
+  @override
+  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid) async {
+    final db = await isar;
+    final records = await db.isarWeightRecords
+        .filter()
+        .lotUuidEqualTo(lotUuid)
+        .findAll();
+    final entities = records.map((record) => record.toEntity()).toList();
+    _sortNewestFirst(entities);
+    return entities;
+  }
 
   @override
   Future<Map<String, WeightRecord>> getWeightRecordsByRecordUuids(
@@ -95,6 +110,9 @@ class WeightRecordRepositoryIsar
           .putIfAbsent(record.animalUuid, () => <WeightRecord>[])
           .add(record.toEntity());
     }
+    for (final history in grouped.values) {
+      _sortNewestFirst(history);
+    }
     return grouped;
   }
 
@@ -110,4 +128,14 @@ class WeightRecordRepositoryIsar
         onSaved: (isar, _) =>
             AnimalProjectionRecalculator.recalculate(isar, animalUuid),
       );
+
+  static void _sortNewestFirst(List<WeightRecord> records) {
+    records.sort((a, b) {
+      final measured = b.date.compareTo(a.date);
+      if (measured != 0) return measured;
+      final created = (b.createdAt ?? b.date).compareTo(a.createdAt ?? a.date);
+      if (created != 0) return created;
+      return (b.recordUuid ?? b.id ?? '').compareTo(a.recordUuid ?? a.id ?? '');
+    });
+  }
 }

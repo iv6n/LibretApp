@@ -1,7 +1,7 @@
 ﻿/// features \u203a ubicaciones \u203a domain \u203a enums \u203a crop_status \u2014 enum for crop lifecycle status.
 library;
 
-enum CropStatus { active, harvested, failed }
+enum CropStatus { active, harvested, failed, archived }
 
 extension CropStatusX on CropStatus {
   String get displayName {
@@ -12,6 +12,8 @@ extension CropStatusX on CropStatus {
         return 'Cosechado';
       case CropStatus.failed:
         return 'Perdido';
+      case CropStatus.archived:
+        return 'Archivado';
     }
   }
 }

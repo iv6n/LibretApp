@@ -19,7 +19,6 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';

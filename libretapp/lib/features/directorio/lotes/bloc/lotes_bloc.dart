@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_bloc \u2014 BLoC for the lotes list.
+/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_bloc \u2014 BLoC for the lotes list.
 library;
 
 import 'dart:async';
@@ -97,6 +97,9 @@ class LotesBloc extends Bloc<LotesEvent, LotesState> {
         nombre: event.name,
         descripcion: event.description,
         notas: event.notes,
+        feedPricePerKg: event.feedPricePerKg,
+        dailyFeedKgPerHead: event.dailyFeedKgPerHead,
+        liveWeightPricePerKg: event.liveWeightPricePerKg,
       );
 
       final updatedLotes = [...currentState.lotes, newLote];

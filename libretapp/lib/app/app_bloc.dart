@@ -14,7 +14,7 @@ import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart
 import 'package:libretapp/features/agenda/domain/operational_planning_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/default_care_rules.dart';
-import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
+import 'app_migrations.dart';
 
 part 'app_event.dart';
 part 'app_state.dart';
@@ -35,13 +35,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
     await _preloadCareDefaults();
-    await _syncAutomaticReminders();
 
     // Ejecutar migración de enums de ubicaciones (Spanish → English strings)
     try {
-      if (locator.isRegistered<LocationEnumMigrationService>()) {
-        await locator<LocationEnumMigrationService>().runIfNeeded();
-      }
+      await runLocationEnumMigrationIfRegistered();
     } catch (e, st) {
       LoggerService.e(
         'Error durante migracion de enums de ubicaciones: $e',
@@ -49,6 +46,26 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         stackTrace: st,
       );
     }
+
+    try {
+      final migrated = await runCultivationMigrationIfRegistered();
+      if (migrated > 0) {
+        LoggerService.i(
+          'Cultivos migrados desde ubicaciones: $migrated',
+          tag: 'AppBloc',
+        );
+      }
+    } catch (e, st) {
+      LoggerService.e(
+        'Error durante migracion de cultivos: $e',
+        tag: 'AppBloc',
+        stackTrace: st,
+      );
+    }
+
+    // La agenda se genera después de migrar datos locales para no crear
+    // ocurrencias contra tipos de ubicación todavía no normalizados.
+    await _syncAutomaticReminders();
 
     await _finishStartup(emit);
   }

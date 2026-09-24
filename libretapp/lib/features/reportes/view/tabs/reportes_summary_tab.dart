@@ -226,7 +226,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
                       ),
                       Text(
                         'En ${c.daysRemaining} días · '
-                        '${DateFormat('d MMM').format(c.expectedDate)}',
+                        '${DateFormat('d MMM', Localizations.localeOf(context).toLanguageTag()).format(c.expectedDate)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),

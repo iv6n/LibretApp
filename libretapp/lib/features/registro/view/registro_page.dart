@@ -1,9 +1,12 @@
 /// features \u203a registro \u203a view \u203a registro_page \u2014 entry page for the registro module showing record type selection.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/generated_asset_icon.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
@@ -51,23 +54,35 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroSection(
                   label: 'Nuevo',
                   items: [
+                    if (ReleaseFeatures.hardwareIntegrationsEnabled)
+                      _RegistroCardItem(
+                        icon: Icons.sensors,
+                        label: 'RFID',
+                        subtitle: 'Escanear y asignar aretes',
+                        color: Colors.deepOrange,
+                        assetPath: assetForRegistroAction('RFID'),
+                        onTap: (context) =>
+                            context.pushNamed(AppRoutes.nameRfid),
+                      ),
                     _RegistroCardItem(
                       icon: Icons.pets,
                       label: 'Animal',
                       subtitle: 'Nuevo animal',
                       color: AppColors.primary,
+                      assetPath: assetForRegistroAction('Animal'),
                       large: true,
                       onTap: (context) =>
-                          context.goNamed(AppRoutes.nameAnimalNuevo),
+                          context.pushNamed(AppRoutes.nameAnimalNuevo),
                     ),
                     _RegistroCardItem(
                       icon: Icons.groups,
                       label: 'Lote',
                       subtitle: 'Nuevo lote',
                       color: AppColors.secondary,
+                      assetPath: assetForRegistroAction('Lote'),
                       large: true,
                       onTap: (context) =>
-                          context.goNamed(AppRoutes.nameLoteNuevo),
+                          context.pushNamed(AppRoutes.nameLoteNuevo),
                     ),
                     _RegistroCardItem(
                       icon: Icons.child_care,
@@ -183,8 +198,9 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Ubicacion',
                       subtitle: 'Nueva ubicacion',
                       color: AppColors.accent,
+                      assetPath: assetForRegistroAction('Ubicacion'),
                       onTap: (context) =>
-                          context.goNamed(AppRoutes.nameUbicacionNueva),
+                          context.pushNamed(AppRoutes.nameUbicacionNueva),
                     ),
                     _RegistroCardItem(
                       icon: Icons.grass,
@@ -219,6 +235,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Riego',
                       subtitle: 'Riego de cultivo',
                       color: Colors.blueAccent,
+                      assetPath: assetForRegistroAction('Riego'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -231,6 +248,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Salud de cultivo',
                       subtitle: 'Problemas y tratamiento',
                       color: Colors.redAccent,
+                      assetPath: assetForRegistroAction('Salud de cultivo'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -243,6 +261,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Tarea',
                       subtitle: 'Nueva tarea de cultivo',
                       color: Colors.amber,
+                      assetPath: assetForRegistroAction('Tarea'),
                       onTap: (context) {
                         _handleCropRecord(context, _CropRecordMenuAction.task);
                       },
@@ -259,14 +278,14 @@ class _RegistroPageState extends State<RegistroPage> {
 
   Future<void> _handleNewCrop(BuildContext context) async {
     final locations = await _locationRepository.getAll();
-    if (!mounted) return;
+    if (!mounted || !context.mounted) return;
     if (locations.isEmpty) {
       _showMessage('Primero crea una ubicacion para registrar cultivos.');
       return;
     }
 
     final location = await _pickLocation(context, locations);
-    if (!mounted || location == null) return;
+    if (!mounted || !context.mounted || location == null) return;
 
     final crop = await showModalBottomSheet<CropRecord>(
       context: context,
@@ -274,7 +293,7 @@ class _RegistroPageState extends State<RegistroPage> {
       isScrollControlled: true,
       builder: (sheetContext) => CropFormSheet(locationName: location.name),
     );
-    if (!mounted || crop == null) return;
+    if (!mounted || !context.mounted || crop == null) return;
 
     await _locationRepository.addCrop(location.uuid, crop);
     if (!mounted) return;
@@ -286,7 +305,7 @@ class _RegistroPageState extends State<RegistroPage> {
     _CropRecordMenuAction action,
   ) async {
     final locations = await _locationRepository.getAll();
-    if (!mounted) return;
+    if (!mounted || !context.mounted) return;
     final withCrops = locations
         .where((location) => location.crops.isNotEmpty)
         .toList();
@@ -296,7 +315,7 @@ class _RegistroPageState extends State<RegistroPage> {
     }
 
     final selection = await _pickLocationAndCrop(context, withCrops, action);
-    if (!mounted || selection == null) return;
+    if (!mounted || !context.mounted || selection == null) return;
 
     final location = selection.location;
     final crop = selection.crop;
@@ -309,7 +328,7 @@ class _RegistroPageState extends State<RegistroPage> {
           isScrollControlled: true,
           builder: (sheetContext) => HarvestFormSheet(cropName: crop.cropName),
         );
-        if (!mounted || record == null) return;
+        if (!mounted || !context.mounted || record == null) return;
         await _locationRepository.addHarvest(location.uuid, crop.uuid, record);
         break;
       case _CropRecordMenuAction.watering:
@@ -320,7 +339,7 @@ class _RegistroPageState extends State<RegistroPage> {
           builder: (sheetContext) =>
               CropWateringFormSheet(cropName: crop.cropName),
         );
-        if (!mounted || record == null) return;
+        if (!mounted || !context.mounted || record == null) return;
         await _locationRepository.addCropWatering(
           location.uuid,
           crop.uuid,
@@ -335,7 +354,7 @@ class _RegistroPageState extends State<RegistroPage> {
           builder: (sheetContext) =>
               CropHealthFormSheet(cropName: crop.cropName),
         );
-        if (!mounted || record == null) return;
+        if (!mounted || !context.mounted || record == null) return;
         await _locationRepository.addCropHealth(
           location.uuid,
           crop.uuid,
@@ -349,7 +368,7 @@ class _RegistroPageState extends State<RegistroPage> {
           isScrollControlled: true,
           builder: (sheetContext) => CropTaskFormSheet(cropName: crop.cropName),
         );
-        if (!mounted || task == null) return;
+        if (!mounted || !context.mounted || task == null) return;
         await _locationRepository.addCropTask(location.uuid, crop.uuid, task);
         break;
     }
@@ -585,13 +604,56 @@ class _RegistroCardGrid extends StatelessWidget {
   }
 }
 
-class _RegistroCard extends StatelessWidget {
+class _RegistroCard extends StatefulWidget {
   const _RegistroCard({required this.item});
 
   final _RegistroCardItem item;
 
   @override
+  State<_RegistroCard> createState() => _RegistroCardState();
+}
+
+class _RegistroCardState extends State<_RegistroCard> {
+  static const _navigationGuardDuration = Duration(milliseconds: 700);
+
+  Timer? _navigationGuardTimer;
+  bool _opening = false;
+
+  @override
+  void dispose() {
+    _navigationGuardTimer?.cancel();
+    super.dispose();
+  }
+
+  void _open() {
+    if (_opening) return;
+
+    // Close the keyboard before navigation so Android back does not pop the
+    // input layer instead of the registration route.
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _opening = true);
+
+    try {
+      widget.item.onTap(context);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _opening = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir este registro.')),
+        );
+      }
+      return;
+    }
+
+    _navigationGuardTimer?.cancel();
+    _navigationGuardTimer = Timer(_navigationGuardDuration, () {
+      if (mounted) setState(() => _opening = false);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final item = widget.item;
     final theme = Theme.of(context);
     final bgColor = item.featured
         ? item.color.withValues(alpha: 0.08)
@@ -611,7 +673,7 @@ class _RegistroCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => item.onTap(context),
+        onTap: _opening ? null : _open,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
           child: Row(
@@ -664,8 +726,10 @@ class _RegistroCard extends StatelessWidget {
                   color: item.color.withValues(alpha: 0.15),
                 ),
                 child: Icon(
-                  Icons.chevron_right,
-                  color: item.color,
+                  _opening ? Icons.hourglass_top : Icons.chevron_right,
+                  color: _opening
+                      ? item.color.withValues(alpha: 0.55)
+                      : item.color,
                   size: chevronIcon,
                 ),
               ),

@@ -11,6 +11,8 @@ import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class RegistroIngresoPage extends StatefulWidget {
   const RegistroIngresoPage({super.key});
@@ -23,6 +25,7 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
   final _amountCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController(text: 'USD');
   final _notesCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   var _type = IncomeType.milkSale;
   var _date = DateTime.now();
   AnimalEntity? _selectedAnimal;
@@ -37,19 +40,21 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final amount = parseFormDouble(_amountCtrl.text);
     if (amount == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Ingresa un monto válido.')),
+        SnackBar(content: Text(l10n.financeAmountInvalid)),
       );
       return;
     }
     if (amount <= 0) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('El monto debe ser mayor a cero.')),
+        SnackBar(content: Text(l10n.financeAmountPositive)),
       );
       return;
     }
@@ -78,167 +83,89 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
       }
       if (!mounted) return;
       navigator.pop();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Ingreso guardado.')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l10n.financeIncomeSaved)));
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) setState(() => _date = picked);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Registrar ingreso')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tipo de ingreso', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<IncomeType>(
-              initialValue: _type,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
-              items: IncomeType.values
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _type = v);
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Monto', style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _amountCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '0.00',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Moneda', style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _currencyCtrl,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: 'USD',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Fecha', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(4),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today, size: 18),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-                child: Text(
-                  '${_date.day.toString().padLeft(2, '0')}/'
-                  '${_date.month.toString().padLeft(2, '0')}/'
-                  '${_date.year}',
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Animal (opcional)', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            AnimalSelector(
-              selectedAnimal: _selectedAnimal,
-              onSelected: (a) => setState(() => _selectedAnimal = a),
-            ),
-            const SizedBox(height: 16),
-            Text('Notas (opcional)', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _notesCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Descripción adicional...',
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Guardar ingreso'),
-              ),
-            ),
-          ],
+    final l10n = AppLocalizations.of(context);
+    return AppFormScaffold(
+      title: l10n.financeRegisterIncome,
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      saveKey: const ValueKey('finance-income-save'),
+      onCancel: () => Navigator.of(context).pop(),
+      cancelLabel: l10n.actionCancel,
+      fields: [
+        AppSelectField<IncomeType>(
+          value: _type,
+          labelText: l10n.financeIncomeType,
+          requiredField: true,
+          items: IncomeType.values,
+          itemLabel: (type) => type.label,
+          onChanged: (value) {
+            if (value != null) setState(() => _type = value);
+          },
         ),
-      ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _amountCtrl,
+          key: const ValueKey('finance-income-amount'),
+          labelText: l10n.financeAmount,
+          hintText: '0.00',
+          requiredField: true,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) {
+            final amount = parseFormDouble(value ?? '');
+            if (amount == null) return l10n.financeAmountInvalid;
+            if (amount <= 0) return l10n.financeAmountPositive;
+            return null;
+          },
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _currencyCtrl,
+          key: const ValueKey('finance-income-currency'),
+          labelText: l10n.financeCurrency,
+          hintText: 'USD',
+          textCapitalization: TextCapitalization.characters,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(2000),
+          lastDate: DateTime.now(),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppFormSection(
+          title: l10n.financeOptionalAnimal,
+          child: AnimalSelector(
+            label: l10n.financeOptionalAnimal,
+            selectedAnimal: _selectedAnimal,
+            onSelected: (animal) => setState(() => _selectedAnimal = animal),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _notesCtrl,
+          labelText: l10n.fieldNotesOptional,
+          hintText: l10n.financeDescriptionHint,
+          maxLines: 3,
+        ),
+      ],
     );
   }
 }

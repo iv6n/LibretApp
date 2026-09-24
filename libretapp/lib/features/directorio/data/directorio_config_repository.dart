@@ -13,6 +13,7 @@ const defaultDirectorioSectionConfig = DirectorioSectionConfig(
 );
 
 const _storageKey = 'directorio.section_config.v1';
+const _cultivosMigrationKey = 'directorio.section_config.cultivos.v1';
 
 class DirectorioSectionConfig extends Equatable {
   const DirectorioSectionConfig({
@@ -41,9 +42,7 @@ class DirectorioSectionConfig extends Equatable {
       if (!ordered.contains(section)) ordered.add(section);
     }
 
-    final visible = visibleSections
-        .where(ordered.contains)
-        .toSet();
+    final visible = visibleSections.where(ordered.contains).toSet();
 
     return DirectorioSectionConfig(
       orderedSections: List<DirectorioSection>.unmodifiable(ordered),
@@ -92,10 +91,25 @@ class DirectorioConfigRepository {
 
   Future<DirectorioSectionConfig> load() async {
     final raw = _prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return defaultDirectorioSectionConfig;
+    if (raw == null || raw.isEmpty) {
+      await _prefs.setBool(_cultivosMigrationKey, true);
+      return defaultDirectorioSectionConfig;
+    }
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      return DirectorioSectionConfig.fromJson(json);
+      var config = DirectorioSectionConfig.fromJson(json);
+      if (!(_prefs.getBool(_cultivosMigrationKey) ?? false)) {
+        config = DirectorioSectionConfig(
+          orderedSections: config.orderedSections,
+          visibleSections: {
+            ...config.visibleSections,
+            DirectorioSection.cultivos,
+          },
+        ).normalized();
+        await save(config);
+        await _prefs.setBool(_cultivosMigrationKey, true);
+      }
+      return config;
     } catch (_) {
       return defaultDirectorioSectionConfig;
     }

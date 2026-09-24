@@ -1,9 +1,9 @@
 # Inventory and Finance Image Assets
 
-Inventory and finance illustrations use the same soft 2.5D raster language as
-the location, task, status and health assets: centered square WEBPs, warm
-agricultural colors, simple silhouettes, no text or watermarks, and real RGBA
-transparency.
+Inventory and finance illustrations use the shared 2.5D language: centered
+square WEBPs with short gradients, soft contact shadows and integrated
+highlights, warm agricultural colors, simple silhouettes, no text or
+watermarks, and real RGBA transparency.
 
 ## Tanda 10 - Inventory and finance
 

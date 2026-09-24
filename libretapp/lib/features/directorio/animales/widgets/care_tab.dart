@@ -124,7 +124,13 @@ class _CareTabState extends State<CareTab> {
       await CareCalendarService(
         widget.careRepo,
       ).regenerateFor(widget.data.animal, now: DateTime.now());
-      await locator<AgendaReminderSyncService>().sync();
+      // The widget is also used in isolated flows (for example during local
+      // draft capture and tests) where the global agenda coordinator is not
+      // installed. Saving the care record must not fail just because the
+      // optional agenda bridge is unavailable.
+      if (locator.isRegistered<AgendaReminderSyncService>()) {
+        await locator<AgendaReminderSyncService>().sync();
+      }
       widget.onChanged();
     } finally {
       if (mounted) setState(() => _busy = false);

@@ -17,10 +17,16 @@ String _registroKey(String value) => value
 
 /// Returns the approved raster asset for a Registro menu action.
 ///
-/// Actions without a semantically specific asset intentionally return null so
-/// their caller can keep the Material icon fallback.
+/// Every known Registro card resolves to a centralized asset; unknown or
+/// future actions return null so the caller can keep its fallback.
 String? assetForRegistroAction(String action) {
   switch (_registroKey(action)) {
+    case 'rfid':
+      return AppAssetPaths.recordRfid;
+    case 'animal':
+      return AppAssetPaths.recordAnimal;
+    case 'lote':
+      return AppAssetPaths.recordLot;
     case 'paricion':
       return AppAssetPaths.healthBirth;
     case 'tratar_lote':
@@ -45,6 +51,14 @@ String? assetForRegistroAction(String action) {
       return AppAssetPaths.cropField;
     case 'cosecha':
       return AppAssetPaths.cropHarvested;
+    case 'ubicacion':
+      return AppAssetPaths.recordLocation;
+    case 'riego':
+      return AppAssetPaths.recordIrrigation;
+    case 'salud_de_cultivo':
+      return AppAssetPaths.recordCropHealth;
+    case 'tarea':
+      return AppAssetPaths.recordTask;
     default:
       return null;
   }

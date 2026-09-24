@@ -41,6 +41,7 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
   initialLocation: initialLocation,
   overridePlatformDefaultLocation: initialLocation == AppRoutes.onboarding,
   observers: [NavigationTracer.observer],
+  errorBuilder: (context, state) => const _RouterErrorPage(),
   routes: [
     GoRoute(
       path: AppRoutes.onboarding,
@@ -93,6 +94,7 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                       animalesTabBloc: context.read<AnimalesTabBloc>(),
                       lotesTabBloc: context.read<LotesTabBloc>(),
                       ubicacionesTabBloc: context.read<UbicacionesTabBloc>(),
+                      cultivationRepository: locator<CultivationRepository>(),
                       configRepository: DirectorioConfigRepository(
                         locator<SharedPrefsService>(),
                       ),
@@ -287,6 +289,17 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                   },
                 ),
                 GoRoute(
+                  path: 'lotes/:uuid/registros/peso',
+                  name: AppRoutes.nameLoteRegistroPeso,
+                  pageBuilder: (context, state) {
+                    final uuid = state.pathParameters['uuid'] ?? '';
+                    return _buildOverlayDetailPage(
+                      state: state,
+                      child: LoteWeighingPage(loteUuid: uuid),
+                    );
+                  },
+                ),
+                GoRoute(
                   path: 'lotes/:uuid',
                   name: AppRoutes.nameLoteDetalle,
                   pageBuilder: (context, state) {
@@ -298,14 +311,50 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                   },
                 ),
                 GoRoute(
+                  path: 'cultivos/nuevo',
+                  name: AppRoutes.nameCultivoNuevo,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: CultivationFormPage(
+                      presetLocationUuid: state.uri.queryParameters['location'],
+                    ),
+                  ),
+                ),
+                GoRoute(
+                  path: 'cultivos/:uuid/editar',
+                  name: AppRoutes.nameCultivoEditar,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: CultivationFormPage(
+                      cultivationUuid: state.pathParameters['uuid'] ?? '',
+                    ),
+                  ),
+                ),
+                GoRoute(
+                  path: 'cultivos/:uuid',
+                  name: AppRoutes.nameCultivoDetalle,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: CultivationDetailPage(
+                      cultivationUuid: state.pathParameters['uuid'] ?? '',
+                    ),
+                  ),
+                ),
+                GoRoute(
                   path: 'ubicaciones/nueva',
                   name: AppRoutes.nameUbicacionNueva,
                   pageBuilder: (context, state) {
-                    final presetParentUuid = state.extra as String?;
+                    final extra = state.extra;
+                    final args = extra is LocationFormRouteArgs
+                        ? extra
+                        : LocationFormRouteArgs(
+                            presetParentUuid: extra is String ? extra : null,
+                          );
                     return _buildOverlayDetailPage(
                       state: state,
                       child: LocationFormPage(
-                        presetParentUuid: presetParentUuid,
+                        presetParentUuid: args.presetParentUuid,
+                        returnCreatedUuid: args.returnCreatedUuid,
                       ),
                     );
                   },
@@ -629,6 +678,16 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
       pageBuilder: (context, state) =>
           _buildOverlayDetailPage(state: state, child: const ExportarPage()),
     ),
+    GoRoute(
+      path: AppRoutes.rfid,
+      name: AppRoutes.nameRfid,
+      pageBuilder: (context, state) => _buildOverlayDetailPage(
+        state: state,
+        child: RfidScannerPage(
+          initialAnimalUuid: state.uri.queryParameters['animalUuid'],
+        ),
+      ),
+    ),
   ],
 );
 
@@ -657,6 +716,42 @@ CustomTransitionPage<void> _buildOverlayDetailPage({
       );
     },
   );
+}
+
+/// A recoverable route error surface. Without an explicit error page, a
+/// navigation failure can leave the transition area looking empty on release
+/// builds, especially after a fast tap during another transition.
+class _RouterErrorPage extends StatelessWidget {
+  const _RouterErrorPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('No se pudo abrir')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.refresh, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'El registro no pudo abrirse. Puedes volver a Inicio e intentarlo de nuevo.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () => GoRouter.of(context).go(AppRoutes.inicio),
+                icon: const Icon(Icons.home),
+                label: const Text('Volver a Inicio'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Reached only via a direct deep link into a chapter without going through

@@ -3,20 +3,29 @@ part of '../location_detail_widgets.dart';
 // ─── RecordActions ────────────────────────────────────────────────────────────
 
 class RecordActions extends StatelessWidget {
-  const RecordActions({super.key, 
+  const RecordActions({
+    super.key,
     required this.onVisit,
-    required this.onWater,
-    required this.onSalt,
-    required this.onShade,
-    required this.onPasture,
+    this.onWater,
+    this.onSalt,
+    this.onShade,
+    this.onPasture,
+    this.onSeeding,
+    this.onIrrigation,
+    this.onRain,
+    this.onMaintenance,
     required this.onCost,
   });
 
   final VoidCallback onVisit;
-  final VoidCallback onWater;
-  final VoidCallback onSalt;
-  final VoidCallback onShade;
-  final VoidCallback onPasture;
+  final VoidCallback? onWater;
+  final VoidCallback? onSalt;
+  final VoidCallback? onShade;
+  final VoidCallback? onPasture;
+  final VoidCallback? onSeeding;
+  final VoidCallback? onIrrigation;
+  final VoidCallback? onRain;
+  final VoidCallback? onMaintenance;
   final VoidCallback onCost;
 
   @override
@@ -44,26 +53,54 @@ class RecordActions extends StatelessWidget {
                   label: 'Visita',
                   onPressed: onVisit,
                 ),
-                _ActionButton(
-                  icon: Icons.water_drop_outlined,
-                  label: 'Agua',
-                  onPressed: onWater,
-                ),
-                _ActionButton(
-                  icon: Icons.scatter_plot_outlined,
-                  label: 'Sal',
-                  onPressed: onSalt,
-                ),
-                _ActionButton(
-                  icon: Icons.nature_outlined,
-                  label: 'Sombra',
-                  onPressed: onShade,
-                ),
-                _ActionButton(
-                  icon: Icons.grass_outlined,
-                  label: 'Pastura',
-                  onPressed: onPasture,
-                ),
+                if (onWater != null)
+                  _ActionButton(
+                    icon: Icons.water_drop_outlined,
+                    label: 'Agua',
+                    onPressed: onWater!,
+                  ),
+                if (onSalt != null)
+                  _ActionButton(
+                    icon: Icons.scatter_plot_outlined,
+                    label: 'Sal',
+                    onPressed: onSalt!,
+                  ),
+                if (onShade != null)
+                  _ActionButton(
+                    icon: Icons.nature_outlined,
+                    label: 'Sombra',
+                    onPressed: onShade!,
+                  ),
+                if (onPasture != null)
+                  _ActionButton(
+                    icon: Icons.grass_outlined,
+                    label: 'Pastura',
+                    onPressed: onPasture!,
+                  ),
+                if (onSeeding != null)
+                  _ActionButton(
+                    icon: Icons.grass_outlined,
+                    label: 'Siembra',
+                    onPressed: onSeeding!,
+                  ),
+                if (onIrrigation != null)
+                  _ActionButton(
+                    icon: Icons.waterfall_chart_outlined,
+                    label: 'Riego',
+                    onPressed: onIrrigation!,
+                  ),
+                if (onRain != null)
+                  _ActionButton(
+                    icon: Icons.umbrella_outlined,
+                    label: 'Lluvia',
+                    onPressed: onRain!,
+                  ),
+                if (onMaintenance != null)
+                  _ActionButton(
+                    icon: Icons.build_outlined,
+                    label: 'Mantenimiento',
+                    onPressed: onMaintenance!,
+                  ),
                 _ActionButton(
                   icon: Icons.payments_outlined,
                   label: 'Costo',

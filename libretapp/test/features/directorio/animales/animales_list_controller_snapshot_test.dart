@@ -1,11 +1,14 @@
 /// Covers the record-derived figures the animal cards read.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/animales_list_controller.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
@@ -53,31 +56,48 @@ class _FakeLocationRepository implements LocationRepository {
 }
 
 class _FakeWeightRepository implements WeightRecordRepository {
-  _FakeWeightRepository(this._records);
+  _FakeWeightRepository(this._records, {this.gate});
   final Map<String, List<WeightRecord>> _records;
+  final _IndicatorGate? gate;
+  int calls = 0;
 
   @override
   Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
     Set<String> animalUuids,
-  ) async => _records;
+  ) async {
+    calls++;
+    final gate = this.gate;
+    return gate == null ? _records : gate.wait('weight', _records);
+  }
+
+  @override
+  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid) async =>
+      _records.values
+          .expand((records) => records)
+          .where((record) => record.lotUuid == lotUuid)
+          .toList();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeHealthRepository implements HealthRecordRepository {
-  _FakeHealthRepository(this._withdrawals);
+  _FakeHealthRepository(this._withdrawals, {this.gate});
   final Map<String, DateTime> _withdrawals;
+  final _IndicatorGate? gate;
 
   Set<String>? lastQueried;
+  int calls = 0;
 
   @override
   Future<Map<String, DateTime>> getActiveWithdrawals(
     Set<String> animalUuids, {
     DateTime? asOf,
   }) async {
+    calls++;
     lastQueried = animalUuids;
-    return _withdrawals;
+    final gate = this.gate;
+    return gate == null ? _withdrawals : gate.wait('health', _withdrawals);
   }
 
   @override
@@ -85,17 +105,58 @@ class _FakeHealthRepository implements HealthRecordRepository {
 }
 
 class _FakeMilkingRepository implements MilkingRepository {
-  _FakeMilkingRepository(this._records);
+  _FakeMilkingRepository(this._records, {this.gate});
   final Map<String, List<MilkingRecord>> _records;
+  final _IndicatorGate? gate;
+  int calls = 0;
 
   @override
   Future<Map<String, List<MilkingRecord>>> getRecordsForAnimals(
     Set<String> animalUuids, {
     DateTime? since,
-  }) async => _records;
+  }) async {
+    calls++;
+    final gate = this.gate;
+    return gate == null ? _records : gate.wait('milking', _records);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeReproductionRepository implements ReproductionRecordRepository {
+  _FakeReproductionRepository(this.gate);
+
+  final _IndicatorGate gate;
+  int calls = 0;
+
+  @override
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids) {
+    calls++;
+    return gate.wait(
+      'reproduction',
+      const <String, List<ReproductionRecord>>{},
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _IndicatorGate {
+  final started = <String>{};
+  final allStarted = Completer<void>();
+  final release = Completer<void>();
+
+  Future<T> wait<T>(String source, T value) async {
+    started.add(source);
+    if (started.length == 4 && !allStarted.isCompleted) {
+      allStarted.complete();
+    }
+    await release.future;
+    return value;
+  }
 }
 
 MilkingRecord _milking(String animalUuid, DateTime day, double liters) {
@@ -126,33 +187,41 @@ AnimalesListController _controller({
   Map<String, List<WeightRecord>> weights = const {},
   Map<String, DateTime> withdrawals = const {},
   Map<String, List<MilkingRecord>> milkings = const {},
+  ReproductionRecordRepository? reproductionRepository,
+  HealthRecordRepository? healthRepository,
+  WeightRecordRepository? weightRepository,
+  MilkingRepository? milkingRepository,
 }) {
   return AnimalesListController(
     locationRepository: _FakeLocationRepository(),
-    weightRepository: _FakeWeightRepository(weights),
-    healthRepository: _FakeHealthRepository(withdrawals),
-    milkingRepository: _FakeMilkingRepository(milkings),
+    reproductionRepository: reproductionRepository,
+    weightRepository: weightRepository ?? _FakeWeightRepository(weights),
+    healthRepository: healthRepository ?? _FakeHealthRepository(withdrawals),
+    milkingRepository: milkingRepository ?? _FakeMilkingRepository(milkings),
   );
 }
 
 void main() {
-  test('daily gain is measured between the two most recent weighings', () async {
-    final controller = _controller(
-      weights: {
-        'a1': [
-          _weight(DateTime(2026, 6, 10), 420),
-          _weight(DateTime(2026, 5, 11), 390),
-        ],
-      },
-    );
+  test(
+    'daily gain is measured between the two most recent weighings',
+    () async {
+      final controller = _controller(
+        weights: {
+          'a1': [
+            _weight(DateTime(2026, 6, 10), 420),
+            _weight(DateTime(2026, 5, 11), 390),
+          ],
+        },
+      );
 
-    await controller.loadIndicatorSnapshots([_animal('a1')], now: _now);
+      await controller.loadIndicatorSnapshots([_animal('a1')], now: _now);
 
-    final snapshot = controller.snapshotFor('a1')!;
-    expect(snapshot.lastWeightKg, 420);
-    // 30 kg over 30 days.
-    expect(snapshot.averageDailyGainKg, closeTo(1.0, 0.001));
-  });
+      final snapshot = controller.snapshotFor('a1')!;
+      expect(snapshot.lastWeightKg, 420);
+      // 30 kg over 30 days.
+      expect(snapshot.averageDailyGainKg, closeTo(1.0, 0.001));
+    },
+  );
 
   test('daily gain is negative when the animal lost weight', () async {
     final controller = _controller(
@@ -248,6 +317,45 @@ void main() {
 
     expect(health.lastQueried, isNull);
   });
+
+  test(
+    'indicator sources run in parallel and duplicate page requests share work',
+    () async {
+      final gate = _IndicatorGate();
+      final reproduction = _FakeReproductionRepository(gate);
+      final health = _FakeHealthRepository(const {}, gate: gate);
+      final weight = _FakeWeightRepository(const {}, gate: gate);
+      final milking = _FakeMilkingRepository(const {}, gate: gate);
+      final controller = _controller(
+        reproductionRepository: reproduction,
+        healthRepository: health,
+        weightRepository: weight,
+        milkingRepository: milking,
+      );
+
+      final first = controller.loadIndicatorSnapshots([
+        _animal('a1'),
+      ], now: _now);
+      await gate.allStarted.future;
+
+      // A second post-frame callback for the same page must not launch a
+      // second batch while the first batch is still waiting on storage.
+      final second = controller.loadIndicatorSnapshots([
+        _animal('a1'),
+      ], now: _now);
+      await second;
+
+      expect(gate.started, {'reproduction', 'health', 'weight', 'milking'});
+      expect(reproduction.calls, 1);
+      expect(health.calls, 1);
+      expect(weight.calls, 1);
+      expect(milking.calls, 1);
+
+      gate.release.complete();
+      await first;
+      expect(controller.snapshotFor('a1'), isNotNull);
+    },
+  );
 
   test('missing repositories leave the snapshot empty but present', () async {
     final controller = AnimalesListController(

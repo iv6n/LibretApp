@@ -13,6 +13,8 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 const Object _selectedSpeciesUnset = Object();
+const Object _selectedLoteUnset = Object();
+const Object _selectedLocationUnset = Object();
 
 @immutable
 class AnimalesListState {
@@ -22,6 +24,8 @@ class AnimalesListState {
     required this.onlyAttention,
     required this.onlyPendingEarTag,
     this.selectedSpecies,
+    this.selectedLoteUuid,
+    this.selectedLocationUuid,
     this.taxonomyCounts = const <Species, Map<LifeStage, int>>{},
     this.includeInactive = false,
     this.indicatorSnapshots = const <String, AnimalIndicatorSnapshot>{},
@@ -39,6 +43,8 @@ class AnimalesListState {
   final bool onlyAttention;
   final bool onlyPendingEarTag;
   final Species? selectedSpecies;
+  final String? selectedLoteUuid;
+  final String? selectedLocationUuid;
   final Map<Species, Map<LifeStage, int>> taxonomyCounts;
 
   /// Shows animals that left the herd — sold, dead or archived. Off by
@@ -55,6 +61,8 @@ class AnimalesListState {
     bool? onlyAttention,
     bool? onlyPendingEarTag,
     Object? selectedSpecies = _selectedSpeciesUnset,
+    Object? selectedLoteUuid = _selectedLoteUnset,
+    Object? selectedLocationUuid = _selectedLocationUnset,
     Map<Species, Map<LifeStage, int>>? taxonomyCounts,
     bool? includeInactive,
     Map<String, AnimalIndicatorSnapshot>? indicatorSnapshots,
@@ -67,6 +75,13 @@ class AnimalesListState {
       selectedSpecies: identical(selectedSpecies, _selectedSpeciesUnset)
           ? this.selectedSpecies
           : selectedSpecies as Species?,
+      selectedLoteUuid: identical(selectedLoteUuid, _selectedLoteUnset)
+          ? this.selectedLoteUuid
+          : selectedLoteUuid as String?,
+      selectedLocationUuid:
+          identical(selectedLocationUuid, _selectedLocationUnset)
+          ? this.selectedLocationUuid
+          : selectedLocationUuid as String?,
       taxonomyCounts: taxonomyCounts ?? this.taxonomyCounts,
       includeInactive: includeInactive ?? this.includeInactive,
       indicatorSnapshots: indicatorSnapshots ?? this.indicatorSnapshots,
@@ -78,6 +93,8 @@ class AnimalesListState {
       selectedSpecies != null ||
       onlyAttention ||
       onlyPendingEarTag ||
+      selectedLoteUuid != null ||
+      selectedLocationUuid != null ||
       includeInactive;
 }
 
@@ -117,6 +134,7 @@ class AnimalesListController extends ChangeNotifier {
 
   AnimalesListState _state;
   bool _disposed = false;
+  final Set<String> _indicatorLoadsInFlight = <String>{};
   AnimalesListState get state => _state;
 
   /// Figures for [uuid], or null while they are still loading.
@@ -133,7 +151,7 @@ class AnimalesListController extends ChangeNotifier {
   Future<void> loadTaxonomy([Iterable<AnimalEntity>? fallbackAnimals]) async {
     final counts = _animalRepository == null
         ? _taxonomyFromAnimals(fallbackAnimals ?? const <AnimalEntity>[])
-        : await _animalRepository!.getActiveTaxonomyCounts();
+        : await _animalRepository.getActiveTaxonomyCounts();
     if (_disposed) return;
 
     final selected = _state.selectedSpecies;
@@ -200,59 +218,115 @@ class AnimalesListController extends ChangeNotifier {
     Iterable<AnimalEntity> animals, {
     DateTime? now,
   }) async {
-    final uuids = animals.map((animal) => animal.uuid).toSet()
-      ..removeAll(_state.indicatorSnapshots.keys);
+    // Capture the iterable once. The view passes a filtered list today, but
+    // keeping a stable snapshot also makes the in-flight de-duplication safe
+    // for callers that provide a lazy iterable.
+    final animalList = animals.toList(growable: false);
+    final uuids = animalList.map((animal) => animal.uuid).toSet()
+      ..removeAll(_state.indicatorSnapshots.keys)
+      ..removeAll(_indicatorLoadsInFlight);
     if (uuids.isEmpty) return;
+
+    _indicatorLoadsInFlight.addAll(uuids);
 
     final reference = now ?? DateTime.now();
 
-    // One round trip per source for the whole page, all in flight together.
-    final reproductions =
-        await _reproductionRepository?.getReproductionRecordsForAnimals(
-          uuids,
-        ) ??
-        const <String, List<ReproductionRecord>>{};
-    final withdrawals =
-        await _healthRepository?.getActiveWithdrawals(uuids, asOf: reference) ??
-        const <String, DateTime>{};
-    final weights =
-        await _weightRepository?.getWeightRecordsForAnimals(uuids) ??
-        const <String, List<WeightRecord>>{};
-    final milkings =
-        await _milkingRepository?.getRecordsForAnimals(
-          uuids,
-          since: reference.subtract(_milkAverageWindow),
-        ) ??
-        const <String, List<MilkingRecord>>{};
+    // The four sources are independent. Start each one before waiting so a
+    // page of cards pays one round-trip's latency rather than four in series.
+    // Future.sync also turns a synchronous fake/repository error into a future
+    // so every started source is covered by the same cleanup path.
+    var reproductions = const <String, List<ReproductionRecord>>{};
+    var withdrawals = const <String, DateTime>{};
+    var weights = const <String, List<WeightRecord>>{};
+    var milkings = const <String, List<MilkingRecord>>{};
+    final queries = <Future<void>>[];
 
-    if (_disposed) return;
-
-    final byUuid = {for (final animal in animals) animal.uuid: animal};
-    final snapshots = Map<String, AnimalIndicatorSnapshot>.from(
-      _state.indicatorSnapshots,
-    );
-
-    for (final uuid in uuids) {
-      final records = reproductions[uuid] ?? const <ReproductionRecord>[];
-      final animalWeights = weights[uuid] ?? const <WeightRecord>[];
-
-      snapshots[uuid] = AnimalIndicatorSnapshot(
-        reproductiveKpis: records.isEmpty
-            ? null
-            : _kpiService.forAnimal(
-                records: records,
-                birthDate: byUuid[uuid]?.birthDate,
-              ),
-        withdrawalEndsOn: withdrawals[uuid],
-        lastWeightKg: animalWeights.isEmpty ? null : animalWeights.first.weight,
-        averageDailyGainKg: _dailyGain(animalWeights),
-        milkLitersPerDay: _litersPerDay(
-          milkings[uuid] ?? const <MilkingRecord>[],
-        ),
+    final reproductionRepository = _reproductionRepository;
+    if (reproductionRepository != null) {
+      queries.add(
+        Future<Map<String, List<ReproductionRecord>>>.sync(
+          () => reproductionRepository.getReproductionRecordsForAnimals(uuids),
+        ).then<void>((value) {
+          reproductions = value;
+        }),
       );
     }
 
-    _setState(_state.copyWith(indicatorSnapshots: snapshots));
+    final healthRepository = _healthRepository;
+    if (healthRepository != null) {
+      queries.add(
+        Future<Map<String, DateTime>>.sync(
+          () => healthRepository.getActiveWithdrawals(uuids, asOf: reference),
+        ).then<void>((value) {
+          withdrawals = value;
+        }),
+      );
+    }
+
+    final weightRepository = _weightRepository;
+    if (weightRepository != null) {
+      queries.add(
+        Future<Map<String, List<WeightRecord>>>.sync(
+          () => weightRepository.getWeightRecordsForAnimals(uuids),
+        ).then<void>((value) {
+          weights = value;
+        }),
+      );
+    }
+
+    final milkingRepository = _milkingRepository;
+    if (milkingRepository != null) {
+      queries.add(
+        Future<Map<String, List<MilkingRecord>>>.sync(
+          () => milkingRepository.getRecordsForAnimals(
+            uuids,
+            since: reference.subtract(_milkAverageWindow),
+          ),
+        ).then<void>((value) {
+          milkings = value;
+        }),
+      );
+    }
+
+    try {
+      // Wait for every source to settle before clearing the in-flight set. If
+      // one source fails, a still-running sibling must remain de-duplicated
+      // until it finishes; the error still propagates to the caller.
+      await Future.wait<void>(queries, eagerError: false);
+
+      if (_disposed) return;
+
+      final byUuid = {for (final animal in animalList) animal.uuid: animal};
+      final snapshots = Map<String, AnimalIndicatorSnapshot>.from(
+        _state.indicatorSnapshots,
+      );
+
+      for (final uuid in uuids) {
+        final records = reproductions[uuid] ?? const <ReproductionRecord>[];
+        final animalWeights = weights[uuid] ?? const <WeightRecord>[];
+
+        snapshots[uuid] = AnimalIndicatorSnapshot(
+          reproductiveKpis: records.isEmpty
+              ? null
+              : _kpiService.forAnimal(
+                  records: records,
+                  birthDate: byUuid[uuid]?.birthDate,
+                ),
+          withdrawalEndsOn: withdrawals[uuid],
+          lastWeightKg: animalWeights.isEmpty
+              ? null
+              : animalWeights.first.weight,
+          averageDailyGainKg: _dailyGain(animalWeights),
+          milkLitersPerDay: _litersPerDay(
+            milkings[uuid] ?? const <MilkingRecord>[],
+          ),
+        );
+      }
+
+      _setState(_state.copyWith(indicatorSnapshots: snapshots));
+    } finally {
+      _indicatorLoadsInFlight.removeAll(uuids);
+    }
   }
 
   /// Gain per day between the two most recent weighings.
@@ -320,6 +394,14 @@ class AnimalesListController extends ChangeNotifier {
     _setState(_state.copyWith(onlyPendingEarTag: value));
   }
 
+  void setLoteUuid(String? uuid) {
+    _setState(_state.copyWith(selectedLoteUuid: uuid));
+  }
+
+  void setLocationUuid(String? uuid) {
+    _setState(_state.copyWith(selectedLocationUuid: uuid));
+  }
+
   void setIncludeInactive(bool value) {
     _setState(_state.copyWith(includeInactive: value));
   }
@@ -373,6 +455,7 @@ class AnimalesListController extends ChangeNotifier {
   }
 
   List<AnimalEntity> applyFilters(List<AnimalEntity> animales) {
+    final selectedLocationScope = _selectedLocationScope();
     final filtered = animales.where((animal) {
       final matchesStage =
           _state.selectedStages.isEmpty ||
@@ -392,6 +475,13 @@ class AnimalesListController extends ChangeNotifier {
       final matchesAttention = !_state.onlyAttention || needsAttention;
       final matchesPendingEarTag =
           !_state.onlyPendingEarTag || hasPendingEarTag(animal);
+      final matchesLote =
+          _state.selectedLoteUuid == null ||
+          animal.batchUuid == _state.selectedLoteUuid;
+      final matchesLocation =
+          selectedLocationScope.isEmpty ||
+          selectedLocationScope.contains(animal.currentLocationId) ||
+          selectedLocationScope.contains(animal.initialLocationId);
       // The repository already limits the feed to the active herd; this only
       // matters when a caller hands over inactive animals too.
       final matchesHerd =
@@ -401,6 +491,8 @@ class AnimalesListController extends ChangeNotifier {
           matchesStage &&
           matchesAttention &&
           matchesPendingEarTag &&
+          matchesLote &&
+          matchesLocation &&
           matchesHerd;
     }).toList();
 
@@ -409,6 +501,29 @@ class AnimalesListController extends ChangeNotifier {
     // animal record.
     filtered.sort(_compareAnimals);
     return filtered;
+  }
+
+  /// Includes descendants when a root location is selected. Root location
+  /// cards display subtree totals, so their "Ver animales" link should open
+  /// the same scope rather than silently omitting animals in child locations.
+  Set<String> _selectedLocationScope() {
+    final selected = _state.selectedLocationUuid;
+    if (selected == null || selected.isEmpty) return const <String>{};
+
+    final root = locationById(selected);
+    final scope = <String>{root?.uuid ?? selected};
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (final location in _state.locations) {
+        if (location.parentUuid != null &&
+            scope.contains(location.parentUuid) &&
+            scope.add(location.uuid)) {
+          changed = true;
+        }
+      }
+    }
+    return scope;
   }
 
   int _compareAnimals(AnimalEntity a, AnimalEntity b) {

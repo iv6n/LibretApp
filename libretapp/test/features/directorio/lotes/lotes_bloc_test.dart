@@ -11,6 +11,9 @@ class _FakeLotesRepository implements LotesRepository {
     required String nombre,
     String? descripcion,
     String? notas,
+    double? feedPricePerKg,
+    double? dailyFeedKgPerHead,
+    double? liveWeightPricePerKg,
   }) async {
     final now = DateTime.now();
     return LoteEntity(
@@ -26,6 +29,9 @@ class _FakeLotesRepository implements LotesRepository {
       synced: false,
       remoteId: null,
       syncDate: null,
+      feedPricePerKg: feedPricePerKg,
+      dailyFeedKgPerHead: dailyFeedKgPerHead,
+      liveWeightPricePerKg: liveWeightPricePerKg,
     );
   }
 
@@ -39,26 +45,23 @@ Future<void> _flushEvents() async {
 }
 
 void main() {
-  test(
-    'a mutating event dispatched before LotesLoaded emits a visible error '
-    'instead of silently doing nothing',
-    () async {
-      final bloc = LotesBloc(_FakeLotesRepository());
-      addTearDown(bloc.close);
+  test('a mutating event dispatched before LotesLoaded emits a visible error '
+      'instead of silently doing nothing', () async {
+    final bloc = LotesBloc(_FakeLotesRepository());
+    addTearDown(bloc.close);
 
-      expect(bloc.state, isA<LotesInitial>());
+    expect(bloc.state, isA<LotesInitial>());
 
-      bloc.add(const CreateLote(name: 'Lote nuevo'));
-      await _flushEvents();
+    bloc.add(const CreateLote(name: 'Lote nuevo'));
+    await _flushEvents();
 
-      expect(
-        bloc.state,
-        isA<LotesError>(),
-        reason:
-            'a caller awaiting the next settled state (e.g. a form page '
-            'using the same _dispatchAndAwait pattern as LoteFormPage) '
-            'must not hang forever waiting for a state that never arrives',
-      );
-    },
-  );
+    expect(
+      bloc.state,
+      isA<LotesError>(),
+      reason:
+          'a caller awaiting the next settled state (e.g. a form page '
+          'using the same _dispatchAndAwait pattern as LoteFormPage) '
+          'must not hang forever waiting for a state that never arrives',
+    );
+  });
 }

@@ -9,8 +9,6 @@
 /// defaults as [QuickRegisterAnimalPage].
 library;
 
-import 'dart:io';
-
 import 'package:excel/excel.dart' as xlsx;
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -49,25 +47,19 @@ class AnimalExcelImportService {
       type: FileType.custom,
       allowedExtensions: const ['xlsx'],
       allowMultiple: false,
-      withData: false,
+      withData: true,
     );
 
     if (picked == null || picked.files.isEmpty) {
       return null;
     }
 
-    final path = picked.files.single.path;
-    if (path == null || path.isEmpty) {
+    final bytes = picked.files.single.bytes;
+    if (bytes == null || bytes.isEmpty) {
       throw const FormatException(
-        'No se pudo leer la ruta del archivo seleccionado.',
+        'No se pudo leer el archivo seleccionado.',
       );
     }
-
-    return importFromFile(File(path));
-  }
-
-  Future<AnimalExcelImportSummary> importFromFile(File file) async {
-    final bytes = await file.readAsBytes();
     return importFromBytes(bytes);
   }
 

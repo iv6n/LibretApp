@@ -520,6 +520,48 @@ class AppLocalizationsEs extends AppLocalizations {
   String get uiLoading => 'Cargando';
 
   @override
+  String get fieldDate => 'Fecha';
+
+  @override
+  String get actionClearDate => 'Borrar fecha';
+
+  @override
+  String get financeRegisterIncome => 'Registrar ingreso';
+
+  @override
+  String get financeRegisterExpense => 'Registrar gasto general';
+
+  @override
+  String get financeIncomeType => 'Tipo de ingreso';
+
+  @override
+  String get financeExpenseType => 'Tipo de gasto';
+
+  @override
+  String get financeAmount => 'Monto';
+
+  @override
+  String get financeCurrency => 'Moneda';
+
+  @override
+  String get financeOptionalAnimal => 'Animal (opcional)';
+
+  @override
+  String get financeDescriptionHint => 'Descripción adicional...';
+
+  @override
+  String get financeAmountInvalid => 'Ingresa un monto válido.';
+
+  @override
+  String get financeAmountPositive => 'El monto debe ser mayor a cero.';
+
+  @override
+  String get financeIncomeSaved => 'Ingreso guardado.';
+
+  @override
+  String get financeExpenseSaved => 'Gasto guardado.';
+
+  @override
   String get uiQuickActions => 'Accesos rápidos';
 
   @override
@@ -1119,4 +1161,103 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get animalPhotoRemove => 'Quitar foto';
+
+  @override
+  String get loteWeightTitle => 'Registrar pesaje';
+
+  @override
+  String loteWeightCaptured(int captured, int total) {
+    return '$captured de $total capturados';
+  }
+
+  @override
+  String get loteWeightDate => 'Fecha del pesaje';
+
+  @override
+  String get loteWeightKg => 'Peso kg';
+
+  @override
+  String get loteWeightPrevious => 'Anterior';
+
+  @override
+  String get loteWeightGain => 'Diferencia';
+
+  @override
+  String get loteWeightAdg => 'ADG';
+
+  @override
+  String get loteWeightSave => 'Guardar pesaje del lote';
+
+  @override
+  String get loteWeightSaving => 'Guardando...';
+
+  @override
+  String get loteWeightNoActiveAnimals =>
+      'Este lote no tiene animales activos.';
+
+  @override
+  String get loteWeightLoadError => 'No se pudo cargar el lote.';
+
+  @override
+  String get loteWeightAtLeastOne => 'Captura al menos un peso.';
+
+  @override
+  String get loteWeightInvalid => 'Peso inválido';
+
+  @override
+  String get lotePerformanceTitle => 'Rendimiento';
+
+  @override
+  String get lotePerformanceEmpty =>
+      'Registra un pesaje para ver el rendimiento del lote.';
+
+  @override
+  String get lotePerformanceLoadError => 'No se pudo cargar el rendimiento.';
+
+  @override
+  String get lotePerformanceTotal => 'Peso total';
+
+  @override
+  String get lotePerformanceAverage => 'Promedio';
+
+  @override
+  String get lotePerformanceAdgAverage => 'ADG promedio';
+
+  @override
+  String get lotePerformanceGain => 'Ganancia lote';
+
+  @override
+  String get lotePerformancePrevious => 'Vs. pesaje anterior';
+
+  @override
+  String get lotePerformanceGood => 'Buen rendimiento';
+
+  @override
+  String get lotePerformanceBelow => 'Debajo promedio';
+
+  @override
+  String get lotePerformanceNoGain => 'Sin ganancia';
+
+  @override
+  String get lotePerformanceNoReference => 'Sin referencia';
+
+  @override
+  String lotePerformanceUnmeasured(int count) {
+    return '$count animal(es) aún sin pesaje en esta sesión.';
+  }
+
+  @override
+  String get lotePerformanceSessions => 'Historial de pesajes';
+
+  @override
+  String get lotePerformanceEconomics => 'Economía estimada';
+
+  @override
+  String get lotePerformanceFeedPerDay => 'Alimento/día';
+
+  @override
+  String get lotePerformanceCostPerKg => 'Costo/kg ganado';
+
+  @override
+  String get lotePerformanceMargin => 'Margen alimentación';
 }

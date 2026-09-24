@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a lotes_repository_isar \u2014 Isar implementation of LotesRepository.
+/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a lotes_repository_isar \u2014 Isar implementation of LotesRepository.
 library;
 
 import 'package:isar/isar.dart';
@@ -15,7 +15,9 @@ class LotesRepositoryIsar implements LotesRepository {
   Future<Isar> get _isar async => _database.initialize();
 
   @override
-  Stream<List<LoteEntity>> watchAll() async* {
+  Stream<List<LoteEntity>> watchAll() => _watchAll().asBroadcastStream();
+
+  Stream<List<LoteEntity>> _watchAll() async* {
     final isar = await _isar;
     yield* isar.isarLotes
         .where()
@@ -69,6 +71,9 @@ class LotesRepositoryIsar implements LotesRepository {
     required String nombre,
     String? descripcion,
     String? notas,
+    double? feedPricePerKg,
+    double? dailyFeedKgPerHead,
+    double? liveWeightPricePerKg,
   }) async {
     final isar = await _isar;
     final uuid =
@@ -83,6 +88,9 @@ class LotesRepositoryIsar implements LotesRepository {
       ..createdAt = now
       ..active = true
       ..notes = notas
+      ..feedPricePerKg = feedPricePerKg
+      ..dailyFeedKgPerHead = dailyFeedKgPerHead
+      ..liveWeightPricePerKg = liveWeightPricePerKg
       ..lastUpdateDate = now
       ..synced = false;
 

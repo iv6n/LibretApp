@@ -72,7 +72,7 @@ class DashboardWidgetCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(child: Text(title, style: titleStyle)),
-                    ?trailingWidget,
+                    if (trailingWidget != null) trailingWidget,
                   ],
                 ),
                 SizedBox(height: isTablet ? AppSpacing.sm : AppSpacing.xs),

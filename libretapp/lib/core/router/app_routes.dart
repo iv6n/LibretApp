@@ -28,6 +28,11 @@ class AppRoutes {
   static const loteNuevo = '/directorio/lotes/nuevo';
   static const loteDetalle = '/directorio/lotes/:uuid';
   static const loteEditar = '/directorio/lotes/:uuid/editar';
+  static const loteRegistroPeso = '/directorio/lotes/:uuid/registros/peso';
+  static const cultivos = '/directorio?tab=cultivos';
+  static const cultivoNuevo = '/directorio/cultivos/nuevo';
+  static const cultivoDetalle = '/directorio/cultivos/:uuid';
+  static const cultivoEditar = '/directorio/cultivos/:uuid/editar';
   static const agenda = '/agenda';
   static const agendaNuevo = '/agenda/nuevo';
   static const agendaRegistro = '/agenda/registro';
@@ -53,6 +58,7 @@ class AppRoutes {
   static const registroTratarLote = '/registro/tratar-lote';
   static const finanzas = '/finanzas';
   static const exportar = '/exportar';
+  static const rfid = '/rfid';
   static const perfilBibliotecaItem = '/perfil/biblioteca/:id';
   static const perfilBibliotecaCapitulo = '/perfil/biblioteca/:id/:chapterId';
 
@@ -74,6 +80,10 @@ class AppRoutes {
   static const nameLoteNuevo = 'lote_nuevo';
   static const nameLoteDetalle = 'lote_detalle';
   static const nameLoteEditar = 'lote_editar';
+  static const nameLoteRegistroPeso = 'lote_registro_peso';
+  static const nameCultivoNuevo = 'cultivo_nuevo';
+  static const nameCultivoDetalle = 'cultivo_detalle';
+  static const nameCultivoEditar = 'cultivo_editar';
   static const nameAgenda = 'agenda_page';
   static const nameAgendaNuevo = 'agenda_nuevo';
   static const nameAgendaRegistro = 'agenda_registro';
@@ -98,6 +108,7 @@ class AppRoutes {
   static const nameRegistroTratarLote = 'registro_tratar_lote';
   static const nameFinanzas = 'finanzas';
   static const nameExportar = 'exportar';
+  static const nameRfid = 'rfid';
   static const namePerfilBibliotecaItem = 'perfil_biblioteca_item';
   static const namePerfilBibliotecaCapitulo = 'perfil_biblioteca_capitulo';
 
@@ -125,6 +136,14 @@ class AppRoutes {
   static String loteNuevoPath() => '/directorio/lotes/nuevo';
   static String loteDetallePath(String uuid) => '/directorio/lotes/$uuid';
   static String loteEditarPath(String uuid) => '/directorio/lotes/$uuid/editar';
+  static String loteRegistroPesoPath(String uuid) =>
+      '/directorio/lotes/$uuid/registros/peso';
+  static String cultivoNuevoPath({String? locationUuid}) => locationUuid == null
+      ? '/directorio/cultivos/nuevo'
+      : '/directorio/cultivos/nuevo?location=$locationUuid';
+  static String cultivoDetallePath(String uuid) => '/directorio/cultivos/$uuid';
+  static String cultivoEditarPath(String uuid) =>
+      '/directorio/cultivos/$uuid/editar';
 
   /// Builds a deep link into the animals tab of the directory, optionally
   /// pre-applying one of the list filters. There is no standalone `/animales`
@@ -132,14 +151,29 @@ class AppRoutes {
   static String animalesPath({
     bool attention = false,
     bool pendingEarTag = false,
+    String? loteUuid,
+    String? locationUuid,
   }) {
     final buffer = StringBuffer('/directorio?tab=animales');
     if (attention) buffer.write('&attention=true');
     if (pendingEarTag) buffer.write('&pendingEarTag=true');
+    if (loteUuid != null && loteUuid.isNotEmpty) {
+      buffer.write('&lote=${Uri.encodeQueryComponent(loteUuid)}');
+    }
+    if (locationUuid != null && locationUuid.isNotEmpty) {
+      buffer.write('&ubicacion=${Uri.encodeQueryComponent(locationUuid)}');
+    }
     return buffer.toString();
   }
 
   static String directorioUbicacionesPath() => '/directorio?tab=ubicaciones';
+  static String directorioCultivosPath({String? locationUuid}) {
+    final path = StringBuffer('/directorio?tab=cultivos');
+    if (locationUuid != null && locationUuid.isNotEmpty) {
+      path.write('&ubicacion=${Uri.encodeQueryComponent(locationUuid)}');
+    }
+    return path.toString();
+  }
   static String ubicacionNuevaPath() => '/directorio/ubicaciones/nueva';
   static String ubicacionDetallePath(String uuid) =>
       '/directorio/ubicaciones/$uuid';

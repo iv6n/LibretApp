@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a view \u203a lote_form_page \u2014 form page for creating or editing a lote.
+/// features \u203a directorio \u203a lotes \u203a view \u203a lote_form_page \u2014 form page for creating or editing a lote.
 library;
 
 import 'package:flutter/material.dart';
@@ -29,6 +29,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
   late final TextEditingController _nombreController;
   late final TextEditingController _descripcionController;
   late final TextEditingController _notasController;
+  late final TextEditingController _feedPriceController;
+  late final TextEditingController _dailyFeedController;
+  late final TextEditingController _livePriceController;
   Future<LoteEntity?>? _editFuture;
   bool _saving = false;
 
@@ -38,6 +41,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
     _nombreController = TextEditingController();
     _descripcionController = TextEditingController();
     _notasController = TextEditingController();
+    _feedPriceController = TextEditingController();
+    _dailyFeedController = TextEditingController();
+    _livePriceController = TextEditingController();
     if (widget.isEdit) {
       _editFuture = widget.repository.getByUuid(widget.loteUuid!);
     }
@@ -48,6 +54,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
     _nombreController.dispose();
     _descripcionController.dispose();
     _notasController.dispose();
+    _feedPriceController.dispose();
+    _dailyFeedController.dispose();
+    _livePriceController.dispose();
     super.dispose();
   }
 
@@ -79,6 +88,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
       return;
     }
 
+    final economics = _readEconomics();
+    if (economics == null) return;
+
     setState(() {
       _saving = true;
     });
@@ -99,6 +111,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
         name: nombre,
         description: _descripcionController.text.trim(),
         notes: _notasController.text.trim(),
+        feedPricePerKg: economics.feedPricePerKg,
+        dailyFeedKgPerHead: economics.dailyFeedKgPerHead,
+        liveWeightPricePerKg: economics.liveWeightPricePerKg,
         lastUpdateDate: DateTime.now(),
         synced: false,
       );
@@ -109,6 +124,9 @@ class _LoteFormPageState extends State<LoteFormPage> {
           name: nombre,
           description: _descripcionController.text.trim(),
           notes: _notasController.text.trim(),
+          feedPricePerKg: economics.feedPricePerKg,
+          dailyFeedKgPerHead: economics.dailyFeedKgPerHead,
+          liveWeightPricePerKg: economics.liveWeightPricePerKg,
         ),
       );
     }
@@ -161,6 +179,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
 
   Widget _buildForm({LoteEntity? current}) {
     return SafeArea(
+      top: false,
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(
@@ -168,6 +187,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
           children: [
             TextField(
               controller: _nombreController,
+              key: const ValueKey('lote-name'),
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 labelText: 'Nombre del lote',
@@ -194,9 +214,52 @@ class _LoteFormPageState extends State<LoteFormPage> {
               ),
             ),
             const SizedBox(height: 20),
+            Text(
+              'Economía del lote (opcional)',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _feedPriceController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Precio alimento / kg',
+                prefixText: '\$ ',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dailyFeedController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Consumo diario / cabeza (kg)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _livePriceController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Precio kg vivo (opcional)',
+                prefixText: '\$ ',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
+                key: const ValueKey('lote-save'),
                 onPressed: _saving ? null : () => _submit(current: current),
                 icon: Icon(widget.isEdit ? Icons.save : Icons.add),
                 label: Text(_saving ? 'Guardando...' : 'Guardar'),
@@ -226,7 +289,58 @@ class _LoteFormPageState extends State<LoteFormPage> {
     if (_notasController.text.isEmpty) {
       _notasController.text = lote.notes ?? '';
     }
+    if (_feedPriceController.text.isEmpty && lote.feedPricePerKg != null) {
+      _feedPriceController.text = _formatEconomic(lote.feedPricePerKg!);
+    }
+    if (_dailyFeedController.text.isEmpty && lote.dailyFeedKgPerHead != null) {
+      _dailyFeedController.text = _formatEconomic(lote.dailyFeedKgPerHead!);
+    }
+    if (_livePriceController.text.isEmpty &&
+        lote.liveWeightPricePerKg != null) {
+      _livePriceController.text = _formatEconomic(lote.liveWeightPricePerKg!);
+    }
   }
+
+  _LotEconomics? _readEconomics() {
+    final values = <double?>[];
+    for (final entry in [
+      (_feedPriceController, 'precio del alimento'),
+      (_dailyFeedController, 'consumo diario'),
+      (_livePriceController, 'precio del kg vivo'),
+    ]) {
+      final value = _parseEconomic(entry.$1.text);
+      if (entry.$1.text.trim().isNotEmpty &&
+          (value == null || value < 0 || !value.isFinite)) {
+        context.showErrorSnackBar('Revisa el ${entry.$2}.');
+        return null;
+      }
+      values.add(value);
+    }
+    return _LotEconomics(
+      feedPricePerKg: values[0],
+      dailyFeedKgPerHead: values[1],
+      liveWeightPricePerKg: values[2],
+    );
+  }
+
+  double? _parseEconomic(String value) => value.trim().isEmpty
+      ? null
+      : double.tryParse(value.trim().replaceAll(',', '.'));
+
+  String _formatEconomic(double value) =>
+      value.toStringAsFixed(value == value.roundToDouble() ? 0 : 2);
+}
+
+class _LotEconomics {
+  const _LotEconomics({
+    required this.feedPricePerKg,
+    required this.dailyFeedKgPerHead,
+    required this.liveWeightPricePerKg,
+  });
+
+  final double? feedPricePerKg;
+  final double? dailyFeedKgPerHead;
+  final double? liveWeightPricePerKg;
 }
 
 class _FormErrorState extends StatelessWidget {

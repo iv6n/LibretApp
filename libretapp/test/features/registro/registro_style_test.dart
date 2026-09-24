@@ -49,11 +49,26 @@ void main() {
     );
   });
 
-  test('keeps Material fallback for actions without a specific asset', () {
-    expect(assetForRegistroAction('Animal'), isNull);
-    expect(assetForRegistroAction('Riego'), isNull);
-    expect(assetForRegistroAction('Salud de cultivo'), isNull);
-    expect(assetForRegistroAction('Tarea'), isNull);
+  test('maps the remaining Registro cards to 2.5D assets', () {
+    expect(assetForRegistroAction('RFID'), 'assets/images/record_rfid.webp');
+    expect(
+      assetForRegistroAction('Animal'),
+      'assets/images/record_animal.webp',
+    );
+    expect(assetForRegistroAction('Lote'), 'assets/images/record_lot.webp');
+    expect(
+      assetForRegistroAction('Ubicación'),
+      'assets/images/record_location.webp',
+    );
+    expect(
+      assetForRegistroAction('Riego'),
+      'assets/images/record_irrigation.webp',
+    );
+    expect(
+      assetForRegistroAction('Salud de cultivo'),
+      'assets/images/record_crop_health.webp',
+    );
+    expect(assetForRegistroAction('Tarea'), 'assets/images/record_task.webp');
   });
 
   test('bundles every asset used by Registro cards', () async {
@@ -70,6 +85,13 @@ void main() {
       'assets/images/record_sale.webp',
       'assets/images/crop_field.webp',
       'assets/images/crop_harvested.webp',
+      'assets/images/record_rfid.webp',
+      'assets/images/record_animal.webp',
+      'assets/images/record_lot.webp',
+      'assets/images/record_location.webp',
+      'assets/images/record_irrigation.webp',
+      'assets/images/record_crop_health.webp',
+      'assets/images/record_task.webp',
     ];
 
     for (final asset in assets) {

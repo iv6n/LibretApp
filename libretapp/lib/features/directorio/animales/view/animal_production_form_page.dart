@@ -3,15 +3,15 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AnimalProductionFormPage extends StatefulWidget {
   const AnimalProductionFormPage({
@@ -195,7 +195,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return RecordFormScaffold(
+    return AppFormScaffold(
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormProductionTitle,
@@ -207,88 +207,47 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
           assetForProductionRecordType(_type) ?? AppAssetPaths.recordProduction,
       fallbackIcon: Icons.agriculture_outlined,
       fields: [
-        DropdownButtonFormField<ProductionRecordType>(
-          initialValue: _type,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormProductionType,
-            border: const OutlineInputBorder(),
-          ),
-          items: ProductionRecordType.values
-              .map(
-                (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
-              )
-              .toList(),
+        AppSelectField<ProductionRecordType>(
+          value: _type,
+          items: ProductionRecordType.values,
+          itemLabel: (type) => type.displayName,
+          labelText: l10n.detailFormProductionType,
           onChanged: (value) {
             if (value == null) return;
             setState(() => _type = value);
           },
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.event),
-                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _valueController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormProductionValue,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(_date.year - 5),
+          lastDate: DateTime(_date.year + 1),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
+          },
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _unitController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormProductionUnit,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _scoreController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormProductionScore,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _valueController,
+          labelText: l10n.detailFormProductionValue,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _unitController,
+          labelText: l10n.detailFormProductionUnit,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _scoreController,
+          labelText: l10n.detailFormProductionScore,
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _notesController,
-          decoration: InputDecoration(
-            labelText: l10n.fieldNotes,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.fieldNotes,
           maxLines: 2,
         ),
       ],

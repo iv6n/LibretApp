@@ -9,7 +9,6 @@ import 'dart:convert';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
 class LoteDto {
-
   factory LoteDto.fromEntity(LoteEntity entity) {
     return LoteDto(
       id: entity.id,
@@ -21,6 +20,9 @@ class LoteDto {
       closedAt: entity.closedAt?.toIso8601String(),
       active: entity.active,
       notes: entity.notes,
+      feedPricePerKg: entity.feedPricePerKg,
+      dailyFeedKgPerHead: entity.dailyFeedKgPerHead,
+      liveWeightPricePerKg: entity.liveWeightPricePerKg,
       lastUpdateDate: entity.lastUpdateDate.toIso8601String(),
       synced: entity.synced,
       remoteId: entity.remoteId,
@@ -41,6 +43,9 @@ class LoteDto {
       closedAt: (json['fechaCierre'] ?? json['closedAt']) as String?,
       active: (json['activo'] ?? json['active']) as bool? ?? true,
       notes: (json['notas'] ?? json['notes']) as String?,
+      feedPricePerKg: (json['feedPricePerKg'] as num?)?.toDouble(),
+      dailyFeedKgPerHead: (json['dailyFeedKgPerHead'] as num?)?.toDouble(),
+      liveWeightPricePerKg: (json['liveWeightPricePerKg'] as num?)?.toDouble(),
       lastUpdateDate: json['lastUpdateDate'] as String,
       synced: json['synced'] as bool? ?? false,
       remoteId: json['remoteId'] as String?,
@@ -60,6 +65,9 @@ class LoteDto {
     this.closedAt,
     required this.active,
     this.notes,
+    this.feedPricePerKg,
+    this.dailyFeedKgPerHead,
+    this.liveWeightPricePerKg,
     required this.lastUpdateDate,
     required this.synced,
     this.remoteId,
@@ -75,6 +83,9 @@ class LoteDto {
   final String? closedAt;
   final bool active;
   final String? notes;
+  final double? feedPricePerKg;
+  final double? dailyFeedKgPerHead;
+  final double? liveWeightPricePerKg;
   final String lastUpdateDate;
   final bool synced;
   final String? remoteId;
@@ -91,6 +102,9 @@ class LoteDto {
       closedAt: _parseDate(closedAt),
       active: active,
       notes: notes,
+      feedPricePerKg: feedPricePerKg,
+      dailyFeedKgPerHead: dailyFeedKgPerHead,
+      liveWeightPricePerKg: liveWeightPricePerKg,
       lastUpdateDate: DateTime.parse(lastUpdateDate),
       synced: synced,
       remoteId: remoteId,
@@ -109,6 +123,9 @@ class LoteDto {
       'fechaCierre': closedAt,
       'activo': active,
       'notas': notes,
+      'feedPricePerKg': feedPricePerKg,
+      'dailyFeedKgPerHead': dailyFeedKgPerHead,
+      'liveWeightPricePerKg': liveWeightPricePerKg,
       'lastUpdateDate': lastUpdateDate,
       'synced': synced,
       'remoteId': remoteId,

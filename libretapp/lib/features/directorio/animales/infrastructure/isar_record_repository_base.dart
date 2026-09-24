@@ -87,8 +87,15 @@ abstract class IsarRecordRepositoryBase<
       }
       final id = await collection(db).put(model);
       assignId(model, id);
-      await AnimalActivityTracker.touch(db, animalUuid, activityAt);
-      if (onSaved != null) await onSaved(db, model);
+      // Projection hooks already load and persist the parent animal (and set
+      // its activity timestamp). Avoid writing the same parent twice for
+      // those repositories; records without a projection still get the
+      // lightweight activity touch.
+      if (onSaved == null) {
+        await AnimalActivityTracker.touch(db, animalUuid, activityAt);
+      } else {
+        await onSaved(db, model);
+      }
     });
     final saved = toEntity(model);
     LoggerService.i(describeSaved(animalUuid, saved), tag: logTag);
@@ -134,8 +141,11 @@ abstract class IsarRecordRepositoryBase<
     await db.writeTxn(() async {
       final id = await collection(db).put(model);
       assignId(model, id);
-      await AnimalActivityTracker.touch(db, animalUuid, editedAt);
-      if (onSaved != null) await onSaved(db, model);
+      if (onSaved == null) {
+        await AnimalActivityTracker.touch(db, animalUuid, editedAt);
+      } else {
+        await onSaved(db, model);
+      }
     });
 
     final saved = toEntity(model);
@@ -156,7 +166,11 @@ abstract class IsarRecordRepositoryBase<
         // The animal's denormalized fields were derived from this record too;
         // without this a deleted weighing left its value on the animal and a
         // deleted death record left the animal dead.
-        await AnimalProjectionRecalculator.recalculate(db, animalUuid);
+        await AnimalProjectionRecalculator.recalculate(
+          db,
+          animalUuid,
+          updateActivityTimestamp: false,
+        );
       }
     });
   }

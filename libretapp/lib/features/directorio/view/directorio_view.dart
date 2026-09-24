@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
@@ -17,6 +16,7 @@ import 'package:libretapp/features/directorio/bloc/directorio_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
+import 'package:libretapp/features/directorio/cultivos/view/cultivos_list_view.dart';
 import 'package:libretapp/features/directorio/lotes/lotes_list_view.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_page.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -33,6 +33,7 @@ class _DirectorioViewState extends State<DirectorioView>
     with TickerProviderStateMixin {
   static const _animalesTabKey = ValueKey<String>('directorio_animales_tab');
   static const _lotesTabKey = ValueKey<String>('directorio_lotes_tab');
+  static const _cultivosTabKey = ValueKey<String>('directorio_cultivos_tab');
   static const _ubicacionesTabKey = ValueKey<String>(
     'directorio_ubicaciones_tab',
   );
@@ -42,9 +43,10 @@ class _DirectorioViewState extends State<DirectorioView>
   late TextEditingController _animalSearchController;
   late FocusNode _animalSearchFocusNode;
   bool _isSearching = false;
-  bool _initialRouteTabHandled = false;
+  String? _lastRouteTabParam;
   List<DirectorioSection> _orderedSections = defaultDirectorioSectionOrder;
   Set<DirectorioSection> _visibleSections = defaultDirectorioVisibleSections;
+  DirectorioSection? _lastNotifiedSection;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _DirectorioViewState extends State<DirectorioView>
     _tabController = _createTabController(
       initialSection: DirectorioSection.animales,
     );
+    _lastNotifiedSection = _activeSection;
     _searchController = TextEditingController();
     _searchFocusNode = FocusNode();
     _animalSearchController = TextEditingController();
@@ -106,24 +109,27 @@ class _DirectorioViewState extends State<DirectorioView>
     _tabController.removeListener(_onTabChange);
     _tabController.dispose();
     _tabController = _createTabController(initialSection: preferredSection);
+    _lastNotifiedSection = _activeSection;
   }
 
   void _applyInitialRouteTab() {
-    if (_initialRouteTabHandled) return;
-    _initialRouteTabHandled = true;
-
     DirectorioSection? target;
+    String? tab;
     try {
-      final tab = GoRouterState.of(context).uri.queryParameters['tab'];
+      tab = GoRouterState.of(context).uri.queryParameters['tab'];
       target = _sectionFromRouteParam(tab);
     } catch (_) {
       target = null;
     }
 
+    if (_lastRouteTabParam == tab) return;
+    _lastRouteTabParam = tab;
+
     if (target == null || !_visibleSections.contains(target)) return;
     final targetIndex = _activeSections.indexOf(target);
     if (targetIndex < 0 || targetIndex == _tabController.index) return;
     _tabController.index = targetIndex;
+    _lastNotifiedSection = target;
     context.read<DirectorioBloc>().add(ChangeDirectorioSection(target));
   }
 
@@ -133,14 +139,12 @@ class _DirectorioViewState extends State<DirectorioView>
         return DirectorioSection.animales;
       case 'lotes':
         return DirectorioSection.lotes;
+      case 'cultivos':
+        return DirectorioSection.cultivos;
       case 'ubicaciones':
         return DirectorioSection.ubicaciones;
     }
     return null;
-  }
-
-  void _toggleTheme() {
-    context.read<ThemeBloc>().add(const ThemeToggled());
   }
 
   void _toggleSectionVisibility(DirectorioSection section, bool visible) {
@@ -218,10 +222,20 @@ class _DirectorioViewState extends State<DirectorioView>
   }
 
   void _onTabChange() {
-    setState(() {});
+    // TabController notifies once per animation frame. Rebuilding the whole
+    // directory and notifying the bloc for every frame made the Cultivos tab
+    // look as if it were loading again. Only publish a settled section.
+    if (!mounted ||
+        _tabController.indexIsChanging ||
+        _tabController.offset.abs() > 0.001) {
+      return;
+    }
 
-    // Notificar al bloc que la seccion activa cambió
-    context.read<DirectorioBloc>().add(ChangeDirectorioSection(_activeSection));
+    final section = _activeSection;
+    if (_lastNotifiedSection == section) return;
+    _lastNotifiedSection = section;
+    setState(() {});
+    context.read<DirectorioBloc>().add(ChangeDirectorioSection(section));
   }
 
   void _onSearchChanged(String query) {
@@ -317,16 +331,8 @@ class _DirectorioViewState extends State<DirectorioView>
   }
 
   Widget _buildDirectoryMenu(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return MenuAnchor(
       menuChildren: [
-        MenuItemButton(
-          onPressed: _toggleTheme,
-          leadingIcon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-          child: Text(isDark ? 'Modo claro' : 'Modo oscuro'),
-        ),
-        const Divider(height: 1),
         DirectorioTabsMenuContent(
           orderedSections: _orderedSections,
           visibleSections: _visibleSections,
@@ -437,11 +443,16 @@ class _DirectorioViewState extends State<DirectorioView>
                           ? AppSegmentedTabBar(
                               keyPrefix: 'directorio_segmented_tab',
                               controller: _tabController,
+                              variant: AppSegmentedTabBarVariant.colorAccented,
                               items: _activeSections
                                   .map(
                                     (section) => AppSegmentedTabItem(
                                       label: _labelForSection(section),
                                       icon: _iconForSection(section),
+                                      accentColor: _accentColorForSection(
+                                        context,
+                                        section,
+                                      ),
                                     ),
                                   )
                                   .toList(),
@@ -507,6 +518,11 @@ class _DirectorioViewState extends State<DirectorioView>
             child: LotesListView(shellInteractionsEnabled: isActive),
           ),
         );
+      case DirectorioSection.cultivos:
+        return KeyedSubtree(
+          key: _cultivosTabKey,
+          child: _DeferredCultivosTab(active: isActive),
+        );
       case DirectorioSection.ubicaciones:
         return KeyedSubtree(
           key: _ubicacionesTabKey,
@@ -529,6 +545,8 @@ class _DirectorioViewState extends State<DirectorioView>
         return 'Animales';
       case DirectorioSection.lotes:
         return 'Lotes';
+      case DirectorioSection.cultivos:
+        return 'Cultivos';
       case DirectorioSection.ubicaciones:
         return 'Ubicaciones';
     }
@@ -540,8 +558,27 @@ class _DirectorioViewState extends State<DirectorioView>
         return Icons.pets;
       case DirectorioSection.lotes:
         return Icons.fence;
+      case DirectorioSection.cultivos:
+        return Icons.eco_outlined;
       case DirectorioSection.ubicaciones:
         return Icons.location_on_outlined;
+    }
+  }
+
+  Color _accentColorForSection(
+    BuildContext context,
+    DirectorioSection section,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    switch (section) {
+      case DirectorioSection.animales:
+        return isDark ? const Color(0xFFE58A67) : const Color(0xFFA65332);
+      case DirectorioSection.lotes:
+        return isDark ? const Color(0xFF7FC7AA) : AppColors.primary;
+      case DirectorioSection.cultivos:
+        return isDark ? const Color(0xFFE4B65D) : AppColors.amber;
+      case DirectorioSection.ubicaciones:
+        return isDark ? const Color(0xFF7FB2CE) : AppColors.secondary;
     }
   }
 
@@ -578,6 +615,41 @@ class _DirectorioViewState extends State<DirectorioView>
       if (!b.contains(section)) return false;
     }
     return true;
+  }
+}
+
+/// Keeps Cultivos out of the initial Directorio build, then keeps its state
+/// alive after the first visit so switching tabs does not restart its reads.
+class _DeferredCultivosTab extends StatefulWidget {
+  const _DeferredCultivosTab({required this.active});
+
+  final bool active;
+
+  @override
+  State<_DeferredCultivosTab> createState() => _DeferredCultivosTabState();
+}
+
+class _DeferredCultivosTabState extends State<_DeferredCultivosTab> {
+  late bool _activated = widget.active;
+
+  @override
+  void didUpdateWidget(covariant _DeferredCultivosTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active) _activated = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_activated) {
+      // The page is intentionally not created until the tab settles, but a
+      // small placeholder keeps the incoming TabBarView pane from looking
+      // like a blank or broken screen during the swipe animation.
+      return const ColoredBox(
+        color: Colors.transparent,
+        child: AppLoadingIndicator.inline(),
+      );
+    }
+    return CultivosListView(shellInteractionsEnabled: widget.active);
   }
 }
 
@@ -722,6 +794,10 @@ Widget buildDirectorioTypeIcon(CombinedSearchType type) {
       icon = Icons.agriculture;
       color = AppColors.success;
       break;
+    case CombinedSearchType.cultivo:
+      icon = Icons.eco_outlined;
+      color = AppColors.primary;
+      break;
     case CombinedSearchType.ubicacion:
       icon = Icons.location_on;
       color = AppColors.warning;
@@ -748,6 +824,12 @@ void openDirectorioSearchResult(
       case CombinedSearchType.lote:
         context.pushNamed(
           AppRoutes.nameLoteDetalle,
+          pathParameters: {'uuid': result.id},
+        );
+        break;
+      case CombinedSearchType.cultivo:
+        context.pushNamed(
+          AppRoutes.nameCultivoDetalle,
           pathParameters: {'uuid': result.id},
         );
         break;

@@ -170,17 +170,27 @@ class _UpcomingEventsWidget extends StatelessWidget {
         visible: showSectionAction,
         route: AppRoutes.agenda,
       ),
-      child: Column(children: events.take(4).map(_eventTile).toList()),
+      child: Column(
+        children: events
+            .take(4)
+            .map((event) => _eventTile(context, event))
+            .toList(),
+      ),
     );
   }
 
-  Widget _eventTile(AgendaEntry e) {
+  Widget _eventTile(BuildContext context, AgendaEntry e) {
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.event, size: 20),
       title: Text(e.titulo, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(DateFormat('EEE d MMM').format(e.fecha)),
+      subtitle: Text(
+        DateFormat(
+          'EEE d MMM',
+          Localizations.localeOf(context).toLanguageTag(),
+        ).format(e.fecha),
+      ),
     );
   }
 }

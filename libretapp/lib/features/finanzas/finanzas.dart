@@ -10,5 +10,9 @@ export 'domain/entities/general_expense_record.dart';
 export 'domain/entities/income_record.dart';
 export 'domain/finance_summary_service.dart';
 export 'domain/repositories/finanzas_repository.dart';
-export 'infrastructure/isar_finanzas_repository.dart';
+export 'infrastructure/isar_finanzas_repository.dart'
+    if (dart.library.html) 'web_finanzas_infrastructure_stub.dart';
 export 'view/view.dart';
+export 'contabilidad/contabilidad.dart';
+export 'facturacion/facturacion.dart';
+export 'maquila/maquila.dart';

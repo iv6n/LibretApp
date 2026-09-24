@@ -8,7 +8,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -22,6 +21,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the production registration form.
 class RegistroProduccionPage extends StatelessWidget {
@@ -54,6 +54,7 @@ class _RegistroProduccionView extends StatefulWidget {
 }
 
 class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
+  final _formKey = GlobalKey<FormState>();
   final _valueCtrl = TextEditingController();
   final _unitCtrl = TextEditingController();
   final _scoreCtrl = TextEditingController();
@@ -81,6 +82,7 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
       );
       return;
     }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final rawValue = _valueCtrl.text.trim();
     final parsedValue = parseFormDouble(rawValue);
@@ -191,133 +193,105 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: GeneratedAssetTitle(
+      child: BlocBuilder<RegistroBloc, RegistroState>(
+        buildWhen: (prev, curr) => prev.status != curr.status,
+        builder: (context, state) {
+          final isSaving = state.status == RegistroStatus.loading;
+          return AppFormScaffold(
             title: l10n.detailFormProductionTitle,
             assetPath: AppAssetPaths.recordProduction,
             fallbackIcon: Icons.agriculture_outlined,
-          ),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            formKey: _formKey,
+            saving: isSaving,
+            onSave: _save,
+            saveLabel: l10n.actionSave,
+            onCancel: () => Navigator.of(context).pop(),
+            cancelLabel: l10n.actionCancel,
+            fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
                 onSelected: (a) => setState(() => _selectedAnimal = a),
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<ProductionRecordType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormProductionType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: ProductionRecordType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
+              const SizedBox(height: AppSpacing.md),
+              AppSelectField<ProductionRecordType>(
+                value: _type,
+                labelText: l10n.detailFormProductionType,
+                requiredField: true,
+                items: ProductionRecordType.values,
+                itemLabel: (type) => type.displayName,
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);
                 },
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.event),
-                      label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _date,
-                          firstDate: DateTime(_date.year - 5),
-                          lastDate: DateTime(_date.year + 1),
-                        );
-                        if (picked != null) setState(() => _date = picked);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _valueCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormProductionValue,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _unitCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormProductionUnit,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _scoreCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormProductionScore,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-              BlocBuilder<RegistroBloc, RegistroState>(
-                buildWhen: (prev, curr) => prev.status != curr.status,
-                builder: (context, state) {
-                  final isSaving = state.status == RegistroStatus.loading;
-                  return SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isSaving ? null : _save,
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(l10n.actionSave),
-                    ),
-                  );
+              const SizedBox(height: AppSpacing.md),
+              AppDateField(
+                value: _date,
+                labelText: l10n.fieldDate,
+                firstDate: DateTime(_date.year - 5),
+                lastDate: DateTime(_date.year + 1),
+                onChanged: (value) {
+                  if (value != null) setState(() => _date = value);
                 },
               ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _valueCtrl,
+                labelText: l10n.detailFormProductionValue,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (value) {
+                  final raw = value?.trim() ?? '';
+                  final parsed = parseFormDouble(raw);
+                  final requiresValue =
+                      _type == ProductionRecordType.weighing ||
+                      _type == ProductionRecordType.weightGain ||
+                      _type == ProductionRecordType.production;
+                  if (requiresValue && raw.isEmpty) {
+                    return l10n.detailFormProductionValueRequired;
+                  }
+                  if (raw.isNotEmpty && parsed == null) {
+                    return l10n.detailFormNumberInvalid;
+                  }
+                  return parsed != null && parsed <= 0
+                      ? l10n.detailFormAmountPositive
+                      : null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _unitCtrl,
+                labelText: l10n.detailFormProductionUnit,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _scoreCtrl,
+                labelText: l10n.detailFormProductionScore,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final raw = value?.trim() ?? '';
+                  final parsed = parseFormInt(raw);
+                  if (_type == ProductionRecordType.bodyConditionScore &&
+                      raw.isEmpty) {
+                    return l10n.detailFormProductionScoreRequired;
+                  }
+                  if (raw.isNotEmpty && parsed == null) {
+                    return l10n.detailFormProductionScoreInvalid;
+                  }
+                  return parsed != null && (parsed < 0 || parsed > 9)
+                      ? l10n.detailFormProductionScoreRange
+                      : null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _notesCtrl,
+                labelText: l10n.fieldNotes,
+                maxLines: 2,
+              ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -7,11 +7,17 @@ import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/isar_backup_store.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/isar_cultivation.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
+import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 
 class _MemoryPerfilRepository implements PerfilRepository {
   Perfil perfil = const Perfil(
@@ -137,6 +143,78 @@ void main() {
       expect(restored.single.amount, 2000);
     },
   );
+
+  test('schema 8 restore migrates embedded crops after locations', () async {
+    final isar = await database.initialize();
+    final location = LocationEntity(
+      uuid: 'old-location',
+      name: 'Lote Norte',
+      type: LocationType.field,
+      surfaceArea: 8,
+      capacity: 0,
+      waterSource: '',
+      terrainType: '',
+      crops: [
+        CropRecord(
+          uuid: 'old-crop',
+          cropName: 'Maíz',
+          plantingDate: DateTime.utc(2026, 2, 1),
+          surface: 4.2,
+        ),
+      ],
+    );
+    await isar.writeTxn(() => isar.isarLocations.put(location.toIsar()));
+    final current = await store.capture();
+    final oldCollections = Map<String, List<Map<String, dynamic>>>.from(
+      current.collections,
+    )..remove('cultivations');
+    final schema8 = BackupEnvelope(
+      schemaVersion: 8,
+      appVersion: current.appVersion,
+      exportedAt: current.exportedAt,
+      collections: oldCollections,
+      profile: current.profile,
+    );
+
+    await database.clearAllCollections();
+    await store.restore(schema8, mode: BackupImportMode.replaceAll);
+
+    final restored = await isar.isarCultivations
+        .where()
+        .uuidEqualTo('old-crop')
+        .findFirst();
+    expect(restored, isNotNull);
+    expect(restored!.locationUuid, 'old-location');
+    expect(restored.areaSquareMeters, 42000);
+    expect((await isar.isarLocations.where().findFirst())!.crops, isEmpty);
+  });
+
+  test('schema 9 capture and restore keeps independent cultivations', () async {
+    final isar = await database.initialize();
+    await isar.writeTxn(
+      () => isar.isarCultivations.put(
+        IsarCultivation.fromEntity(
+          CultivationEntity(
+            uuid: 'cultivation-9',
+            name: 'Rosa',
+            plantingDate: DateTime.utc(2026, 9, 1),
+          ),
+        ),
+      ),
+    );
+    final captured = await store.capture();
+    expect(captured.schemaVersion, 9);
+    expect(captured.collections['cultivations'], hasLength(1));
+
+    await database.clearAllCollections();
+    await store.restore(captured, mode: BackupImportMode.replaceAll);
+
+    final restored = await isar.isarCultivations
+        .where()
+        .uuidEqualTo('cultivation-9')
+        .findFirst();
+    expect(restored?.name, 'Rosa');
+  });
 
   group('merge respects modification timestamps', () {
     Future<void> putLote({

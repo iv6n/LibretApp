@@ -2,11 +2,11 @@
 
 ## Visión general
 - App Flutter modular con barriles para reducir imports: core/, app/, features/, theme/, l10n/. Refactor documentado en [REFACTORING_SUMMARY.md](../REFACTORING_SUMMARY.md).
-- Stack: GoRouter para navegación, flutter_bloc + Equatable para estado, GetIt para DI, Isar para persistencia local, SharedPreferences para settings, theming M3 y i18n generada.
+- Stack: GoRouter para navegación, flutter_bloc + Equatable para estado, GetIt para DI, Isar móvil, Drift/SQLite WASM web, SharedPreferences para settings, theming M3 e i18n generada.
 - Entrada en [lib/main.dart](../lib/main.dart): inicializa bindings, sistema UI edge-to-edge, trazadores de rendimiento opcionales, DI (`setupLocator`) y levanta `LibretApp` con `AppBloc` y `ThemeBloc`.
 
 ## Arranque, DI y trazas
-- DI central en [lib/core/di/injection.dart](../lib/core/di/injection.dart): registra Isar, prefs, repositorios (animales, lotes, ubicaciones), fuentes remotas mock, repos de eventos/perfil y theme repo.
+- DI central con selección de plataforma en [lib/core/di/injection.dart](../lib/core/di/injection.dart): móvil conserva Isar y Web usa Drift; ambos registran los contratos compartidos de finca, sincronización y módulos operativos.
 - `AppBloc` en [lib/app/app_bloc.dart](../lib/app/app_bloc.dart): arranque, migración de lotes opcional, resolución/guardar idioma.
 - `ThemeBloc` en [lib/app/theme/theme_bloc.dart](../lib/app/theme/theme_bloc.dart): carga/guarda `ThemeMode`, fallback al brillo del sistema.
 - Performance hooks: `PerformanceMonitor`, `InteractionTracer`, `NavigationTracer` instanciados en [lib/main.dart](../lib/main.dart) cuando hay debug/profile.
@@ -21,8 +21,8 @@
 - Barriles clave: `core/core.dart`, `app/app_index.dart`, `theme/theme.dart`, `features/*/*.dart` para imports limpios.
 
 ## Datos y persistencia
-- Isar como store local: base en [lib/core/database/isar_database.dart](../lib/core/database/isar_database.dart); SharedPreferences en [lib/core/services/shared_prefs_service.dart](../lib/core/services/shared_prefs_service.dart).
-- Repos de dominio registrados en DI: animales y lotes (Isar), ubicaciones (Isar), eventos y perfil (in-memory/mock). Ejemplos: [lib/features/directorio/animales/infrastructure/animal_repository_isar.dart](../lib/features/directorio/animales/infrastructure/animal_repository_isar.dart), [lib/features/directorio/lotes/infrastructure/lotes_repository_isar.dart](../lib/features/directorio/lotes/infrastructure/lotes_repository_isar.dart), [lib/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart](../lib/features/ubicaciones/infrastructure/repositories/isar_location_repository.dart).
+- Persistencia local móvil en [lib/core/database/isar_database.dart](../lib/core/database/isar_database.dart) y contrato compartido en [lib/core/persistence/feature_record_store.dart](../lib/core/persistence/feature_record_store.dart); Web abre Drift con SQLite WASM. SharedPreferences conserva settings y estado de respaldo.
+- Los módulos nuevos persisten por UUID, `farmId`, revisión, soft-delete y payload versionado. Animales Web ya usa el mismo contrato; las colecciones legacy restantes se migran progresivamente.
 - Seeding/migración descrita en [IMPLEMENTATION_SUMMARY.md](../IMPLEMENTATION_SUMMARY.md).
 
 ## Theming y UX chrome
@@ -32,7 +32,8 @@
 
 ## Internacionalización y recursos
 - Delegados y locales generados en [lib/l10n](../lib/l10n); selección de idioma via `AppBloc` (persistida en prefs).
-- Assets configurados en [pubspec.yaml](../pubspec.yaml) bajo `assets/images/`.
+- Assets configurados en [pubspec.yaml](../pubspec.yaml): WEBP de ejecución en
+  `assets/images/` y maestros PNG 2.5D en `assets/icons_25d_source/`.
 
 ## Convenciones de código y módulos
 - Lints base: [analysis_options.yaml](../analysis_options.yaml) incluye `flutter_lints`. Sugeridos para endurecer: `prefer_single_quotes`, `sort_constructors_first`, `unawaited_futures`, `prefer_const_constructors`, `exhaustive_switch`, `public_member_api_docs` en core.

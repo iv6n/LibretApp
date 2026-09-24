@@ -11,6 +11,11 @@ abstract class WeightRecordRepository {
   Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
     Set<String> animalUuids,
   );
+
+  /// Returns all records historically assigned to a lot, including animals
+  /// that no longer belong to its current membership list.
+  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid);
+
   Future<WeightRecord> addWeightRecord(String animalUuid, WeightRecord record);
   Future<void> deleteWeightRecord(String recordId);
 }

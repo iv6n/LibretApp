@@ -9,6 +9,8 @@ import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
 import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class RegistroGastoGeneralPage extends StatefulWidget {
   const RegistroGastoGeneralPage({super.key});
@@ -22,6 +24,7 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   final _amountCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController(text: 'USD');
   final _notesCtrl = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   var _type = GeneralExpenseType.fuel;
   var _date = DateTime.now();
   bool _saving = false;
@@ -35,19 +38,21 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final amount = parseFormDouble(_amountCtrl.text);
     if (amount == null) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Ingresa un monto válido.')),
+        SnackBar(content: Text(l10n.financeAmountInvalid)),
       );
       return;
     }
     if (amount <= 0) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('El monto debe ser mayor a cero.')),
+        SnackBar(content: Text(l10n.financeAmountPositive)),
       );
       return;
     }
@@ -73,158 +78,80 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
       }
       if (!mounted) return;
       navigator.pop();
-      messenger.showSnackBar(const SnackBar(content: Text('Gasto guardado.')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.financeExpenseSaved)));
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _date,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) setState(() => _date = picked);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Registrar gasto general')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tipo de gasto', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<GeneralExpenseType>(
-              initialValue: _type,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
-              items: GeneralExpenseType.values
-                  .map((t) => DropdownMenuItem(value: t, child: Text(t.label)))
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _type = v);
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Monto', style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _amountCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: '0.00',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Moneda', style: theme.textTheme.labelMedium),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _currencyCtrl,
-                        textCapitalization: TextCapitalization.characters,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: 'USD',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text('Fecha', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(4),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  suffixIcon: Icon(Icons.calendar_today, size: 18),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                ),
-                child: Text(
-                  '${_date.day.toString().padLeft(2, '0')}/'
-                  '${_date.month.toString().padLeft(2, '0')}/'
-                  '${_date.year}',
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('Notas (opcional)', style: theme.textTheme.labelMedium),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _notesCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Descripción adicional...',
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _saving ? null : _save,
-                child: _saving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Guardar gasto'),
-              ),
-            ),
-          ],
+    final l10n = AppLocalizations.of(context);
+    return AppFormScaffold(
+      title: l10n.financeRegisterExpense,
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      saveLabel: l10n.actionSave,
+      saveKey: const ValueKey('finance-expense-save'),
+      onCancel: () => Navigator.of(context).pop(),
+      cancelLabel: l10n.actionCancel,
+      fields: [
+        AppSelectField<GeneralExpenseType>(
+          value: _type,
+          labelText: l10n.financeExpenseType,
+          requiredField: true,
+          items: GeneralExpenseType.values,
+          itemLabel: (type) => type.label,
+          onChanged: (value) {
+            if (value != null) setState(() => _type = value);
+          },
         ),
-      ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _amountCtrl,
+          key: const ValueKey('finance-expense-amount'),
+          labelText: l10n.financeAmount,
+          hintText: '0.00',
+          requiredField: true,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) {
+            final amount = parseFormDouble(value ?? '');
+            if (amount == null) return l10n.financeAmountInvalid;
+            if (amount <= 0) return l10n.financeAmountPositive;
+            return null;
+          },
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _currencyCtrl,
+          key: const ValueKey('finance-expense-currency'),
+          labelText: l10n.financeCurrency,
+          hintText: 'USD',
+          textCapitalization: TextCapitalization.characters,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(2000),
+          lastDate: DateTime.now(),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
+          },
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _notesCtrl,
+          labelText: l10n.fieldNotesOptional,
+          hintText: l10n.financeDescriptionHint,
+          maxLines: 3,
+        ),
+      ],
     );
   }
 }

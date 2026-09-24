@@ -1022,11 +1022,14 @@ class _AgendaRegistrationFlowPageState
               notes: _nullable(_notesController.text),
             ) ??
             WeightRecord(
+              animalUuid: animalId,
+              lotUuid: widget.animalsById[animalId]?.batchUuid,
               date: _performedAt,
               weight: parsed,
               method: _weightMethods[animalId]!,
               measuredBy: _nullable(_responsibleController.text),
               notes: _nullable(_notesController.text),
+              createdAt: DateTime.now(),
             );
         return AgendaRegistrationRowDraft(
           row: row,

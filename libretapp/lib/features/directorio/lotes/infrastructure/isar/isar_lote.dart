@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a isar \u203a isar_lote \u2014 Isar schema for the Lote model.
+/// features \u203a directorio \u203a lotes \u203a infrastructure \u203a isar \u203a isar_lote \u2014 Isar schema for the Lote model.
 ///
 /// @Name annotations preserve the original Spanish column names in the Isar
 /// store so that existing data survives the Dart field rename without a
@@ -38,6 +38,9 @@ class IsarLote {
   String? notes;
 
   String? currentLocationId;
+  double? feedPricePerKg;
+  double? dailyFeedKgPerHead;
+  double? liveWeightPricePerKg;
 
   late bool synced;
   String? remoteId;
@@ -59,6 +62,9 @@ extension IsarLoteMapper on IsarLote {
       active: active,
       notes: notes,
       currentLocationId: currentLocationId,
+      feedPricePerKg: feedPricePerKg,
+      dailyFeedKgPerHead: dailyFeedKgPerHead,
+      liveWeightPricePerKg: liveWeightPricePerKg,
       lastUpdateDate: lastUpdateDate,
       synced: synced,
       remoteId: remoteId,
@@ -76,6 +82,9 @@ extension IsarLoteMapper on IsarLote {
     active = entity.active;
     notes = entity.notes;
     currentLocationId = entity.currentLocationId;
+    feedPricePerKg = entity.feedPricePerKg;
+    dailyFeedKgPerHead = entity.dailyFeedKgPerHead;
+    liveWeightPricePerKg = entity.liveWeightPricePerKg;
     lastUpdateDate = entity.lastUpdateDate;
     synced = entity.synced;
     remoteId = entity.remoteId;
@@ -93,6 +102,9 @@ extension IsarLoteFromEntityMapper on LoteEntity {
       ..createdAt = createdAt
       ..closedAt = closedAt
       ..currentLocationId = currentLocationId
+      ..feedPricePerKg = feedPricePerKg
+      ..dailyFeedKgPerHead = dailyFeedKgPerHead
+      ..liveWeightPricePerKg = liveWeightPricePerKg
       ..active = active
       ..notes = notes
       ..lastUpdateDate = lastUpdateDate

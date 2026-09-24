@@ -18,11 +18,14 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/isar_cultivation.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entry.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
+import 'package:libretapp/features/rfid/infrastructure/isar_rfid.dart';
+import 'package:libretapp/core/persistence/isar_feature_record.dart';
 
 class IsarDatabase {
   factory IsarDatabase() => _instance;
@@ -51,6 +54,7 @@ class IsarDatabase {
         IsarCommercialRecordSchema,
         IsarMovementRecordSchema,
         IsarLoteSchema,
+        IsarCultivationSchema,
         IsarLocationSchema,
         IsarIncomeRecordSchema,
         IsarGeneralExpenseRecordSchema,
@@ -63,6 +67,9 @@ class IsarDatabase {
         IsarCareRuleSchema,
         IsarCareRecordSchema,
         IsarScheduledCareSchema,
+        IsarRfidBindingSchema,
+        IsarRfidScanSessionSchema,
+        IsarFeatureRecordSchema,
       ],
       directory: dir.path,
       inspector: kDebugMode,
@@ -99,6 +106,7 @@ class IsarDatabase {
       await db.isarCommercialRecords.clear();
       await db.isarMovementRecords.clear();
       await db.isarLotes.clear();
+      await db.isarCultivations.clear();
       await db.isarLocations.clear();
       await db.isarIncomeRecords.clear();
       await db.isarGeneralExpenseRecords.clear();
@@ -111,6 +119,9 @@ class IsarDatabase {
       await db.isarCareRules.clear();
       await db.isarCareRecords.clear();
       await db.isarScheduledCares.clear();
+      await db.isarRfidBindings.clear();
+      await db.isarRfidScanSessions.clear();
+      await db.isarFeatureRecords.clear();
     });
     LoggerService.w(
       'Todas las colecciones Isar fueron limpiadas',

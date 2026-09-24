@@ -109,8 +109,22 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   Future<void> addPasture(PastureRecord record) =>
       _mutate(() => _locationRepository.addPasture(_locationUuid, record));
 
+  Future<void> addSeeding(SeedingRecord record) =>
+      _mutate(() => _locationRepository.addSeeding(_locationUuid, record));
+
+  Future<void> addIrrigation(IrrigationRecord record) => _mutate(
+    () => _locationRepository.addIrrigation(_locationUuid, record),
+  );
+
+  Future<void> addRain(RainRecord record) =>
+      _mutate(() => _locationRepository.addRain(_locationUuid, record));
+
   Future<void> addCost(LocationCostRecord record) =>
       _mutate(() => _locationRepository.addCost(_locationUuid, record));
+
+  Future<void> addMaintenance(MaintenanceRecord record) => _mutate(
+    () => _locationRepository.addMaintenance(_locationUuid, record),
+  );
 
   Future<void> addCrop(CropRecord crop) =>
       _mutate(() => _locationRepository.addCrop(_locationUuid, crop));

@@ -67,6 +67,7 @@ library;
 import 'package:libretapp/core/demo/builders/demo_agenda_workforce.dart';
 import 'package:libretapp/core/demo/builders/demo_animals.dart';
 import 'package:libretapp/core/demo/builders/demo_commercial_costs.dart';
+import 'package:libretapp/core/demo/builders/demo_cultivations.dart';
 import 'package:libretapp/core/demo/builders/demo_finanzas.dart';
 import 'package:libretapp/core/demo/builders/demo_health.dart';
 import 'package:libretapp/core/demo/builders/demo_locations.dart';
@@ -99,6 +100,7 @@ import 'package:libretapp/features/directorio/animales/domain/services/care_cale
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
@@ -145,6 +147,7 @@ class DemoScenarioService {
     required AnimalRepository animalRepository,
     required LotesRepository lotesRepository,
     required LocationRepository locationRepository,
+    required CultivationRepository cultivationRepository,
     required WeightRecordRepository weightRepository,
     required HealthRecordRepository healthRepository,
     required ReproductionRecordRepository reproductionRepository,
@@ -164,6 +167,7 @@ class DemoScenarioService {
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _locationRepository = locationRepository,
+       _cultivationRepository = cultivationRepository,
        _weightRepository = weightRepository,
        _healthRepository = healthRepository,
        _reproductionRepository = reproductionRepository,
@@ -184,6 +188,7 @@ class DemoScenarioService {
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
   final LocationRepository _locationRepository;
+  final CultivationRepository _cultivationRepository;
   final WeightRecordRepository _weightRepository;
   final HealthRecordRepository _healthRepository;
   final ReproductionRecordRepository _reproductionRepository;
@@ -297,6 +302,9 @@ class DemoScenarioService {
         .toSet();
     final lotes = await _lotesRepository.getAll();
     final demoLoteUuids = lotes.map((l) => l.uuid).where(isDemoId).toSet();
+    final demoCultivations = (await _cultivationRepository.getAll(
+      includeArchived: true,
+    )).where((cultivation) => isDemoId(cultivation.uuid)).toList();
 
     final detached = await _detachForeignReferences(
       allAnimals: allAnimals,
@@ -324,6 +332,11 @@ class DemoScenarioService {
       await _locationRepository.deleteByUuid(uuid);
     }
     counts['locations'] = demoLocationUuids.length;
+
+    for (final cultivation in demoCultivations) {
+      await _cultivationRepository.purge(cultivation.uuid);
+    }
+    counts['cultivations'] = demoCultivations.length;
 
     // Milking and workforce expose no per-row delete, so both are rewritten
     // without their demo rows.
@@ -541,14 +554,22 @@ class DemoScenarioService {
     }
     counts['locations'] = locations.length;
 
-    // 2. Lotes, empty roster — filled in step 4.
+    // 2. Cultivations — independent from location storage. Their optional
+    // locationUuid creates a link without nesting the records in the place.
+    final cultivations = buildDemoCultivations(reference: reference);
+    for (final cultivation in cultivations) {
+      await _cultivationRepository.upsert(cultivation);
+    }
+    counts['cultivations'] = cultivations.length;
+
+    // 3. Lotes, empty roster — filled later from animal membership.
     final lotes = buildDemoLotes(reference: reference);
     for (final lote in lotes) {
       await _lotesRepository.upsert(lote);
     }
     counts['lotes'] = lotes.length;
 
-    // 3. Animals — upsert by uuid (update if present, save if not: a plain
+    // 4. Animals — upsert by uuid (update if present, save if not: a plain
     // `save()` twice would violate the unique index on `uuid`).
     final animals = buildDemoAnimals(reference: reference);
     final removedObsolete = await _removeObsoleteDemoAnimals(

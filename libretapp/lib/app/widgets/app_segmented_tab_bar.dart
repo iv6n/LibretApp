@@ -4,49 +4,78 @@ library;
 import 'package:flutter/material.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
+/// Visual variants for the reusable segmented tab bar.
+enum AppSegmentedTabBarVariant { standard, colorAccented }
+
 class AppSegmentedTabItem {
-  const AppSegmentedTabItem({required this.label, required this.icon});
+  const AppSegmentedTabItem({
+    required this.label,
+    required this.icon,
+    this.accentColor,
+  });
 
   final String label;
   final IconData icon;
+
+  /// Optional category color used by [AppSegmentedTabBarVariant.colorAccented].
+  ///
+  /// It is deliberately optional so existing consumers retain the original
+  /// single-color appearance.
+  final Color? accentColor;
 }
 
-class AppSegmentedTabBar extends StatelessWidget implements PreferredSizeWidget {
+class AppSegmentedTabBar extends StatelessWidget
+    implements PreferredSizeWidget {
   const AppSegmentedTabBar({
     required this.controller,
     required this.items,
     this.keyPrefix = 'segmented_tab',
+    this.variant = AppSegmentedTabBarVariant.standard,
     super.key,
   });
 
   static const double barHeight = 42;
   static const double totalHeight = 54;
+  static const double accentedTotalHeight = 72;
 
   final TabController controller;
   final List<AppSegmentedTabItem> items;
   final String keyPrefix;
+  final AppSegmentedTabBarVariant variant;
 
   @override
-  Size get preferredSize => const Size.fromHeight(totalHeight);
+  Size get preferredSize => Size.fromHeight(
+    variant == AppSegmentedTabBarVariant.colorAccented
+        ? accentedTotalHeight
+        : totalHeight,
+  );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colors = _SegmentedTabBarColors.resolve(theme, isDark);
+    final isColorAccented = variant == AppSegmentedTabBarVariant.colorAccented;
+    final height = isColorAccented ? accentedTotalHeight : totalHeight;
+    final radius = isColorAccented ? 24.0 : 18.0;
 
     if (items.isEmpty) {
-      return const SizedBox(height: totalHeight);
+      return SizedBox(height: height);
     }
 
     return SizedBox(
-      height: totalHeight,
+      height: height,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
+        padding: EdgeInsets.fromLTRB(
+          isColorAccented ? 8 : 6,
+          isColorAccented ? 4 : 2,
+          isColorAccented ? 8 : 6,
+          isColorAccented ? 4 : 2,
+        ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: colors.track,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(radius),
             boxShadow: [
               BoxShadow(
                 color: colors.shadow,
@@ -56,7 +85,7 @@ class AppSegmentedTabBar extends StatelessWidget implements PreferredSizeWidget 
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(radius),
             child: AnimatedBuilder(
               animation: controller,
               builder: (context, _) {
@@ -75,7 +104,17 @@ class AppSegmentedTabBar extends StatelessWidget implements PreferredSizeWidget 
                           selected: index == selectedIndex,
                           activeColor: colors.activeForeground,
                           inactiveColor: colors.inactiveForeground,
-                          activeSurface: colors.activeSurface,
+                          activeSurface: isColorAccented
+                              ? Color.alphaBlend(
+                                  (items[index].accentColor ??
+                                          colors.activeForeground)
+                                      .withValues(alpha: isDark ? 0.18 : 0.08),
+                                  isDark
+                                      ? theme.colorScheme.surface
+                                      : LightColors.background,
+                                )
+                              : colors.activeSurface,
+                          colorAccented: isColorAccented,
                           keyPrefix: keyPrefix,
                           onTap: () {
                             if (controller.index == index) return;
@@ -182,6 +221,7 @@ class _SegmentedTabButton extends StatelessWidget {
     required this.activeColor,
     required this.inactiveColor,
     required this.activeSurface,
+    required this.colorAccented,
     required this.keyPrefix,
     required this.onTap,
   });
@@ -192,12 +232,19 @@ class _SegmentedTabButton extends StatelessWidget {
   final Color activeColor;
   final Color inactiveColor;
   final Color activeSurface;
+  final bool colorAccented;
   final String keyPrefix;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? activeColor : inactiveColor;
+    final accent = item.accentColor ?? activeColor;
+    final labelColor = selected ? accent : inactiveColor;
+    final iconColor = colorAccented && item.accentColor != null
+        ? accent
+        : labelColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final buttonRadius = colorAccented ? 20.0 : 15.0;
 
     return Semantics(
       button: true,
@@ -208,7 +255,7 @@ class _SegmentedTabButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             key: ValueKey<String>('${keyPrefix}_button_$index'),
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(buttonRadius),
             splashFactory: NoSplash.splashFactory,
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
@@ -224,22 +271,42 @@ class _SegmentedTabButton extends StatelessWidget {
                 height: double.infinity,
                 decoration: BoxDecoration(
                   color: selected ? activeSurface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(buttonRadius),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(item.icon, size: selected ? 22 : 21, color: color),
-                    const SizedBox(height: 2),
+                    if (colorAccented)
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: isDark ? 0.22 : 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          item.icon,
+                          size: selected ? 23 : 22,
+                          color: iconColor,
+                        ),
+                      )
+                    else
+                      Icon(
+                        item.icon,
+                        size: selected ? 22 : 21,
+                        color: iconColor,
+                      ),
+                    SizedBox(height: colorAccented ? 3 : 2),
                     Flexible(
                       child: Text(
                         item.label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: color,
-                          fontSize: 10.5,
+                          color: labelColor,
+                          fontSize: colorAccented ? 11.5 : 10.5,
                           height: 1.05,
                           fontWeight: selected
                               ? FontWeight.w800
@@ -259,10 +326,7 @@ class _SegmentedTabButton extends StatelessWidget {
 }
 
 class _SegmentedTabDivider extends StatelessWidget {
-  const _SegmentedTabDivider({
-    required this.color,
-    required this.hidden,
-  });
+  const _SegmentedTabDivider({required this.color, required this.hidden});
 
   final Color color;
   final bool hidden;

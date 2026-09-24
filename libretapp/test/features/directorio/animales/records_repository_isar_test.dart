@@ -156,6 +156,38 @@ void main() {
     );
 
     test(
+      'conserva el lote, el animal hidratado y la fecha de creación',
+      () async {
+        final repo = WeightRecordRepositoryIsar(IsarDatabase());
+        const animalUuid = 'animal-weight-lot-1';
+        const lotUuid = 'lot-history-1';
+        final createdAt = DateTime(2025, 4, 10, 8, 30);
+
+        final saved = await repo.addWeightRecord(
+          animalUuid,
+          WeightRecord(
+            animalUuid: animalUuid,
+            lotUuid: lotUuid,
+            date: DateTime(2025, 4, 10),
+            weight: 385.5,
+            method: WeightMethod.scale,
+            createdAt: createdAt,
+          ),
+        );
+
+        expect(saved.animalUuid, animalUuid);
+        expect(saved.lotUuid, lotUuid);
+        expect(saved.createdAt, createdAt);
+
+        final byLot = await repo.getWeightRecordsForLot(lotUuid);
+        expect(byLot, hasLength(1));
+        expect(byLot.single.animalUuid, animalUuid);
+        expect(byLot.single.createdAt, createdAt);
+      },
+      skip: !_canRunIsarNative(),
+    );
+
+    test(
       'no retorna registros pertenecientes a otro animal',
       () async {
         final repo = WeightRecordRepositoryIsar(IsarDatabase());

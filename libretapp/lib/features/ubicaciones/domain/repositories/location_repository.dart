@@ -21,6 +21,10 @@ abstract class LocationRepository {
   Future<void> addIrrigation(String uuid, IrrigationRecord record);
   Future<void> addRain(String uuid, RainRecord record);
   Future<void> addCost(String uuid, LocationCostRecord record);
+  /// Optional until all external repository adapters implement the operation.
+  /// The production Isar adapter overrides it; test adapters can safely ignore
+  /// maintenance writes when they only exercise location navigation.
+  Future<void> addMaintenance(String uuid, MaintenanceRecord record) async {}
 
   // Crop management
   Future<void> addCrop(String locationUuid, CropRecord crop);

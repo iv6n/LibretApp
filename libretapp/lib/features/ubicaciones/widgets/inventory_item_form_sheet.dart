@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 
 class InventoryItemFormSheet extends StatefulWidget {
@@ -93,45 +94,32 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                     ),
                   ),
                   const Spacer(),
-                  IconButton(
+                  AppIconButton(
+                    icon: Icons.close,
+                    tooltip: 'Cerrar',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<InventoryCategory>(
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: 'Categoría',
-                  prefixIcon: Icon(Icons.label_outline),
-                ),
-                items: InventoryCategory.values
-                    .map(
-                      (c) => DropdownMenuItem(
-                        value: c,
-                        child: Row(
-                          children: [
-                            Icon(c.icon, size: 18),
-                            const SizedBox(width: 8),
-                            Text(c.label),
-                          ],
-                        ),
-                      ),
-                    )
-                    .toList(),
+              AppSelectField<InventoryCategory>(
+                value: _category,
+                items: InventoryCategory.values,
+                itemLabel: (category) => category.label,
+                labelText: 'Categoría',
+                prefixIcon: const Icon(Icons.label_outline),
                 onChanged: (value) {
                   if (value != null) setState(() => _category = value);
                 },
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              AppTextField(
                 controller: _nameController,
+                key: const ValueKey('inventory-item-name'),
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre del artículo',
-                  prefixIcon: Icon(Icons.inventory_2_outlined),
-                ),
+                labelText: 'Nombre del artículo',
+                prefixIcon: const Icon(Icons.inventory_2_outlined),
+                requiredField: true,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Ingresa un nombre'
                     : null,
@@ -140,15 +128,15 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: AppTextField(
                       controller: _quantityController,
+                      key: const ValueKey('inventory-item-quantity'),
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Cantidad',
-                        prefixIcon: Icon(Icons.numbers),
-                      ),
+                      labelText: 'Cantidad',
+                      prefixIcon: const Icon(Icons.numbers),
+                      requiredField: true,
                       validator: (v) {
                         final n = double.tryParse(
                           v?.replaceAll(',', '.') ?? '',
@@ -160,14 +148,14 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: TextFormField(
+                    child: AppTextField(
                       controller: _unitController,
+                      key: const ValueKey('inventory-item-unit'),
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Unidad',
-                        prefixIcon: Icon(Icons.straighten),
-                        hintText: 'kg, lt, bolsas…',
-                      ),
+                      labelText: 'Unidad',
+                      prefixIcon: const Icon(Icons.straighten),
+                      hintText: 'kg, lt, bolsas…',
+                      requiredField: true,
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'Ingresa la unidad'
                           : null,
@@ -176,16 +164,14 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              AppTextField(
                 controller: _reorderController,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Punto de reorden (opcional)',
-                  prefixIcon: Icon(Icons.warning_amber_outlined),
-                  hintText: 'Alerta cuando baje de este valor',
-                ),
+                labelText: 'Punto de reorden (opcional)',
+                prefixIcon: const Icon(Icons.warning_amber_outlined),
+                hintText: 'Alerta cuando baje de este valor',
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return null;
                   final n = double.tryParse(v.replaceAll(',', '.'));
@@ -200,51 +186,47 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
               ),
               if (_category == InventoryCategory.medicine) ...[
                 const SizedBox(height: 12),
-                TextFormField(
+                AppTextField(
                   controller: _activeIngredientController,
-                  decoration: const InputDecoration(
-                    labelText: 'Principio activo (opcional)',
-                    prefixIcon: Icon(Icons.science_outlined),
-                  ),
+                  labelText: 'Principio activo (opcional)',
+                  prefixIcon: const Icon(Icons.science_outlined),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
-                      child: TextFormField(
+                      child: AppTextField(
                         controller: _batchController,
-                        decoration: const InputDecoration(
-                          labelText: 'Lote del producto',
-                        ),
+                        labelText: 'Lote del producto',
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextFormField(
+                      child: AppTextField(
                         controller: _withdrawalController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Retiro (días)',
-                        ),
+                        labelText: 'Retiro (días)',
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) return null;
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
                           final days = int.tryParse(value.trim());
-                          return days == null || days < 0 ? 'Valor inválido' : null;
+                          return days == null || days < 0
+                              ? 'Valor inválido'
+                              : null;
                         },
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
+                AppTextField(
                   controller: _unitCostController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Costo por unidad (opcional)',
-                    prefixIcon: Icon(Icons.payments_outlined),
-                  ),
+                  labelText: 'Costo por unidad (opcional)',
+                  prefixIcon: const Icon(Icons.payments_outlined),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return null;
                     final cost = double.tryParse(value.replaceAll(',', '.'));
@@ -253,29 +235,21 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                 ),
               ],
               const SizedBox(height: 12),
-              TextFormField(
+              AppTextField(
                 controller: _notesController,
                 minLines: 2,
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                  alignLabelWithHint: true,
-                ),
+                labelText: 'Notas (opcional)',
+                prefixIcon: const Icon(Icons.notes_outlined),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: Icon(
-                    isEditing ? Icons.save_outlined : Icons.add_box_outlined,
-                  ),
-                  label: Text(
-                    isEditing ? 'Guardar cambios' : 'Agregar artículo',
-                  ),
-                  onPressed: _submit,
-                ),
+              AppButton(
+                key: const ValueKey('inventory-item-save'),
+                expanded: true,
+                icon: isEditing ? Icons.save_outlined : Icons.add_box_outlined,
+                label: isEditing ? 'Guardar cambios' : 'Agregar artículo',
+                onPressed: _submit,
               ),
               const SizedBox(height: 8),
             ],
@@ -333,59 +307,15 @@ class _ExpiryDateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = value == null
-        ? 'Sin vencimiento'
-        : '${value!.day.toString().padLeft(2, '0')}/'
-              '${value!.month.toString().padLeft(2, '0')}/'
-              '${value!.year}';
-
-    return InputDecorator(
-      decoration: const InputDecoration(
-        labelText: 'Fecha de vencimiento (opcional)',
-        prefixIcon: Icon(Icons.calendar_today_outlined),
-        border: OutlineInputBorder(),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: value == null
-                    ? theme.colorScheme.onSurfaceVariant
-                    : theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          if (value != null)
-            GestureDetector(
-              onTap: () => onChanged(null),
-              child: Icon(
-                Icons.clear,
-                size: 18,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          const SizedBox(width: 4),
-          GestureDetector(
-            onTap: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: value ?? DateTime.now(),
-                firstDate: DateTime.now(),
-                lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-              );
-              if (picked != null) onChanged(picked);
-            },
-            child: Icon(
-              Icons.edit_calendar_outlined,
-              size: 18,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ],
-      ),
+    return AppDateField(
+      value: value,
+      onChanged: onChanged,
+      labelText: 'Fecha de vencimiento (opcional)',
+      emptyLabel: 'Sin vencimiento',
+      clearTooltip: 'Borrar fecha',
+      allowClear: true,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
   }
 }

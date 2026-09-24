@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_event \u2014 events for LotesBloc.
+/// features \u203a directorio \u203a lotes \u203a bloc \u203a lotes_event \u2014 events for LotesBloc.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -23,14 +23,31 @@ class LoadLotes extends LotesEvent {
 
 /// Evento para crear un nuevo lote
 class CreateLote extends LotesEvent {
-  const CreateLote({required this.name, this.description, this.notes});
+  const CreateLote({
+    required this.name,
+    this.description,
+    this.notes,
+    this.feedPricePerKg,
+    this.dailyFeedKgPerHead,
+    this.liveWeightPricePerKg,
+  });
 
   final String name;
   final String? description;
   final String? notes;
+  final double? feedPricePerKg;
+  final double? dailyFeedKgPerHead;
+  final double? liveWeightPricePerKg;
 
   @override
-  List<Object> get props => [name, description ?? '', notes ?? ''];
+  List<Object> get props => [
+    name,
+    description ?? '',
+    notes ?? '',
+    feedPricePerKg ?? -1,
+    dailyFeedKgPerHead ?? -1,
+    liveWeightPricePerKg ?? -1,
+  ];
 }
 
 /// Evento para actualizar un lote existente

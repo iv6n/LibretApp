@@ -23,6 +23,7 @@ import 'package:libretapp/features/registro/view/registro_peso_page.dart';
 import 'package:libretapp/features/registro/view/registro_produccion_page.dart';
 import 'package:libretapp/features/registro/view/registro_reproduccion_page.dart';
 import 'package:libretapp/features/registro/view/registro_sanitario_page.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 void main() {
@@ -71,7 +72,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _selectAnimal(tester);
-      await tester.enterText(find.widgetWithText(TextField, 'Peso (kg)'), '0');
+      await tester.enterText(find.byType(TextFormField).first, '0');
 
       await _tapSave(tester);
 
@@ -100,14 +101,8 @@ void main() {
       await tester.pumpAndSettle();
 
       await _selectAnimal(tester);
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Desde (opcional)'),
-        'Potrero 1',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Hacia'),
-        'Potrero 1',
-      );
+      await tester.enterText(find.byType(TextFormField).first, 'Potrero 1');
+      await tester.enterText(find.byType(TextFormField).at(1), 'Potrero 1');
 
       await _tapSave(tester);
 
@@ -134,7 +129,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await _selectAnimal(tester);
-      await tester.enterText(find.widgetWithText(TextField, 'Monto'), '0');
+      await tester.enterText(find.byType(TextFormField).first, '0');
 
       await _tapSave(tester);
 
@@ -169,7 +164,10 @@ void main() {
         await tester.pumpWidget(_testApp(const RegistroSanitarioPage()));
         await tester.pumpAndSettle();
 
-        await _pickThenCancelNextDate(tester, placeholder: 'Próximo (opcional)');
+        await _pickThenCancelNextDate(
+          tester,
+          placeholder: 'Próximo (opcional)',
+        );
       },
     );
 
@@ -184,7 +182,10 @@ void main() {
         await tester.tap(find.text('Continuar (1)'));
         await tester.pumpAndSettle();
 
-        await _pickThenCancelNextDate(tester, placeholder: 'Próximo (opcional)');
+        await _pickThenCancelNextDate(
+          tester,
+          placeholder: 'Próximo (opcional)',
+        );
       },
     );
   });
@@ -198,17 +199,25 @@ Future<void> _pickThenCancelNextDate(
   WidgetTester tester, {
   required String placeholder,
 }) async {
-  final nextDateButtonFinder = find.ancestor(
-    of: find.byIcon(Icons.event_available),
-    matching: find.byType(OutlinedButton),
-  );
+  final appDateFields = find.byType(AppDateField);
+  final usesSharedDateField = appDateFields.evaluate().length >= 2;
+  final nextDateButtonFinder = usesSharedDateField
+      ? appDateFields.at(1)
+      : find.ancestor(
+          of: find.byIcon(Icons.event_available),
+          matching: find.byType(OutlinedButton),
+        );
   expect(nextDateButtonFinder, findsOneWidget);
 
   final labelFinder = find.descendant(
     of: nextDateButtonFinder,
     matching: find.byType(Text),
   );
-  expect(tester.widget<Text>(labelFinder).data, placeholder);
+  if (usesSharedDateField) {
+    expect(find.text(placeholder), findsWidgets);
+  } else {
+    expect(tester.widget<Text>(labelFinder).data, placeholder);
+  }
 
   await tester.ensureVisible(nextDateButtonFinder);
   await tester.tap(nextDateButtonFinder);
@@ -220,7 +229,13 @@ Future<void> _pickThenCancelNextDate(
   await tester.tap(find.text(materialLocalizations.okButtonLabel));
   await tester.pumpAndSettle();
 
-  final pickedDateLabel = tester.widget<Text>(labelFinder).data;
+  final pickedDateLabel = usesSharedDateField
+      ? tester
+            .widgetList<Text>(labelFinder)
+            .map((text) => text.data)
+            .whereType<String>()
+            .firstWhere((text) => text != placeholder && text.contains('/'))
+      : tester.widget<Text>(labelFinder).data!;
   expect(
     pickedDateLabel,
     isNot(placeholder),
@@ -229,11 +244,17 @@ Future<void> _pickThenCancelNextDate(
 
   await tester.tap(nextDateButtonFinder);
   await tester.pumpAndSettle();
-  await tester.tap(find.text(materialLocalizations.cancelButtonLabel));
+  await tester.tap(find.text(materialLocalizations.cancelButtonLabel).last);
   await tester.pumpAndSettle();
 
   expect(
-    tester.widget<Text>(labelFinder).data,
+    usesSharedDateField
+        ? tester
+              .widgetList<Text>(labelFinder)
+              .map((text) => text.data)
+              .whereType<String>()
+              .firstWhere((text) => text != placeholder && text.contains('/'))
+        : tester.widget<Text>(labelFinder).data,
     pickedDateLabel,
     reason:
         'cancelling the picker must not wipe out a date the user already chose',
@@ -336,6 +357,9 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
     Set<String> animalUuids,
   ) async => const {};
+  @override
+  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid) async =>
+      const [];
   @override
   Future<WeightRecord> addWeightRecord(
     String animalUuid,

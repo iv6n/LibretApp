@@ -27,8 +27,9 @@ class MyApp extends StatelessWidget {
       builder: (context, state) {
         final languageCode = _languageCodeOf(state);
         return BlocBuilder<ThemeBloc, ThemeState>(
-          builder: (context, themeState) {
+          builder: (context, _) {
             return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
               onGenerateTitle: (context) =>
                   AppLocalizations.of(context).appTitle,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -36,7 +37,9 @@ class MyApp extends StatelessWidget {
               locale: Locale(languageCode),
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
-              themeMode: themeState.themeMode,
+              // El tema oscuro queda desactivado temporalmente hasta que
+              // todos los componentes tengan una paleta accesible.
+              themeMode: ThemeMode.light,
               routerConfig: router,
               builder: (context, child) {
                 final navPadding = MediaQuery.of(context).padding.bottom;

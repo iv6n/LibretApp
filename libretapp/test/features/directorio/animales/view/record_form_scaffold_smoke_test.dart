@@ -8,7 +8,7 @@ import 'package:libretapp/features/directorio/animales/view/bulk_health_form_pag
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Smoke-tests two of the 8 record form pages that were migrated onto the
-/// shared `RecordFormScaffold` (one plain page, one that uses the
+/// shared `AppFormScaffold` (one plain page, one that uses the
 /// `formKey`-driven `Form`/`TextFormField` validation path) to catch any
 /// rendering/wiring regression from the extraction — these pages had zero
 /// widget test coverage before.
@@ -22,6 +22,9 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
     Set<String> animalUuids,
   ) async => const {};
+
+  @override
+  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid) async => [];
 
   @override
   Future<WeightRecord> addWeightRecord(
@@ -72,7 +75,9 @@ void main() {
           _testApp(const AnimalWeightFormPage(animalUuid: 'a1')),
         );
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+        final saveButton = find.widgetWithText(FilledButton, 'Guardar');
+        await tester.ensureVisible(saveButton);
+        await tester.tap(saveButton);
         await tester.pump();
 
         expect(find.text('Ingresa un peso válido'), findsOneWidget);
@@ -112,7 +117,9 @@ void main() {
           ),
         );
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Guardar'));
+        final saveButton = find.widgetWithText(FilledButton, 'Guardar');
+        await tester.ensureVisible(saveButton);
+        await tester.tap(saveButton);
         await tester.pump();
 
         expect(find.text('Producto requerido'), findsOneWidget);

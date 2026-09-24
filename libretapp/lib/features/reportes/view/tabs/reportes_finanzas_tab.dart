@@ -89,9 +89,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                       icon: balance >= 0
                           ? Icons.trending_up
                           : Icons.trending_down,
-                      color: balance >= 0
-                          ? AppColors.success
-                          : AppColors.error,
+                      color: balance >= 0 ? AppColors.success : AppColors.error,
                       large: true,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -187,8 +185,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                     ? const AppEmptyState(
                         icon: Icons.swap_horiz,
                         title: 'Sin movimientos',
-                        message:
-                            'Aún no hay ingresos ni egresos este mes.',
+                        message: 'Aún no hay ingresos ni egresos este mes.',
                       )
                     : Column(
                         children: detail.recentMovements
@@ -226,12 +223,15 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
               children: [
                 Text(
                   m.label,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  DateFormat('d MMM yyyy').format(m.date),
+                  DateFormat(
+                    'd MMM yyyy',
+                    Localizations.localeOf(context).toLanguageTag(),
+                  ).format(m.date),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

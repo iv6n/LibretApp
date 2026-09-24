@@ -1,9 +1,9 @@
 # Task Image Assets
 
-Task illustrations use the same soft 2.5D raster language as the location
-assets: centered square WEBPs, warm agricultural colors, simple silhouettes,
-subtle highlights, no text, people, animals or watermarks, and real RGBA
-transparency.
+Task illustrations use the shared 2.5D language: centered square WEBPs with
+short gradients, soft contact shadows and integrated highlights, warm
+agricultural colors, simple silhouettes, no text, people, animals or
+watermarks, and real RGBA transparency.
 
 ## Tanda 6 — Tareas ganaderas específicas
 

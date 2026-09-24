@@ -15,7 +15,7 @@ class AppShellFab extends StatelessWidget {
     this.foregroundColor = Colors.white,
   });
 
-  static const double _fabHeight = 40;
+  static const double _fabHeight = 44;
 
   final ShellFabConfig? config;
   final double dockPadding;

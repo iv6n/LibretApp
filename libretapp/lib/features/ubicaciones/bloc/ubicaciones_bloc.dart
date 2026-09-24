@@ -1,4 +1,4 @@
-﻿/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_bloc \u2014 BLoC for the ubicaciones (farm locations) feature.
+/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_bloc \u2014 BLoC for the ubicaciones (farm locations) feature.
 library;
 
 import 'dart:async';
@@ -107,6 +107,7 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     Emitter<UbicacionesState> emit,
   ) {
     _latest = event.ubicaciones;
+    _normalizeSelectedRancho();
     _emitLoaded(emit);
     unawaited(_refreshAnimalCounts(emit));
   }
@@ -441,7 +442,18 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     SelectParentFilter event,
     Emitter<UbicacionesState> emit,
   ) {
-    _selectedRanchoUuid = event.ranchoUuid;
+    if (event.ranchoUuid == null) {
+      _selectedRanchoUuid = null;
+    } else {
+      final roots = _latest
+          .where((location) => location.parentUuid == null)
+          .map((location) => location.uuid)
+          .toSet();
+      _selectedRanchoUuid =
+          roots.length >= 2 && roots.contains(event.ranchoUuid)
+          ? event.ranchoUuid
+          : null;
+    }
     _emitLoaded(emit);
   }
 
@@ -551,6 +563,7 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
 
   void _emitLoaded(Emitter<UbicacionesState> emit) {
     if (emit.isDone || isClosed) return;
+    _normalizeSelectedRancho();
     final visible = _computeVisible(_latest);
     emit(
       UbicacionesLoaded(
@@ -566,6 +579,22 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
         treeSnapshot: _buildTreeSnapshot(visible),
       ),
     );
+  }
+
+  /// A root filter is only meaningful while there are multiple top-level
+  /// locations. Clear it when a selected root is removed, nested, or becomes
+  /// the only remaining root so the UI cannot retain an inaccessible filter.
+  void _normalizeSelectedRancho() {
+    final selected = _selectedRanchoUuid;
+    if (selected == null) return;
+
+    final roots = _latest
+        .where((location) => location.parentUuid == null)
+        .map((location) => location.uuid)
+        .toSet();
+    if (roots.length < 2 || !roots.contains(selected)) {
+      _selectedRanchoUuid = null;
+    }
   }
 
   EventTransformer<T> _debounce<T>(Duration duration) {

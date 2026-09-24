@@ -3,18 +3,21 @@ library;
 
 import 'package:equatable/equatable.dart';
 
-enum CombinedSearchType { animal, lote, ubicacion }
+enum CombinedSearchType { animal, lote, cultivo, ubicacion }
 
-enum DirectorioSection { animales, lotes, ubicaciones }
+enum DirectorioSection { animales, lotes, cultivos, ubicaciones }
 
 const defaultDirectorioSectionOrder = <DirectorioSection>[
   DirectorioSection.animales,
-  DirectorioSection.ubicaciones,
   DirectorioSection.lotes,
+  DirectorioSection.cultivos,
+  DirectorioSection.ubicaciones,
 ];
 
 const defaultDirectorioVisibleSections = <DirectorioSection>{
   DirectorioSection.animales,
+  DirectorioSection.lotes,
+  DirectorioSection.cultivos,
   DirectorioSection.ubicaciones,
 };
 
@@ -25,6 +28,8 @@ extension DirectorioSectionX on DirectorioSection {
         return CombinedSearchType.animal;
       case DirectorioSection.lotes:
         return CombinedSearchType.lote;
+      case DirectorioSection.cultivos:
+        return CombinedSearchType.cultivo;
       case DirectorioSection.ubicaciones:
         return CombinedSearchType.ubicacion;
     }
@@ -36,6 +41,8 @@ extension DirectorioSectionX on DirectorioSection {
         return DirectorioSection.animales;
       case CombinedSearchType.lote:
         return DirectorioSection.lotes;
+      case CombinedSearchType.cultivo:
+        return DirectorioSection.cultivos;
       case CombinedSearchType.ubicacion:
         return DirectorioSection.ubicaciones;
     }
@@ -49,6 +56,8 @@ extension CombinedSearchTypeX on CombinedSearchType {
         return 'animal';
       case CombinedSearchType.lote:
         return 'lote';
+      case CombinedSearchType.cultivo:
+        return 'cultivo';
       case CombinedSearchType.ubicacion:
         return 'ubicacion';
     }
@@ -114,9 +123,8 @@ class DirectorioLoaded extends DirectorioState {
   final Set<DirectorioSection> visibleSections;
 
   /// Visible sections in the user-configured order.
-  List<DirectorioSection> get activeSections => orderedSections
-      .where(visibleSections.contains)
-      .toList(growable: false);
+  List<DirectorioSection> get activeSections =>
+      orderedSections.where(visibleSections.contains).toList(growable: false);
 
   /// Legacy index used by older callers and tests.
   int get activeTabIndex {

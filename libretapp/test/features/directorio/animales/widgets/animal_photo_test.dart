@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_card.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
@@ -68,4 +71,50 @@ void main() {
 
     expect(result, isNull);
   });
+
+  testWidgets('fills the animal card avatar frame without an inner gutter', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _testApp(AnimalCard(animal: _testAnimal(), onTap: () {})),
+    );
+    await tester.pumpAndSettle();
+
+    final image = find.byType(Image);
+    expect(image, findsOneWidget);
+    expect(tester.getSize(image).width, greaterThan(70));
+    expect(tester.getSize(image).height, greaterThan(70));
+    expect(tester.widget<Image>(image).fit, BoxFit.cover);
+  });
+}
+
+AnimalEntity _testAnimal() {
+  final now = DateTime(2025, 1, 1);
+  return AnimalEntity(
+    uuid: 'animal-card-test',
+    earTagNumber: 'TAG-1',
+    species: Species.cattle,
+    category: Category.cow,
+    lifeStage: LifeStage.cow,
+    sex: Sex.female,
+    breed: 'Criolla',
+    birthDate: now.subtract(const Duration(days: 900)),
+    ageMonths: 30,
+    healthStatus: HealthStatus.good,
+    vaccinated: false,
+    dewormed: false,
+    hasVitamins: false,
+    hasChronicIssues: false,
+    reproductiveStatus: ReproductiveStatus.unknown,
+    productionPurpose: ProductionPurpose.undefined,
+    productionStage: ProductionStage.unknown,
+    productionSystem: ProductionSystem.unknown,
+    underObservation: false,
+    requiresAttention: false,
+    riskLevel: RiskLevel.low,
+    gallery: const [],
+    synced: false,
+    creationDate: now,
+    lastUpdateDate: now,
+  );
 }

@@ -63,6 +63,17 @@ String? assetForTipo(String tipo) {
       return AppAssetPaths.cropField;
     case 'mantenimiento':
       return AppAssetPaths.inventoryTool;
+    case 'riego':
+      return AppAssetPaths.recordIrrigation;
+    case 'administrativo':
+    case 'administracion':
+      return AppAssetPaths.recordAdministration;
+    case 'alerta':
+      return AppAssetPaths.recordAlert;
+    case 'recordatorio':
+      return AppAssetPaths.recordReminder;
+    case 'cuidado':
+      return AppAssetPaths.recordCare;
     default:
       return null;
   }
@@ -73,7 +84,6 @@ String? assetForEstado(String estado) {
     case 'pendiente':
       return AppAssetPaths.statusPending;
     case 'completado':
-    case 'verificado':
       return AppAssetPaths.statusCompleted;
     case 'vencido':
       return AppAssetPaths.statusOverdue;
@@ -94,6 +104,15 @@ String? assetForEstado(String estado) {
     case 'sin_conexion':
     case 'offline':
       return AppAssetPaths.statusOffline;
+    case 'verificado':
+      return AppAssetPaths.statusVerified;
+    case 'reprogramada':
+    case 'reprogramado':
+      return AppAssetPaths.statusReprogrammed;
+    case 'borrador':
+      return AppAssetPaths.statusDraft;
+    case 'bloqueado':
+      return AppAssetPaths.statusBlocked;
     default:
       return null;
   }

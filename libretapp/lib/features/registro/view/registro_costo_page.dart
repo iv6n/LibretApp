@@ -8,7 +8,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -22,6 +21,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the cost registration form.
 class RegistroCostoPage extends StatelessWidget {
@@ -53,6 +53,7 @@ class _RegistroCostoView extends StatefulWidget {
 }
 
 class _RegistroCostoViewState extends State<_RegistroCostoView> {
+  final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController(text: 'USD');
   final _notesCtrl = TextEditingController();
@@ -78,6 +79,7 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
       );
       return;
     }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final amount = parseFormDouble(_amountCtrl.text);
     if (amount == null) {
@@ -128,116 +130,75 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: GeneratedAssetTitle(
+      child: BlocBuilder<RegistroBloc, RegistroState>(
+        buildWhen: (prev, curr) => prev.status != curr.status,
+        builder: (context, state) {
+          final isSaving = state.status == RegistroStatus.loading;
+          return AppFormScaffold(
             title: l10n.detailFormCostTitle,
             assetPath: AppAssetPaths.recordCost,
             fallbackIcon: Icons.payments_outlined,
-          ),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            formKey: _formKey,
+            saving: isSaving,
+            onSave: _save,
+            saveLabel: l10n.actionSave,
+            onCancel: () => Navigator.of(context).pop(),
+            cancelLabel: l10n.actionCancel,
+            fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
                 onSelected: (a) => setState(() => _selectedAnimal = a),
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<CostType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormCostType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: CostType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
+              const SizedBox(height: AppSpacing.md),
+              AppSelectField<CostType>(
+                value: _type,
+                labelText: l10n.detailFormCostType,
+                requiredField: true,
+                items: CostType.values,
+                itemLabel: (type) => type.displayName,
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);
                 },
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _amountCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCostAmount,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _currencyCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCostCurrency,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked != null) setState(() => _date = picked);
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _amountCtrl,
+                labelText: l10n.detailFormCostAmount,
+                requiredField: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                validator: (value) {
+                  final amount = parseFormDouble(value?.trim() ?? '');
+                  if (amount == null) return l10n.detailFormCostAmountRequired;
+                  return amount <= 0 ? l10n.detailFormAmountPositive : null;
                 },
               ),
-              const SizedBox(height: 12),
-              TextField(
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _currencyCtrl,
+                labelText: l10n.detailFormCostCurrency,
+                textCapitalization: TextCapitalization.characters,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppDateField(
+                value: _date,
+                labelText: l10n.fieldDate,
+                firstDate: DateTime(_date.year - 5),
+                lastDate: DateTime(_date.year + 1),
+                onChanged: (value) {
+                  if (value != null) setState(() => _date = value);
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
                 controller: _notesCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
+                labelText: l10n.fieldNotes,
                 maxLines: 2,
               ),
-              const SizedBox(height: 24),
-              BlocBuilder<RegistroBloc, RegistroState>(
-                buildWhen: (prev, curr) => prev.status != curr.status,
-                builder: (context, state) {
-                  final isSaving = state.status == RegistroStatus.loading;
-                  return SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isSaving ? null : _save,
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(l10n.actionSave),
-                    ),
-                  );
-                },
-              ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

@@ -443,6 +443,8 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         elevation: 4,
         backgroundColor: AppColors.primary,
+        contentTextStyle: const TextStyle(color: Colors.white),
+        actionTextColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
         ),
@@ -630,6 +632,8 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         elevation: 4,
         backgroundColor: const Color(0xFF123430),
+        contentTextStyle: const TextStyle(color: Colors.white),
+        actionTextColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
         ),

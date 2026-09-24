@@ -14,12 +14,17 @@ class ReportSummaryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final attention = summary.healthAlertsCount +
+    final attention =
+        summary.healthAlertsCount +
         summary.unvaccinatedCount +
         summary.underObservationCount;
     final stable = attention == 0;
     final statusColor = stable ? AppColors.success : AppColors.warning;
-    final updatedAt = DateFormat('d MMM, HH:mm').format(summary.generatedAt);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final updatedAt = DateFormat(
+      'd MMM, HH:mm',
+      locale,
+    ).format(summary.generatedAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),

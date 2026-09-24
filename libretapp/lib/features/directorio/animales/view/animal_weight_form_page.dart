@@ -3,14 +3,17 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/platform/release_features.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/rfid/rfid.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AnimalWeightFormPage extends StatefulWidget {
   const AnimalWeightFormPage({
@@ -31,6 +34,7 @@ class AnimalWeightFormPage extends StatefulWidget {
 }
 
 class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _weightController;
   late final TextEditingController _notesController;
 
@@ -91,6 +95,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
     if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final parsed = double.tryParse(_weightController.text.trim());
     if (parsed == null) {
       messenger.showSnackBar(
@@ -104,6 +109,9 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
       final notes = _notesController.text.trim();
       final repository = locator<WeightRecordRepository>();
       final edited = _editing;
+      final animal = locator.isRegistered<AnimalRepository>()
+          ? await locator<AnimalRepository>().getByUuid(widget.animalUuid)
+          : null;
 
       if (edited != null &&
           repository is EditableRecordRepository<WeightRecord>) {
@@ -119,6 +127,9 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
                 measuredBy: edited.measuredBy,
                 recordUuid: edited.recordUuid,
                 updatedAt: edited.updatedAt,
+                animalUuid: edited.animalUuid ?? widget.animalUuid,
+                lotUuid: edited.lotUuid,
+                createdAt: edited.createdAt,
               ),
             );
       } else {
@@ -130,6 +141,9 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
             weight: parsed,
             method: _method,
             notes: notes.isEmpty ? null : notes,
+            animalUuid: widget.animalUuid,
+            lotUuid: animal?.batchUuid,
+            createdAt: DateTime.now(),
           ),
         );
       }
@@ -149,75 +163,93 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
     }
   }
 
+  Future<void> _readFromScale() async {
+    try {
+      final adapter = locator<ScaleAdapter>();
+      final devices = await adapter.discover();
+      if (devices.isNotEmpty) await adapter.connect(devices.first);
+      final reading = await adapter.readStable();
+      if (!mounted) return;
+      _weightController.text = reading.valueKg.toStringAsFixed(1);
+      setState(() => _method = WeightMethod.scale);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lectura de báscula cargada.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo leer la báscula.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return RecordFormScaffold(
+    return AppFormScaffold(
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormWeightTitle,
       saving: _saving,
       loading: _loading,
+      formKey: _formKey,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: AppAssetPaths.healthWeight,
       fallbackIcon: Icons.monitor_weight_outlined,
       fields: [
-        TextField(
+        if (ReleaseFeatures.hardwareIntegrationsEnabled) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: _saving || _loading ? null : _readFromScale,
+              icon: const Icon(Icons.sensors_outlined),
+              label: const Text('Tomar lectura de báscula'),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        AppTextField(
           controller: _weightController,
+          labelText: l10n.detailFormWeightValue,
+          requiredField: true,
+          validator: (value) {
+            final parsed = double.tryParse(value?.trim() ?? '');
+            return parsed == null || parsed <= 0
+                ? l10n.detailFormWeightErrorInvalid
+                : null;
+          },
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: l10n.detailFormWeightValue,
-            border: const OutlineInputBorder(),
-          ),
         ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<WeightMethod>(
-          initialValue: _method,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormWeightMethod,
-            border: const OutlineInputBorder(),
-          ),
-          items: WeightMethod.values
-              .map(
-                (m) => DropdownMenuItem(
-                  value: m,
-                  child: Text(
-                    m == WeightMethod.scale
-                        ? l10n.detailFormWeightMethodScale
-                        : l10n.detailFormWeightMethodEstimated,
-                  ),
-                ),
-              )
-              .toList(),
+        const SizedBox(height: AppSpacing.md),
+        AppSelectField<WeightMethod>(
+          value: _method,
+          labelText: l10n.detailFormWeightMethod,
+          requiredField: true,
+          items: WeightMethod.values,
+          itemLabel: (method) => method == WeightMethod.scale
+              ? l10n.detailFormWeightMethodScale
+              : l10n.detailFormWeightMethodEstimated,
           onChanged: (value) {
             if (value == null) return;
             setState(() => _method = value);
           },
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.today),
-          label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-          onPressed: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: _date,
-              firstDate: DateTime(_date.year - 5),
-              lastDate: DateTime(_date.year + 1),
-            );
-            if (picked == null) return;
-            setState(() => _date = picked);
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(_date.year - 5),
+          lastDate: DateTime(_date.year + 1),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
           },
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _notesController,
-          decoration: InputDecoration(
-            labelText: l10n.fieldNotesOptional,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.fieldNotesOptional,
           maxLines: 2,
         ),
       ],

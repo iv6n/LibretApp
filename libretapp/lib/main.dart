@@ -33,6 +33,10 @@ void main() async {
       publishableKey: SupabaseConfig.anonKey,
     );
   }
+  // Replace Flutter's empty error surface with an actionable recovery view.
+  // The original exception is still logged below; this only prevents a
+  // release build from leaving the user on a white screen.
+  ErrorWidget.builder = (_) => const _RuntimeErrorRecovery();
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     LoggerService.e(
@@ -92,7 +96,10 @@ void main() async {
 
     const enableTracing = kDebugMode || kProfileMode;
     if (enableTracing) {
-      // Start capturing frame timings to surface slow frame KPIs in logs.
+      // Capture frame timings on physical profile builds so list/navigation
+      // changes can be compared against a real 60 Hz frame budget. Keep the
+      // callback registration here, before runApp, so it is installed once.
+      PerformanceMonitor().attachFrameTimings(slowFrameThresholdMs: 16);
       // Capture global taps to correlate with slow frames.
       InteractionTracer().start();
       // Prepare navigation observer before router instantiation.
@@ -160,6 +167,41 @@ class _StartupFailureApp extends StatelessWidget {
             child: Text(
               'No se pudo iniciar la aplicacion. Revisa los logs para detalles.',
               textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RuntimeErrorRecovery extends StatelessWidget {
+  const _RuntimeErrorRecovery();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'No se pudo mostrar esta pantalla. Tus datos no se han borrado.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: () => Navigator.maybeOf(context)?.maybePop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Volver'),
+                ),
+              ],
             ),
           ),
         ),

@@ -138,7 +138,7 @@ class _InlineMeta extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.xxs),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 180),
+          constraints: const BoxConstraints(maxWidth: 130),
           child: Text(
             label,
             maxLines: 1,

@@ -1,11 +1,13 @@
 /// features › ubicaciones › widgets › location_form_sheet — bottom sheet form for creating or editing a location.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/location/gps_capture_service.dart';
 import 'package:libretapp/core/media/image_source_picker.dart';
 import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
@@ -16,6 +18,7 @@ import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_labels.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class LocationFormSheet extends StatefulWidget {
   const LocationFormSheet({
@@ -49,6 +52,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   late LocationStatus _status;
   String? _parentUuid;
   late List<String> _imagePaths;
+  bool _capturingGps = false;
 
   @override
   void initState() {
@@ -144,19 +148,19 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                     ),
                   ),
                   const Spacer(),
-                  IconButton(
+                  AppIconButton(
+                    icon: Icons.close,
+                    tooltip: 'Cerrar',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              AppTextField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre',
-                  prefixIcon: Icon(Icons.place_outlined),
-                ),
+                labelText: 'Nombre',
+                prefixIcon: const Icon(Icons.place_outlined),
+                requiredField: true,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Ingresa un nombre';
@@ -261,20 +265,12 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<LocationStatus>(
-                initialValue: _status,
-                decoration: const InputDecoration(
-                  labelText: 'Estado',
-                  prefixIcon: Icon(Icons.brightness_medium_outlined),
-                ),
-                items: LocationStatus.values
-                    .map(
-                      (s) => DropdownMenuItem(
-                        value: s,
-                        child: Text(locationStatusLabel(context, s)),
-                      ),
-                    )
-                    .toList(),
+              AppSelectField<LocationStatus>(
+                value: _status,
+                items: LocationStatus.values,
+                itemLabel: (status) => locationStatusLabel(context, status),
+                labelText: 'Estado',
+                prefixIcon: const Icon(Icons.brightness_medium_outlined),
                 onChanged: (value) {
                   if (value != null) {
                     setState(() {
@@ -287,15 +283,13 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: TextFormField(
+                    child: AppTextField(
                       controller: _surfaceController,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Superficie (ha)',
-                        prefixIcon: Icon(Icons.straighten),
-                      ),
+                      labelText: 'Superficie (ha)',
+                      prefixIcon: const Icon(Icons.straighten),
                       validator: (value) {
                         final raw = value?.trim() ?? '';
                         if (raw.isEmpty) return null;
@@ -311,13 +305,11 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: TextFormField(
+                    child: AppTextField(
                       controller: _capacityController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Capacidad (animales)',
-                        prefixIcon: Icon(Icons.groups_outlined),
-                      ),
+                      labelText: 'Capacidad (animales)',
+                      prefixIcon: const Icon(Icons.groups_outlined),
                       validator: (value) {
                         final raw = value?.trim() ?? '';
                         if (raw.isEmpty) return null;
@@ -332,60 +324,41 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
                 ],
               ),
               const SizedBox(height: 12),
-              TextFormField(
+              AppTextField(
                 controller: _waterController,
-                decoration: const InputDecoration(
-                  labelText: 'Fuente de agua',
-                  prefixIcon: Icon(Icons.water_drop_outlined),
-                ),
+                labelText: 'Fuente de agua',
+                prefixIcon: const Icon(Icons.water_drop_outlined),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
                 controller: _terrainController,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de terreno',
-                  prefixIcon: Icon(Icons.terrain),
-                ),
+                labelText: 'Tipo de terreno',
+                prefixIcon: const Icon(Icons.terrain),
               ),
               const SizedBox(height: 12),
               _buildAdaptivePropertiesSection(theme),
               if (_type.canNestAsSubLocation || !_type.isRootType) ...[
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String?>(
-                  initialValue: _parentUuid,
-                  decoration: const InputDecoration(
-                    labelText: 'Ubicación padre (opcional)',
-                    prefixIcon: Icon(Icons.account_tree_outlined),
-                  ),
+                AppSelectField<String?>(
+                  value: _parentUuid,
                   items: [
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Sin ubicación padre'),
-                    ),
-                    ..._validParents.map(
-                      (r) => DropdownMenuItem(
-                        value: r.uuid,
-                        child: Text(
-                          '${locationTypeLabel(context, r.type)} · ${r.name}',
-                        ),
-                      ),
-                    ),
+                    null,
+                    ..._validParents.map((location) => location.uuid),
                   ],
+                  itemLabel: (uuid) => uuid == null
+                      ? 'Sin ubicación padre'
+                      : '${locationTypeLabel(context, _validParents.firstWhere((location) => location.uuid == uuid).type)} · ${_validParents.firstWhere((location) => location.uuid == uuid).name}',
+                  labelText: 'Ubicación padre (opcional)',
+                  prefixIcon: const Icon(Icons.account_tree_outlined),
                   onChanged: (value) => setState(() => _parentUuid = value),
                 ),
               ],
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: Icon(
-                    isEditing ? Icons.save_outlined : Icons.add_location_alt,
-                  ),
-                  label: Text(
-                    isEditing ? 'Guardar cambios' : 'Crear ubicación',
-                  ),
-                  onPressed: _submit,
-                ),
+              AppButton(
+                expanded: true,
+                icon: isEditing ? Icons.save_outlined : Icons.add_location_alt,
+                label: isEditing ? 'Guardar cambios' : 'Crear ubicación',
+                onPressed: _submit,
               ),
               const SizedBox(height: 8),
             ],
@@ -627,6 +600,10 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
   }
 
   Widget _buildAdaptiveField(_AdaptiveFieldSpec field) {
+    if (field.dedicatedField == _DedicatedField.geometry) {
+      return _buildGeometryField(field);
+    }
+
     switch (field.kind) {
       case _AdaptiveFieldKind.boolean:
         return Material(
@@ -658,13 +635,18 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: TextFormField(
+          child: AppTextField(
             controller: controller,
             keyboardType: keyboardType,
-            decoration: InputDecoration(
-              labelText: locationPropertyLabel(context, field.key),
-              suffixText: field.unit,
-            ),
+            labelText: locationPropertyLabel(context, field.key),
+            suffixIcon: field.unit == null
+                ? null
+                : Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.sm,
+                    ),
+                    child: Center(child: Text(field.unit!)),
+                  ),
             validator: (value) {
               final raw = value?.trim() ?? '';
               if (raw.isEmpty) return null;
@@ -685,6 +667,92 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
           ),
         );
     }
+  }
+
+  Widget _buildGeometryField(_AdaptiveFieldSpec field) {
+    final controller = _adaptiveTextControllers[field.key]!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTextField(
+            controller: controller,
+            labelText: locationPropertyLabel(context, field.key),
+            prefixIcon: const Icon(Icons.map_outlined),
+            maxLines: 2,
+            validator: (value) {
+              final raw = value?.trim() ?? '';
+              if (raw.isEmpty) return null;
+              try {
+                final decoded = jsonDecode(raw);
+                if (decoded is! Map<String, dynamic> ||
+                    decoded['type'] == null ||
+                    decoded['coordinates'] == null) {
+                  return 'Usa un GeoJSON de punto o poligono valido';
+                }
+              } catch (_) {
+                return 'Usa un GeoJSON de punto o poligono valido';
+              }
+              return null;
+            },
+          ),
+          if (ReleaseFeatures.gpsCaptureEnabled)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: _capturingGps ? null : _captureCurrentLocation,
+                icon: _capturingGps
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location_outlined),
+                label: Text(
+                  _capturingGps
+                      ? 'Obteniendo ubicacion...'
+                      : 'Usar ubicacion actual',
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _captureCurrentLocation() async {
+    if (_capturingGps) return;
+    setState(() => _capturingGps = true);
+
+    final capture = await locator<GpsCaptureService>().tryCapture();
+    if (!mounted) return;
+
+    setState(() => _capturingGps = false);
+    if (capture == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo obtener el GPS. Puedes guardar la ubicacion sin coordenadas.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final geometryController = _adaptiveTextControllers['geometry'];
+    if (geometryController == null) return;
+    geometryController.text = jsonEncode({
+      'type': 'Point',
+      'coordinates': [capture.longitude, capture.latitude],
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'GPS guardado (precision aproximada: ${capture.accuracyMeters.toStringAsFixed(0)} m)',
+        ),
+      ),
+    );
   }
 
   void _ensureAdaptiveFieldState(_AdaptiveFieldSpec field) {
@@ -959,6 +1027,11 @@ _baseAdaptiveFieldsByCategory = {
       key: 'isShared',
       kind: _AdaptiveFieldKind.boolean,
       dedicatedField: _DedicatedField.isShared,
+    ),
+    _AdaptiveFieldSpec(
+      key: 'geometry',
+      kind: _AdaptiveFieldKind.text,
+      dedicatedField: _DedicatedField.geometry,
     ),
   ],
   LocationCategory.handling: [

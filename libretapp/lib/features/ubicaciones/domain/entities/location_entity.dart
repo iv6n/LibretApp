@@ -27,6 +27,9 @@ class LocationEntity extends Equatable {
     this.status = LocationStatus.available,
     this.category,
     this.geometry,
+    this.createdAt,
+    this.updatedAt,
+    this.archivedAt,
     this.isShared = false,
     this.isCommunal = false,
     this.imagePaths = const [],
@@ -41,6 +44,7 @@ class LocationEntity extends Equatable {
     this.irrigations = const [],
     this.rains = const [],
     this.costs = const [],
+    this.maintenances = const [],
     this.crops = const [],
   });
   final int? id;
@@ -62,6 +66,11 @@ class LocationEntity extends Equatable {
   /// GeoJSON geometry string (Point, Polygon, etc.) for GIS integration.
   final String? geometry;
 
+  /// Lifecycle timestamps used by synchronization, backups and audit views.
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final DateTime? archivedAt;
+
   /// Whether this location is shared among multiple herds/operations.
   final bool isShared;
 
@@ -82,6 +91,7 @@ class LocationEntity extends Equatable {
   final List<IrrigationRecord> irrigations;
   final List<RainRecord> rains;
   final List<LocationCostRecord> costs;
+  final List<MaintenanceRecord> maintenances;
   final List<CropRecord> crops;
 
   /// Effective category: explicit override first, otherwise derived from type.
@@ -119,6 +129,9 @@ class LocationEntity extends Equatable {
     LocationStatus? status,
     LocationCategory? category,
     String? geometry,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? archivedAt,
     bool? isShared,
     bool? isCommunal,
     List<String>? imagePaths,
@@ -133,6 +146,7 @@ class LocationEntity extends Equatable {
     List<IrrigationRecord>? irrigations,
     List<RainRecord>? rains,
     List<LocationCostRecord>? costs,
+    List<MaintenanceRecord>? maintenances,
     List<CropRecord>? crops,
   }) {
     return LocationEntity(
@@ -150,6 +164,9 @@ class LocationEntity extends Equatable {
       status: status ?? this.status,
       category: category ?? this.category,
       geometry: geometry ?? this.geometry,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
       isShared: isShared ?? this.isShared,
       isCommunal: isCommunal ?? this.isCommunal,
       imagePaths: imagePaths ?? this.imagePaths,
@@ -164,6 +181,7 @@ class LocationEntity extends Equatable {
       irrigations: irrigations ?? this.irrigations,
       rains: rains ?? this.rains,
       costs: costs ?? this.costs,
+      maintenances: maintenances ?? this.maintenances,
       crops: crops ?? this.crops,
     );
   }
@@ -184,6 +202,9 @@ class LocationEntity extends Equatable {
     status,
     category,
     geometry,
+    createdAt,
+    updatedAt,
+    archivedAt,
     isShared,
     isCommunal,
     imagePaths,
@@ -198,6 +219,7 @@ class LocationEntity extends Equatable {
     irrigations,
     rains,
     costs,
+    maintenances,
     crops,
   ];
 }

@@ -11,4 +11,5 @@ library;
 // v3 refreshes existing installations so their relative dates are rebuilt
 // from the current installation date instead of remaining anchored to the
 // previous demo snapshot.
-const int demoScenarioVersion = 3;
+// v4 adds independent cultivation examples and a linked Patio location.
+const int demoScenarioVersion = 4;

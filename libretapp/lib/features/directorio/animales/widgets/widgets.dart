@@ -11,7 +11,6 @@ export 'info_tab.dart';
 export 'location_batch_sheet.dart';
 export 'pedigree_tab.dart';
 export 'quick_actions_fab.dart';
-export 'record_form_scaffold.dart';
 export 'registration_widgets.dart';
 export 'records_tab.dart';
 export 'care_tab.dart';

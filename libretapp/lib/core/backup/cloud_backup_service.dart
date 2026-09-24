@@ -25,12 +25,14 @@ class CloudBackupService {
       );
     }
     final bytes = await _backupService.createArchiveBytes();
-    return _repository.uploadSnapshot(
+    final metadata = await _repository.uploadSnapshot(
       bytes: bytes,
       sha256: _backupService.digestArchive(bytes),
       schemaVersion: BackupEnvelope.currentSchemaVersion,
       appVersion: BackupEnvelope.currentAppVersion,
     );
+    await _backupService.markCloudBackup();
+    return metadata;
   }
 
   Future<List<CloudBackupMetadata>> listSnapshots() =>

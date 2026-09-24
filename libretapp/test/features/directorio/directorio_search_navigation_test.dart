@@ -45,6 +45,18 @@ void main() {
       expect(find.text('ubicacion:ubicacion-1'), findsOneWidget);
     });
 
+    testWidgets('navigates to cultivation detail route', (tester) async {
+      final router = _buildRouter();
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('trigger-cultivo')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('cultivo:cultivo-1'), findsOneWidget);
+    });
+
     testWidgets(
       'legacy ubicacion path redirects to directorio ubicacion route',
       (tester) async {
@@ -123,6 +135,14 @@ GoRouter _buildRouter() {
           return _TargetPage(text: 'ubicacion:$uuid');
         },
       ),
+      GoRoute(
+        path: '/directorio/cultivos/:uuid',
+        name: AppRoutes.nameCultivoDetalle,
+        builder: (context, state) {
+          final uuid = state.pathParameters['uuid'] ?? '';
+          return _TargetPage(text: 'cultivo:$uuid');
+        },
+      ),
     ],
   );
 }
@@ -198,6 +218,18 @@ class _SearchTriggerView extends StatelessWidget {
               ),
             ),
             child: const Text('Ubicacion'),
+          ),
+          ElevatedButton(
+            key: const Key('trigger-cultivo'),
+            onPressed: () => openDirectorioSearchResult(
+              context,
+              const CombinedSearchResult(
+                type: CombinedSearchType.cultivo,
+                id: 'cultivo-1',
+                name: 'Cultivo A',
+              ),
+            ),
+            child: const Text('Cultivo'),
           ),
         ],
       ),

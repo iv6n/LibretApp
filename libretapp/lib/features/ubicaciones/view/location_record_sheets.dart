@@ -754,6 +754,465 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
   }
 }
 
+// ─── Seeding ──────────────────────────────────────────────────────────────────
+
+class SeedingRecordSheet extends StatefulWidget {
+  const SeedingRecordSheet({super.key, required this.locationName});
+
+  final String locationName;
+
+  @override
+  State<SeedingRecordSheet> createState() => _SeedingRecordSheetState();
+}
+
+class _SeedingRecordSheetState extends State<SeedingRecordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _cropController;
+  late final TextEditingController _surfaceController;
+  late final TextEditingController _costController;
+
+  @override
+  void initState() {
+    super.initState();
+    _cropController = TextEditingController();
+    _surfaceController = TextEditingController();
+    _costController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _cropController.dispose();
+    _surfaceController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _RecordFormScaffold(
+      formKey: _formKey,
+      title: 'Registrar siembra',
+      subtitle: widget.locationName,
+      fields: [
+        TextFormField(
+          controller: _cropController,
+          decoration: const InputDecoration(
+            labelText: 'Cultivo o variedad',
+            prefixIcon: Icon(Icons.grass_outlined),
+          ),
+          validator: (value) => value == null || value.trim().isEmpty
+              ? 'Ingresa el cultivo'
+              : null,
+        ),
+        const SizedBox(height: 12),
+        _numberField(
+          controller: _surfaceController,
+          label: 'Superficie (ha)',
+          icon: Icons.square_foot_outlined,
+        ),
+        const SizedBox(height: 12),
+        _numberField(
+          controller: _costController,
+          label: 'Costo (opcional)',
+          icon: Icons.payments_outlined,
+          required: false,
+        ),
+      ],
+      onSubmit: () {
+        if (!_formKey.currentState!.validate()) return;
+        Navigator.of(context).pop(
+          SeedingRecord(
+            date: DateTime.now(),
+            crop: _cropController.text.trim(),
+            surface: _readDouble(_surfaceController),
+            cost: _readDouble(_costController),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Irrigation ──────────────────────────────────────────────────────────────
+
+class IrrigationRecordSheet extends StatefulWidget {
+  const IrrigationRecordSheet({super.key, required this.locationName});
+
+  final String locationName;
+
+  @override
+  State<IrrigationRecordSheet> createState() => _IrrigationRecordSheetState();
+}
+
+class _IrrigationRecordSheetState extends State<IrrigationRecordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _durationController;
+  late final TextEditingController _costController;
+  String _type = 'Riego por gravedad';
+
+  @override
+  void initState() {
+    super.initState();
+    _durationController = TextEditingController();
+    _costController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _RecordFormScaffold(
+      formKey: _formKey,
+      title: 'Registrar riego',
+      subtitle: widget.locationName,
+      fields: [
+        DropdownButtonFormField<String>(
+          value: _type,
+          decoration: const InputDecoration(
+            labelText: 'Método',
+            prefixIcon: Icon(Icons.waterfall_chart_outlined),
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: 'Riego por gravedad',
+              child: Text('Riego por gravedad'),
+            ),
+            DropdownMenuItem(value: 'Goteo', child: Text('Goteo')),
+            DropdownMenuItem(value: 'Aspersión', child: Text('Aspersión')),
+            DropdownMenuItem(value: 'Bomba', child: Text('Bomba')),
+          ],
+          onChanged: (value) => setState(() => _type = value ?? _type),
+        ),
+        const SizedBox(height: 12),
+        _numberField(
+          controller: _durationController,
+          label: 'Duración (minutos)',
+          icon: Icons.timer_outlined,
+        ),
+        const SizedBox(height: 12),
+        _numberField(
+          controller: _costController,
+          label: 'Costo (opcional)',
+          icon: Icons.payments_outlined,
+          required: false,
+        ),
+      ],
+      onSubmit: () {
+        if (!_formKey.currentState!.validate()) return;
+        Navigator.of(context).pop(
+          IrrigationRecord(
+            date: DateTime.now(),
+            type: _type,
+            duration: Duration(minutes: _readDouble(_durationController).round()),
+            cost: _readDouble(_costController),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Rainfall ─────────────────────────────────────────────────────────────────
+
+class RainRecordSheet extends StatefulWidget {
+  const RainRecordSheet({super.key, required this.locationName});
+
+  final String locationName;
+
+  @override
+  State<RainRecordSheet> createState() => _RainRecordSheetState();
+}
+
+class _RainRecordSheetState extends State<RainRecordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _millimetersController;
+  late final TextEditingController _gaugeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _millimetersController = TextEditingController();
+    _gaugeController = TextEditingController(text: widget.locationName);
+  }
+
+  @override
+  void dispose() {
+    _millimetersController.dispose();
+    _gaugeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _RecordFormScaffold(
+      formKey: _formKey,
+      title: 'Registrar lluvia',
+      subtitle: widget.locationName,
+      fields: [
+        _numberField(
+          controller: _millimetersController,
+          label: 'Lluvia (mm)',
+          icon: Icons.umbrella_outlined,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _gaugeController,
+          decoration: const InputDecoration(
+            labelText: 'Pluviómetro o referencia',
+            prefixIcon: Icon(Icons.place_outlined),
+          ),
+          validator: (value) => value == null || value.trim().isEmpty
+              ? 'Indica dónde se midió'
+              : null,
+        ),
+      ],
+      onSubmit: () {
+        if (!_formKey.currentState!.validate()) return;
+        Navigator.of(context).pop(
+          RainRecord(
+            date: DateTime.now(),
+            millimeters: _readDouble(_millimetersController),
+            location: _gaugeController.text.trim(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Maintenance ─────────────────────────────────────────────────────────────
+
+class MaintenanceRecordSheet extends StatefulWidget {
+  const MaintenanceRecordSheet({super.key, required this.locationName});
+
+  final String locationName;
+
+  @override
+  State<MaintenanceRecordSheet> createState() =>
+      _MaintenanceRecordSheetState();
+}
+
+class _MaintenanceRecordSheetState extends State<MaintenanceRecordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _assetController;
+  late final TextEditingController _costController;
+  late final TextEditingController _meterController;
+  late final TextEditingController _notesController;
+  String _type = 'Preventivo';
+  String _meterUnit = 'Horas';
+  DateTime? _nextDueDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _assetController = TextEditingController();
+    _costController = TextEditingController();
+    _meterController = TextEditingController();
+    _notesController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _assetController.dispose();
+    _costController.dispose();
+    _meterController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _RecordFormScaffold(
+      formKey: _formKey,
+      title: 'Registrar mantenimiento',
+      subtitle: widget.locationName,
+      fields: [
+        TextFormField(
+          controller: _assetController,
+          decoration: const InputDecoration(
+            labelText: 'Equipo o infraestructura',
+            prefixIcon: Icon(Icons.handyman_outlined),
+          ),
+          validator: (value) => value == null || value.trim().isEmpty
+              ? 'Indica qué se atendió'
+              : null,
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: _type,
+          decoration: const InputDecoration(
+            labelText: 'Tipo de servicio',
+            prefixIcon: Icon(Icons.fact_check_outlined),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'Preventivo', child: Text('Preventivo')),
+            DropdownMenuItem(value: 'Correctivo', child: Text('Correctivo')),
+            DropdownMenuItem(value: 'Inspección', child: Text('Inspección')),
+          ],
+          onChanged: (value) => setState(() => _type = value ?? _type),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _numberField(
+                controller: _meterController,
+                label: 'Lectura de uso',
+                icon: Icons.speed_outlined,
+                required: false,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _meterUnit,
+                decoration: const InputDecoration(labelText: 'Unidad'),
+                items: const [
+                  DropdownMenuItem(value: 'Horas', child: Text('Horas')),
+                  DropdownMenuItem(value: 'Km', child: Text('Km')),
+                  DropdownMenuItem(value: 'Ciclos', child: Text('Ciclos')),
+                ],
+                onChanged: (value) =>
+                    setState(() => _meterUnit = value ?? _meterUnit),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _pickNextDueDate,
+          icon: const Icon(Icons.event_available_outlined),
+          label: Text(
+            _nextDueDate == null
+                ? 'Programar próxima revisión'
+                : 'Próxima revisión: ${_nextDueDate!.day}/${_nextDueDate!.month}/${_nextDueDate!.year}',
+          ),
+        ),
+        const SizedBox(height: 12),
+        _numberField(
+          controller: _costController,
+          label: 'Costo (opcional)',
+          icon: Icons.payments_outlined,
+          required: false,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _notesController,
+          maxLines: 2,
+          decoration: const InputDecoration(
+            labelText: 'Notas (opcional)',
+            prefixIcon: Icon(Icons.notes_outlined),
+          ),
+        ),
+      ],
+      onSubmit: () {
+        if (!_formKey.currentState!.validate()) return;
+        Navigator.of(context).pop(
+          MaintenanceRecord(
+            date: DateTime.now(),
+            assetName: _assetController.text.trim(),
+            maintenanceType: _type,
+            nextDueDate: _nextDueDate,
+            meterReading: _meterController.text.trim().isEmpty
+                ? null
+                : _readDouble(_meterController),
+            meterUnit: _meterController.text.trim().isEmpty
+                ? null
+                : _meterUnit,
+            cost: _readDouble(_costController),
+            notes: _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickNextDueDate() async {
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDate: _nextDueDate ?? DateTime.now().add(const Duration(days: 90)),
+    );
+    if (date != null && mounted) setState(() => _nextDueDate = date);
+  }
+}
+
+class _RecordFormScaffold extends StatelessWidget {
+  const _RecordFormScaffold({
+    required this.formKey,
+    required this.title,
+    required this.subtitle,
+    required this.fields,
+    required this.onSubmit,
+  });
+
+  final GlobalKey<FormState> formKey;
+  final String title;
+  final String subtitle;
+  final List<Widget> fields;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _SheetHeader(title: title, subtitle: subtitle),
+              ...fields,
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onSubmit,
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Guardar registro'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _numberField({
+  required TextEditingController controller,
+  required String label,
+  required IconData icon,
+  bool required = true,
+}) {
+  return TextFormField(
+    controller: controller,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+    validator: (value) {
+      final raw = value?.trim() ?? '';
+      if (!required && raw.isEmpty) return null;
+      final parsed = double.tryParse(raw.replaceAll(',', '.'));
+      if (parsed == null || parsed < 0) return 'Ingresa un número válido';
+      return null;
+    },
+  );
+}
+
+double _readDouble(TextEditingController controller) =>
+    double.tryParse(controller.text.trim().replaceAll(',', '.')) ?? 0;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 String _capitalize(String value) {

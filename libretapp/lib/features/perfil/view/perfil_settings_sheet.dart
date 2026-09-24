@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
@@ -118,18 +118,12 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               ),
               onTap: _openRegionSettings,
             ),
-            BlocBuilder<ThemeBloc, ThemeState>(
-              builder: (context, state) {
-                final isDark = state.themeMode == ThemeMode.dark;
-                return SwitchListTile(
-                  secondary: const Icon(Icons.dark_mode_outlined),
-                  title: const Text('Tema oscuro'),
-                  value: isDark,
-                  onChanged: (_) => context.read<ThemeBloc>().add(
-                    ThemeModeChanged(isDark ? ThemeMode.light : ThemeMode.dark),
-                  ),
-                );
-              },
+            const ListTile(
+              leading: Icon(Icons.light_mode_outlined),
+              title: Text('Tema claro'),
+              subtitle: Text(
+                'El tema claro está activo. El tema oscuro estará disponible más adelante.',
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.upload_file_outlined),
@@ -141,34 +135,36 @@ class _PerfilSettingsContentState extends State<PerfilSettingsContent> {
               title: const Text('Importar respaldo completo'),
               onTap: () => _importBackup(context),
             ),
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: const Text('Cuenta de respaldo'),
-              onTap: () => showModalBottomSheet<void>(
-                context: context,
-                useRootNavigator: true,
-                isScrollControlled: true,
-                useSafeArea: true,
-                builder: (_) => const CloudAuthSheet(),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.cloud_done_outlined),
-              title: const Text('Copias en la nube'),
-              subtitle: const Text(
-                'Crear, revisar o restaurar copias verificadas.',
-              ),
-              onTap: () => showModalBottomSheet<void>(
-                context: context,
-                useRootNavigator: true,
-                isScrollControlled: true,
-                useSafeArea: true,
-                builder: (_) => const FractionallySizedBox(
-                  heightFactor: 0.85,
-                  child: CloudBackupSheet(),
+            if (ReleaseFeatures.externalProvidersEnabled) ...[
+              ListTile(
+                leading: const Icon(Icons.account_circle_outlined),
+                title: const Text('Cuenta de respaldo'),
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => const CloudAuthSheet(),
                 ),
               ),
-            ),
+              ListTile(
+                leading: const Icon(Icons.cloud_done_outlined),
+                title: const Text('Copias en la nube'),
+                subtitle: const Text(
+                  'Crear, revisar o restaurar copias verificadas.',
+                ),
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  useSafeArea: true,
+                  builder: (_) => const FractionallySizedBox(
+                    heightFactor: 0.85,
+                    child: CloudBackupSheet(),
+                  ),
+                ),
+              ),
+            ],
             ListTile(
               leading: const Icon(Icons.table_chart_outlined),
               title: const Text('Exportar a Excel'),

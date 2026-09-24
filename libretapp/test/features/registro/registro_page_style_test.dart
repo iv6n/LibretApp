@@ -37,7 +37,9 @@ void main() {
       return decoration.shape == BoxShape.circle;
     }).toList();
 
-    expect(mainIconContainers, hasLength(12));
+    // The animal menu includes the commercial registration card in addition
+    // to the original twelve cards.
+    expect(mainIconContainers, hasLength(13));
     expect(
       mainIconContainers.where(
         (container) => _sizeOf(tester, container).width == 60,
@@ -48,9 +50,9 @@ void main() {
       mainIconContainers.where(
         (container) => _sizeOf(tester, container).width == 48,
       ),
-      hasLength(9),
+      hasLength(10),
     );
-    expect(chevronContainers, hasLength(12));
+    expect(chevronContainers, hasLength(13));
 
     final generatedIconSizes = tester
         .widgetList<GeneratedAssetIcon>(find.byType(GeneratedAssetIcon))
@@ -59,8 +61,12 @@ void main() {
     expect(generatedIconSizes, contains(34));
     expect(generatedIconSizes, contains(26));
 
-    expect(tester.widget<Icon>(find.byIcon(Icons.pets)).size, 34);
-    expect(tester.widget<Icon>(find.byIcon(Icons.groups)).size, 34);
+    final generatedAssetPaths = tester
+        .widgetList<GeneratedAssetIcon>(find.byType(GeneratedAssetIcon))
+        .map((icon) => icon.assetPath)
+        .toSet();
+    expect(generatedAssetPaths, contains('assets/images/record_animal.webp'));
+    expect(generatedAssetPaths, contains('assets/images/record_lot.webp'));
 
     await tester.tap(find.text('Ubicacion'));
     await tester.pumpAndSettle();

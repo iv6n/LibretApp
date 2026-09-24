@@ -38,6 +38,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/reproducti
 import 'package:libretapp/features/directorio/animales/infrastructure/weight_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository_isar.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_repository_isar.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/milking/infrastructure/milking_repository_isar.dart';
@@ -99,6 +100,7 @@ void main() {
     );
     final lotesRepository = LotesRepositoryIsar(database);
     final locationRepository = IsarLocationRepository(database);
+    final cultivationRepository = CultivationRepositoryIsar(database);
     final weightRepository = WeightRecordRepositoryIsar(database);
     final healthRepository = HealthRecordRepositoryIsar(database);
     final reproductionRepository = ReproductionRecordRepositoryIsar(database);
@@ -117,6 +119,7 @@ void main() {
       animalRepository: animalRepository,
       agendaRepository: agendaRepository,
       locationRepository: locationRepository,
+      cultivationRepository: cultivationRepository,
       healthRepo: healthRepository,
       reproductionRepo: reproductionRepository,
       careRepo: careRepository,
@@ -127,6 +130,7 @@ void main() {
       animalRepository: animalRepository,
       lotesRepository: lotesRepository,
       locationRepository: locationRepository,
+      cultivationRepository: cultivationRepository,
       weightRepository: weightRepository,
       healthRepository: healthRepository,
       reproductionRepository: reproductionRepository,
@@ -261,7 +265,13 @@ void main() {
     final lotes = await LotesRepositoryIsar(database).getAll();
     expect(lotes, hasLength(6));
     final locations = await IsarLocationRepository(database).getAll();
-    expect(locations, hasLength(15));
+    expect(locations, hasLength(16));
+    final cultivations = await CultivationRepositoryIsar(
+      database,
+    ).getAll(includeArchived: true);
+    expect(cultivations, hasLength(4));
+    expect(cultivations.any((item) => item.locationUuid == null), isTrue);
+    expect(cultivations.any((item) => item.measureLabel == '4.2 ha'), isTrue);
   });
 
   test(
@@ -510,7 +520,8 @@ void main() {
 
       expect(result.removed, isTrue);
       expect(result.counts['animals'], 35);
-      expect(result.counts['locations'], 15);
+      expect(result.counts['locations'], 16);
+      expect(result.counts['cultivations'], 4);
       expect(result.counts['lotes'], 6);
       expect(result.counts['milkingSessions'], greaterThan(0));
       expect(result.counts['milkingEntries'], greaterThan(0));
@@ -529,6 +540,10 @@ void main() {
       // meaningful check is that no *demo*-owned location survived.
       final locationsAfter = await IsarLocationRepository(database).getAll();
       expect(locationsAfter.where((l) => l.uuid.startsWith('demo-')), isEmpty);
+      expect(
+        await CultivationRepositoryIsar(database).getAll(includeArchived: true),
+        isEmpty,
+      );
       expect(await MilkingRepositoryIsar(database).getAllSessions(), isEmpty);
       expect(await IsarWorkforceRepository(database).fetchWorkers(), isEmpty);
 

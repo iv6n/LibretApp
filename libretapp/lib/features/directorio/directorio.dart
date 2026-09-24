@@ -3,6 +3,7 @@ library;
 
 export 'animales/animals.dart' hide ClearSearch;
 export 'lotes/lotes.dart';
+export 'cultivos/cultivos.dart';
 export 'bloc/index.dart';
 export 'data/directorio_config_repository.dart';
 export 'view/directorio_view.dart';

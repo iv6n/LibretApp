@@ -3,16 +3,16 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
+import 'package:libretapp/theme/theme.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalReproductionFormPage extends StatefulWidget {
@@ -174,7 +174,7 @@ class _AnimalReproductionFormPageState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return RecordFormScaffold(
+    return AppFormScaffold(
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormReproductionTitle,
@@ -185,94 +185,57 @@ class _AnimalReproductionFormPageState
       assetPath: AppAssetPaths.healthReproduction,
       fallbackIcon: Icons.pregnant_woman,
       fields: [
-        DropdownButtonFormField<ServiceType>(
-          initialValue: _serviceType,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormReproductionServiceType,
-            border: const OutlineInputBorder(),
-          ),
-          items: ServiceType.values
-              .map(
-                (s) => DropdownMenuItem(
-                  value: s,
-                  child: Text(
-                    s == ServiceType.naturalService
-                        ? l10n.detailFormReproductionServiceNatural
-                        : s == ServiceType.artificialInsemination
-                        ? l10n.detailFormReproductionServiceAi
-                        : l10n.detailFormReproductionServiceIvf,
-                  ),
-                ),
-              )
-              .toList(),
+        AppSelectField<ServiceType>(
+          value: _serviceType,
+          items: ServiceType.values,
+          itemLabel: (service) => service == ServiceType.naturalService
+              ? l10n.detailFormReproductionServiceNatural
+              : service == ServiceType.artificialInsemination
+              ? l10n.detailFormReproductionServiceAi
+              : l10n.detailFormReproductionServiceIvf,
+          labelText: l10n.detailFormReproductionServiceType,
           onChanged: (value) {
             if (value == null) return;
             setState(() => _serviceType = value);
           },
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.event),
-                label: Text(DateFormat('dd/MM/yyyy').format(_serviceDate)),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _serviceDate,
-                    firstDate: DateTime(_serviceDate.year - 5),
-                    lastDate: DateTime(_serviceDate.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() {
-                    _serviceDate = picked;
-                    _projectExpectedCalving();
-                  });
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.child_friendly),
-                label: Text(
-                  _expectedCalvingDate == null
-                      ? l10n.detailFormReproductionExpectedCalving
-                      : DateFormat('dd/MM/yyyy').format(_expectedCalvingDate!),
-                ),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _expectedCalvingDate ?? _serviceDate,
-                    firstDate: DateTime(_serviceDate.year - 1),
-                    lastDate: DateTime(_serviceDate.year + 2),
-                  );
-                  if (picked == null) return;
-                  setState(() => _expectedCalvingDate = picked);
-                },
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _serviceDate,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(_serviceDate.year - 5),
+          lastDate: DateTime(_serviceDate.year + 1),
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              _serviceDate = value;
+              _projectExpectedCalving();
+            });
+          },
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _expectedCalvingDate,
+          labelText: l10n.detailFormReproductionExpectedCalving,
+          emptyLabel: l10n.detailFormReproductionExpectedCalving,
+          allowClear: true,
+          clearTooltip: l10n.actionClearDate,
+          firstDate: DateTime(_serviceDate.year - 1),
+          lastDate: DateTime(_serviceDate.year + 2),
+          onChanged: (value) => setState(() => _expectedCalvingDate = value),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _sireController,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormReproductionSire,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.detailFormReproductionSire,
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _notesController,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormReproductionNotes,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.detailFormReproductionNotes,
           maxLines: 2,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         if (_animal != null) ...[
           AdvisorTipsPanel(
             tips: LivestockAdvisor.forReproduction(
@@ -288,7 +251,7 @@ class _AnimalReproductionFormPageState
               herd: _herd,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
         ],
       ],
     );

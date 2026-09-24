@@ -25,10 +25,10 @@ class AppBottomNavBar extends StatelessWidget {
     required this.onItemSelected,
     required this.center,
     this.centerIndex = 2,
-    this.barHeight = 67,
+    this.barHeight = 65,
     this.barHorizontalPadding = 10,
     this.barBottomGap = 10,
-    this.centerGapWidth = 56,
+    this.centerGapWidth = 48,
     required this.backgroundColor,
     required this.shadowColor,
   });
@@ -63,13 +63,13 @@ class AppBottomNavBar extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Positioned.fill(
-              top: 11,
+              top: 10,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: barHorizontalPadding),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: backgroundColor,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
                         color: shadowColor,
@@ -137,37 +137,44 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final itemColor = isSelected ? selectedColor : unselectedColor;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: itemColor, size: 22),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isSelected ? 9 : 8,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: itemColor,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: itemColor, size: 22),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isSelected ? 10 : 9,
+                  height: 1.05,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: itemColor,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              height: 2,
-              width: 18,
-              decoration: BoxDecoration(
-                color: isSelected ? selectedColor : Colors.transparent,
-                borderRadius: BorderRadius.circular(99),
+              const SizedBox(height: 4),
+              Container(
+                height: 2,
+                width: 20,
+                decoration: BoxDecoration(
+                  color: isSelected ? selectedColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

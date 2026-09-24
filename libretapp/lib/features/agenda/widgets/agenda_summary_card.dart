@@ -26,7 +26,8 @@ class AgendaSummaryCard extends StatelessWidget {
     final typeColor = colorForTipo(entry.tipo);
     final estadoColor = colorForEstado(entry.estado);
     final timeFormatter = DateFormat('HH:mm');
-    final dateFormatter = DateFormat('d MMM, EEEE');
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final dateFormatter = DateFormat('d MMM, EEEE', locale);
 
     final completedCount = entry.completedAnimalIds.length;
     final hasAnimals = entry.animalIds.isNotEmpty || entry.loteIds.isNotEmpty;

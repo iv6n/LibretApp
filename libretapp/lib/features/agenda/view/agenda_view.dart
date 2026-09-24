@@ -22,6 +22,7 @@ import 'package:libretapp/features/agenda/view/agenda_registration_flow_page.dar
 import 'package:libretapp/features/agenda/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/theme/theme.dart';
 
 class AgendaView extends StatefulWidget {
   const AgendaView({super.key});
@@ -95,7 +96,6 @@ class _AgendaViewState extends State<AgendaView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final bottomInset = ShellInsets.bottomSafePadding(context);
     final fabConfig = ShellFabConfig(
       id: 'agenda',
@@ -112,25 +112,24 @@ class _AgendaViewState extends State<AgendaView> {
         child: Scaffold(
           appBar: AppBar(
             title: _isSearchFieldActive
-                ? TextField(
+                ? AppSearchBar(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar agenda...',
-                      border: InputBorder.none,
-                      hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                    style: theme.textTheme.bodyMedium,
+                    hintText: 'Buscar agenda...',
+                    onClear: () => setState(() {}),
+                    onClose: () => setState(() {
+                      _isSearchFieldActive = false;
+                      _searchController.clear();
+                      _searchFocusNode.unfocus();
+                    }),
                     onChanged: (_) => setState(() {}),
                   )
                 : const Text('Agenda'),
-            elevation: 5,
             centerTitle: false,
             leading: _isSearchFieldActive
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back),
+                ? AppIconButton(
+                    icon: Icons.arrow_back,
+                    tooltip: 'Cerrar búsqueda',
                     onPressed: () => setState(() {
                       _isSearchFieldActive = false;
                       _searchController.clear();
@@ -140,19 +139,19 @@ class _AgendaViewState extends State<AgendaView> {
                 : null,
             actions: [
               if (!_isSearchFieldActive)
-                IconButton(
-                  icon: const Icon(Icons.groups_outlined),
-                  onPressed: () => showWorkforceManager(context),
+                AppIconButton(
+                  icon: Icons.groups_outlined,
                   tooltip: 'Personal y cuadrillas',
+                  onPressed: () => showWorkforceManager(context),
                 ),
               if (!_isSearchFieldActive)
-                IconButton(
-                  icon: const Icon(Icons.search),
+                AppIconButton(
+                  icon: Icons.search,
+                  tooltip: 'Buscar',
                   onPressed: () => setState(() {
                     _isSearchFieldActive = true;
                     _searchFocusNode.requestFocus();
                   }),
-                  tooltip: 'Buscar',
                 ),
             ],
           ),
@@ -162,7 +161,18 @@ class _AgendaViewState extends State<AgendaView> {
                 return const AppLoadingIndicator();
               }
               if (state is AgendaError) {
-                return Center(child: Text('Error: ${state.message}'));
+                return AppEmptyState(
+                  icon: Icons.cloud_off_outlined,
+                  title: 'No se pudo cargar la agenda',
+                  message: state.message,
+                  action: AppButton(
+                    label: 'Reintentar',
+                    variant: AppButtonVariant.secondary,
+                    icon: Icons.refresh,
+                    onPressed: () =>
+                        context.read<AgendaBloc>().add(const RefreshAgenda()),
+                  ),
+                );
               }
               if (state is! AgendaLoaded) {
                 return const SizedBox.shrink();
@@ -206,11 +216,16 @@ class _AgendaViewState extends State<AgendaView> {
 
               return SingleChildScrollView(
                 controller: _scrollController,
-                padding: EdgeInsets.fromLTRB(7, 4, 7, bottomInset + 80),
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.xs,
+                  AppSpacing.xs,
+                  AppSpacing.xs,
+                  bottomInset + 80,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 4),
+                    const SizedBox(height: AppSpacing.xs),
                     _CalendarSection(
                       onToggleMode: _toggleMode,
                       visibleDate: _visibleDate,
@@ -225,9 +240,9 @@ class _AgendaViewState extends State<AgendaView> {
                       onPrevious: () => _cambiarMes(-1),
                       onNext: () => _cambiarMes(1),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: AppSpacing.xs),
                     const AgendaLegend(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: AppSpacing.sm),
 
                     // Entries for selected day
                     const _SectionHeader(title: 'Hoy'),
@@ -515,17 +530,18 @@ class _CalendarSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final monthName = DateFormat.yMMMM().format(visibleDate);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final monthName = DateFormat.yMMMM(locale).format(visibleDate);
 
     return Column(
       children: [
         // Navigation controls
         Row(
           children: [
-            IconButton(
-              onPressed: onPrevious,
-              icon: const Icon(Icons.chevron_left),
+            AppIconButton(
+              icon: Icons.chevron_left,
               tooltip: 'Anterior',
+              onPressed: onPrevious,
             ),
             const Expanded(child: SizedBox.shrink()),
             Center(
@@ -539,30 +555,19 @@ class _CalendarSection extends StatelessWidget {
             ),
             const Expanded(child: SizedBox.shrink()),
             if (onToggleMode != null)
-              OutlinedButton.icon(
+              AppButton(
+                variant: AppButtonVariant.secondary,
+                size: AppButtonSize.compact,
                 onPressed: onToggleMode,
-                icon: Icon(
-                  mode == CalendarMode.month
-                      ? Icons.view_week_outlined
-                      : Icons.calendar_month_outlined,
-                  size: 14,
-                ),
-                label: Text(
-                  mode == CalendarMode.month ? '2 semanas' : 'Mes',
-                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 11),
-                ),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                ),
+                icon: mode == CalendarMode.month
+                    ? Icons.view_week_outlined
+                    : Icons.calendar_month_outlined,
+                label: mode == CalendarMode.month ? '2 semanas' : 'Mes',
               ),
-            IconButton(
-              onPressed: onNext,
-              icon: const Icon(Icons.chevron_right),
+            AppIconButton(
+              icon: Icons.chevron_right,
               tooltip: 'Siguiente',
+              onPressed: onNext,
             ),
           ],
         ),

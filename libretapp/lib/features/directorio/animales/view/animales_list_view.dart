@@ -19,8 +19,6 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
-import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
-import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/directorio/animales/view/bulk_health_form_page.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -53,6 +51,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
   bool _isScrollingUp = false;
   bool _quickMenuOpen = false;
   bool _taxonomyRefreshInFlight = false;
+  String? _lastRouteFilterKey;
   String? _taxonomySourceKey;
   double _quickMenuExtraPadding = 0;
   double _lastScrollOffset = 0;
@@ -71,26 +70,47 @@ class _AnimalesListViewState extends State<AnimalesListView>
       weightRepository: locator<WeightRecordRepository>(),
       milkingRepository: locator<MilkingRepository>(),
     );
+    _animalController.loadInitial();
+    unawaited(_animalController.loadTaxonomy());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncRouteFilters();
+  }
+
+  void _syncRouteFilters() {
     try {
       final query = GoRouterState.of(context).uri.queryParameters;
-      var hasRouteFilter = false;
-      if (query['pendingEarTag'] == 'true') {
-        _animalController.setOnlyPendingEarTag(true);
-        hasRouteFilter = true;
-      }
-      if (query['attention'] == 'true') {
-        _animalController.setOnlyAttention(true);
-        hasRouteFilter = true;
-      }
-      if (hasRouteFilter) {
+      final pendingEarTag = query['pendingEarTag'] == 'true';
+      final attention = query['attention'] == 'true';
+      final loteUuid = query['lote']?.trim();
+      final locationUuid = query['ubicacion']?.trim();
+      final key = [
+        pendingEarTag,
+        attention,
+        loteUuid ?? '',
+        locationUuid ?? '',
+      ].join('|');
+      if (_lastRouteFilterKey == key) return;
+      _lastRouteFilterKey = key;
+
+      _animalController.setOnlyPendingEarTag(pendingEarTag);
+      _animalController.setOnlyAttention(attention);
+      _animalController.setLoteUuid(
+        loteUuid == null || loteUuid.isEmpty ? null : loteUuid,
+      );
+      _animalController.setLocationUuid(
+        locationUuid == null || locationUuid.isEmpty ? null : locationUuid,
+      );
+      if (pendingEarTag || attention || (loteUuid?.isNotEmpty ?? false) ||
+          (locationUuid?.isNotEmpty ?? false)) {
         _ensureAllAnimalsForFilter();
       }
     } catch (_) {
       // The list can also be hosted without GoRouter in focused widget tests.
     }
-    _animalController.loadInitial();
-    unawaited(_animalController.loadTaxonomy());
-    context.read<LotesTabBloc>().add(const LoadLotesTab());
   }
 
   @override
@@ -821,6 +841,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required AnimalIndicatorSnapshot? Function(AnimalEntity) snapshotResolver,
     required void Function(AnimalEntity) onOpenDetail,
   }) {
+    final location = locationResolver(animal);
     return _CenteredSection(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Slidable(
@@ -863,8 +884,13 @@ class _AnimalesListViewState extends State<AnimalesListView>
         child: AnimalCard(
           key: ValueKey('card_${animal.uuid}'),
           animal: animal,
-          location: locationResolver(animal),
+          location: location,
           indicatorSnapshot: snapshotResolver(animal),
+          onLocationTap: location == null
+              ? null
+              : () => context.push(
+                    AppRoutes.ubicacionDetallePath(location.uuid),
+                  ),
           isSelected: state.selectedAnimalUuids.contains(animal.uuid),
           selectionEnabled: state.isSelectionMode,
           onMenuAction: (action) => _handleAnimalCardMenuAction(

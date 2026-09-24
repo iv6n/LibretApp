@@ -4,10 +4,15 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/view/cultivation_usage_scope.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_labels.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -27,6 +32,8 @@ class LocationCard extends StatelessWidget {
     this.hierarchyDepth = 0,
     this.ejidoCount,
     this.ejidoTotalCapacity,
+    this.onAnimalsTap,
+    this.onCultivationsTap,
   });
 
   final LocationEntity location;
@@ -46,6 +53,8 @@ class LocationCard extends StatelessWidget {
 
   /// Sum of capacity across all ejido-type direct children.
   final int? ejidoTotalCapacity;
+  final VoidCallback? onAnimalsTap;
+  final VoidCallback? onCultivationsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +63,37 @@ class LocationCard extends StatelessWidget {
     final typeColor = locationTypeColor(location.type);
     final isDark = theme.brightness == Brightness.dark;
     final summary = _locationSummary();
+    final activeCultivations = CultivationUsageScope.forLocation(
+      context,
+      location.uuid,
+    );
+    final nextCultivationTask = _nextCultivationTask(activeCultivations);
+    final routerAvailable = GoRouter.maybeOf(context) != null;
+    final hasAnimals = (totalAnimalCount ?? animalCount) > 0;
+    final animalsAction = hasAnimals
+        ? onAnimalsTap ??
+            (routerAvailable
+                ? () => context.push(
+                      AppRoutes.animalesPath(locationUuid: location.uuid),
+                    )
+                : null)
+        : null;
+    final hasCultivations = activeCultivations.isNotEmpty;
+    final cultivationsAction = hasCultivations
+        ? onCultivationsTap ??
+            (routerAvailable
+                ? () => context.push(
+                      AppRoutes.directorioCultivosPath(
+                        locationUuid: location.uuid,
+                      ),
+                    )
+                : null)
+        : null;
+    final effectiveStatus =
+        location.status == LocationStatus.available &&
+            (hasAnimals || activeCultivations.isNotEmpty)
+        ? LocationStatus.inUse
+        : location.status;
     final radius = isNested ? 16.0 : 20.0;
 
     final headerColor = isDark
@@ -155,6 +195,31 @@ class LocationCard extends StatelessWidget {
                                   height: 1.18,
                                 ),
                               ),
+                              if (activeCultivations.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.eco_outlined,
+                                      size: 14,
+                                      color: typeColor,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        'En uso por ${activeCultivations.first.name}${activeCultivations.length > 1 ? ' +${activeCultivations.length - 1}' : ''}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: typeColor,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -162,7 +227,7 @@ class LocationCard extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _StatusPill(status: location.status),
+                            _StatusPill(status: effectiveStatus),
                             const SizedBox(height: 7),
                             Icon(
                               Icons.chevron_right,
@@ -221,11 +286,35 @@ class LocationCard extends StatelessWidget {
                       animalCount: animalCount,
                       totalAnimalCount: totalAnimalCount,
                       averageWeightKg: averageWeightKg,
+                      activeCultivationCount: activeCultivations.length,
+                      nextCultivationTask: nextCultivationTask,
                       childCount: childCount,
                       ejidoCount: ejidoCount,
                       ejidoTotalCapacity: ejidoTotalCapacity,
                     ),
                   ),
+                  if (animalsAction != null || cultivationsAction != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (animalsAction != null)
+                            _LinkButton(
+                              icon: Icons.pets_outlined,
+                              label: 'Ver animales',
+                              onTap: animalsAction,
+                            ),
+                          if (cultivationsAction != null)
+                            _LinkButton(
+                              icon: Icons.eco_outlined,
+                              label: 'Ver cultivos',
+                              onTap: cultivationsAction,
+                            ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -247,7 +336,7 @@ class LocationCard extends StatelessWidget {
       return 'Contiene $childCount sub-ubicacion${childCount == 1 ? '' : 'es'} para seguimiento interno.';
     }
 
-    switch (location.type.category) {
+    switch (location.effectiveCategory) {
       case LocationCategory.water:
         if (location.waters.isEmpty) {
           return 'Recurso de agua sin lectura reciente.';
@@ -273,12 +362,24 @@ class LocationCard extends StatelessWidget {
         if (capacity > 0) {
           return '$animalCount de $capacity espacios ocupados.';
         }
+        if (animalCount == 0) return 'Sin animales asignados.';
         return '$animalCount animal${animalCount == 1 ? '' : 'es'} asignado${animalCount == 1 ? '' : 's'}.';
       case LocationCategory.macro:
         return 'Propiedad principal para organizar areas internas.';
       case LocationCategory.natural:
         return 'Area natural para manejo, conservacion o pastoreo extensivo.';
     }
+  }
+
+  String? _nextCultivationTask(List<CultivationEntity> cultivations) {
+    final pending = [
+      for (final cultivation in cultivations)
+        for (final task in cultivation.tasks)
+          if (!task.completed) (task.dueDate, task.type.displayName),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    if (pending.isEmpty) return null;
+    final (date, label) = pending.first;
+    return '$label · ${date.day}/${date.month}';
   }
 }
 
@@ -561,6 +662,8 @@ class _BottomBar extends StatelessWidget {
     required this.animalCount,
     this.totalAnimalCount,
     this.averageWeightKg,
+    this.activeCultivationCount = 0,
+    this.nextCultivationTask,
     this.childCount = 0,
     this.ejidoCount,
     this.ejidoTotalCapacity,
@@ -570,6 +673,8 @@ class _BottomBar extends StatelessWidget {
   final int animalCount;
   final int? totalAnimalCount;
   final double? averageWeightKg;
+  final int activeCultivationCount;
+  final String? nextCultivationTask;
   final int childCount;
   final int? ejidoCount;
   final int? ejidoTotalCapacity;
@@ -596,7 +701,7 @@ class _BottomBar extends StatelessWidget {
       );
     }
 
-    final cat = location.type.category;
+    final cat = location.effectiveCategory;
     switch (cat) {
       case LocationCategory.water:
         if (location.waters.isNotEmpty) {
@@ -605,28 +710,55 @@ class _BottomBar extends StatelessWidget {
           );
           return (
             Icons.water_drop_outlined,
-            '${latest.level.toStringAsFixed(0)}%',
+            '${latest.level.toStringAsFixed(0)}% · ${_shortDate(latest.date)}',
           );
         }
         return (Icons.water_drop_outlined, 'Sin datos');
       case LocationCategory.agricultural:
         final total = location.crops.length + location.seedings.length;
-        return (Icons.eco_outlined, '$total cultivo${total == 1 ? '' : 's'}');
+        final count = activeCultivationCount > 0
+            ? activeCultivationCount
+            : total;
+        return (
+          Icons.eco_outlined,
+          count == 0 ? 'Sin cultivos' : '$count cultivo${count == 1 ? '' : 's'}',
+        );
       case LocationCategory.infrastructure:
         return (
           Icons.inventory_2_outlined,
-          '${location.inventory.length} items',
+          location.inventory.isEmpty
+              ? 'Sin inventario'
+              : '${location.inventory.length} item${location.inventory.length == 1 ? '' : 's'}',
         );
-      default:
+      case LocationCategory.macro:
+        final total = totalAnimalCount ?? animalCount;
+        return (
+          Icons.house_outlined,
+          total == 0 ? 'Sin animales' : '$total animales',
+        );
+      case LocationCategory.livestock:
+      case LocationCategory.handling:
         if (location.capacity > 0) {
           return (Icons.pets_outlined, '$animalCount / ${location.capacity}');
         }
-        return (Icons.pets_outlined, '$animalCount animales');
+        return (
+          Icons.pets_outlined,
+          animalCount == 0 ? 'Sin animales' : '$animalCount animales',
+        );
+      case LocationCategory.natural:
+        return (
+          Icons.pets_outlined,
+          animalCount == 0 ? 'Sin animales' : '$animalCount animales',
+        );
     }
   }
 
+  String _shortDate(DateTime value) => '${value.day}/${value.month}';
+
   List<(IconData, String)> _metrics() {
-    final metrics = <(IconData, String)>[_mainMetric()];
+    final metrics = <(IconData, String)>[];
+    final mainMetric = _mainMetric();
+    if (!mainMetric.$2.startsWith('Sin ')) metrics.add(mainMetric);
     if (childCount > 0 && !location.isCommunalMonteContainer) {
       metrics.add((
         Icons.account_tree_outlined,
@@ -639,7 +771,13 @@ class _BottomBar extends StatelessWidget {
         '${averageWeightKg!.toStringAsFixed(0)} kg',
       ));
     }
-    metrics.add((Icons.square_foot, _formatSurface(location.surfaceArea)));
+    if (location.surfaceArea > 0) {
+      metrics.add((Icons.square_foot, _formatSurface(location.surfaceArea)));
+    }
+    if (location.effectiveCategory == LocationCategory.agricultural &&
+        nextCultivationTask != null) {
+      metrics.add((Icons.event_note_outlined, 'Próxima: $nextCultivationTask'));
+    }
     return metrics;
   }
 
@@ -648,7 +786,10 @@ class _BottomBar extends StatelessWidget {
     final theme = Theme.of(context);
     final subtle = theme.colorScheme.onSurfaceVariant;
     final metrics = _metrics();
-    final occupancy = location.capacity > 0
+    final showsOccupancy =
+        location.effectiveCategory == LocationCategory.livestock ||
+        location.effectiveCategory == LocationCategory.handling;
+    final occupancy = showsOccupancy && location.capacity > 0
         ? (animalCount / location.capacity).clamp(0.0, 1.0)
         : null;
     final accent = locationTypeColor(location.type);
@@ -772,6 +913,31 @@ class _MetricChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LinkButton extends StatelessWidget {
+  const _LinkButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 16),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }

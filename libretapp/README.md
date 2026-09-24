@@ -2,7 +2,8 @@
 
 LibretApp is an offline-first livestock management application built with
 Flutter. It manages animals, lots, locations, operational records, agenda,
-workforce, milking, and farm finances in a local Isar database.
+workforce, milking, and farm finances with Isar on mobile and a shared
+Drift/SQLite WASM envelope on the web.
 
 The current release line is `0.1.x`, intended for a controlled Android pilot.
 Spanish is the only enabled application locale.
@@ -67,9 +68,8 @@ of a bare pass/fail.
 
 Local and cloud backups use the same `.libretbackup` format:
 
-- schema version 5;
-- all 20 Isar collections, including the care calendar (rules, records, and
-  scheduled tasks);
+- schema version 9;
+- all current Isar collections, including RFID and shared feature records;
 - persisted farm profile;
 - referenced local media, stored by content hash;
 - no authentication tokens, encryption keys, theme, language, or other
@@ -97,8 +97,9 @@ Restoring a snapshot offers two modes:
   them.
 
 Merge makes a restore usable across devices, but it is still a manual,
-user-initiated operation. Background and bidirectional synchronization remain
-intentionally deferred until after the pilot.
+user-initiated operation. The shared sync queue, cursors, conflicts and
+tombstones are now implemented locally; remote bidirectional synchronization
+requires applying the Supabase migration and configuring authenticated access.
 
 Apply the local Supabase migration and security tests with:
 
@@ -165,7 +166,9 @@ installation would break the normal Android upgrade path.
 - Flutter, Material 3, GoRouter
 - BLoC/Cubit state management
 - GetIt dependency injection
-- Isar offline persistence
+- Isar offline persistence on mobile
+- Drift/SQLite WASM persistence and PWA service worker on web
+- farm context, role contracts, persistent sync queue and conflict records
 - SharedPreferences for profile/settings data
 - Supabase Auth and private Storage for optional versioned backups
 
@@ -174,7 +177,7 @@ details.
 
 ## Pilot limitations
 
-The pilot does not include maps, expanded camera workflows, push
-notifications, multi-farm sharing, or live multi-device synchronization.
-These features should be prioritized from observed pilot usage rather than
-added before recovery and data-integrity drills pass.
+The pilot keeps fiscal, payment, OpenAI and hardware providers in sandbox or
+contract mode until credentials, certificates and physical-device validation
+are available. Supabase RLS and live multi-device synchronization require the
+deployment migration and authenticated environment configuration.

@@ -125,10 +125,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<AnimalEntity?> getByUuid(String uuid) async {
     final isar = await _isar;
-    final record = await isar.isarAnimals
-        .where()
-        .uuidEqualTo(uuid)
-        .findFirst();
+    final record = await isar.isarAnimals.where().uuidEqualTo(uuid).findFirst();
     return record?.toEntity();
   }
 

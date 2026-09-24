@@ -7,4 +7,5 @@ export 'bloc/perfil_state.dart';
 export 'data/perfil_model.dart';
 export 'data/perfil_repository.dart';
 export 'view/view.dart';
+export 'suscripcion/suscripcion.dart';
 export 'widgets/widgets.dart';

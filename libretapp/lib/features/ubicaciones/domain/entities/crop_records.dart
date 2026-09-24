@@ -10,8 +10,8 @@ import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.da
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
 
-String _generateId() =>
-    'crop-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
+String _generateId([String prefix = 'crop']) =>
+    '$prefix-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(9999)}';
 
 class CropRecord extends Equatable {
   CropRecord({
@@ -74,6 +74,8 @@ class CropRecord extends Equatable {
         return AppAssetPaths.cropHarvested;
       case CropStatus.failed:
         return AppAssetPaths.cropFailed;
+      case CropStatus.archived:
+        return AppAssetPaths.cropFailed;
     }
   }
 
@@ -135,19 +137,24 @@ class CropRecord extends Equatable {
 }
 
 class HarvestRecord extends Equatable {
-  const HarvestRecord({
+  HarvestRecord({
+    String? uuid,
     required this.date,
     required this.yieldKg,
     this.qualityRating = 3,
+    this.isFinal = false,
     this.notes,
-  });
+  }) : uuid = uuid ?? _generateId('harvest');
+
+  final String uuid;
   final DateTime date;
   final double yieldKg;
   final int qualityRating; // 1-5
+  final bool isFinal;
   final String? notes;
 
   @override
-  List<Object?> get props => [date, yieldKg, qualityRating, notes];
+  List<Object?> get props => [uuid, date, yieldKg, qualityRating, isFinal, notes];
 }
 
 class CropWateringRecord extends Equatable {

@@ -11,4 +11,5 @@ export 'data/inicio_dashboard_models.dart';
 export 'data/inicio_dashboard_service.dart';
 export 'data/weather_service.dart';
 export 'view/view.dart';
+export 'asistente/asistente.dart';
 export 'widgets/widgets.dart';

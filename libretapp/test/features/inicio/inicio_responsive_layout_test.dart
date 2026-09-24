@@ -19,6 +19,7 @@ import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.da
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:libretapp/theme/app_theme.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -168,6 +169,8 @@ Future<void> _pumpInicio(
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.lightTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
         data: MediaQueryData(
           size: Size(width, 1200),
@@ -197,6 +200,8 @@ Future<void> _pumpQuickActions(
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.lightTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
         data: MediaQueryData(
           size: Size(width, 1200),

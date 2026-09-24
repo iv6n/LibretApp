@@ -17,7 +17,10 @@ export 'domain/agenda_task_grouping.dart';
 export 'domain/agenda_registration.dart';
 export 'domain/agenda_registration_coordinator.dart';
 export 'domain/agenda_registration_read_service.dart';
-export 'infrastructure/isar_agenda_repository.dart';
-export 'infrastructure/isar_workforce_repository.dart';
+export 'infrastructure/isar_agenda_repository.dart'
+    if (dart.library.html) 'infrastructure/web_agenda_infrastructure_stub.dart';
+export 'infrastructure/isar_workforce_repository.dart'
+    if (dart.library.html) 'infrastructure/web_agenda_infrastructure_stub.dart';
 export 'view/view.dart';
 export 'widgets/widgets.dart';
+export 'personal/personal.dart';

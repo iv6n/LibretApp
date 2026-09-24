@@ -1,4 +1,4 @@
-/// Shared delete-location confirmation dialog.
+/// Shared archive-location confirmation dialog.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,9 +12,9 @@ Future<bool> confirmDeleteLocation(
     context: context,
     useRootNavigator: true,
     builder: (context) => AlertDialog(
-      title: const Text('Eliminar ubicación'),
+      title: const Text('Archivar ubicación'),
       content: Text(
-        '¿Deseas borrar "${location.name}"? Esta acción no se puede deshacer.',
+        '¿Deseas archivar "${location.name}"? Se conservará su historial y dejará de aparecer en las listas activas.',
       ),
       actions: [
         TextButton(
@@ -23,7 +23,7 @@ Future<bool> confirmDeleteLocation(
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Eliminar'),
+          child: const Text('Archivar'),
         ),
       ],
     ),

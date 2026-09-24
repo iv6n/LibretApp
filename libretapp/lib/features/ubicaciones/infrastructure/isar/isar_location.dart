@@ -42,6 +42,10 @@ class IsarLocation {
   /// GeoJSON geometry string (Point, Polygon, etc.).
   String? geometry;
 
+  DateTime? createdAt;
+  DateTime? updatedAt;
+  DateTime? archivedAt;
+
   /// Shared among multiple herds/operations.
   bool isShared = false;
 
@@ -64,6 +68,7 @@ class IsarLocation {
   List<IsarIrrigationRecord> irrigations = [];
   List<IsarRainRecord> rains = [];
   List<IsarLocationCostRecord> costs = [];
+  List<IsarMaintenanceRecord> maintenances = [];
   List<IsarCropRecord> crops = [];
 }
 
@@ -256,6 +261,43 @@ class IsarRainRecord {
 }
 
 @embedded
+class IsarMaintenanceRecord {
+  late String uuid;
+  late DateTime date;
+  late String assetName;
+  late String maintenanceType;
+  DateTime? nextDueDate;
+  double? meterReading;
+  String? meterUnit;
+  late double cost;
+  String? notes;
+
+  MaintenanceRecord toEntity() => MaintenanceRecord(
+    uuid: uuid,
+    date: date,
+    assetName: assetName,
+    maintenanceType: maintenanceType,
+    nextDueDate: nextDueDate,
+    meterReading: meterReading,
+    meterUnit: meterUnit,
+    cost: cost,
+    notes: notes,
+  );
+
+  static IsarMaintenanceRecord fromEntity(MaintenanceRecord record) =>
+      IsarMaintenanceRecord()
+        ..uuid = record.uuid
+        ..date = record.date
+        ..assetName = record.assetName
+        ..maintenanceType = record.maintenanceType
+        ..nextDueDate = record.nextDueDate
+        ..meterReading = record.meterReading
+        ..meterUnit = record.meterUnit
+        ..cost = record.cost
+        ..notes = record.notes;
+}
+
+@embedded
 class IsarLocationCostRecord {
   late DateTime date;
   late double maintenance;
@@ -285,23 +327,29 @@ class IsarLocationCostRecord {
 
 @embedded
 class IsarHarvestRecord {
+  late String uuid;
   late DateTime date;
   late double yieldKg;
   late int qualityRating;
+  bool isFinal = false;
   String? notes;
 
   HarvestRecord toEntity() => HarvestRecord(
+    uuid: uuid,
     date: date,
     yieldKg: yieldKg,
     qualityRating: qualityRating,
+    isFinal: isFinal,
     notes: notes,
   );
 
   static IsarHarvestRecord fromEntity(HarvestRecord record) =>
       IsarHarvestRecord()
+        ..uuid = record.uuid
         ..date = record.date
         ..yieldKg = record.yieldKg
         ..qualityRating = record.qualityRating
+        ..isFinal = record.isFinal
         ..notes = record.notes;
 }
 
@@ -459,6 +507,9 @@ extension IsarLocationMapper on IsarLocation {
           ? null
           : _enumByName(LocationCategory.values, category!),
       geometry: geometry,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      archivedAt: archivedAt,
       isShared: isShared,
       isCommunal: isCommunal,
       imagePaths: List<String>.from(imagePaths),
@@ -473,6 +524,9 @@ extension IsarLocationMapper on IsarLocation {
       irrigations: irrigations.map((e) => e.toEntity()).toList(growable: false),
       rains: rains.map((e) => e.toEntity()).toList(growable: false),
       costs: costs.map((e) => e.toEntity()).toList(growable: false),
+      maintenances: maintenances
+          .map((e) => e.toEntity())
+          .toList(growable: false),
       crops: crops.map((e) => e.toEntity()).toList(growable: false),
     );
   }
@@ -494,6 +548,9 @@ extension LocationEntityToIsar on LocationEntity {
       ..status = status.name
       ..category = category?.name
       ..geometry = geometry
+      ..createdAt = createdAt
+      ..updatedAt = updatedAt
+      ..archivedAt = archivedAt
       ..isShared = isShared
       ..isCommunal = isCommunal
       ..imagePaths = List<String>.from(imagePaths)
@@ -508,6 +565,9 @@ extension LocationEntityToIsar on LocationEntity {
       ..irrigations = irrigations.map(IsarIrrigationRecord.fromEntity).toList()
       ..rains = rains.map(IsarRainRecord.fromEntity).toList()
       ..costs = costs.map(IsarLocationCostRecord.fromEntity).toList()
+      ..maintenances = maintenances
+          .map(IsarMaintenanceRecord.fromEntity)
+          .toList()
       ..crops = crops.map(IsarCropRecord.fromEntity).toList();
 
     if (existingId != null && existingId != Isar.autoIncrement) {

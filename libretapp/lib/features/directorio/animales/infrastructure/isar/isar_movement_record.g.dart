@@ -18,48 +18,63 @@ const IsarMovementRecordSchema = CollectionSchema(
   name: r'IsarMovementRecord',
   id: 211328675151965341,
   properties: {
-    r'animalUuid': PropertySchema(
+    r'accuracyMeters': PropertySchema(
       id: 0,
+      name: r'accuracyMeters',
+      type: IsarType.double,
+    ),
+    r'animalUuid': PropertySchema(
+      id: 1,
       name: r'animalUuid',
       type: IsarType.string,
     ),
     r'date': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'date',
       type: IsarType.dateTime,
     ),
     r'fromLocation': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'fromLocation',
       type: IsarType.string,
     ),
+    r'latitude': PropertySchema(
+      id: 4,
+      name: r'latitude',
+      type: IsarType.double,
+    ),
+    r'longitude': PropertySchema(
+      id: 5,
+      name: r'longitude',
+      type: IsarType.double,
+    ),
     r'movedBy': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'movedBy',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 4,
+      id: 7,
       name: r'notes',
       type: IsarType.string,
     ),
     r'reason': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'reason',
       type: IsarType.string,
     ),
     r'recordUuid': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'recordUuid',
       type: IsarType.string,
     ),
     r'toLocation': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'toLocation',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -142,15 +157,18 @@ void _isarMovementRecordSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.animalUuid);
-  writer.writeDateTime(offsets[1], object.date);
-  writer.writeString(offsets[2], object.fromLocation);
-  writer.writeString(offsets[3], object.movedBy);
-  writer.writeString(offsets[4], object.notes);
-  writer.writeString(offsets[5], object.reason);
-  writer.writeString(offsets[6], object.recordUuid);
-  writer.writeString(offsets[7], object.toLocation);
-  writer.writeDateTime(offsets[8], object.updatedAt);
+  writer.writeDouble(offsets[0], object.accuracyMeters);
+  writer.writeString(offsets[1], object.animalUuid);
+  writer.writeDateTime(offsets[2], object.date);
+  writer.writeString(offsets[3], object.fromLocation);
+  writer.writeDouble(offsets[4], object.latitude);
+  writer.writeDouble(offsets[5], object.longitude);
+  writer.writeString(offsets[6], object.movedBy);
+  writer.writeString(offsets[7], object.notes);
+  writer.writeString(offsets[8], object.reason);
+  writer.writeString(offsets[9], object.recordUuid);
+  writer.writeString(offsets[10], object.toLocation);
+  writer.writeDateTime(offsets[11], object.updatedAt);
 }
 
 IsarMovementRecord _isarMovementRecordDeserialize(
@@ -160,16 +178,19 @@ IsarMovementRecord _isarMovementRecordDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = IsarMovementRecord();
-  object.animalUuid = reader.readString(offsets[0]);
-  object.date = reader.readDateTime(offsets[1]);
-  object.fromLocation = reader.readStringOrNull(offsets[2]);
+  object.accuracyMeters = reader.readDoubleOrNull(offsets[0]);
+  object.animalUuid = reader.readString(offsets[1]);
+  object.date = reader.readDateTime(offsets[2]);
+  object.fromLocation = reader.readStringOrNull(offsets[3]);
   object.id = id;
-  object.movedBy = reader.readStringOrNull(offsets[3]);
-  object.notes = reader.readStringOrNull(offsets[4]);
-  object.reason = reader.readString(offsets[5]);
-  object.recordUuid = reader.readString(offsets[6]);
-  object.toLocation = reader.readString(offsets[7]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.latitude = reader.readDoubleOrNull(offsets[4]);
+  object.longitude = reader.readDoubleOrNull(offsets[5]);
+  object.movedBy = reader.readStringOrNull(offsets[6]);
+  object.notes = reader.readStringOrNull(offsets[7]);
+  object.reason = reader.readString(offsets[8]);
+  object.recordUuid = reader.readString(offsets[9]);
+  object.toLocation = reader.readString(offsets[10]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[11]);
   return object;
 }
 
@@ -181,22 +202,28 @@ P _isarMovementRecordDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 3:
       return (reader.readStringOrNull(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -446,6 +473,90 @@ extension IsarMovementRecordQueryWhere
 
 extension IsarMovementRecordQueryFilter
     on QueryBuilder<IsarMovementRecord, IsarMovementRecord, QFilterCondition> {
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'accuracyMeters',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'accuracyMeters',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'accuracyMeters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'accuracyMeters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'accuracyMeters',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      accuracyMetersBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'accuracyMeters',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
       animalUuidEqualTo(
     String value, {
@@ -844,6 +955,174 @@ extension IsarMovementRecordQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'latitude',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'latitude',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'latitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'latitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'latitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      latitudeBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'latitude',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'longitude',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'longitude',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'longitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'longitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'longitude',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterFilterCondition>
+      longitudeBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'longitude',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }
@@ -1648,6 +1927,20 @@ extension IsarMovementRecordQueryLinks
 extension IsarMovementRecordQuerySortBy
     on QueryBuilder<IsarMovementRecord, IsarMovementRecord, QSortBy> {
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByAccuracyMeters() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracyMeters', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByAccuracyMetersDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracyMeters', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
       sortByAnimalUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'animalUuid', Sort.asc);
@@ -1686,6 +1979,34 @@ extension IsarMovementRecordQuerySortBy
       sortByFromLocationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fromLocation', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByLatitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'latitude', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByLatitudeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'latitude', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByLongitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'longitude', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      sortByLongitudeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'longitude', Sort.desc);
     });
   }
 
@@ -1777,6 +2098,20 @@ extension IsarMovementRecordQuerySortBy
 extension IsarMovementRecordQuerySortThenBy
     on QueryBuilder<IsarMovementRecord, IsarMovementRecord, QSortThenBy> {
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByAccuracyMeters() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracyMeters', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByAccuracyMetersDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'accuracyMeters', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
       thenByAnimalUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'animalUuid', Sort.asc);
@@ -1829,6 +2164,34 @@ extension IsarMovementRecordQuerySortThenBy
       thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByLatitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'latitude', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByLatitudeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'latitude', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByLongitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'longitude', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QAfterSortBy>
+      thenByLongitudeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'longitude', Sort.desc);
     });
   }
 
@@ -1920,6 +2283,13 @@ extension IsarMovementRecordQuerySortThenBy
 extension IsarMovementRecordQueryWhereDistinct
     on QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct> {
   QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
+      distinctByAccuracyMeters() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'accuracyMeters');
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
       distinctByAnimalUuid({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'animalUuid', caseSensitive: caseSensitive);
@@ -1937,6 +2307,20 @@ extension IsarMovementRecordQueryWhereDistinct
       distinctByFromLocation({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fromLocation', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
+      distinctByLatitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'latitude');
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, IsarMovementRecord, QDistinct>
+      distinctByLongitude() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'longitude');
     });
   }
 
@@ -1991,6 +2375,13 @@ extension IsarMovementRecordQueryProperty
     });
   }
 
+  QueryBuilder<IsarMovementRecord, double?, QQueryOperations>
+      accuracyMetersProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'accuracyMeters');
+    });
+  }
+
   QueryBuilder<IsarMovementRecord, String, QQueryOperations>
       animalUuidProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2008,6 +2399,20 @@ extension IsarMovementRecordQueryProperty
       fromLocationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fromLocation');
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, double?, QQueryOperations>
+      latitudeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'latitude');
+    });
+  }
+
+  QueryBuilder<IsarMovementRecord, double?, QQueryOperations>
+      longitudeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'longitude');
     });
   }
 

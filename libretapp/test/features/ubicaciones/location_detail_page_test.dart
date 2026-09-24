@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/features/agenda/bloc/agenda_bloc.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
@@ -194,6 +195,8 @@ Widget _testHost({
   return BlocProvider.value(
     value: agendaBloc,
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: LocationDetailPage(
         locationUuid: 'loc-1',
         locationRepository: locationRepository,

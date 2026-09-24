@@ -20,11 +20,15 @@ class IsarWeightRecord implements StableAnimalRecordModel {
   @override
   late String animalUuid;
 
+  @Index()
+  String? lotUuid;
+
   late DateTime date;
   late double weight;
   late String method;
   String? measuredBy;
   String? notes;
+  DateTime? createdAt;
   DateTime? updatedAt;
 }
 
@@ -32,12 +36,15 @@ extension IsarWeightRecordMapper on IsarWeightRecord {
   WeightRecord toEntity() {
     return WeightRecord(
       id: id.toString(),
+      animalUuid: animalUuid,
+      lotUuid: lotUuid,
       date: date,
       weight: weight,
       method: WeightMethod.values.byName(method),
       measuredBy: measuredBy,
       notes: notes,
       recordUuid: recordUuid,
+      createdAt: createdAt,
       updatedAt: updatedAt,
     );
   }
@@ -45,14 +52,17 @@ extension IsarWeightRecordMapper on IsarWeightRecord {
 
 extension WeightRecordToIsar on WeightRecord {
   IsarWeightRecord toIsar(String animalUuid) {
+    final now = DateTime.now();
     final model = IsarWeightRecord()
       ..animalUuid = animalUuid
+      ..lotUuid = lotUuid
       ..date = date
       ..weight = weight
       ..method = method.name
       ..measuredBy = measuredBy
       ..notes = notes
-      ..updatedAt = DateTime.now();
+      ..createdAt = createdAt ?? now
+      ..updatedAt = updatedAt ?? now;
 
     if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 

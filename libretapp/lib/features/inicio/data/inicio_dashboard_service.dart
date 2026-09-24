@@ -38,6 +38,11 @@ class InicioDashboardService {
        _reproductionRepository = reproductionRepository,
        _weatherService = weatherService;
 
+  // Weather is supplementary to the operational dashboard. Keep the first
+  // dashboard result independent from a slow geocoder, GPS provider, or HTTP
+  // request so an unavailable network cannot hold the initial surface open.
+  static const _weatherLoadBudget = Duration(milliseconds: 250);
+
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
   final AgendaRepository _agendaRepository;
@@ -220,8 +225,7 @@ class InicioDashboardService {
           message:
               '$pendingEarTags animal${pendingEarTags == 1 ? '' : 'es'} '
               '${pendingEarTags == 1 ? 'requiere' : 'requieren'} identificación.',
-          targetRoute:
-              AppRoutes.animalesPath(pendingEarTag: true),
+          targetRoute: AppRoutes.animalesPath(pendingEarTag: true),
         ),
       );
     }
@@ -297,10 +301,9 @@ class InicioDashboardService {
 
     WeatherData? weather;
     try {
-      weather = await _weatherService.getCurrentWeather(
-        locations: locations,
-        address: perfil.direccion,
-      );
+      weather = await _weatherService
+          .getCurrentWeather(locations: locations, address: perfil.direccion)
+          .timeout(_weatherLoadBudget, onTimeout: () => null);
     } catch (_) {
       // Weather is supplementary: connectivity or location failures must not
       // prevent the operational dashboard from loading.

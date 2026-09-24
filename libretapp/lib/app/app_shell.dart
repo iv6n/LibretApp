@@ -13,6 +13,10 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
+// Temporary release switch: keep local/offline services active while hiding
+// the diagnostic connectivity strip from the main UI.
+const bool _showOfflineStatusBanner = false;
+
 class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
 
@@ -74,15 +78,29 @@ class _AppShellState extends State<AppShell>
       visible: chromeVisible,
       child: Scaffold(
         extendBody: true,
-        body: Stack(
+        body: Column(
           children: [
-            Positioned.fill(child: widget.navigationShell),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: IgnorePointer(
-                child: SizedBox(height: _bodyBottomInset(context)),
+            if (_showOfflineStatusBanner) const OfflineStatusBanner(),
+            Expanded(
+              // The visible banner owns the top system inset when enabled.
+              // Without it, leave the original MediaQuery padding available
+              // so each page AppBar or custom header consumes it exactly once.
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: _showOfflineStatusBanner,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: widget.navigationShell),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: IgnorePointer(
+                        child: SizedBox(height: _bodyBottomInset(context)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -106,7 +124,8 @@ class _AppShellState extends State<AppShell>
                   barHorizontalPadding: _barHorizontalPadding,
                   barBottomGap: _barBottomGap,
                   backgroundColor:
-                      shellTheme?.navBackground ?? const Color(0xFF1B1D22),
+                      shellTheme?.navBackground ??
+                      Theme.of(context).colorScheme.surface,
                   shadowColor: shellTheme?.navShadow ?? const Color(0x33000000),
                 ),
               )
@@ -173,50 +192,64 @@ class _AppShellState extends State<AppShell>
         ? Colors.white.withValues(alpha: 0.10)
         : Colors.grey.shade200;
     final inactiveForeground = onSurface.withValues(alpha: 0.46);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 44,
-          height: 44,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: isHomeSelected ? accent : inactiveBackground,
-              borderRadius: BorderRadius.circular(14),
-              border: isHomeSelected
-                  ? null
-                  : Border.all(color: onSurface.withValues(alpha: 0.10)),
-              boxShadow: [
-                if (isHomeSelected)
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.25),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+    final label = isHomeSelected ? l10n.navAdd : l10n.navHome;
+    final hint = isHomeSelected
+        ? 'Abre el menú para registrar'
+        : 'Vuelve a Inicio';
+
+    return Semantics(
+      button: true,
+      label: label,
+      hint: hint,
+      child: Tooltip(
+        message: hint,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isHomeSelected ? accent : inactiveBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: isHomeSelected
+                      ? null
+                      : Border.all(color: onSurface.withValues(alpha: 0.10)),
+                  boxShadow: [
+                    if (isHomeSelected)
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => _onCentralTap(context),
+                  child: Icon(
+                    isHomeSelected ? Icons.add : Icons.home,
+                    size: 24,
+                    color: isHomeSelected ? Colors.white : inactiveForeground,
                   ),
-              ],
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _onCentralTap(context),
-              child: Icon(
-                isHomeSelected ? Icons.add : Icons.home,
-                size: 22,
-                color: isHomeSelected ? Colors.white : inactiveForeground,
+                ),
               ),
             ),
-          ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.05,
+                fontWeight: isHomeSelected ? FontWeight.w800 : FontWeight.w700,
+                color: isHomeSelected ? accent : inactiveForeground,
+              ),
+            ),
+          ],
         ),
-        Text(
-          isHomeSelected ? l10n.navAdd : l10n.navHome,
-          style: TextStyle(
-            fontSize: 9.0,
-            fontWeight: isHomeSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isHomeSelected ? accent : inactiveForeground,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

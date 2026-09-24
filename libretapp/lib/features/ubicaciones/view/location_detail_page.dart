@@ -1,4 +1,4 @@
-﻿/// features › ubicaciones › view › location_detail_page — detail page for a single location.
+/// features › ubicaciones › view › location_detail_page — detail page for a single location.
 library;
 
 import 'dart:io';
@@ -13,6 +13,8 @@ import 'package:libretapp/core/widgets/app_loading_indicator.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
+import 'package:libretapp/features/directorio/cultivos/view/linked_cultivations_section.dart';
 import 'package:libretapp/features/ubicaciones/cubit/location_detail_cubit.dart';
 import 'package:libretapp/features/ubicaciones/cubit/location_detail_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
@@ -35,17 +37,25 @@ class LocationDetailPage extends StatelessWidget {
     LocationRepository? locationRepository,
     AnimalRepository? animalRepository,
     MovementRecordRepository? movementRepository,
+    CultivationRepository? cultivationRepository,
     LocationDetailCubit? cubit,
-  }) : _locationRepository = locationRepository ?? locator<LocationRepository>(),
+  }) : _locationRepository =
+           locationRepository ?? locator<LocationRepository>(),
        _animalRepository = animalRepository ?? locator<AnimalRepository>(),
        _movementRepository =
            movementRepository ?? locator<MovementRecordRepository>(),
+       _cultivationRepository =
+           cultivationRepository ??
+           (locator.isRegistered<CultivationRepository>()
+               ? locator<CultivationRepository>()
+               : null),
        _cubit = cubit;
 
   final String locationUuid;
   final LocationRepository _locationRepository;
   final AnimalRepository _animalRepository;
   final MovementRecordRepository _movementRepository;
+  final CultivationRepository? _cultivationRepository;
   final LocationDetailCubit? _cubit;
 
   @override
@@ -62,13 +72,15 @@ class LocationDetailPage extends StatelessWidget {
               await locator<AgendaReminderSyncService>().sync();
             },
           ),
-      child: const _LocationDetailView(),
+      child: _LocationDetailView(cultivationRepository: _cultivationRepository),
     );
   }
 }
 
 class _LocationDetailView extends StatelessWidget {
-  const _LocationDetailView();
+  const _LocationDetailView({required this.cultivationRepository});
+
+  final CultivationRepository? cultivationRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -97,13 +109,12 @@ class _LocationDetailView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (location.imagePaths.isNotEmpty) ...[
-                    _LocationDetailImageGallery(imagePaths: location.imagePaths),
+                    _LocationDetailImageGallery(
+                      imagePaths: location.imagePaths,
+                    ),
                     const SizedBox(height: 12),
                   ],
-                  LocationHeader(
-                    location: location,
-                    animalsHere: animalsHere,
-                  ),
+                  LocationHeader(location: location, animalsHere: animalsHere),
                   const SizedBox(height: 12),
                   if (location.type.isRootType) ...[
                     SublocationsSection(
@@ -112,12 +123,16 @@ class _LocationDetailView extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  OccupancyCard(location: location, animalsHere: animalsHere),
-                  const SizedBox(height: 12),
+                  if (location.type.supportsAnimals) ...[
+                    OccupancyCard(location: location, animalsHere: animalsHere),
+                    const SizedBox(height: 12),
+                  ],
                   AdaptivePropertiesSection(location: location),
                   const SizedBox(height: 12),
-                  InventorySection(location: location),
-                  const SizedBox(height: 12),
+                  if (location.type.supportsInventory) ...[
+                    InventorySection(location: location),
+                    const SizedBox(height: 12),
+                  ],
                   ConditionSection(location: location),
                   const SizedBox(height: 12),
                   InfrastructureSection(location: location),
@@ -128,13 +143,40 @@ class _LocationDetailView extends StatelessWidget {
                   const SizedBox(height: 12),
                   RecordActions(
                     onVisit: () => _showVisitSheet(context, location),
-                    onWater: () => _showWaterSheet(context, location),
-                    onSalt: () => _showSaltSheet(context, location),
-                    onShade: () => _showShadeSheet(context, location),
-                    onPasture: () => _showPastureSheet(context, location),
+                    onWater:
+                        location.type.category.name == 'water' ||
+                            location.type.supportsAnimals
+                        ? () => _showWaterSheet(context, location)
+                        : null,
+                    onSalt: location.type.supportsAnimals
+                        ? () => _showSaltSheet(context, location)
+                        : null,
+                    onShade: location.type.supportsAnimals
+                        ? () => _showShadeSheet(context, location)
+                        : null,
+                    onPasture: location.type.supportsAnimals
+                        ? () => _showPastureSheet(context, location)
+                        : null,
+                    onSeeding: location.type.supportsCrops
+                        ? () => _showSeedingSheet(context, location)
+                        : null,
+                    onIrrigation: location.type.supportsCrops
+                        ? () => _showIrrigationSheet(context, location)
+                        : null,
+                    onRain:
+                        location.type.supportsCrops ||
+                            location.type.supportsAnimals
+                        ? () => _showRainSheet(context, location)
+                        : null,
+                    onMaintenance:
+                        location.type.category.name != 'macro' &&
+                            location.type.category.name != 'handling'
+                        ? () => _showMaintenanceSheet(context, location)
+                        : null,
                     onCost: () => _showCostSheet(context, location),
                   ),
-                  if (_hasUpcomingTasks(location)) ...[
+                  if (cultivationRepository == null &&
+                      _hasUpcomingTasks(location)) ...[
                     const SizedBox(height: 12),
                     UpcomingTasksCard(
                       location: location,
@@ -143,26 +185,34 @@ class _LocationDetailView extends StatelessWidget {
                           .completeCropTask(cropUuid, taskUuid),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  CropsSection(
-                    location: location,
-                    onAddCrop: () => _showCropFormSheet(context, location),
-                    onEditCrop: (crop) =>
-                        _showCropFormSheet(context, location, initial: crop),
-                    onDeleteCrop: (crop) =>
-                        _confirmDeleteCrop(context, location, crop),
-                    onWaterCrop: (crop) =>
-                        _showCropWateringSheet(context, location, crop),
-                    onHarvestCrop: (crop) =>
-                        _showHarvestSheet(context, location, crop),
-                    onHealthCrop: (crop) =>
-                        _showCropHealthSheet(context, location, crop),
-                    onAddTask: (crop) =>
-                        _showCropTaskSheet(context, location, crop),
-                    onCompleteTask: (crop, taskUuid) => context
-                        .read<LocationDetailCubit>()
-                        .completeCropTask(crop.uuid, taskUuid),
-                  ),
+                  if (cultivationRepository != null) ...[
+                    const SizedBox(height: 12),
+                    LinkedCultivationsSection(
+                      location: location,
+                      repository: cultivationRepository!,
+                    ),
+                  ] else if (location.type.supportsCrops) ...[
+                    const SizedBox(height: 12),
+                    CropsSection(
+                      location: location,
+                      onAddCrop: () => _showCropFormSheet(context, location),
+                      onEditCrop: (crop) =>
+                          _showCropFormSheet(context, location, initial: crop),
+                      onDeleteCrop: (crop) =>
+                          _confirmDeleteCrop(context, location, crop),
+                      onWaterCrop: (crop) =>
+                          _showCropWateringSheet(context, location, crop),
+                      onHarvestCrop: (crop) =>
+                          _showHarvestSheet(context, location, crop),
+                      onHealthCrop: (crop) =>
+                          _showCropHealthSheet(context, location, crop),
+                      onAddTask: (crop) =>
+                          _showCropTaskSheet(context, location, crop),
+                      onCompleteTask: (crop, taskUuid) => context
+                          .read<LocationDetailCubit>()
+                          .completeCropTask(crop.uuid, taskUuid),
+                    ),
+                  ],
                   if (_hasRecords(location)) ...[
                     const SizedBox(height: 12),
                     LocationRecords(location: location),
@@ -172,19 +222,21 @@ class _LocationDetailView extends StatelessWidget {
                     location: location,
                     allLocations: state.allLocations,
                   ),
-                  const SizedBox(height: 20),
-                  AnimalsSection(
-                    animalsHere: animalsHere,
-                    location: location,
-                    assigning: state.isAssigning,
-                    onAssign: () => _showAssignAnimalsSheet(
-                      context,
-                      location,
-                      state.allAnimals,
-                      animalsHere,
-                      state.allLocations,
+                  if (location.type.supportsAnimals) ...[
+                    const SizedBox(height: 20),
+                    AnimalsSection(
+                      animalsHere: animalsHere,
+                      location: location,
+                      assigning: state.isAssigning,
+                      onAssign: () => _showAssignAnimalsSheet(
+                        context,
+                        location,
+                        state.allAnimals,
+                        animalsHere,
+                        state.allLocations,
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 20),
                   ActionsRow(
                     onEdit: () => _openForm(context, location),
@@ -245,15 +297,12 @@ class _LocationDetailView extends StatelessWidget {
 
     await cubit.assignAnimals(result);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Animales actualizados')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Animales actualizados')));
   }
 
-  Future<T?> _openRecordFormPage<T>(
-    BuildContext context,
-    Widget child,
-  ) {
+  Future<T?> _openRecordFormPage<T>(BuildContext context, Widget child) {
     return Navigator.of(context).push<T>(
       MaterialPageRoute<T>(
         fullscreenDialog: true,
@@ -329,6 +378,58 @@ class _LocationDetailView extends StatelessWidget {
     }
   }
 
+  Future<void> _showSeedingSheet(
+    BuildContext context,
+    LocationEntity location,
+  ) async {
+    final record = await _openRecordFormPage<SeedingRecord>(
+      context,
+      SeedingRecordSheet(locationName: location.name),
+    );
+    if (record != null && context.mounted) {
+      await context.read<LocationDetailCubit>().addSeeding(record);
+    }
+  }
+
+  Future<void> _showIrrigationSheet(
+    BuildContext context,
+    LocationEntity location,
+  ) async {
+    final record = await _openRecordFormPage<IrrigationRecord>(
+      context,
+      IrrigationRecordSheet(locationName: location.name),
+    );
+    if (record != null && context.mounted) {
+      await context.read<LocationDetailCubit>().addIrrigation(record);
+    }
+  }
+
+  Future<void> _showRainSheet(
+    BuildContext context,
+    LocationEntity location,
+  ) async {
+    final record = await _openRecordFormPage<RainRecord>(
+      context,
+      RainRecordSheet(locationName: location.name),
+    );
+    if (record != null && context.mounted) {
+      await context.read<LocationDetailCubit>().addRain(record);
+    }
+  }
+
+  Future<void> _showMaintenanceSheet(
+    BuildContext context,
+    LocationEntity location,
+  ) async {
+    final record = await _openRecordFormPage<MaintenanceRecord>(
+      context,
+      MaintenanceRecordSheet(locationName: location.name),
+    );
+    if (record != null && context.mounted) {
+      await context.read<LocationDetailCubit>().addMaintenance(record);
+    }
+  }
+
   Future<void> _showCostSheet(
     BuildContext context,
     LocationEntity location,
@@ -366,13 +467,13 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final shouldDelete = await showDialog<bool>(
+    final shouldArchive = await showDialog<bool>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar cultivo'),
+        title: const Text('Archivar ciclo de cultivo'),
         content: Text(
-          '¿Deseas borrar "${crop.cropName}"? Esta acción no se puede deshacer.',
+          '¿Deseas archivar "${crop.cropName}"? Se conservarán sus registros y dejará de generar pendientes.',
         ),
         actions: [
           TextButton(
@@ -381,13 +482,13 @@ class _LocationDetailView extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
+            child: const Text('Archivar'),
           ),
         ],
       ),
     );
 
-    if (shouldDelete == true && context.mounted) {
+    if (shouldArchive == true && context.mounted) {
       await context.read<LocationDetailCubit>().deleteCrop(crop.uuid);
     }
   }
@@ -402,9 +503,10 @@ class _LocationDetailView extends StatelessWidget {
       CropWateringFormSheet(cropName: crop.cropName),
     );
     if (record != null && context.mounted) {
-      await context
-          .read<LocationDetailCubit>()
-          .addCropWatering(crop.uuid, record);
+      await context.read<LocationDetailCubit>().addCropWatering(
+        crop.uuid,
+        record,
+      );
     }
   }
 
@@ -432,9 +534,10 @@ class _LocationDetailView extends StatelessWidget {
       CropHealthFormSheet(cropName: crop.cropName),
     );
     if (record != null && context.mounted) {
-      await context
-          .read<LocationDetailCubit>()
-          .addCropHealth(crop.uuid, record);
+      await context.read<LocationDetailCubit>().addCropHealth(
+        crop.uuid,
+        record,
+      );
     }
   }
 
@@ -508,9 +611,9 @@ class _LocationDetailImageGalleryState
                   fit: BoxFit.cover,
                   width: double.infinity,
                   errorBuilder: (_, err, __) => ColoredBox(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     child: Center(
                       child: Icon(
                         Icons.broken_image_outlined,

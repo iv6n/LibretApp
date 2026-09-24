@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a movement_record \u2014 entity for an animal movement record.
+/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a movement_record \u2014 entity for an animal movement record.
 library;
 
 import 'package:libretapp/core/models/timestamped_record.dart';
@@ -47,6 +47,9 @@ class MovementRecord extends TimestampedRecord {
     this.movedBy,
     this.recordUuid,
     this.updatedAt,
+    this.latitude,
+    this.longitude,
+    this.accuracyMeters,
     super.id,
   });
   final String? fromLocation;
@@ -55,6 +58,9 @@ class MovementRecord extends TimestampedRecord {
   final String? movedBy;
   final String? recordUuid;
   final DateTime? updatedAt;
+  final double? latitude;
+  final double? longitude;
+  final double? accuracyMeters;
 
   MovementRecord copyWith({
     String? fromLocation,
@@ -66,6 +72,9 @@ class MovementRecord extends TimestampedRecord {
     String? recordUuid,
     DateTime? updatedAt,
     String? id,
+    double? latitude,
+    double? longitude,
+    double? accuracyMeters,
   }) {
     return MovementRecord(
       fromLocation: fromLocation ?? this.fromLocation,
@@ -76,6 +85,9 @@ class MovementRecord extends TimestampedRecord {
       movedBy: movedBy ?? this.movedBy,
       recordUuid: recordUuid ?? this.recordUuid,
       updatedAt: updatedAt ?? this.updatedAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      accuracyMeters: accuracyMeters ?? this.accuracyMeters,
       id: id ?? this.id,
     );
   }
@@ -89,5 +101,8 @@ class MovementRecord extends TimestampedRecord {
     movedBy,
     recordUuid,
     updatedAt,
+    latitude,
+    longitude,
+    accuracyMeters,
   ];
 }

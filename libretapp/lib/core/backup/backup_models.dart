@@ -12,14 +12,13 @@ class BackupEnvelope {
     required this.profile,
   });
 
-  /// 5 adds the care-calendar collections. Restore iterates the collections
-  /// present in the archive, so older backups keep working — they simply leave
-  /// the new ones empty.
-  static const currentSchemaVersion = 6;
+  /// 9 promotes cultivation records to their own collection while schema 8
+  /// snapshots remain restorable through the legacy-location migration.
+  static const currentSchemaVersion = 9;
 
   /// Stamped into every archive and cloud snapshot. Kept here so a version bump
   /// is a single edit — must stay in step with `version:` in pubspec.yaml.
-  static const currentAppVersion = '0.1.0+2';
+  static const currentAppVersion = '0.1.0+3';
 
   final int schemaVersion;
   final String appVersion;

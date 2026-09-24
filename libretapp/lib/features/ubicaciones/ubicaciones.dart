@@ -7,3 +7,6 @@ export 'bloc/ubicaciones_state.dart';
 export 'domain/repositories/location_repository.dart';
 export 'view/view.dart';
 export 'widgets/widgets.dart';
+export 'almacen/almacen.dart';
+export 'pastoreo/pastoreo.dart';
+export 'caceria/caceria.dart';

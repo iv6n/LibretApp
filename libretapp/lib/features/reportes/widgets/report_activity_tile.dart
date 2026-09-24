@@ -65,7 +65,10 @@ class ReportActivityTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                DateFormat('d MMM').format(item.date),
+                DateFormat(
+                  'd MMM',
+                  Localizations.localeOf(context).toLanguageTag(),
+                ).format(item.date),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,

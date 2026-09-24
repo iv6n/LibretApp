@@ -27,6 +27,9 @@ class IsarMovementRecord implements StableAnimalRecordModel {
   String? notes;
   String? movedBy;
   DateTime? updatedAt;
+  double? latitude;
+  double? longitude;
+  double? accuracyMeters;
 }
 
 extension IsarMovementRecordMapper on IsarMovementRecord {
@@ -41,6 +44,9 @@ extension IsarMovementRecordMapper on IsarMovementRecord {
       movedBy: movedBy,
       recordUuid: recordUuid,
       updatedAt: updatedAt,
+      latitude: latitude,
+      longitude: longitude,
+      accuracyMeters: accuracyMeters,
     );
   }
 }
@@ -55,7 +61,10 @@ extension MovementRecordToIsar on MovementRecord {
       ..reason = reason.name
       ..notes = notes
       ..movedBy = movedBy
-      ..updatedAt = DateTime.now();
+      ..updatedAt = DateTime.now()
+      ..latitude = latitude
+      ..longitude = longitude
+      ..accuracyMeters = accuracyMeters;
 
     if (recordUuid?.isNotEmpty == true) model.recordUuid = recordUuid!;
 

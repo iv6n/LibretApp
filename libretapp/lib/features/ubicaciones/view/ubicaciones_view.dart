@@ -10,7 +10,6 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
-import 'package:libretapp/features/ubicaciones/view/ubicaciones_scoped_tab_view.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_search_app_bar.dart';
 import 'package:libretapp/features/ubicaciones/widgets/confirm_delete_location_dialog.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_empty_view.dart';
@@ -32,7 +31,8 @@ class UbicacionesView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Computed here so MediaQuery changes (keyboard, orientation) always
     // invalidate the padding even when the bloc state hasn't changed.
-    final listBottomPadding = ShellInsets.bottomSafePadding(context) + 2;
+    // Keep the final location card fully visible above the shell FAB and nav.
+    final listBottomPadding = ShellInsets.bottomSafePadding(context) + 240;
 
     // The FAB scope lives outside BlocBuilder so it stays stable. The
     // onPressed reads the current bloc state at press-time instead of
@@ -93,45 +93,9 @@ class UbicacionesView extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // When a root/rancho is selected and not searching, show the tabbed sub-location view.
-    final selectedUuid = state.selectedRanchoUuid;
-    final isScopedMode =
-        selectedUuid != null && !state.isSearching && state.searchQuery.isEmpty;
-
-    if (isScopedMode) {
-      final rootLocation = state.allUbicaciones
-          .where((l) => l.uuid == selectedUuid)
-          .firstOrNull;
-
-      if (rootLocation == null) {
-        // Stale UUID (location was deleted) — clear on the next frame and show
-        // a brief loader so we don't flash empty-filtered tree state.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            context.read<UbicacionesBloc>().add(const SelectParentFilter(null));
-          }
-        });
-        return const Center(child: CircularProgressIndicator());
-      } else {
-        return UbicacionesScopedTabView(
-          rootLocation: rootLocation,
-          state: state,
-          listBottomPadding: listBottomPadding,
-          onTap: (location) => _openDetail(context, location.uuid),
-          onEdit: (location) {
-            _openEditPage(context, location.uuid);
-          },
-          onDelete: (location) {
-            _confirmDelete(context, location);
-          },
-        );
-      }
-    }
-
-    final isFiltering =
-        state.isSearching ||
-        state.searchQuery.isNotEmpty ||
-        state.hasActiveFilters;
+    // Filter rows remain part of the normal scrollable content. Search keeps
+    // its existing compact presentation and temporarily hides them.
+    final showFilterBar = !state.isSearching && state.searchQuery.isEmpty;
 
     final roots = state.treeSnapshot.roots;
 
@@ -141,7 +105,7 @@ class UbicacionesView extends StatelessWidget {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            if (!isFiltering)
+            if (showFilterBar)
               SliverToBoxAdapter(child: UbicacionesFilterBar(state: state)),
             SliverFillRemaining(
               hasScrollBody: false,
@@ -166,7 +130,7 @@ class UbicacionesView extends StatelessWidget {
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          if (!isFiltering)
+          if (showFilterBar)
             SliverToBoxAdapter(child: UbicacionesFilterBar(state: state)),
           UbicacionesLocationTree(
             state: state,

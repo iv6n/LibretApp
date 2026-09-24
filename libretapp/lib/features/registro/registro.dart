@@ -5,4 +5,5 @@
 library;
 export 'bloc/index.dart';
 export 'view/view.dart';
+export 'comercial/comercial.dart';
 export 'widgets/widgets.dart';

@@ -17,6 +17,10 @@ class LocationHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final dominantSpecies = _dominantSpeciesLabel(animalsHere);
     final systemLabel = _systemLabel(context, location.type);
+    final updatedAt = location.updatedAt;
+    final updatedLabel = updatedAt == null
+        ? 'Sin actualización registrada'
+        : 'Actualizada ${MaterialLocalizations.of(context).formatMediumDate(updatedAt.toLocal())}';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -34,7 +38,7 @@ class LocationHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Última actualización ${location.costs.isNotEmpty ? location.costs.last.date : 'N/D'}',
+              updatedLabel,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
               ),
@@ -133,7 +137,7 @@ class LocationHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const _MiniMapPlaceholder(),
+                _MiniMapPreview(location: location),
               ],
             ),
             const SizedBox(height: 12),
@@ -276,14 +280,43 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-// ─── MiniMapPlaceholder ───────────────────────────────────────────────────────
+// ─── MiniMapPreview ───────────────────────────────────────────────────────────
 
-class _MiniMapPlaceholder extends StatelessWidget {
-  const _MiniMapPlaceholder();
+class _MiniMapPreview extends StatelessWidget {
+  const _MiniMapPreview({required this.location});
+
+  final LocationEntity location;
+
+  List<List<double>> _polygonPoints() {
+    final raw = location.geometry;
+    if (raw == null || raw.trim().isEmpty) return const [];
+    try {
+      final json = jsonDecode(raw);
+      if (json is! Map || json['type'] != 'Polygon') return const [];
+      final rings = json['coordinates'];
+      if (rings is! List || rings.isEmpty || rings.first is! List) {
+        return const [];
+      }
+      return (rings.first as List)
+          .whereType<List>()
+          .where((point) => point.length >= 2)
+          .map(
+            (point) => [
+              (point[0] as num).toDouble(),
+              (point[1] as num).toDouble(),
+            ],
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final points = _polygonPoints();
+    final hasPoint = location.geometry?.contains('Point') ?? false;
     return Container(
       width: 120,
       height: 120,
@@ -293,13 +326,27 @@ class _MiniMapPlaceholder extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: Icon(
-              Icons.map_outlined,
-              color: theme.colorScheme.primary.withValues(alpha: 0.2),
-              size: 80,
+          if (points.length >= 3)
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: CustomPaint(
+                  painter: _PolygonPreviewPainter(
+                    points: points,
+                    fillColor: theme.colorScheme.primary.withValues(alpha: 0.18),
+                    strokeColor: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+            )
+          else
+            Positioned.fill(
+              child: Icon(
+                hasPoint ? Icons.location_on : Icons.map_outlined,
+                color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                size: hasPoint ? 64 : 80,
+              ),
             ),
-          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -311,7 +358,7 @@ class _MiniMapPlaceholder extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'GPS pendiente',
+                  points.length >= 3 || hasPoint ? 'GPS guardado' : 'GPS pendiente',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w700,
@@ -324,6 +371,59 @@ class _MiniMapPlaceholder extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PolygonPreviewPainter extends CustomPainter {
+  const _PolygonPreviewPainter({
+    required this.points,
+    required this.fillColor,
+    required this.strokeColor,
+  });
+
+  final List<List<double>> points;
+  final Color fillColor;
+  final Color strokeColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final minX = points.map((point) => point[0]).reduce((a, b) => a < b ? a : b);
+    final maxX = points.map((point) => point[0]).reduce((a, b) => a > b ? a : b);
+    final minY = points.map((point) => point[1]).reduce((a, b) => a < b ? a : b);
+    final maxY = points.map((point) => point[1]).reduce((a, b) => a > b ? a : b);
+    final width = (maxX - minX).abs();
+    final height = (maxY - minY).abs();
+    final scale = (size.width / (width == 0 ? 1 : width)) <
+            (size.height / (height == 0 ? 1 : height))
+        ? size.width / (width == 0 ? 1 : width)
+        : size.height / (height == 0 ? 1 : height);
+    final offsetX = (size.width - width * scale) / 2;
+    final offsetY = (size.height - height * scale) / 2;
+    final path = Path();
+    for (var i = 0; i < points.length; i++) {
+      final x = offsetX + (points[i][0] - minX) * scale;
+      final y = offsetY + (maxY - points[i][1]) * scale;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, Paint()..color = fillColor);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = strokeColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PolygonPreviewPainter oldDelegate) =>
+      oldDelegate.points != points ||
+      oldDelegate.fillColor != fillColor ||
+      oldDelegate.strokeColor != strokeColor;
 }
 
 // ─── GalleryStrip ─────────────────────────────────────────────────────────────

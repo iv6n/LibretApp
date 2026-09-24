@@ -39,6 +39,7 @@ class AppCard extends StatelessWidget {
           padding: padding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (title != null ||
                   subtitle != null ||

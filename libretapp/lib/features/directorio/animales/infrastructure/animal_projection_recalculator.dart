@@ -42,7 +42,11 @@ class AnimalProjectionRecalculator {
   /// Recomputes every record-derived field on [animalUuid] and saves it.
   ///
   /// Must run inside a write transaction — every caller is already in one.
-  static Future<void> recalculate(Isar isar, String animalUuid) async {
+  static Future<void> recalculate(
+    Isar isar,
+    String animalUuid, {
+    bool updateActivityTimestamp = true,
+  }) async {
     final animal = await isar.isarAnimals
         .where()
         .uuidEqualTo(animalUuid)
@@ -56,9 +60,10 @@ class AnimalProjectionRecalculator {
     await _applyReproduction(isar, animal, animalUuid);
     await _applyHerdStatus(isar, animal, animalUuid);
 
-    animal
-      ..lastUpdateDate = DateTime.now()
-      ..synced = false;
+    animal.synced = false;
+    if (updateActivityTimestamp) {
+      animal.lastUpdateDate = DateTime.now();
+    }
     await isar.isarAnimals.put(animal);
   }
 
@@ -72,12 +77,18 @@ class AnimalProjectionRecalculator {
     IsarAnimal animal,
     String animalUuid,
   ) async {
-    final latest = await isar.isarWeightRecords
+    final records = await isar.isarWeightRecords
         .where()
         .animalUuidEqualTo(animalUuid)
-        .sortByDateDesc()
-        .findFirst();
-    if (latest != null) animal.weight = latest.weight;
+        .findAll();
+    records.sort((a, b) {
+      final measured = b.date.compareTo(a.date);
+      if (measured != 0) return measured;
+      final created = (b.createdAt ?? b.date).compareTo(a.createdAt ?? a.date);
+      if (created != 0) return created;
+      return b.id.compareTo(a.id);
+    });
+    if (records.isNotEmpty) animal.weight = records.first.weight;
   }
 
   /// Body condition is the most recent scoring. Kept when none remain, for the

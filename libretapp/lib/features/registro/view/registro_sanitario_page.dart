@@ -8,7 +8,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
@@ -22,6 +21,7 @@ import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the sanitary registration form.
 class RegistroSanitarioPage extends StatelessWidget {
@@ -53,6 +53,7 @@ class _RegistroSanitarioView extends StatefulWidget {
 }
 
 class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
+  final _formKey = GlobalKey<FormState>();
   final _productCtrl = TextEditingController();
   final _doseCtrl = TextEditingController();
   final _appliedByCtrl = TextEditingController();
@@ -87,6 +88,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
       );
       return;
     }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_productCtrl.text.trim().isEmpty) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormHealthProductRequired)),
@@ -149,183 +151,112 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: GeneratedAssetTitle(
+      child: BlocBuilder<RegistroBloc, RegistroState>(
+        buildWhen: (prev, curr) => prev.status != curr.status,
+        builder: (context, state) {
+          final isSaving = state.status == RegistroStatus.loading;
+          return AppFormScaffold(
             title: l10n.detailFormHealthTitle,
             assetPath: assetForHealthRecordType(_type),
             fallbackIcon: fallbackIconForHealthRecordType(_type),
-          ),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            formKey: _formKey,
+            saving: isSaving,
+            onSave: _save,
+            saveLabel: l10n.actionSave,
+            onCancel: () => Navigator.of(context).pop(),
+            cancelLabel: l10n.actionCancel,
+            fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
                 onSelected: (a) => setState(() => _selectedAnimal = a),
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<HealthRecordType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormHealthType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: HealthRecordType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
+              const SizedBox(height: AppSpacing.md),
+              AppSelectField<HealthRecordType>(
+                value: _type,
+                labelText: l10n.detailFormHealthType,
+                requiredField: true,
+                items: HealthRecordType.values,
+                itemLabel: (type) => type.displayName,
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);
                 },
               ),
-              const SizedBox(height: 12),
-              TextField(
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
                 controller: _productCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormHealthProduct,
-                  border: const OutlineInputBorder(),
-                ),
+                labelText: l10n.detailFormHealthProduct,
+                requiredField: true,
+                validator: (value) => value == null || value.trim().isEmpty
+                    ? l10n.detailFormHealthProductRequired
+                    : null,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _doseCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormHealthDose,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _appliedByCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormHealthAppliedBy,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _doseCtrl,
+                labelText: l10n.detailFormHealthDose,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _medicineBatchCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormHealthMedicineBatch,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _withdrawalDaysCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormHealthWithdrawalDays,
-                        helperText: l10n.detailFormHealthWithdrawalHelper,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _appliedByCtrl,
+                labelText: l10n.detailFormHealthAppliedBy,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.today),
-                      label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _date,
-                          firstDate: DateTime(_date.year - 5),
-                          lastDate: DateTime(_date.year + 1),
-                        );
-                        if (picked != null) setState(() => _date = picked);
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.event_available),
-                      label: Text(
-                        _nextDate == null
-                            ? l10n.detailFormHealthNext
-                            : DateFormat('dd/MM/yyyy').format(_nextDate!),
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _nextDate ?? _date,
-                          firstDate: DateTime(_date.year),
-                          lastDate: DateTime(_date.year + 5),
-                        );
-                        if (picked != null) setState(() => _nextDate = picked);
-                      },
-                    ),
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _medicineBatchCtrl,
+                labelText: l10n.detailFormHealthMedicineBatch,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _causeCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormHealthCause,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _notesCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-              BlocBuilder<RegistroBloc, RegistroState>(
-                buildWhen: (prev, curr) => prev.status != curr.status,
-                builder: (context, state) {
-                  final isSaving = state.status == RegistroStatus.loading;
-                  return SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isSaving ? null : _save,
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(l10n.actionSave),
-                    ),
-                  );
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _withdrawalDaysCtrl,
+                labelText: l10n.detailFormHealthWithdrawalDays,
+                helperText: l10n.detailFormHealthWithdrawalHelper,
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return null;
+                  final days = int.tryParse(value.trim());
+                  return days == null || days < 0
+                      ? l10n.detailFormNumberInvalid
+                      : null;
                 },
               ),
+              const SizedBox(height: AppSpacing.md),
+              AppDateField(
+                value: _date,
+                labelText: l10n.fieldDate,
+                firstDate: DateTime(_date.year - 5),
+                lastDate: DateTime(_date.year + 1),
+                onChanged: (value) {
+                  if (value != null) setState(() => _date = value);
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppDateField(
+                value: _nextDate,
+                labelText: l10n.detailFormHealthNext,
+                emptyLabel: l10n.detailFormHealthNext,
+                clearTooltip: l10n.actionClearDate,
+                firstDate: _date,
+                lastDate: DateTime(_date.year + 5),
+                allowClear: true,
+                validator: (value) => value != null && value.isBefore(_date)
+                    ? l10n.detailFormHealthNextAfterDate
+                    : null,
+                onChanged: (value) => setState(() => _nextDate = value),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _causeCtrl,
+                labelText: l10n.detailFormHealthCause,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _notesCtrl,
+                labelText: l10n.fieldNotes,
+                maxLines: 2,
+              ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

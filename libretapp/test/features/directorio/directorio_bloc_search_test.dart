@@ -13,6 +13,8 @@ import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -106,6 +108,8 @@ void main() {
         expect(loaded.visibleSections, defaultDirectorioVisibleSections);
         expect(loaded.activeSections, [
           DirectorioSection.animales,
+          DirectorioSection.lotes,
+          DirectorioSection.cultivos,
           DirectorioSection.ubicaciones,
         ]);
 
@@ -192,6 +196,51 @@ void main() {
       expect(loaded.searchResults.length, 1);
       expect(loaded.searchResults.first.type, CombinedSearchType.ubicacion);
       expect(loaded.searchResults.first.id, 'loc-1');
+    });
+
+    test('finds independent cultivations by name and UUID', () async {
+      final cultivation = CultivationEntity(
+        uuid: 'cultivo-tomate-42',
+        name: 'Tomate cherry',
+        variety: 'Rojo',
+        scale: CultivationScale.group,
+        plantingDate: DateTime(2024, 3, 1),
+        quantity: 12,
+      );
+      final bloc = DirectorioBloc(
+        animalesTabBloc: AnimalesTabBloc(_FakeAnimalRepository()),
+        lotesTabBloc: LotesTabBloc(_FakeLotesRepository()),
+        ubicacionesTabBloc: UbicacionesTabBloc(_FakeLocationRepository()),
+        cultivationRepository: _FakeCultivationRepository([cultivation]),
+      );
+
+      bloc.add(const LoadDirectorioData());
+      await _flushEvents();
+      bloc.add(
+        const SetDirectorioSectionConfig(
+          orderedSections: defaultDirectorioSectionOrder,
+          visibleSections: {DirectorioSection.cultivos},
+          activeSection: DirectorioSection.cultivos,
+        ),
+      );
+      await _flushEvents();
+
+      bloc.add(const PerformCombinedSearch('tomate'));
+      await _flushEvents();
+
+      var loaded = bloc.state as DirectorioLoaded;
+      expect(loaded.searchResults, hasLength(1));
+      expect(loaded.searchResults.single.type, CombinedSearchType.cultivo);
+      expect(loaded.searchResults.single.id, 'cultivo-tomate-42');
+      expect(loaded.searchResults.single.name, 'Tomate cherry');
+
+      bloc.add(const PerformCombinedSearch('tomate-42'));
+      await _flushEvents();
+
+      loaded = bloc.state as DirectorioLoaded;
+      expect(loaded.searchResults.single.id, 'cultivo-tomate-42');
+
+      await bloc.close();
     });
 
     test('search does not break and uses only loaded tabs', () async {
@@ -1010,6 +1059,24 @@ class _FakeLotesRepository implements LotesRepository {
 class _FakeLocationRepository implements LocationRepository {
   @override
   Stream<List<LocationEntity>> watchAll() => const Stream.empty();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _FakeCultivationRepository implements CultivationRepository {
+  _FakeCultivationRepository(this._data);
+
+  final List<CultivationEntity> _data;
+
+  @override
+  Stream<List<CultivationEntity>> watchAll({bool includeArchived = false}) =>
+      Stream.value(_data);
+
+  @override
+  Future<List<CultivationEntity>> getAll({
+    bool includeArchived = false,
+  }) async => _data;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

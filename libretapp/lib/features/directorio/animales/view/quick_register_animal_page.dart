@@ -378,6 +378,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         ],
       ),
       body: SafeArea(
+        top: false,
         bottom: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -406,6 +407,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               TextField(
                 focusNode: _identificationFocus,
                 controller: _identificationCtrl,
+                key: const ValueKey('animal-quick-identification'),
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
                   labelText: policy.identificationLabel,
@@ -419,6 +421,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _nameCtrl,
+                key: const ValueKey('animal-quick-name'),
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Nombre o alias — opcional',
@@ -428,6 +431,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _breedCtrl,
+                key: const ValueKey('animal-quick-breed'),
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: 'Raza — opcional',
@@ -468,6 +472,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _weightCtrl,
+                key: const ValueKey('animal-quick-weight'),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
@@ -495,6 +500,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         child: SizedBox(
           height: 56,
           child: FilledButton.icon(
+            key: const ValueKey('animal-quick-save'),
             onPressed: _saving ? null : _save,
             icon: _saving
                 ? const SizedBox.square(

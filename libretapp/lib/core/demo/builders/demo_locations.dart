@@ -1,7 +1,7 @@
 /// core › demo › builders › demo_locations — hierarchical property layout
 /// for the demo ranch.
 ///
-/// 15 locations rooted at a single property, covering every
+/// 16 locations rooted at a single property, covering every
 /// [LocationCategory]: macro (the ranch), livestock (pastures, corrals, a
 /// stable), handling (a chute), a quarantine area, agricultural (a milpa),
 /// natural (monte/agostadero), infrastructure (a warehouse) and water (a dam
@@ -12,13 +12,9 @@
 library;
 
 import 'package:libretapp/core/demo/demo_identity.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
-import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
-import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
-import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
@@ -38,6 +34,7 @@ const String locAreaManejoSlug = 'area-manejo';
 const String locCuarentenaSlug = 'cuarentena';
 const String locBodegaSlug = 'bodega';
 const String locMilpaSlug = 'milpa';
+const String locPatioSlug = 'patio';
 const String locMonteSlug = 'monte';
 const String locRepresaSlug = 'represa';
 const String locAbrevaderoNorteSlug = 'abrevadero-norte';
@@ -273,54 +270,18 @@ List<LocationEntity> buildDemoLocations({required DateTime reference}) {
         location: 'Milpa',
       ),
     ],
-    crops: [
-      CropRecord(
-        uuid: uuidOf('crop-maiz-activo'),
-        cropName: 'Maíz criollo',
-        variety: 'Criollo sonorense',
-        plantingDate: reference.subtract(const Duration(days: 60)),
-        expectedHarvestDate: reference.add(const Duration(days: 45)),
-        growthStage: CropGrowthStage.vegetative,
-        wateringFrequencyDays: 7,
-        lastWateredDate: reference.subtract(const Duration(days: 7)),
-        status: CropStatus.active,
-        surface: 8,
-        notes: 'Ciclo actual. Registro de demostración.',
-        tasks: [
-          CropTask(
-            uuid: uuidOf('crop-task-fertilizar'),
-            type: CropTaskType.fertilize,
-            dueDate: reference.add(const Duration(days: 5)),
-            notes: 'Registro de demostración.',
-          ),
-          CropTask(
-            uuid: uuidOf('crop-task-riego'),
-            type: CropTaskType.water,
-            dueDate: reference.add(const Duration(days: 2)),
-            notes: 'Registro de demostración.',
-          ),
-        ],
-      ),
-      CropRecord(
-        uuid: uuidOf('crop-sorgo-historico'),
-        cropName: 'Sorgo forrajero',
-        variety: 'Sorgo criollo',
-        plantingDate: reference.subtract(const Duration(days: 240)),
-        expectedHarvestDate: reference.subtract(const Duration(days: 150)),
-        growthStage: CropGrowthStage.harvested,
-        status: CropStatus.harvested,
-        surface: 5,
-        notes: 'Ciclo anterior, ya cosechado. Registro de demostración.',
-        harvests: [
-          HarvestRecord(
-            date: reference.subtract(const Duration(days: 150)),
-            yieldKg: 3200,
-            qualityRating: 4,
-            notes: 'Registro de demostración.',
-          ),
-        ],
-      ),
-    ],
+  );
+
+  final patio = LocationEntity(
+    uuid: uuidOf(locPatioSlug),
+    name: 'Patio',
+    parentUuid: ranch.uuid,
+    type: LocationType.garden,
+    surfaceArea: 0.02,
+    capacity: 0,
+    waterSource: 'Llave doméstica',
+    terrainType: 'Camas elevadas y macetas',
+    status: LocationStatus.available,
   );
 
   final monte = LocationEntity(
@@ -388,6 +349,7 @@ List<LocationEntity> buildDemoLocations({required DateTime reference}) {
     cuarentena,
     bodega,
     milpa,
+    patio,
     monte,
     represa,
     abrevaderoNorte,

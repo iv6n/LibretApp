@@ -8,7 +8,6 @@ import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
-import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_card.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_labels.dart';
 
@@ -26,26 +25,25 @@ class UbicacionesFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ranchos = state.allUbicaciones
-        .where((l) => l.type.isRootType)
+    final roots = state.allUbicaciones
+        .where((location) => location.parentUuid == null)
         .toList(growable: false);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (ranchos.isNotEmpty) _buildRanchoRow(context, ranchos),
+        if (roots.length >= 2) _buildRanchoRow(context, roots),
         if (showCategoryFilter) _buildCategoryRow(context),
-        if (showCategoryFilter && state.hasActiveFilters) _buildClearRow(context),
+        if (showCategoryFilter && state.hasActiveFilters)
+          _buildClearRow(context),
       ],
     );
   }
 
-  Widget _buildRanchoRow(
-    BuildContext context,
-    List<LocationEntity> ranchos,
-  ) {
+  Widget _buildRanchoRow(BuildContext context, List<LocationEntity> ranchos) {
     return SizedBox(
+      key: const ValueKey('ubicaciones-root-filter-row'),
       height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -55,6 +53,7 @@ class UbicacionesFilterBar extends StatelessWidget {
           if (index == 0) {
             final isSelected = state.selectedRanchoUuid == null;
             return _FilterChip(
+              key: const ValueKey('ubicaciones-root-filter-all'),
               label: 'Todos',
               icon: Icons.home_work_outlined,
               selected: isSelected,
@@ -66,6 +65,7 @@ class UbicacionesFilterBar extends StatelessWidget {
           final rancho = ranchos[index - 1];
           final isSelected = state.selectedRanchoUuid == rancho.uuid;
           return _FilterChip(
+            key: ValueKey<String>('ubicaciones-root-filter-${rancho.uuid}'),
             label: rancho.name,
             icon: iconForLocationType(rancho.type),
             selected: isSelected,
@@ -80,6 +80,7 @@ class UbicacionesFilterBar extends StatelessWidget {
 
   Widget _buildCategoryRow(BuildContext context) {
     return SizedBox(
+      key: const ValueKey('ubicaciones-category-filter-row'),
       height: 48,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -136,6 +137,7 @@ class UbicacionesFilterBar extends StatelessWidget {
 
 class _FilterChip extends StatelessWidget {
   const _FilterChip({
+    super.key,
     required this.label,
     required this.icon,
     required this.selected,

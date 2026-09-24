@@ -73,8 +73,11 @@ void main() {
         assetForTipo('Suplemento / Vitaminas'),
         'assets/images/task_vitamins.webp',
       );
-      expect(assetForTipo('Riego'), isNull);
-      expect(assetForTipo('Administrativo'), isNull);
+      expect(assetForTipo('Riego'), 'assets/images/record_irrigation.webp');
+      expect(
+        assetForTipo('Administrativo'),
+        'assets/images/record_administration.webp',
+      );
     });
   });
 
@@ -104,7 +107,16 @@ void main() {
         assetForEstado('sin conexión'),
         'assets/images/status_offline.webp',
       );
-      expect(assetForEstado('borrador'), isNull);
+      expect(assetForEstado('borrador'), 'assets/images/status_draft.webp');
+      expect(
+        assetForEstado('verificado'),
+        'assets/images/status_verified.webp',
+      );
+      expect(
+        assetForEstado('reprogramada'),
+        'assets/images/status_reprogrammed.webp',
+      );
+      expect(assetForEstado('bloqueado'), 'assets/images/status_blocked.webp');
     });
   });
 
@@ -137,6 +149,15 @@ void main() {
       'assets/images/status_quarantine.webp',
       'assets/images/status_synced.webp',
       'assets/images/status_offline.webp',
+      'assets/images/record_irrigation.webp',
+      'assets/images/record_administration.webp',
+      'assets/images/record_alert.webp',
+      'assets/images/record_reminder.webp',
+      'assets/images/record_care.webp',
+      'assets/images/status_verified.webp',
+      'assets/images/status_reprogrammed.webp',
+      'assets/images/status_draft.webp',
+      'assets/images/status_blocked.webp',
     ];
 
     for (final asset in assets) {

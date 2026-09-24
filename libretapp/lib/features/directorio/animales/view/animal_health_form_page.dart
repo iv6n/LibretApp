@@ -3,7 +3,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
@@ -13,9 +12,10 @@ import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/record_form_scaffold.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 
 class AnimalHealthFormPage extends StatefulWidget {
@@ -37,6 +37,7 @@ class AnimalHealthFormPage extends StatefulWidget {
 }
 
 class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _productController;
   late final TextEditingController _doseController;
   late final TextEditingController _appliedByController;
@@ -141,12 +142,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    if (_productController.text.trim().isEmpty) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.detailFormHealthProductRequired)),
-      );
-      return;
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _saving = true);
     try {
@@ -232,137 +228,102 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return RecordFormScaffold(
+    return AppFormScaffold(
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormHealthTitle,
       saving: _saving,
       loading: _loading,
+      formKey: _formKey,
       onSave: _save,
       saveLabel: l10n.actionSave,
       assetPath: assetForHealthRecordType(_type) ?? AppAssetPaths.healthVaccine,
       fallbackIcon: fallbackIconForHealthRecordType(_type),
       fields: [
         if (_lastRecord != null) ...[
-          ActionChip(
-            avatar: const Icon(Icons.replay, size: 16),
-            label: Text(
-              'Repetir: ${_lastRecord!.product} · ${_lastRecord!.type.name}',
-              overflow: TextOverflow.ellipsis,
-            ),
-            onPressed: _applyLastRecord,
-            side: BorderSide.none,
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+          AppChip(
+            icon: Icons.replay,
+            label:
+                'Repetir: ${_lastRecord!.product} · ${_lastRecord!.type.name}',
+            tone: AppChipTone.info,
+            onTap: _applyLastRecord,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
         ],
-        DropdownButtonFormField<HealthRecordType>(
-          initialValue: _type,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormHealthType,
-            border: const OutlineInputBorder(),
-          ),
-          items: HealthRecordType.values
-              .map(
-                (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
-              )
-              .toList(),
+        AppSelectField<HealthRecordType>(
+          value: _type,
+          labelText: l10n.detailFormHealthType,
+          requiredField: true,
+          items: HealthRecordType.values,
+          itemLabel: (type) => type.displayName,
           onChanged: (value) {
             if (value == null) return;
             setState(() => _type = value);
           },
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _productController,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormHealthProduct,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.detailFormHealthProduct,
+          requiredField: true,
+          validator: (value) => value == null || value.trim().isEmpty
+              ? l10n.detailFormHealthProductRequired
+              : null,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         Row(
           children: [
             Expanded(
-              child: TextField(
+              child: AppTextField(
                 controller: _doseController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormHealthDose,
-                  border: const OutlineInputBorder(),
-                ),
+                labelText: l10n.detailFormHealthDose,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: TextField(
+              child: AppTextField(
                 controller: _appliedByController,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormHealthAppliedBy,
-                  border: const OutlineInputBorder(),
-                ),
+                labelText: l10n.detailFormHealthAppliedBy,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked == null) return;
-                  setState(() => _date = picked);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.event_available),
-                label: Text(
-                  _nextDate == null
-                      ? l10n.detailFormHealthNext
-                      : DateFormat('dd/MM/yyyy').format(_nextDate!),
-                ),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _nextDate ?? _date,
-                    firstDate: DateTime(_date.year),
-                    lastDate: DateTime(_date.year + 5),
-                  );
-                  setState(() => _nextDate = picked);
-                },
-              ),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _date,
+          labelText: l10n.fieldDate,
+          firstDate: DateTime(_date.year - 5),
+          lastDate: DateTime(_date.year + 1),
+          onChanged: (value) {
+            if (value != null) setState(() => _date = value);
+          },
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppDateField(
+          value: _nextDate,
+          labelText: l10n.detailFormHealthNext,
+          emptyLabel: l10n.detailFormHealthNext,
+          clearTooltip: l10n.actionClearDate,
+          firstDate: _date,
+          lastDate: DateTime(_date.year + 5),
+          allowClear: true,
+          validator: (value) => value != null && value.isBefore(_date)
+              ? l10n.detailFormHealthNextAfterDate
+              : null,
+          onChanged: (value) => setState(() => _nextDate = value),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _causeController,
-          decoration: InputDecoration(
-            labelText: l10n.detailFormHealthCause,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.detailFormHealthCause,
         ),
-        const SizedBox(height: 12),
-        TextField(
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
           controller: _notesController,
-          decoration: InputDecoration(
-            labelText: l10n.fieldNotes,
-            border: const OutlineInputBorder(),
-          ),
+          labelText: l10n.fieldNotes,
           maxLines: 2,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         if (_animal != null) ...[
           AdvisorTipsPanel(
             tips: LivestockAdvisor.forHealth(
@@ -376,7 +337,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
         ],
       ],
     );

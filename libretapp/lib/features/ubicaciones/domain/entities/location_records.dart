@@ -8,6 +8,9 @@ typedef Money = double;
 
 typedef Area = double;
 
+String _recordId(String prefix) =>
+    '$prefix-${DateTime.now().microsecondsSinceEpoch}';
+
 class VisitRecord extends Equatable {
   const VisitRecord({
     required this.date,
@@ -126,6 +129,46 @@ class RainRecord extends Equatable {
 
   @override
   List<Object?> get props => [date, millimeters, location];
+}
+
+class MaintenanceRecord extends Equatable {
+  MaintenanceRecord({
+    String? uuid,
+    required this.date,
+    required this.assetName,
+    required this.maintenanceType,
+    this.nextDueDate,
+    this.meterReading,
+    this.meterUnit,
+    this.cost = 0,
+    this.notes,
+  }) : uuid = uuid ?? _recordId('maintenance');
+
+  final String uuid;
+  final DateTime date;
+  final String assetName;
+  final String maintenanceType;
+  final DateTime? nextDueDate;
+  final double? meterReading;
+  final String? meterUnit;
+  final Money cost;
+  final String? notes;
+
+  bool get isDue =>
+      nextDueDate != null && !nextDueDate!.isAfter(DateTime.now());
+
+  @override
+  List<Object?> get props => [
+    uuid,
+    date,
+    assetName,
+    maintenanceType,
+    nextDueDate,
+    meterReading,
+    meterUnit,
+    cost,
+    notes,
+  ];
 }
 
 /// Upkeep spending booked against a location.

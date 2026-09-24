@@ -26,6 +26,7 @@ const _collectionNames = <String>{
   'commercialRecords',
   'movementRecords',
   'lotes',
+  'cultivations',
   'locations',
   'incomeRecords',
   'generalExpenseRecords',

@@ -9,3 +9,5 @@ export 'bloc/bloc.dart';
 export 'lote_card.dart';
 export 'lotes_list_view.dart';
 export 'view/view.dart';
+export 'alimentacion/alimentacion.dart';
+export 'engorda/engorda.dart';

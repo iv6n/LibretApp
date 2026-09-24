@@ -1,4 +1,4 @@
-﻿/// features \u203a ubicaciones \u203a view \u203a location_form_page \u2014 form page for creating or editing a location.
+/// features \u203a ubicaciones \u203a view \u203a location_form_page \u2014 form page for creating or editing a location.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,11 +10,27 @@ import 'package:libretapp/features/ubicaciones/domain/repositories/location_repo
 import 'package:libretapp/features/ubicaciones/widgets/location_form_sheet.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_hierarchy_validation.dart';
 
+class LocationFormRouteArgs {
+  const LocationFormRouteArgs({
+    this.presetParentUuid,
+    this.returnCreatedUuid = false,
+  });
+
+  final String? presetParentUuid;
+  final bool returnCreatedUuid;
+}
+
 class LocationFormPage extends StatefulWidget {
-  const LocationFormPage({this.locationUuid, this.presetParentUuid, super.key});
+  const LocationFormPage({
+    this.locationUuid,
+    this.presetParentUuid,
+    this.returnCreatedUuid = false,
+    super.key,
+  });
 
   final String? locationUuid;
   final String? presetParentUuid;
+  final bool returnCreatedUuid;
 
   bool get isEdit => locationUuid != null;
 
@@ -105,7 +121,9 @@ class _LocationFormPageState extends State<LocationFormPage> {
     try {
       await _repository.upsert(value);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(
+        context,
+      ).pop(widget.returnCreatedUuid && !widget.isEdit ? value.uuid : true);
     } catch (e) {
       if (!mounted) return;
       setState(() {

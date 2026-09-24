@@ -8,7 +8,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -22,6 +21,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weigh
 import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/theme.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the commercial registration form.
 class RegistroComercialPage extends StatelessWidget {
@@ -53,6 +53,7 @@ class _RegistroComercialView extends StatefulWidget {
 }
 
 class _RegistroComercialViewState extends State<_RegistroComercialView> {
+  final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _currencyCtrl = TextEditingController(text: 'USD');
   final _counterpartyCtrl = TextEditingController();
@@ -80,6 +81,7 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
       );
       return;
     }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final rawAmount = _amountCtrl.text.trim();
     final amount = parseFormDouble(rawAmount);
@@ -148,124 +150,91 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: GeneratedAssetTitle(
+      child: BlocBuilder<RegistroBloc, RegistroState>(
+        buildWhen: (prev, curr) => prev.status != curr.status,
+        builder: (context, state) {
+          final isSaving = state.status == RegistroStatus.loading;
+          return AppFormScaffold(
             title: l10n.detailFormCommercialTitle,
             assetPath: AppAssetPaths.recordSale,
             fallbackIcon: Icons.sell_outlined,
-          ),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            formKey: _formKey,
+            saving: isSaving,
+            onSave: _save,
+            saveLabel: l10n.actionSave,
+            onCancel: () => Navigator.of(context).pop(),
+            cancelLabel: l10n.actionCancel,
+            fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
                 onSelected: (a) => setState(() => _selectedAnimal = a),
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<CommercialRecordType>(
-                initialValue: _type,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormCommercialType,
-                  border: const OutlineInputBorder(),
-                ),
-                items: CommercialRecordType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
+              const SizedBox(height: AppSpacing.md),
+              AppSelectField<CommercialRecordType>(
+                value: _type,
+                labelText: l10n.detailFormCommercialType,
+                requiredField: true,
+                items: CommercialRecordType.values,
+                itemLabel: (type) => type.displayName,
                 onChanged: (v) {
                   if (v != null) setState(() => _type = v);
                 },
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _amountCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCommercialAmount,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _currencyCtrl,
-                      decoration: InputDecoration(
-                        labelText: l10n.detailFormCommercialCurrency,
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _counterpartyCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.detailFormCommercialCounterparty,
-                  border: const OutlineInputBorder(),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _amountCtrl,
+                labelText: l10n.detailFormCommercialAmount,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.today),
-                label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _date,
-                    firstDate: DateTime(_date.year - 5),
-                    lastDate: DateTime(_date.year + 1),
-                  );
-                  if (picked != null) setState(() => _date = picked);
+                validator: (value) {
+                  final raw = value?.trim() ?? '';
+                  final amount = parseFormDouble(raw);
+                  final required =
+                      _type == CommercialRecordType.purchase ||
+                      _type == CommercialRecordType.sale ||
+                      _type == CommercialRecordType.priceUpdate;
+                  if (required && raw.isEmpty) {
+                    return l10n.detailFormCommercialAmountRequired;
+                  }
+                  if (raw.isNotEmpty && amount == null) {
+                    return l10n.detailFormNumberInvalid;
+                  }
+                  return amount != null && amount <= 0
+                      ? l10n.detailFormAmountPositive
+                      : null;
                 },
               ),
-              const SizedBox(height: 12),
-              TextField(
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _currencyCtrl,
+                labelText: l10n.detailFormCommercialCurrency,
+                textCapitalization: TextCapitalization.characters,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _counterpartyCtrl,
+                labelText: l10n.detailFormCommercialCounterparty,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppDateField(
+                value: _date,
+                labelText: l10n.fieldDate,
+                firstDate: DateTime(_date.year - 5),
+                lastDate: DateTime(_date.year + 1),
+                onChanged: (value) {
+                  if (value != null) setState(() => _date = value);
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
                 controller: _notesCtrl,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldNotes,
-                  border: const OutlineInputBorder(),
-                ),
+                labelText: l10n.fieldNotes,
                 maxLines: 2,
               ),
-              const SizedBox(height: 24),
-              BlocBuilder<RegistroBloc, RegistroState>(
-                buildWhen: (prev, curr) => prev.status != curr.status,
-                builder: (context, state) {
-                  final isSaving = state.status == RegistroStatus.loading;
-                  return SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: isSaving ? null : _save,
-                      child: isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(l10n.actionSave),
-                    ),
-                  );
-                },
-              ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }

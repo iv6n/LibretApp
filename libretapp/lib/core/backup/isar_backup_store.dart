@@ -19,12 +19,16 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_migration_service.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/isar_cultivation.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_income_record.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entry.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
+import 'package:libretapp/features/rfid/infrastructure/isar_rfid.dart';
+import 'package:libretapp/core/persistence/isar_feature_record.dart';
 import 'package:uuid/uuid.dart';
 
 class IsarBackupStore implements BackupStore {
@@ -44,6 +48,7 @@ class IsarBackupStore implements BackupStore {
     'commercialRecords',
     'movementRecords',
     'lotes',
+    'cultivations',
     'locations',
     'incomeRecords',
     'generalExpenseRecords',
@@ -56,6 +61,9 @@ class IsarBackupStore implements BackupStore {
     'careRules',
     'careRecords',
     'scheduledCares',
+    'rfidBindings',
+    'rfidScanSessions',
+    'featureRecords',
   };
 
   final IsarDatabase _database;
@@ -83,6 +91,7 @@ class IsarBackupStore implements BackupStore {
             .exportJson(),
         'movementRecords': await isar.isarMovementRecords.where().exportJson(),
         'lotes': await isar.isarLotes.where().exportJson(),
+        'cultivations': await isar.isarCultivations.where().exportJson(),
         'locations': await isar.isarLocations.where().exportJson(),
         'incomeRecords': await isar.isarIncomeRecords.where().exportJson(),
         'generalExpenseRecords': await isar.isarGeneralExpenseRecords
@@ -99,6 +108,11 @@ class IsarBackupStore implements BackupStore {
         'careRules': await isar.isarCareRules.where().exportJson(),
         'careRecords': await isar.isarCareRecords.where().exportJson(),
         'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
+        'rfidBindings': await isar.isarRfidBindings.where().exportJson(),
+        'rfidScanSessions': await isar.isarRfidScanSessions
+            .where()
+            .exportJson(),
+        'featureRecords': await isar.isarFeatureRecords.where().exportJson(),
       };
     });
     return BackupEnvelope(
@@ -120,6 +134,12 @@ class IsarBackupStore implements BackupStore {
       ...envelope.collections,
       'agendaRegistrations':
           envelope.collections['agendaRegistrations'] ?? const [],
+      // RFID collections were introduced in schema 7. Old snapshots remain
+      // valid and restore with an empty hardware history.
+      'rfidBindings': envelope.collections['rfidBindings'] ?? const [],
+      'rfidScanSessions': envelope.collections['rfidScanSessions'] ?? const [],
+      'cultivations': envelope.collections['cultivations'] ?? const [],
+      'featureRecords': envelope.collections['featureRecords'] ?? const [],
     };
     final prepared = mode == BackupImportMode.merge
         ? await _prepareMerge(isar, compatibleCollections)
@@ -144,6 +164,7 @@ class IsarBackupStore implements BackupStore {
       );
       await isar.isarMovementRecords.importJson(prepared['movementRecords']!);
       await isar.isarLotes.importJson(prepared['lotes']!);
+      await isar.isarCultivations.importJson(prepared['cultivations']!);
       await isar.isarLocations.importJson(prepared['locations']!);
       await isar.isarIncomeRecords.importJson(prepared['incomeRecords']!);
       await isar.isarGeneralExpenseRecords.importJson(
@@ -160,7 +181,19 @@ class IsarBackupStore implements BackupStore {
       await isar.isarCareRules.importJson(prepared['careRules']!);
       await isar.isarCareRecords.importJson(prepared['careRecords']!);
       await isar.isarScheduledCares.importJson(prepared['scheduledCares']!);
+      await isar.isarRfidBindings.importJson(
+        prepared['rfidBindings'] ?? const [],
+      );
+      await isar.isarRfidScanSessions.importJson(
+        prepared['rfidScanSessions'] ?? const [],
+      );
+      await isar.isarFeatureRecords.importJson(
+        prepared['featureRecords'] ?? const [],
+      );
     });
+    if (envelope.schemaVersion < 9) {
+      await migrateLegacyCultivations(isar);
+    }
     if (envelope.profile.isNotEmpty) {
       final current = await _perfilRepository.fetchPerfil();
       await _perfilRepository.updatePerfil(
@@ -259,6 +292,7 @@ class IsarBackupStore implements BackupStore {
             .exportJson(),
         'movementRecords': await isar.isarMovementRecords.where().exportJson(),
         'lotes': await isar.isarLotes.where().exportJson(),
+        'cultivations': await isar.isarCultivations.where().exportJson(),
         'locations': await isar.isarLocations.where().exportJson(),
         'incomeRecords': await isar.isarIncomeRecords.where().exportJson(),
         'generalExpenseRecords': await isar.isarGeneralExpenseRecords
@@ -275,6 +309,11 @@ class IsarBackupStore implements BackupStore {
         'careRules': await isar.isarCareRules.where().exportJson(),
         'careRecords': await isar.isarCareRecords.where().exportJson(),
         'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
+        'rfidBindings': await isar.isarRfidBindings.where().exportJson(),
+        'rfidScanSessions': await isar.isarRfidScanSessions
+            .where()
+            .exportJson(),
+        'featureRecords': await isar.isarFeatureRecords.where().exportJson(),
       };
     });
     const stableFields = <String, String>{
@@ -287,6 +326,7 @@ class IsarBackupStore implements BackupStore {
       'commercialRecords': 'recordUuid',
       'movementRecords': 'recordUuid',
       'lotes': 'uuid',
+      'cultivations': 'uuid',
       'locations': 'uuid',
       'incomeRecords': 'recordUuid',
       'generalExpenseRecords': 'recordUuid',
@@ -299,6 +339,9 @@ class IsarBackupStore implements BackupStore {
       'careRules': 'recordUuid',
       'careRecords': 'recordUuid',
       'scheduledCares': 'recordUuid',
+      'rfidBindings': 'uuid',
+      'rfidScanSessions': 'uuid',
+      'featureRecords': 'uuid',
     };
     const idFields = <String, String>{
       'agendaEntries': 'isarId',
@@ -330,6 +373,7 @@ class IsarBackupStore implements BackupStore {
   static const updatedAtFields = <String, String>{
     'animals': 'lastUpdateDate',
     'lotes': 'lastUpdateDate',
+    'cultivations': 'updatedAt',
     'locations': 'updatedAt',
     'agendaEntries': 'updatedAt',
     'agendaRegistrations': 'updatedAt',
@@ -341,6 +385,8 @@ class IsarBackupStore implements BackupStore {
     'workTeams': 'updatedAt',
     'milkingSessions': 'updatedAt',
     'milkingEntries': 'updatedAt',
+    'rfidBindings': 'updatedAt',
+    'featureRecords': 'updatedAt',
   };
 
   /// Reconciles [incoming] against [existing] by stable id.
@@ -423,6 +469,7 @@ class IsarBackupStore implements BackupStore {
     await isar.isarCommercialRecords.clear();
     await isar.isarMovementRecords.clear();
     await isar.isarLotes.clear();
+    await isar.isarCultivations.clear();
     await isar.isarLocations.clear();
     await isar.isarIncomeRecords.clear();
     await isar.isarGeneralExpenseRecords.clear();
@@ -435,5 +482,8 @@ class IsarBackupStore implements BackupStore {
     await isar.isarCareRules.clear();
     await isar.isarCareRecords.clear();
     await isar.isarScheduledCares.clear();
+    await isar.isarRfidBindings.clear();
+    await isar.isarRfidScanSessions.clear();
+    await isar.isarFeatureRecords.clear();
   }
 }

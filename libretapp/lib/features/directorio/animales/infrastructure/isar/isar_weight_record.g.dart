@@ -22,38 +22,48 @@ const IsarWeightRecordSchema = CollectionSchema(
       name: r'animalUuid',
       type: IsarType.string,
     ),
-    r'date': PropertySchema(
+    r'createdAt': PropertySchema(
       id: 1,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'date': PropertySchema(
+      id: 2,
       name: r'date',
       type: IsarType.dateTime,
     ),
+    r'lotUuid': PropertySchema(
+      id: 3,
+      name: r'lotUuid',
+      type: IsarType.string,
+    ),
     r'measuredBy': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'measuredBy',
       type: IsarType.string,
     ),
     r'method': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'method',
       type: IsarType.string,
     ),
     r'notes': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'notes',
       type: IsarType.string,
     ),
     r'recordUuid': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'recordUuid',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'weight': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'weight',
       type: IsarType.double,
     )
@@ -89,6 +99,19 @@ const IsarWeightRecordSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'lotUuid': IndexSchema(
+      id: 7911640679849091408,
+      name: r'lotUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lotUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {},
@@ -106,6 +129,12 @@ int _isarWeightRecordEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.animalUuid.length * 3;
+  {
+    final value = object.lotUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   {
     final value = object.measuredBy;
     if (value != null) {
@@ -130,13 +159,15 @@ void _isarWeightRecordSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.animalUuid);
-  writer.writeDateTime(offsets[1], object.date);
-  writer.writeString(offsets[2], object.measuredBy);
-  writer.writeString(offsets[3], object.method);
-  writer.writeString(offsets[4], object.notes);
-  writer.writeString(offsets[5], object.recordUuid);
-  writer.writeDateTime(offsets[6], object.updatedAt);
-  writer.writeDouble(offsets[7], object.weight);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeDateTime(offsets[2], object.date);
+  writer.writeString(offsets[3], object.lotUuid);
+  writer.writeString(offsets[4], object.measuredBy);
+  writer.writeString(offsets[5], object.method);
+  writer.writeString(offsets[6], object.notes);
+  writer.writeString(offsets[7], object.recordUuid);
+  writer.writeDateTime(offsets[8], object.updatedAt);
+  writer.writeDouble(offsets[9], object.weight);
 }
 
 IsarWeightRecord _isarWeightRecordDeserialize(
@@ -147,14 +178,16 @@ IsarWeightRecord _isarWeightRecordDeserialize(
 ) {
   final object = IsarWeightRecord();
   object.animalUuid = reader.readString(offsets[0]);
-  object.date = reader.readDateTime(offsets[1]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[1]);
+  object.date = reader.readDateTime(offsets[2]);
   object.id = id;
-  object.measuredBy = reader.readStringOrNull(offsets[2]);
-  object.method = reader.readString(offsets[3]);
-  object.notes = reader.readStringOrNull(offsets[4]);
-  object.recordUuid = reader.readString(offsets[5]);
-  object.updatedAt = reader.readDateTimeOrNull(offsets[6]);
-  object.weight = reader.readDouble(offsets[7]);
+  object.lotUuid = reader.readStringOrNull(offsets[3]);
+  object.measuredBy = reader.readStringOrNull(offsets[4]);
+  object.method = reader.readString(offsets[5]);
+  object.notes = reader.readStringOrNull(offsets[6]);
+  object.recordUuid = reader.readString(offsets[7]);
+  object.updatedAt = reader.readDateTimeOrNull(offsets[8]);
+  object.weight = reader.readDouble(offsets[9]);
   return object;
 }
 
@@ -168,18 +201,22 @@ P _isarWeightRecordDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 9:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -423,6 +460,73 @@ extension IsarWeightRecordQueryWhere
       }
     });
   }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterWhereClause>
+      lotUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lotUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterWhereClause>
+      lotUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lotUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterWhereClause>
+      lotUuidEqualTo(String? lotUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lotUuid',
+        value: [lotUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterWhereClause>
+      lotUuidNotEqualTo(String? lotUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lotUuid',
+              lower: [],
+              upper: [lotUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lotUuid',
+              lower: [lotUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lotUuid',
+              lower: [lotUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lotUuid',
+              lower: [],
+              upper: [lotUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension IsarWeightRecordQueryFilter
@@ -564,6 +668,80 @@ extension IsarWeightRecordQueryFilter
   }
 
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'createdAt',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
       dateEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -671,6 +849,160 @@ extension IsarWeightRecordQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'lotUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'lotUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lotUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'lotUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'lotUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lotUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterFilterCondition>
+      lotUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'lotUuid',
+        value: '',
       ));
     });
   }
@@ -1418,6 +1750,20 @@ extension IsarWeightRecordQuerySortBy
     });
   }
 
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy> sortByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.asc);
@@ -1428,6 +1774,20 @@ extension IsarWeightRecordQuerySortBy
       sortByDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByLotUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lotUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      sortByLotUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lotUuid', Sort.desc);
     });
   }
 
@@ -1531,6 +1891,20 @@ extension IsarWeightRecordQuerySortThenBy
     });
   }
 
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy> thenByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'date', Sort.asc);
@@ -1554,6 +1928,20 @@ extension IsarWeightRecordQuerySortThenBy
       thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByLotUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lotUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QAfterSortBy>
+      thenByLotUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lotUuid', Sort.desc);
     });
   }
 
@@ -1650,9 +2038,23 @@ extension IsarWeightRecordQueryWhereDistinct
     });
   }
 
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QDistinct>
+      distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
   QueryBuilder<IsarWeightRecord, IsarWeightRecord, QDistinct> distinctByDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'date');
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, IsarWeightRecord, QDistinct> distinctByLotUuid(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lotUuid', caseSensitive: caseSensitive);
     });
   }
 
@@ -1714,9 +2116,22 @@ extension IsarWeightRecordQueryProperty
     });
   }
 
+  QueryBuilder<IsarWeightRecord, DateTime?, QQueryOperations>
+      createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
   QueryBuilder<IsarWeightRecord, DateTime, QQueryOperations> dateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'date');
+    });
+  }
+
+  QueryBuilder<IsarWeightRecord, String?, QQueryOperations> lotUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lotUuid');
     });
   }
 

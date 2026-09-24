@@ -389,6 +389,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           body: _loading
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
+                  top: false,
                   child: Column(
                     children: [
                       Expanded(
@@ -586,6 +587,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       const SizedBox(height: 16),
                       AppTextField(
                         controller: _earTagCtrl,
+                        key: const ValueKey('animal-complete-identification'),
                         textCapitalization: TextCapitalization.characters,
                         decoration: InputDecoration(
                           labelText: policy.identificationLabel,
@@ -601,6 +603,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       const SizedBox(height: 12),
                       AppTextField(
                         controller: _nameCtrl,
+                        key: const ValueKey('animal-complete-name'),
                         textCapitalization: TextCapitalization.words,
                         decoration: const InputDecoration(
                           labelText: 'Nombre o alias — opcional',
@@ -1495,6 +1498,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           Expanded(
             child: isFirstStep
                 ? AppButton(
+                    key: const ValueKey('animal-complete-draft-save'),
                     onPressed: _onSaveForLater,
                     icon: Icons.save_alt_outlined,
                     label: 'Guardar borrador',
@@ -1511,6 +1515,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: AppButton(
+              key: ValueKey(
+                isLastStep ? 'animal-complete-save' : 'animal-complete-next',
+              ),
               onPressed: nextOnPressed,
               icon: isLastStep ? Icons.save_outlined : Icons.arrow_forward,
               label: isLastStep ? 'Guardar animal' : 'Siguiente',

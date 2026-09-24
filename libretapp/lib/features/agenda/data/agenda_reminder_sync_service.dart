@@ -11,11 +11,12 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/domain/services/care_calendar_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/agenda/domain/operational_work.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
@@ -31,6 +32,7 @@ class AgendaReminderSyncService {
     required CareCalendarService careCalendarService,
     ReproductionScheduler? reproductionScheduler,
     LocationRepository? locationRepository,
+    CultivationRepository? cultivationRepository,
     AgendaRefreshSignal? refreshSignal,
   }) : _animalRepository = animalRepository,
        _agendaRepository = agendaRepository,
@@ -39,6 +41,7 @@ class AgendaReminderSyncService {
        _careRepo = careRepo,
        _careCalendarService = careCalendarService,
        _locationRepository = locationRepository,
+       _cultivationRepository = cultivationRepository,
        _reproductionScheduler =
            reproductionScheduler ?? const ReproductionScheduler(),
        _refreshSignal = refreshSignal;
@@ -50,6 +53,7 @@ class AgendaReminderSyncService {
   final CareRepository _careRepo;
   final CareCalendarService _careCalendarService;
   final LocationRepository? _locationRepository;
+  final CultivationRepository? _cultivationRepository;
   final ReproductionScheduler _reproductionScheduler;
   final AgendaRefreshSignal? _refreshSignal;
   Future<int>? _syncInFlight;
@@ -327,7 +331,7 @@ class AgendaReminderSyncService {
       }
     }
 
-    if (_locationRepository != null) {
+    if (_locationRepository != null || _cultivationRepository != null) {
       await _buildCropEntries(desired);
     }
 
@@ -363,8 +367,39 @@ class AgendaReminderSyncService {
   }
 
   Future<void> _buildCropEntries(Map<String, AgendaEntry> desired) async {
-    final locations = await _locationRepository!.getAll();
+    final locations = await _locationRepository?.getAll() ?? const [];
+    final locationsByUuid = {
+      for (final location in locations) location.uuid: location,
+    };
     for (final location in locations) {
+      for (final maintenance in location.maintenances) {
+        final dueDate = maintenance.nextDueDate;
+        if (dueDate == null) continue;
+
+        final date = _startOfDay(dueDate);
+        final id =
+            'auto:location-maintenance:${location.uuid}:${maintenance.uuid}:${_dateKey(date)}';
+        desired[id] = AgendaEntry(
+          id: id,
+          titulo:
+              'Mantenimiento ${maintenance.maintenanceType.toLowerCase()} - ${maintenance.assetName}',
+          descripcion: 'Revisión programada de infraestructura o equipo.',
+          fecha: date,
+          tipo: 'Mantenimiento',
+          animalIds: const [],
+          loteIds: const [],
+          ubicacion: location.name,
+          locationUuid: location.uuid,
+          estado: AgendaEstado.pendiente,
+          completedAnimalIds: const [],
+          notas: maintenance.notes ?? '',
+          actionKind: WorkActionType.maintenance.name,
+          sourceType: WorkSourceType.locationPlan.name,
+          sourceId: maintenance.uuid,
+        );
+      }
+
+      if (_cultivationRepository != null) continue;
       for (final crop in location.crops) {
         if (crop.status != CropStatus.active) continue;
 
@@ -377,7 +412,8 @@ class AgendaReminderSyncService {
             title: '${task.type.displayName} - ${crop.cropName}',
             date: date,
             location: location,
-            crop: crop,
+            cropUuid: crop.uuid,
+            notes: crop.notes,
             action: task.type == CropTaskType.harvest
                 ? WorkActionType.harvest
                 : WorkActionType.cropTask,
@@ -396,7 +432,8 @@ class AgendaReminderSyncService {
             title: 'Riego - ${crop.cropName}',
             date: date,
             location: location,
-            crop: crop,
+            cropUuid: crop.uuid,
+            notes: crop.notes,
             action: WorkActionType.cropWater,
             sourceType: WorkSourceType.cropCycle,
             sourceId: '${crop.uuid}:watering',
@@ -413,7 +450,8 @@ class AgendaReminderSyncService {
             title: 'Cosecha esperada - ${crop.cropName}',
             date: date,
             location: location,
-            crop: crop,
+            cropUuid: crop.uuid,
+            notes: crop.notes,
             action: WorkActionType.harvest,
             sourceType: WorkSourceType.cropCycle,
             sourceId: '${crop.uuid}:harvest',
@@ -421,14 +459,83 @@ class AgendaReminderSyncService {
         }
       }
     }
+
+    final cultivationRepository = _cultivationRepository;
+    if (cultivationRepository == null) return;
+    for (final cultivation in await cultivationRepository.getAll()) {
+      if (!cultivation.isActive) continue;
+      final location = cultivation.locationUuid == null
+          ? null
+          : locationsByUuid[cultivation.locationUuid];
+      await _addIndependentCultivationEntries(desired, cultivation, location);
+    }
+  }
+
+  Future<void> _addIndependentCultivationEntries(
+    Map<String, AgendaEntry> desired,
+    CultivationEntity cultivation,
+    LocationEntity? location,
+  ) async {
+    final locationKey = location?.uuid ?? 'sin-ubicacion';
+    for (final task in cultivation.tasks.where((task) => !task.completed)) {
+      final date = _startOfDay(task.dueDate);
+      final id = 'auto:crop-task:$locationKey:${cultivation.uuid}:${task.uuid}';
+      desired[id] = _cropEntry(
+        id: id,
+        title: '${task.type.displayName} - ${cultivation.name}',
+        date: date,
+        location: location,
+        cropUuid: cultivation.uuid,
+        notes: cultivation.notes,
+        action: task.type == CropTaskType.harvest
+            ? WorkActionType.harvest
+            : WorkActionType.cropTask,
+        sourceType: WorkSourceType.cropTask,
+        sourceId: task.uuid,
+      );
+    }
+
+    final wateringDate = cultivation.nextWateringDate;
+    final wateringDay = _startOfDay(wateringDate);
+    final wateringId =
+        'auto:crop-watering:$locationKey:${cultivation.uuid}:${_dateKey(wateringDay)}';
+    desired[wateringId] = _cropEntry(
+      id: wateringId,
+      title: 'Riego - ${cultivation.name}',
+      date: wateringDay,
+      location: location,
+      cropUuid: cultivation.uuid,
+      notes: cultivation.notes,
+      action: WorkActionType.cropWater,
+      sourceType: WorkSourceType.cropCycle,
+      sourceId: '${cultivation.uuid}:watering',
+    );
+
+    final harvestDate = cultivation.expectedHarvestDate;
+    if (harvestDate == null) return;
+    final harvestDay = _startOfDay(harvestDate);
+    final harvestId =
+        'auto:crop-harvest:$locationKey:${cultivation.uuid}:${_dateKey(harvestDay)}';
+    desired[harvestId] = _cropEntry(
+      id: harvestId,
+      title: 'Cosecha esperada - ${cultivation.name}',
+      date: harvestDay,
+      location: location,
+      cropUuid: cultivation.uuid,
+      notes: cultivation.notes,
+      action: WorkActionType.harvest,
+      sourceType: WorkSourceType.cropCycle,
+      sourceId: '${cultivation.uuid}:harvest',
+    );
   }
 
   AgendaEntry _cropEntry({
     required String id,
     required String title,
     required DateTime date,
-    required LocationEntity location,
-    required CropRecord crop,
+    required LocationEntity? location,
+    required String cropUuid,
+    required String? notes,
     required WorkActionType action,
     required WorkSourceType sourceType,
     required String sourceId,
@@ -441,12 +548,12 @@ class AgendaReminderSyncService {
       tipo: action == WorkActionType.harvest ? 'Cosecha' : 'Cultivo',
       animalIds: const [],
       loteIds: const [],
-      ubicacion: location.name,
-      locationUuid: location.uuid,
-      cropUuid: crop.uuid,
+      ubicacion: location?.name ?? 'Sin ubicación',
+      locationUuid: location?.uuid,
+      cropUuid: cropUuid,
       estado: AgendaEstado.pendiente,
       completedAnimalIds: const [],
-      notas: crop.notes ?? '',
+      notas: notes ?? '',
       actionKind: action.name,
       sourceType: sourceType.name,
       sourceId: sourceId,

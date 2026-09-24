@@ -191,27 +191,29 @@ void main() {
       expect(await repo.getAllRuleIds(), contains('r1'));
     });
 
-    test('the default calendar preloads once and respects retirements',
-        () async {
-      final service = CareCalendarService(repo);
+    test(
+      'the default calendar preloads once and respects retirements',
+      () async {
+        final service = CareCalendarService(repo);
 
-      await service.preloadDefaults(alreadyLoaded: false);
-      final first = await repo.getRules();
-      expect(first, isNotEmpty);
-      expect(first.length, DefaultCareRules.all().length);
+        await service.preloadDefaults(alreadyLoaded: false);
+        final first = await repo.getRules();
+        expect(first, isNotEmpty);
+        expect(first.length, DefaultCareRules.all().length);
 
-      // The breeder switches one off, then the app restarts.
-      await repo.retireRule(first.first.id);
-      await service.preloadDefaults(alreadyLoaded: false);
+        // The breeder switches one off, then the app restarts.
+        await repo.retireRule(first.first.id);
+        await service.preloadDefaults(alreadyLoaded: false);
 
-      final second = await repo.getRules();
-      expect(
-        second.map((r) => r.id),
-        isNot(contains(first.first.id)),
-        reason: 'a rule the breeder retired must not come back',
-      );
-      expect(second.length, first.length - 1);
-    });
+        final second = await repo.getRules();
+        expect(
+          second.map((r) => r.id),
+          isNot(contains(first.first.id)),
+          reason: 'a rule the breeder retired must not come back',
+        );
+        expect(second.length, first.length - 1);
+      },
+    );
 
     test('latest record per rule is what the scheduler reads', () async {
       await repo.saveRecord(
@@ -237,8 +239,37 @@ void main() {
       expect(latest['r1']!.id, 'c2');
     });
 
-    test('regenerating replaces pending tasks instead of stacking them',
-        () async {
+    test(
+      'regenerating replaces pending tasks instead of stacking them',
+      () async {
+        final service = CareCalendarService(repo);
+        await repo.saveRule(
+          const CareRule(
+            id: 'r1',
+            name: 'Desparasitación',
+            type: CareType.deworming,
+            intervalDays: 180,
+            species: Species.cattle,
+          ),
+        );
+
+        final animal = _animal();
+        final now = DateTime(2026, 3, 1);
+
+        await service.regenerateFor(animal, now: now);
+        await service.regenerateFor(animal, now: now);
+
+        final pending = await repo.getPendingForAnimal(animal.uuid);
+        expect(
+          pending,
+          hasLength(1),
+          reason: 'the second run must not duplicate',
+        );
+        expect(pending.single.ruleId, 'r1');
+      },
+    );
+
+    test('a changing clock on the same day keeps one pending task', () async {
       final service = CareCalendarService(repo);
       await repo.saveRule(
         const CareRule(
@@ -251,14 +282,12 @@ void main() {
       );
 
       final animal = _animal();
-      final now = DateTime(2026, 3, 1);
-
-      await service.regenerateFor(animal, now: now);
-      await service.regenerateFor(animal, now: now);
+      await service.regenerateFor(animal, now: DateTime(2026, 3, 1, 8));
+      await service.regenerateFor(animal, now: DateTime(2026, 3, 1, 18));
 
       final pending = await repo.getPendingForAnimal(animal.uuid);
-      expect(pending, hasLength(1), reason: 'the second run must not duplicate');
-      expect(pending.single.ruleId, 'r1');
+      expect(pending, hasLength(1));
+      expect(pending.single.id, 'vaca_r1_20260301');
     });
 
     test('a recorded care pushes the next due date out', () async {
@@ -315,4 +344,3 @@ void main() {
     });
   }, skip: !_canRunIsarNative());
 }
-

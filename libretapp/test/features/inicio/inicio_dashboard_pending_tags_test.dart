@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -51,6 +53,24 @@ void main() {
       );
     },
   );
+
+  test('does not wait indefinitely for supplementary weather', () async {
+    final service = InicioDashboardService(
+      animalRepository: _AnimalRepo(const []),
+      lotesRepository: _LotesRepo(),
+      agendaRepository: _AgendaRepo(),
+      locationRepository: _LocationRepo(),
+      perfilRepository: _PerfilRepo(),
+      reproductionRepository: _ReproductionRepo(),
+      weatherService: _NeverWeather(),
+    );
+
+    final dashboard = await service.loadDashboard().timeout(
+      const Duration(seconds: 1),
+    );
+
+    expect(dashboard.weather, isNull);
+  });
 }
 
 AnimalEntity _animal({
@@ -161,4 +181,12 @@ class _Weather implements WeatherService {
     required List<LocationEntity> locations,
     required String address,
   }) async => null;
+}
+
+class _NeverWeather implements WeatherService {
+  @override
+  Future<WeatherData?> getCurrentWeather({
+    required List<LocationEntity> locations,
+    required String address,
+  }) => Completer<WeatherData?>().future;
 }

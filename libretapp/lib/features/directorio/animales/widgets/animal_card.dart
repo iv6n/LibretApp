@@ -25,6 +25,7 @@ class AnimalCard extends StatelessWidget {
     this.location,
     this.indicatorSnapshot,
     this.onTap,
+    this.onLocationTap,
     this.onLongPress,
     this.onMenuAction,
     this.onQuickMenuOpenChanged,
@@ -40,6 +41,7 @@ class AnimalCard extends StatelessWidget {
   /// the denormalized fields on the entity.
   final AnimalIndicatorSnapshot? indicatorSnapshot;
   final VoidCallback? onTap;
+  final VoidCallback? onLocationTap;
   final VoidCallback? onLongPress;
   final ValueChanged<AnimalCardMenuAction>? onMenuAction;
   final ValueChanged<bool>? onQuickMenuOpenChanged;
@@ -361,9 +363,22 @@ class AnimalCard extends StatelessWidget {
               child: Row(
                 children: [
                   SizedBox(
-                    child: _InlineInfo(
-                      icon: Icons.place_outlined,
-                      label: locationLabel,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: onLocationTap,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 3,
+                          ),
+                          child: _InlineInfo(
+                            icon: Icons.place_outlined,
+                            label: locationLabel,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 2),
@@ -568,10 +583,10 @@ class _Avatar extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: borderColor, width: 1.5),
         ),
+        padding: const EdgeInsets.all(1.5),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
-            padding: const EdgeInsets.all(7),
+          borderRadius: BorderRadius.circular(16.5),
+          child: SizedBox.expand(
             child: AnimalPhotoImage(
               path: profilePhoto,
               fallback: _buildProfileAsset(),
@@ -585,6 +600,8 @@ class _Avatar extends StatelessWidget {
   Widget _buildProfileAsset() {
     final image = Image.asset(
       stageAsset,
+      width: double.infinity,
+      height: double.infinity,
       fit: BoxFit.cover,
       errorBuilder: (context, error, stackTrace) =>
           Icon(profile.fallbackIcon, color: profile.color, size: 30),

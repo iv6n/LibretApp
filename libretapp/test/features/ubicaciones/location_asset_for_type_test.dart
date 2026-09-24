@@ -7,7 +7,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('locationAssetForType', () {
-    test('resolves every approved specific asset from tandas 1 through 5', () {
+    test('resolves all 46 concrete location assets', () {
       final expected = <LocationType, String>{
         LocationType.ranch: 'assets/images/location_ranch.webp',
         LocationType.farm: 'assets/images/location_farm.webp',
@@ -15,10 +15,12 @@ void main() {
         LocationType.hacienda: 'assets/images/location_hacienda.webp',
         LocationType.plantation: 'assets/images/location_plantation.webp',
         LocationType.ejido: 'assets/images/location_ejido.webp',
+        LocationType.pasture: 'assets/images/location_pasture.webp',
         LocationType.corral: 'assets/images/location_corral.webp',
         LocationType.property: 'assets/images/location_property.webp',
         LocationType.homestead: 'assets/images/location_homestead.webp',
         LocationType.feedlot: 'assets/images/location_feedlot.webp',
+        LocationType.barn: 'assets/images/location_barn.webp',
         LocationType.stable: 'assets/images/location_stable.webp',
         LocationType.pen: 'assets/images/location_pen.webp',
         LocationType.chute: 'assets/images/location_chute.webp',
@@ -26,33 +28,44 @@ void main() {
             'assets/images/location_quarantine_area.webp',
         LocationType.loadingArea: 'assets/images/location_loading_area.webp',
         LocationType.weighingArea: 'assets/images/location_weighing_area.webp',
+        LocationType.field: 'assets/images/location_field.webp',
         LocationType.plot: 'assets/images/location_plot.webp',
         LocationType.milpa: 'assets/images/location_milpa.webp',
         LocationType.orchard: 'assets/images/location_orchard.webp',
         LocationType.greenhouse: 'assets/images/location_greenhouse.webp',
         LocationType.nursery: 'assets/images/location_nursery.webp',
         LocationType.garden: 'assets/images/location_garden.webp',
+        LocationType.monte: 'assets/images/location_monte.webp',
         LocationType.forest: 'assets/images/location_forest.webp',
         LocationType.lagoon: 'assets/images/location_lagoon.webp',
         LocationType.river: 'assets/images/location_river.webp',
         LocationType.wetland: 'assets/images/location_wetland.webp',
         LocationType.protectedArea:
             'assets/images/location_protected_area.webp',
+        LocationType.warehouse: 'assets/images/location_warehouse.webp',
         LocationType.workshop: 'assets/images/location_workshop.webp',
         LocationType.office: 'assets/images/location_office.webp',
+        LocationType.house: 'assets/images/location_house.webp',
+        LocationType.road: 'assets/images/location_road.webp',
+        LocationType.waterTank: 'assets/images/location_water_tank.webp',
+        LocationType.gate: 'assets/images/location_gate.webp',
+        LocationType.well: 'assets/images/location_well.webp',
         LocationType.dam: 'assets/images/location_dam.webp',
+        LocationType.spring: 'assets/images/location_spring.webp',
+        LocationType.pond: 'assets/images/location_pond.webp',
         LocationType.aguada: 'assets/images/location_aguada.webp',
         LocationType.trough: 'assets/images/location_trough.webp',
         LocationType.canal: 'assets/images/location_canal.webp',
         LocationType.reservoir: 'assets/images/location_reservoir.webp',
       };
 
+      expect(expected.keys.toSet(), LocationType.values.toSet());
       for (final entry in expected.entries) {
         expect(locationAssetForType(entry.key), entry.value);
       }
     });
 
-    test('bundles every approved asset from tandas 1 through 5', () async {
+    test('bundles all 46 type assets and 7 category assets', () async {
       const assets = [
         'assets/images/location_ranch.webp',
         'assets/images/location_farm.webp',
@@ -60,36 +73,56 @@ void main() {
         'assets/images/location_hacienda.webp',
         'assets/images/location_plantation.webp',
         'assets/images/location_ejido.webp',
+        'assets/images/location_pasture.webp',
         'assets/images/location_corral.webp',
         'assets/images/location_property.webp',
         'assets/images/location_homestead.webp',
         'assets/images/location_feedlot.webp',
+        'assets/images/location_barn.webp',
         'assets/images/location_stable.webp',
         'assets/images/location_pen.webp',
         'assets/images/location_chute.webp',
         'assets/images/location_quarantine_area.webp',
         'assets/images/location_loading_area.webp',
         'assets/images/location_weighing_area.webp',
+        'assets/images/location_field.webp',
         'assets/images/location_plot.webp',
         'assets/images/location_milpa.webp',
         'assets/images/location_orchard.webp',
         'assets/images/location_greenhouse.webp',
         'assets/images/location_nursery.webp',
         'assets/images/location_garden.webp',
+        'assets/images/location_monte.webp',
         'assets/images/location_forest.webp',
         'assets/images/location_lagoon.webp',
         'assets/images/location_river.webp',
         'assets/images/location_wetland.webp',
         'assets/images/location_protected_area.webp',
+        'assets/images/location_warehouse.webp',
         'assets/images/location_aguada.webp',
         'assets/images/location_workshop.webp',
         'assets/images/location_office.webp',
+        'assets/images/location_house.webp',
+        'assets/images/location_road.webp',
+        'assets/images/location_water_tank.webp',
+        'assets/images/location_gate.webp',
+        'assets/images/location_well.webp',
         'assets/images/location_dam.webp',
+        'assets/images/location_spring.webp',
+        'assets/images/location_pond.webp',
         'assets/images/location_trough.webp',
         'assets/images/location_canal.webp',
         'assets/images/location_reservoir.webp',
+        'assets/images/location_macro.webp',
+        'assets/images/location_livestock.webp',
+        'assets/images/location_handling.webp',
+        'assets/images/location_agricultural.webp',
+        'assets/images/location_natural.webp',
+        'assets/images/location_infrastructure.webp',
+        'assets/images/location_water.webp',
       ];
 
+      expect(assets, hasLength(53));
       for (final asset in assets) {
         final data = await rootBundle.load(asset);
         expect(data.lengthInBytes, greaterThan(0), reason: asset);

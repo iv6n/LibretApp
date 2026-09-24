@@ -13,6 +13,7 @@ import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/domain/operational_work.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
@@ -26,6 +27,14 @@ import 'package:libretapp/features/directorio/animales/domain/services/care_cale
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/care_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 bool _canRunIsarNative() {
   try {
@@ -112,6 +121,33 @@ class _InMemoryAgendaRepository implements AgendaRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _FakeLocationRepository implements LocationRepository {
+  _FakeLocationRepository(this.locations);
+
+  final List<LocationEntity> locations;
+
+  @override
+  Future<List<LocationEntity>> getAll() async => locations;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class _FakeCultivationRepository implements CultivationRepository {
+  _FakeCultivationRepository(this.cultivations);
+
+  final List<CultivationEntity> cultivations;
+
+  @override
+  Future<List<CultivationEntity>> getAll({
+    bool includeArchived = false,
+  }) async =>
+      cultivations.where((item) => includeArchived || item.isActive).toList();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -156,6 +192,8 @@ void main() {
     AgendaReminderSyncService buildService({
       required List<AnimalEntity> animals,
       required AgendaRepository agendaRepository,
+      LocationRepository? locationRepository,
+      CultivationRepository? cultivationRepository,
     }) {
       return AgendaReminderSyncService(
         animalRepository: _FakeAnimalRepository(animals),
@@ -164,6 +202,8 @@ void main() {
         reproductionRepo: _EmptyReproductionRepository(),
         careRepo: careRepo,
         careCalendarService: CareCalendarService(careRepo),
+        locationRepository: locationRepository,
+        cultivationRepository: cultivationRepository,
       );
     }
 
@@ -249,6 +289,84 @@ void main() {
 
       await service.sync();
       expect(await agenda.fetchEntries(), isEmpty);
+    });
+
+    test('an independent crop without location creates Agenda work', () async {
+      final agenda = _InMemoryAgendaRepository();
+      final cultivation = CultivationEntity(
+        uuid: 'rose-1',
+        name: 'Rosa',
+        plantingDate: DateTime(2026, 9, 1),
+        expectedHarvestDate: DateTime(2026, 12, 1),
+        tasks: [
+          CropTask(
+            uuid: 'prune-1',
+            type: CropTaskType.prune,
+            dueDate: DateTime(2026, 9, 10),
+          ),
+        ],
+      );
+      final service = buildService(
+        animals: const [],
+        agendaRepository: agenda,
+        cultivationRepository: _FakeCultivationRepository([cultivation]),
+      );
+
+      await service.sync();
+      final entries = await agenda.fetchEntries();
+
+      expect(entries, hasLength(3));
+      expect(entries.every((entry) => entry.cropUuid == 'rose-1'), isTrue);
+      expect(
+        entries.every((entry) => entry.ubicacion == 'Sin ubicación'),
+        isTrue,
+      );
+      expect(entries.any((entry) => entry.titulo == 'Podar - Rosa'), isTrue);
+      expect(entries.any((entry) => entry.titulo == 'Riego - Rosa'), isTrue);
+      expect(
+        entries.any((entry) => entry.titulo == 'Cosecha esperada - Rosa'),
+        isTrue,
+      );
+    });
+
+    test('a location maintenance due date reaches the Agenda', () async {
+      final dueDate = DateTime(2026, 2, 15);
+      final location = LocationEntity(
+        uuid: 'corral-1',
+        name: 'Corral principal',
+        type: LocationType.corral,
+        surfaceArea: 100,
+        capacity: 20,
+        waterSource: 'Pozo',
+        terrainType: 'Plano',
+        maintenances: [
+          MaintenanceRecord(
+            uuid: 'maintenance-1',
+            date: DateTime(2026, 1, 15),
+            assetName: 'Bomba de agua',
+            maintenanceType: 'Preventivo',
+            nextDueDate: dueDate,
+          ),
+        ],
+      );
+      final agenda = _InMemoryAgendaRepository();
+      final service = buildService(
+        animals: const [],
+        agendaRepository: agenda,
+        locationRepository: _FakeLocationRepository([location]),
+      );
+
+      final generated = await service.sync(now: DateTime(2026, 1, 20));
+
+      expect(generated, 1);
+      final entry = (await agenda.fetchEntries()).single;
+      expect(
+        entry.id,
+        'auto:location-maintenance:corral-1:maintenance-1:20260215',
+      );
+      expect(entry.titulo, contains('Bomba de agua'));
+      expect(entry.actionKind, WorkActionType.maintenance.name);
+      expect(entry.locationUuid, 'corral-1');
     });
   }, skip: !_canRunIsarNative());
 }

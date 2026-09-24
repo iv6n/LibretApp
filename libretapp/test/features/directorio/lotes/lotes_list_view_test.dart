@@ -7,6 +7,7 @@ import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/lotes_list_view.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/theme/app_theme.dart';
 
 class _FakeLotesRepository implements LotesRepository {
   _FakeLotesRepository(this._lotes);
@@ -49,6 +50,9 @@ class _FakeLotesRepository implements LotesRepository {
     required String nombre,
     String? descripcion,
     String? notas,
+    double? feedPricePerKg,
+    double? dailyFeedKgPerHead,
+    double? liveWeightPricePerKg,
   }) async {
     final lote = LoteEntity(
       uuid: 'created-$nombre',
@@ -57,6 +61,9 @@ class _FakeLotesRepository implements LotesRepository {
       notes: notas,
       createdAt: DateTime(2024, 1, 1),
       lastUpdateDate: DateTime(2024, 1, 1),
+      feedPricePerKg: feedPricePerKg,
+      dailyFeedKgPerHead: dailyFeedKgPerHead,
+      liveWeightPricePerKg: liveWeightPricePerKg,
     );
     _lotes.add(lote);
     return lote;
@@ -118,6 +125,22 @@ class _FakeLotesRepository implements LotesRepository {
       _lotes.where((lote) => !lote.active).toList();
 }
 
+Future<void> _pumpLotes(WidgetTester tester, List<LoteEntity> lotes) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.lightTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('es'),
+      home: BlocProvider(
+        create: (_) => LotesBloc(_FakeLotesRepository(lotes)),
+        child: const LotesListView(),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -167,6 +190,76 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(repository.deletedUuids, contains('lote-1'));
+    });
+
+    testWidgets(
+      'shows all lots by default and filters active and closed lots',
+      (tester) async {
+        await _pumpLotes(tester, [
+          LoteEntity(
+            uuid: 'active-1',
+            name: 'Vientres productivos',
+            animalUuids: const ['animal-1', 'animal-2'],
+            createdAt: DateTime(2026, 9, 13),
+            lastUpdateDate: DateTime(2026, 9, 13),
+          ),
+          LoteEntity(
+            uuid: 'active-2',
+            name: 'Vaquillas de reemplazo',
+            createdAt: DateTime(2026, 9, 13),
+            lastUpdateDate: DateTime(2026, 9, 13),
+          ),
+          LoteEntity(
+            uuid: 'closed-1',
+            name: 'Lote cerrado',
+            active: false,
+            closedAt: DateTime(2026, 9, 13),
+            createdAt: DateTime(2026, 8, 1),
+            lastUpdateDate: DateTime(2026, 9, 13),
+          ),
+        ]);
+
+        expect(find.text('3 lotes'), findsOneWidget);
+        expect(find.text('Activos · 2'), findsOneWidget);
+        expect(find.text('Cerrados · 1'), findsOneWidget);
+
+        await tester.tap(find.text('Activos 2'));
+        await tester.pumpAndSettle();
+        expect(find.text('2 lotes'), findsOneWidget);
+        expect(find.text('Vientres productivos'), findsOneWidget);
+        expect(find.text('Lote cerrado'), findsNothing);
+        expect(find.text('Cerrados · 1'), findsNothing);
+
+        await tester.tap(find.text('Cerrados 1'));
+        await tester.pumpAndSettle();
+        expect(find.text('1 lotes'), findsOneWidget);
+        expect(find.text('Lote cerrado'), findsOneWidget);
+        expect(find.text('No hay lotes cerrados'), findsNothing);
+      },
+    );
+
+    testWidgets('keeps long cards usable on a compact viewport', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _pumpLotes(tester, [
+        LoteEntity(
+          uuid: 'compact-1',
+          name: 'Lote con un nombre suficientemente largo para truncarse',
+          description:
+              'Descripción extensa del lote que debe conservarse en una sola línea',
+          createdAt: DateTime(2026, 9, 13),
+          lastUpdateDate: DateTime(2026, 9, 13),
+        ),
+      ]);
+
+      expect(find.text('Sin animales asignados'), findsOneWidget);
+      expect(find.text('Activo'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

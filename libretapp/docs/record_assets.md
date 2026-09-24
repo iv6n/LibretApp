@@ -1,7 +1,7 @@
 # Operational Record Image Assets
 
-Operational record illustrations use the same soft 2.5D raster language as
-the location, task, status, health and inventory assets: centered square WEBPs,
+Operational record illustrations use the shared 2.5D language: centered square
+WEBPs with short gradients, soft contact shadows and integrated highlights,
 warm agricultural colors, simple silhouettes, no text or watermarks, and real
 RGBA transparency.
 

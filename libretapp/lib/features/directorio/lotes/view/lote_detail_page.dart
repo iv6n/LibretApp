@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a lotes \u203a view \u203a lote_detail_page \u2014 detail page for a single lote.
+/// features \u203a directorio \u203a lotes \u203a view \u203a lote_detail_page \u2014 detail page for a single lote.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,6 +15,7 @@ import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+import 'package:libretapp/features/directorio/lotes/view/lote_performance_panel.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -333,6 +334,13 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
               onEdit: () => _openEditPage(lote),
               onDelete: () => _confirmDelete(lote),
               onMoveLocation: () => _showMoveLoteSheet(lote),
+              onRegisterWeight: () async {
+                final saved = await context.pushNamed(
+                  AppRoutes.nameLoteRegistroPeso,
+                  pathParameters: {'uuid': lote.uuid},
+                );
+                if (saved == true && mounted) _reload();
+              },
             );
           },
         ),
@@ -347,12 +355,14 @@ class _LoteDetailContent extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onMoveLocation,
+    required this.onRegisterWeight,
   });
 
   final LoteEntity lote;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onMoveLocation;
+  final VoidCallback onRegisterWeight;
 
   @override
   Widget build(BuildContext context) {
@@ -388,6 +398,17 @@ class _LoteDetailContent extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: onRegisterWeight,
+            icon: const Icon(Icons.monitor_weight_outlined),
+            label: const Text('Registrar pesaje'),
+          ),
+        ),
+        const SizedBox(height: 16),
+        LotePerformancePanel(lote: lote),
         const SizedBox(height: 16),
         Row(
           children: [

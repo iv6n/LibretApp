@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a history_tab \u2014 history tab on the animal detail page.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a history_tab \u2014 history tab on the animal detail page.
 library;
 
 import 'dart:math' show max;
@@ -6,6 +6,7 @@ import 'dart:math' show max;
 import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/lotes/domain/services/weight_performance_calculator.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
@@ -58,15 +59,21 @@ class HistoryTab extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
+    return ListView(
       key: const PageStorageKey('history_list'),
       padding: contentPadding,
-      itemCount: events.length,
-      itemBuilder: (context, index) {
-        final event = events[index];
-        final isLast = index == events.length - 1;
-        return _TimelineEntry(event: event, isLast: isLast);
-      },
+      children: [
+        if (data.weights.isNotEmpty) ...[
+          _WeightHistorySummary(weights: data.weights),
+          const SizedBox(height: 8),
+        ],
+        ...events.asMap().entries.map(
+          (entry) => _TimelineEntry(
+            event: entry.value,
+            isLast: entry.key == events.length - 1,
+          ),
+        ),
+      ],
     );
   }
 
@@ -202,6 +209,169 @@ class HistoryTab extends StatelessWidget {
     return events;
   }
 }
+
+class _WeightHistorySummary extends StatelessWidget {
+  const _WeightHistorySummary({required this.weights});
+
+  final List<WeightRecord> weights;
+
+  @override
+  Widget build(BuildContext context) {
+    final ordered = weights.toList(growable: false)
+      ..sort((a, b) => a.date.compareTo(b.date));
+    final latest = ordered.last;
+    final calculator = const WeightPerformanceCalculator();
+    final latestPerformance = calculator.calculateAnimalPerformance(
+      animalUuid: latest.animalUuid ?? '',
+      currentWeightKg: latest.weight,
+      measuredAt: latest.date,
+      history: ordered,
+      currentRecordUuid: latest.recordUuid,
+    );
+    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final baseline = ordered
+        .where((record) => !record.date.isAfter(cutoff))
+        .lastOrNull;
+    final last30Gain = baseline == null
+        ? null
+        : latest.weight - baseline.weight;
+    final points = ordered.length > 8
+        ? ordered.sublist(ordered.length - 8)
+        : ordered;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'PESO',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _WeightMetric(
+                    'Actual',
+                    '${latest.weight.toStringAsFixed(1)} kg',
+                  ),
+                ),
+                Expanded(
+                  child: _WeightMetric(
+                    'Últimos 30 días',
+                    _signedKg(last30Gain),
+                  ),
+                ),
+                Expanded(
+                  child: _WeightMetric(
+                    'GDP',
+                    _adg(latestPerformance.adgKgPerDay),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 90,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _WeightTrendPainter(
+                  points.map((record) => record.weight).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeightMetric extends StatelessWidget {
+  const _WeightMetric(this.label, this.value);
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: Theme.of(context).textTheme.bodySmall),
+      const SizedBox(height: 2),
+      Text(
+        value,
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+      ),
+    ],
+  );
+}
+
+class _WeightTrendPainter extends CustomPainter {
+  _WeightTrendPainter(this.values);
+
+  final List<double> values;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+    final minValue = values.reduce((a, b) => a < b ? a : b);
+    final maxValue = values.reduce((a, b) => a > b ? a : b);
+    final range = (maxValue - minValue).abs();
+    final verticalRange = range == 0 ? 1.0 : range.toDouble();
+    final path = Path();
+    for (var index = 0; index < values.length; index++) {
+      final x = values.length == 1
+          ? 0.0
+          : size.width * index / (values.length - 1).toDouble();
+      final y =
+          size.height -
+          ((values[index] - minValue) / verticalRange) * (size.height - 8) -
+          4;
+      if (index == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    final paint = Paint()
+      ..color = Colors.green.shade700
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(path, paint);
+    final pointPaint = Paint()..color = Colors.green.shade700;
+    for (var index = 0; index < values.length; index++) {
+      final x = values.length == 1
+          ? 0.0
+          : size.width * index / (values.length - 1).toDouble();
+      final y =
+          size.height -
+          ((values[index] - minValue) / verticalRange) * (size.height - 8) -
+          4;
+      canvas.drawCircle(Offset(x, y), 3.5, pointPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeightTrendPainter oldDelegate) =>
+      oldDelegate.values != values;
+}
+
+String _signedKg(double? value) => value == null
+    ? '—'
+    : '${value >= 0 ? '+' : ''}${value.toStringAsFixed(1)} kg';
+
+String _adg(double? value) =>
+    value == null ? '—' : '${value.toStringAsFixed(2)} kg/d';
 
 class _TimelineEvent {
   const _TimelineEvent({
