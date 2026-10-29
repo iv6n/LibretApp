@@ -98,6 +98,45 @@ void main() {
       );
     },
   );
+
+  test('reconcileAll conserva tomas distintas del mismo plan', () async {
+    final repository = _MemoryAgendaRepository();
+    final service = OperationalPlanningService(agendaRepository: repository);
+    final targets = const [
+      WorkTargetRef(type: WorkTargetType.animal, id: 'pet-1'),
+    ];
+
+    final morning = await service.schedule(
+      title: 'Medicamento · mañana',
+      description: 'Toma de la mañana',
+      date: DateTime(2026, 8, 10, 8),
+      category: 'Cuidado',
+      action: WorkActionType.recordCare,
+      targets: targets,
+      sourceType: WorkSourceType.care.name,
+      sourceId: 'plan-1',
+      planId: 'plan-1',
+    );
+    final evening = await service.schedule(
+      title: 'Medicamento · tarde',
+      description: 'Toma de la tarde',
+      date: DateTime(2026, 8, 10, 8),
+      category: 'Cuidado',
+      action: WorkActionType.recordCare,
+      targets: targets,
+      sourceType: WorkSourceType.care.name,
+      sourceId: 'plan-1',
+      planId: 'plan-1',
+    );
+
+    await service.reconcileAll();
+
+    final entries = await repository.fetchEntries();
+    expect(
+      entries.map((entry) => entry.id),
+      containsAll([morning.id, evening.id]),
+    );
+  });
 }
 
 class _MemoryAgendaRepository implements AgendaRepository {
@@ -112,6 +151,11 @@ class _MemoryAgendaRepository implements AgendaRepository {
   @override
   Future<void> saveEntry(AgendaEntry entry) async {
     _entries[entry.id] = entry;
+  }
+
+  @override
+  Future<void> saveEntries(List<AgendaEntry> entries) async {
+    _entries.addEntries(entries.map((entry) => MapEntry(entry.id, entry)));
   }
 
   @override

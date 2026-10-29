@@ -6,7 +6,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('LocationEmptyView', () {
-    testWidgets('muestra CTA de crear y botón recargar', (tester) async {
+    testWidgets('muestra ilustración y una sola acción de crear', (
+      tester,
+    ) async {
       var tapped = false;
 
       await tester.pumpWidget(
@@ -21,9 +23,10 @@ void main() {
         ),
       );
 
-      expect(find.text('No hay ubicaciones registradas'), findsOneWidget);
+      expect(find.text('Da un lugar a cada registro'), findsOneWidget);
       expect(find.text('Crear ubicación'), findsOneWidget);
-      expect(find.text('Recargar'), findsOneWidget);
+      expect(find.text('Recargar'), findsNothing);
+      expect(find.byType(Image), findsOneWidget);
 
       await tester.tap(find.text('Crear ubicación'));
       await tester.pump();

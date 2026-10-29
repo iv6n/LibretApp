@@ -30,14 +30,19 @@ class QuickSummarySection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary, width: 1.5),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
               child: Text(
                 'Total: ${data.totalAnimals}',
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -107,13 +112,14 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final imagePath = _imagePath(summary.category);
-    final showSexBreakdown = summary.maleCount > 0 && summary.femaleCount > 0;
+    final showSexBreakdown =
+        summary.maleCount + summary.femaleCount + summary.unknownCount > 0;
 
     return Container(
       width: 92,
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.25)),
       ),
       padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
@@ -142,21 +148,35 @@ class _CategoryCard extends StatelessWidget {
               ),
               if (showSexBreakdown) ...[
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.male, size: 13, color: Colors.blue.shade400),
-                    Text(
-                      '${summary.maleCount}',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                    const SizedBox(width: 5),
-                    Icon(Icons.female, size: 13, color: Colors.pink.shade300),
-                    Text(
-                      '${summary.femaleCount}',
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                  ],
+                Semantics(
+                  label:
+                      'Machos ${summary.maleCount}, hembras ${summary.femaleCount}, sin dato ${summary.unknownCount}',
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.male, size: 12, color: Colors.blue.shade400),
+                      Text(
+                        '${summary.maleCount}',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.female, size: 12, color: Colors.pink.shade300),
+                      Text(
+                        '${summary.femaleCount}',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.help_outline,
+                        size: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      Text(
+                        '${summary.unknownCount}',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ],

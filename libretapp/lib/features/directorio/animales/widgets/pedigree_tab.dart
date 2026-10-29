@@ -30,7 +30,7 @@ class PedigreeTab extends StatelessWidget {
     );
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 112),
       children: [
         if (animal.sex == Sex.male && data.sireRecords.isNotEmpty)
           _SireSummary(
@@ -54,7 +54,8 @@ class PedigreeTab extends StatelessWidget {
         const SizedBox(height: 8),
         if (data.offspring.isEmpty)
           const _EmptyHint(
-            message: 'Sin crías registradas. Al registrar un parto puedes '
+            message:
+                'Sin crías registradas. Al registrar un parto puedes '
                 'dar de alta la cría y queda enlazada aquí.',
           )
         else
@@ -109,7 +110,10 @@ class _LineageSummary extends StatelessWidget {
             value: '${kpis.ageAtFirstCalvingMonths} meses',
           ),
         if (kpis.averageCalvingIntervalDays != null)
-          (label: 'IEP', value: '${kpis.averageCalvingIntervalDays!.round()} d'),
+          (
+            label: 'IEP',
+            value: '${kpis.averageCalvingIntervalDays!.round()} d',
+          ),
       ],
     );
   }
@@ -169,7 +173,8 @@ class _ParentsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     if (tree.sire == null && tree.dam == null) {
       return const _EmptyHint(
-        message: 'Sin padres registrados. Puedes asignarlos al editar el '
+        message:
+            'Sin padres registrados. Puedes asignarlos al editar el '
             'animal para empezar a construir su pedigrí.',
       );
     }
@@ -215,9 +220,10 @@ class _AncestorBranch extends StatelessWidget {
       return _AncestorCard(role: role, icon: icon, node: null);
     }
 
-    final grandparents = [current.sire, current.dam]
-        .whereType<PedigreeNode>()
-        .toList();
+    final grandparents = [
+      current.sire,
+      current.dam,
+    ].whereType<PedigreeNode>().toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -283,10 +289,7 @@ class _AncestorCard extends StatelessWidget {
         : 'Referencia sin ficha';
 
     final card = Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: dense ? 7 : 10,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: dense ? 7 : 10),
       decoration: BoxDecoration(
         color: known
             ? theme.colorScheme.surface
@@ -294,7 +297,9 @@ class _AncestorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: known
-              ? AnimalPalette.speciesColor(animal.species).withValues(alpha: 0.4)
+              ? AnimalPalette.speciesColor(
+                  animal.species,
+                ).withValues(alpha: 0.4)
               : theme.colorScheme.outlineVariant,
         ),
       ),
@@ -373,7 +378,11 @@ class _OffspringTile extends StatelessWidget {
             animal.species,
           ).withValues(alpha: 0.18),
           child: Icon(
-            animal.sex == Sex.male ? Icons.male : Icons.female,
+            switch (animal.sex) {
+              Sex.male => Icons.male,
+              Sex.female => Icons.female,
+              Sex.unknown => Icons.help_outline,
+            },
             size: 18,
             color: AnimalPalette.speciesColor(animal.species),
           ),
@@ -413,10 +422,12 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -435,8 +446,9 @@ class _EmptyHint extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest
-            .withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

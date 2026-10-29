@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
@@ -49,10 +50,14 @@ class HealthCareCycleService {
     CareRule? rule;
     for (final candidate in await _repository.getRules()) {
       if (candidate.type != careType) continue;
+      if ((animal.species == Species.canine || animal.species == Species.feline) &&
+          candidate.species == null) continue;
       if (candidate.species != null && candidate.species != animal.species) {
         continue;
       }
       if (candidate.sex != null && candidate.sex != animal.sex) continue;
+      if (!animal.hasKnownAge &&
+          (candidate.minAgeMonths != null || candidate.maxAgeMonths != null)) continue;
       if (candidate.minAgeMonths != null &&
           animal.ageMonths < candidate.minAgeMonths!) {
         continue;

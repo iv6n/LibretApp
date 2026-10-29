@@ -1,7 +1,8 @@
 /// Isar implementation of [CultivationRepository].
 library;
+import 'package:libretapp/core/utils/numeric_validation.dart';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
@@ -75,6 +76,7 @@ class CultivationRepositoryIsar implements CultivationRepository {
 
   @override
   Future<void> upsert(CultivationEntity cultivation) async {
+    requireFiniteNumbers(cultivation);
     final current = await _collection
         .filter()
         .uuidEqualTo(cultivation.uuid)

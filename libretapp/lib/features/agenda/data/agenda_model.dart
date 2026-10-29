@@ -154,6 +154,7 @@ class AgendaEntry extends Equatable {
     required this.titulo,
     required this.descripcion,
     required this.fecha,
+    this.hasExplicitTime = true,
     required this.tipo,
     required this.animalIds,
     required this.loteIds,
@@ -190,6 +191,9 @@ class AgendaEntry extends Equatable {
   final String titulo;
   final String descripcion;
   final DateTime fecha;
+
+  /// False for a date-only task. Legacy records retain their stored time.
+  final bool hasExplicitTime;
   final String tipo;
 
   /// IDs of animals assigned to this task. May be empty for general tasks.
@@ -263,6 +267,7 @@ class AgendaEntry extends Equatable {
     String? titulo,
     String? descripcion,
     DateTime? fecha,
+    bool? hasExplicitTime,
     String? tipo,
     List<String>? animalIds,
     List<String>? loteIds,
@@ -299,6 +304,7 @@ class AgendaEntry extends Equatable {
       titulo: titulo ?? this.titulo,
       descripcion: descripcion ?? this.descripcion,
       fecha: fecha ?? this.fecha,
+      hasExplicitTime: hasExplicitTime ?? this.hasExplicitTime,
       tipo: tipo ?? this.tipo,
       animalIds: animalIds ?? this.animalIds,
       loteIds: loteIds ?? this.loteIds,
@@ -365,6 +371,7 @@ class AgendaEntry extends Equatable {
     'titulo': titulo,
     'descripcion': descripcion,
     'fecha': fecha.toIso8601String(),
+    'hasExplicitTime': hasExplicitTime,
     'tipo': tipo,
     'animalIds': animalIds,
     'loteIds': loteIds,
@@ -415,6 +422,7 @@ class AgendaEntry extends Equatable {
       titulo: json['titulo'] as String,
       descripcion: json['descripcion'] as String? ?? '',
       fecha: DateTime.parse(json['fecha'] as String),
+      hasExplicitTime: json['hasExplicitTime'] as bool? ?? true,
       tipo: json['tipo'] as String,
       animalIds: parseAnimalIds(),
       loteIds:
@@ -500,6 +508,7 @@ class AgendaEntry extends Equatable {
     titulo,
     descripcion,
     fecha,
+    hasExplicitTime,
     tipo,
     animalIds,
     loteIds,

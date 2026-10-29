@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -24,7 +25,7 @@ Future<bool?> showAgendaBulkMovementSheet(
   LocationEntity? selected;
   var saving = false;
 
-  return showModalBottomSheet<bool>(
+  return showAppBottomSheet<bool>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,

@@ -4,6 +4,8 @@ library;
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
@@ -19,6 +21,7 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     : _animalRepository = animalRepository,
       super(const UbicacionesInitial()) {
     on<LoadUbicaciones>(_onLoadUbicaciones);
+    on<UbicacionesAnimalsUpdated>(_onAnimalsUpdated);
     on<UbicacionesStreamUpdated>(_onStreamUpdated);
     on<UbicacionesStreamFailed>(_onStreamFailed);
     on<DeleteUbicacion>(_onDeleteUbicacion);
@@ -57,6 +60,8 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   final LocationRepository repository;
   final AnimalRepository? _animalRepository;
   StreamSubscription<List<LocationEntity>>? _subscription;
+  StreamSubscription<List<AnimalEntity>>? _animalSubscription;
+  List<AnimalEntity>? _latestAnimals;
   List<LocationEntity> _latest = const [];
   String _searchQuery = '';
   bool _isSearching = false;
@@ -65,7 +70,6 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   Map<String, int> _animalCounts = const {};
   Map<String, int> _subtreeAnimalCounts = const {};
   Map<String, double> _averageWeights = const {};
-  String _lastCountsKey = '';
 
   Future<void> _onLoadUbicaciones(
     LoadUbicaciones event,
@@ -74,6 +78,10 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     emit(const UbicacionesLoading());
     try {
       await _subscription?.cancel();
+      await _animalSubscription?.cancel();
+      _animalSubscription = _animalRepository?.watchAll().listen((animals) {
+        if (!isClosed) add(UbicacionesAnimalsUpdated(animals));
+      }, onError: (_) {});
       var receivedFirstStreamEmission = false;
       _subscription = repository.watchAll().listen(
         (ubicaciones) {
@@ -94,7 +102,7 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
       if (!receivedFirstStreamEmission && !emit.isDone && !isClosed) {
         _latest = bootstrapData;
         _emitLoaded(emit);
-        unawaited(_refreshAnimalCounts(emit));
+        await _refreshAnimalCounts(emit);
       }
     } catch (e) {
       if (emit.isDone || isClosed) return;
@@ -102,14 +110,22 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     }
   }
 
-  void _onStreamUpdated(
+  Future<void> _onStreamUpdated(
     UbicacionesStreamUpdated event,
     Emitter<UbicacionesState> emit,
-  ) {
+  ) async {
     _latest = event.ubicaciones;
     _normalizeSelectedRancho();
     _emitLoaded(emit);
-    unawaited(_refreshAnimalCounts(emit));
+    await _refreshAnimalCounts(emit);
+  }
+
+  Future<void> _onAnimalsUpdated(
+    UbicacionesAnimalsUpdated event,
+    Emitter<UbicacionesState> emit,
+  ) async {
+    _latestAnimals = event.animals;
+    await _refreshAnimalCounts(emit);
   }
 
   void _onStreamFailed(
@@ -499,18 +515,15 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
     final repository = _animalRepository;
     if (repository == null || emit.isDone || isClosed) return;
 
-    final key = _latest.map((e) => e.uuid).join('|');
-    if (key == _lastCountsKey && _animalCounts.isNotEmpty) return;
-    _lastCountsKey = key;
-
     try {
       final ids = _latest.map((e) => e.uuid).toSet();
-      final animals = await repository.getAll();
+      final animals = _latestAnimals ?? await repository.getAll();
       final counts = <String, int>{};
       final weightTotals = <String, double>{};
       final weightSamples = <String, int>{};
 
       for (final animal in animals) {
+        if (animal.status != AnimalStatus.active) continue;
         final locId = animal.currentLocationId ?? animal.initialLocationId;
         if (locId == null || !ids.contains(locId)) continue;
         counts[locId] = (counts[locId] ?? 0) + 1;
@@ -604,6 +617,7 @@ class UbicacionesBloc extends Bloc<UbicacionesEvent, UbicacionesState> {
   @override
   Future<void> close() async {
     await _subscription?.cancel();
+    await _animalSubscription?.cancel();
     return super.close();
   }
 }

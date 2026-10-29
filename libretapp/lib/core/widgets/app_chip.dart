@@ -31,18 +31,17 @@ class AppChip extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       selected: selected,
-      label: label,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.sm),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minHeight: AppControlMetrics.compactHeight,
+          constraints: BoxConstraints(
+            minHeight: onTap == null ? AppControlMetrics.compactHeight : 48,
           ),
           child: Container(
             decoration: BoxDecoration(
               color: background,
-              borderRadius: BorderRadius.circular(AppRadii.sm),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
               border: Border.all(color: borderColor),
             ),
             padding: const EdgeInsets.symmetric(
@@ -56,11 +55,13 @@ class AppChip extends StatelessWidget {
                   Icon(icon, size: 16, color: colors.foreground),
                   const SizedBox(width: AppSpacing.xs),
                 ],
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.foreground,
-                    fontWeight: FontWeight.w700,
+                Flexible(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.foreground,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -73,39 +74,30 @@ class AppChip extends StatelessWidget {
 
   _ChipColors _colorsForTone(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final status =
+        Theme.of(context).extension<AppStatusTheme>() ??
+        AppStatusTheme(
+          info: scheme.primary,
+          success: AppColors.success,
+          warning: AppColors.warning,
+          error: scheme.error,
+        );
+    _ChipColors semantic(Color foreground) => _ChipColors(
+      foreground: foreground,
+      background: foreground.withValues(alpha: 0.08),
+      backgroundSelected: foreground.withValues(alpha: 0.16),
+      border: foreground.withValues(alpha: 0.30),
+      borderSelected: foreground.withValues(alpha: 0.44),
+    );
     switch (tone) {
       case AppChipTone.info:
-        return _ChipColors(
-          foreground: scheme.primary,
-          background: scheme.primary.withValues(alpha: 0.08),
-          backgroundSelected: scheme.primary.withValues(alpha: 0.14),
-          border: scheme.primary.withValues(alpha: 0.28),
-          borderSelected: scheme.primary.withValues(alpha: 0.40),
-        );
+        return semantic(status.info);
       case AppChipTone.success:
-        return _ChipColors(
-          foreground: AppColors.success,
-          background: AppColors.success.withValues(alpha: 0.08),
-          backgroundSelected: AppColors.success.withValues(alpha: 0.16),
-          border: AppColors.success.withValues(alpha: 0.26),
-          borderSelected: AppColors.success.withValues(alpha: 0.38),
-        );
+        return semantic(status.success);
       case AppChipTone.warning:
-        return _ChipColors(
-          foreground: AppColors.warning,
-          background: AppColors.warning.withValues(alpha: 0.10),
-          backgroundSelected: AppColors.warning.withValues(alpha: 0.18),
-          border: AppColors.warning.withValues(alpha: 0.32),
-          borderSelected: AppColors.warning.withValues(alpha: 0.44),
-        );
+        return semantic(status.warning);
       case AppChipTone.error:
-        return _ChipColors(
-          foreground: AppColors.error,
-          background: AppColors.error.withValues(alpha: 0.10),
-          backgroundSelected: AppColors.error.withValues(alpha: 0.18),
-          border: AppColors.error.withValues(alpha: 0.32),
-          borderSelected: AppColors.error.withValues(alpha: 0.44),
-        );
+        return semantic(status.error);
       case AppChipTone.neutral:
         return _ChipColors(
           foreground: scheme.onSurface.withValues(alpha: 0.78),

@@ -12,6 +12,7 @@ import 'package:libretapp/features/finanzas/widgets/kpi_card.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
+import 'package:libretapp/features/reportes/widgets/report_tiles.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class ReportesFinanzasTab extends StatefulWidget {
@@ -80,7 +81,9 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
             padding: listPadding,
             children: [
               ReportSectionCard(
-                title: 'Balance del mes',
+                title: s.invalidRecordCount > 0
+                    ? 'Balance parcial · revisar importes'
+                    : 'Balance del mes',
                 child: Column(
                   children: [
                     KpiCard(
@@ -93,26 +96,17 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                       large: true,
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: KpiCard(
-                            label: 'Ingresos',
-                            value: fmt.format(s.totalRevenue),
-                            icon: Icons.arrow_downward,
-                            color: AppColors.success,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: KpiCard(
-                            label: 'Egresos',
-                            value: fmt.format(s.totalExpenses),
-                            icon: Icons.arrow_upward,
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ],
+                    KpiCard(
+                      label: 'Ingresos',
+                      value: fmt.format(s.totalRevenue),
+                      icon: Icons.arrow_downward,
+                      color: AppColors.success,
+                    ),
+                    KpiCard(
+                      label: 'Egresos',
+                      value: fmt.format(s.totalExpenses),
+                      icon: Icons.arrow_upward,
+                      color: AppColors.error,
                     ),
                   ],
                 ),
@@ -128,24 +122,18 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
               ),
               ReportSectionCard(
                 title: 'Acciones rápidas',
-                child: Row(
+                child: ReportTiles(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () =>
-                            context.push(AppRoutes.registroIngreso),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Ingreso'),
-                      ),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push(AppRoutes.registroIngreso),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Ingreso'),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () =>
-                            context.push(AppRoutes.registroGastoGeneral),
-                        icon: const Icon(Icons.remove),
-                        label: const Text('Egreso'),
-                      ),
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          context.push(AppRoutes.registroGastoGeneral),
+                      icon: const Icon(Icons.remove),
+                      label: const Text('Egreso'),
                     ),
                   ],
                 ),
@@ -163,9 +151,10 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                             .map(
                               (c) => Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(child: Text(c.label)),
+                                    Text(c.label),
                                     Text(
                                       fmt.format(c.amount),
                                       style: const TextStyle(
@@ -236,14 +225,14 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
+                Text(
+                  '$sign${fmt.format(m.amount)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: m.isPositive ? AppColors.success : AppColors.error,
+                  ),
+                ),
               ],
-            ),
-          ),
-          Text(
-            '$sign${fmt.format(m.amount)}',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: m.isPositive ? AppColors.success : AppColors.error,
             ),
           ),
         ],
@@ -268,8 +257,9 @@ class _FinancePulse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final positive = balance >= 0;
     final total = revenue + expenses;
+    final hasActivity = total > 0;
+    final positive = balance >= 0;
     final revenueShare = total <= 0 ? 0.0 : revenue / total;
 
     return Column(
@@ -278,26 +268,39 @@ class _FinancePulse extends StatelessWidget {
         Row(
           children: [
             Icon(
-              positive ? Icons.savings_outlined : Icons.priority_high,
-              color: positive ? AppColors.success : AppColors.error,
+              !hasActivity
+                  ? Icons.info_outline
+                  : positive
+                  ? Icons.savings_outlined
+                  : Icons.priority_high,
+              color: !hasActivity
+                  ? theme.colorScheme.onSurfaceVariant
+                  : positive
+                  ? AppColors.success
+                  : AppColors.error,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                positive ? 'Margen positivo este mes' : 'Mes bajo presión',
+                !hasActivity
+                    ? 'Sin movimientos este mes'
+                    : positive
+                    ? 'Margen positivo este mes'
+                    : 'Mes bajo presión',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-            Text(
-              formatter.format(balance.abs()),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: positive ? AppColors.success : AppColors.error,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          formatter.format(balance.abs()),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: positive ? AppColors.success : AppColors.error,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         const SizedBox(height: 10),
         ClipRRect(

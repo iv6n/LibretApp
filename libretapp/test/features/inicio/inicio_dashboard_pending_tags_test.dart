@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -12,8 +10,6 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
-import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
-import 'package:libretapp/features/inicio/data/weather_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -34,7 +30,6 @@ void main() {
         locationRepository: _LocationRepo(),
         perfilRepository: _PerfilRepo(),
         reproductionRepository: _ReproductionRepo(),
-        weatherService: _Weather(),
       );
 
       final dashboard = await service.loadDashboard();
@@ -54,7 +49,7 @@ void main() {
     },
   );
 
-  test('does not wait indefinitely for supplementary weather', () async {
+  test('keeps weather loading outside the operational dashboard', () async {
     final service = InicioDashboardService(
       animalRepository: _AnimalRepo(const []),
       lotesRepository: _LotesRepo(),
@@ -62,7 +57,6 @@ void main() {
       locationRepository: _LocationRepo(),
       perfilRepository: _PerfilRepo(),
       reproductionRepository: _ReproductionRepo(),
-      weatherService: _NeverWeather(),
     );
 
     final dashboard = await service.loadDashboard().timeout(
@@ -173,20 +167,4 @@ class _ReproductionRepo implements ReproductionRecordRepository {
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Weather implements WeatherService {
-  @override
-  Future<WeatherData?> getCurrentWeather({
-    required List<LocationEntity> locations,
-    required String address,
-  }) async => null;
-}
-
-class _NeverWeather implements WeatherService {
-  @override
-  Future<WeatherData?> getCurrentWeather({
-    required List<LocationEntity> locations,
-    required String address,
-  }) => Completer<WeatherData?>().future;
 }

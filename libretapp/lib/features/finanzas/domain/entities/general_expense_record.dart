@@ -44,6 +44,7 @@ class GeneralExpenseRecord extends TimestampedRecord {
     required this.amount,
     this.currency,
     this.recordUuid,
+    this.updatedAt,
     super.notes,
     super.id,
   });
@@ -52,6 +53,7 @@ class GeneralExpenseRecord extends TimestampedRecord {
   final double amount;
   final String? currency;
   final String? recordUuid;
+  final DateTime? updatedAt;
 
   GeneralExpenseRecord copyWith({
     DateTime? date,
@@ -59,6 +61,7 @@ class GeneralExpenseRecord extends TimestampedRecord {
     double? amount,
     String? currency,
     String? recordUuid,
+    DateTime? updatedAt,
     String? notes,
     String? id,
   }) {
@@ -68,6 +71,7 @@ class GeneralExpenseRecord extends TimestampedRecord {
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       notes: notes ?? this.notes,
       id: id ?? this.id,
     );
@@ -80,5 +84,6 @@ class GeneralExpenseRecord extends TimestampedRecord {
     amount,
     currency,
     recordUuid,
+    updatedAt,
   ];
 }

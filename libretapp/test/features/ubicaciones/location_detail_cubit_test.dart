@@ -73,6 +73,18 @@ void main() {
     await locationRepository.dispose();
   });
 
+  test('failed location stream retries and clears the loading error', () async {
+    locationRepository._controller.addError(StateError('disk'));
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.state.isLoading, isFalse);
+    expect(cubit.state.errorMessage, isNotNull);
+    await cubit.retry();
+    locationRepository.emitLocations([_location('loc-1')]);
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.state.location?.uuid, 'loc-1');
+    expect(cubit.state.errorMessage, isNull);
+  });
+
   test('location becomes null (isNotFound) after it is deleted', () async {
     locationRepository.emitLocations([_location('loc-1'), _location('loc-2')]);
     await Future<void>.delayed(Duration.zero);

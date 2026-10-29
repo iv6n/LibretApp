@@ -13,23 +13,18 @@ part 'theme_event.dart';
 part 'theme_state.dart';
 
 class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
-  ThemeBloc({ThemeRepository? repository, Brightness? platformBrightness})
+  ThemeBloc({ThemeRepository? repository})
     : _repository = repository ?? locator<ThemeRepository>(),
-      _platformBrightness = platformBrightness,
-      super(const ThemeState(themeMode: ThemeMode.system)) {
+      super(const ThemeState(themeMode: ThemeMode.light)) {
     on<ThemeStarted>(_onStarted);
     on<ThemeModeChanged>(_onModeChanged);
     on<ThemeToggled>(_onToggled);
   }
 
   final ThemeRepository _repository;
-  final Brightness? _platformBrightness;
 
   Future<void> _onStarted(ThemeStarted event, Emitter<ThemeState> emit) async {
-    final fallback = _platformBrightness == Brightness.dark
-        ? ThemeMode.dark
-        : ThemeMode.light;
-    final saved = await _repository.loadThemeMode(fallback: fallback);
+    final saved = await _repository.loadThemeMode();
     emit(ThemeState(themeMode: saved));
   }
 

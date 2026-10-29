@@ -1,7 +1,7 @@
 /// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_income_record \u2014 Isar schema for IncomeRecord.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 
@@ -21,6 +21,7 @@ class IsarIncomeRecord implements StableRecordModel {
 
   late String type;
   late double amount;
+  DateTime? updatedAt;
   String? currency;
   String? animalUuid;
   String? notes;
@@ -36,6 +37,7 @@ extension IsarIncomeRecordMapper on IsarIncomeRecord {
       currency: currency,
       animalUuid: animalUuid,
       recordUuid: recordUuid,
+      updatedAt: updatedAt,
       notes: notes,
     );
   }
@@ -47,6 +49,7 @@ extension IncomeRecordToIsar on IncomeRecord {
       ..date = date
       ..type = type.name
       ..amount = amount
+      ..updatedAt = updatedAt
       ..currency = currency
       ..animalUuid = animalUuid
       ..recordUuid = recordUuid ?? ''

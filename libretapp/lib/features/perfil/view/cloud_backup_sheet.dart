@@ -6,6 +6,12 @@ import 'package:intl/intl.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/cloud_backup_service.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/backup/automatic_backup.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/services/prefs_keys.dart';
+import 'package:libretapp/core/workspace/workspace_registry.dart';
+import 'package:libretapp/core/workspace/workspace_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CloudBackupSheet extends StatefulWidget {
   const CloudBackupSheet({super.key});
@@ -95,14 +101,16 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
     if (mode == null || !mounted) return;
     setState(() => _busy = true);
     try {
+      final manager = locator<WorkspaceManager>();
       await _service.restore(metadata, mode: mode);
+      await manager.reload();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             mode == BackupImportMode.merge
-                ? 'Copia fusionada. Reinicia la app para recargar todo.'
-                : 'Copia restaurada. Reinicia la app para recargar todo.',
+                ? 'Copia fusionada.'
+                : 'Copia restaurada.',
           ),
         ),
       );
@@ -144,13 +152,14 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
             child: Column(
               children: [
-                Row(
+                Wrap(
+                  spacing: 12, runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       'Copias en la nube',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const Spacer(),
                     FilledButton.icon(
                       onPressed: _busy ? null : _backupNow,
                       icon: const Icon(Icons.cloud_upload_outlined),
@@ -158,6 +167,10 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                const Text('Hasta cinco copias verificadas por cuenta, de hasta 100 MiB. Se requiere Wi-Fi.'),
+                if (AutomaticBackup.supported && locator.isRegistered<LocalWorkspace>())
+                  _AutomaticBackupControl(workspace: locator<LocalWorkspace>()),
                 const SizedBox(height: 12),
                 if (_busy) const LinearProgressIndicator(),
                 Expanded(
@@ -209,4 +222,54 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
       ),
     );
   }
+}
+
+class _AutomaticBackupControl extends StatefulWidget {
+  const _AutomaticBackupControl({required this.workspace});
+  final LocalWorkspace workspace;
+  @override
+  State<_AutomaticBackupControl> createState() => _AutomaticBackupControlState();
+}
+class _AutomaticBackupControlState extends State<_AutomaticBackupControl> {
+  bool _enabled = false;
+  bool _busy = false;
+  String _status = 'pending';
+  DateTime? _last;
+  @override
+  void initState() { super.initState(); _load(); }
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    if (!mounted) return;
+    final key = AutomaticBackup.key(widget.workspace.userId!);
+    setState(() {
+      _enabled = prefs.getBool(key) == true;
+      _status = prefs.getString('$key.status') ?? 'pending';
+      _last = locator<SharedPrefsService>().getDateTime(PrefsKeys.lastCloudBackup);
+    });
+  }
+  Future<void> _toggle(bool enabled) async {
+    setState(() => _busy = true);
+    try {
+      await AutomaticBackup.setEnabled(widget.workspace, enabled);
+      await _load();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo cambiar la programación. Intenta de nuevo.')));
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+  @override
+  Widget build(BuildContext context) => Column(children: [
+    SwitchListTile.adaptive(value: _enabled, onChanged: _busy ? null : _toggle,
+      title: const Text('Respaldo automático cada 24 horas'),
+      subtitle: const Text('Solo por Wi-Fi y con batería suficiente. Android puede aplazarlo.')),
+    ListTile(title: Text(_last == null ? 'Sin copia correcta registrada' :
+      'Última copia correcta: ${DateFormat('dd/MM/yyyy HH:mm').format(_last!.toLocal())}'),
+      subtitle: Text(!_enabled ? 'Desactivado' : switch (_status) {
+        'running' => 'Creando copia',
+        'retry' => 'Fallo recuperable; Android volverá a intentarlo',
+        'success' => 'Copia correcta; próxima ejecución pendiente',
+        _ => 'Pendiente de Wi-Fi, batería y programación de Android',
+      }), trailing: IconButton(onPressed: _load, tooltip: 'Actualizar estado', icon: const Icon(Icons.refresh))),
+  ]);
 }

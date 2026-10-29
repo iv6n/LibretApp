@@ -291,17 +291,17 @@ void main() {
         earTag: 'TAG-NEW',
         breed: 'Brahman',
       );
-      await repository.save(created);
-
-      final afterSave = await stream
+      // Subscribe before writing: a broadcast stream does not replay an
+      // update that arrives while save/update/delete is being awaited.
+      final afterSaveFuture = stream
           .firstWhere((items) => items.any((item) => item.uuid == 'stream-new'))
           .timeout(const Duration(seconds: 3));
+      await repository.save(created);
+      final afterSave = await afterSaveFuture;
       expect(afterSave.any((item) => item.uuid == 'stream-new'), isTrue);
 
       final updated = created.copyWith(earTagNumber: 'TAG-UPDATED');
-      await repository.update(updated);
-
-      final afterUpdate = await stream
+      final afterUpdateFuture = stream
           .firstWhere(
             (items) => items.any(
               (item) =>
@@ -310,18 +310,20 @@ void main() {
             ),
           )
           .timeout(const Duration(seconds: 3));
+      await repository.update(updated);
+      final afterUpdate = await afterUpdateFuture;
       final updatedEntity = afterUpdate.firstWhere(
         (item) => item.uuid == 'stream-new',
       );
       expect(updatedEntity.earTagNumber, 'TAG-UPDATED');
 
-      await repository.delete('stream-new');
-
-      final afterDelete = await stream
+      final afterDeleteFuture = stream
           .firstWhere(
             (items) => items.every((item) => item.uuid != 'stream-new'),
           )
           .timeout(const Duration(seconds: 3));
+      await repository.delete('stream-new');
+      final afterDelete = await afterDeleteFuture;
       expect(afterDelete.any((item) => item.uuid == 'stream-new'), isFalse);
     },
     skip: !_canRunIsarNative(),

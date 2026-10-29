@@ -16,10 +16,12 @@ class IngresosList extends StatelessWidget {
     super.key,
     required this.incomes,
     required this.onDelete,
+    this.onEdit,
   });
 
   final List<IncomeRecord> incomes;
   final void Function(String id) onDelete;
+  final void Function(IncomeRecord record)? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -41,11 +43,12 @@ class IngresosList extends StatelessWidget {
           title: r.type.label,
           subtitle: r.notes,
           date: r.date,
-          amount: fmt.format(r.amount),
+          amount: r.amount.isFinite && r.amount > 0 ? fmt.format(r.amount) : 'Importe inválido',
           amountColor: Colors.teal,
           assetPath: AppAssetPaths.inventoryIncome,
           fallbackIcon: Icons.attach_money,
           currency: r.currency,
+          onEdit: onEdit == null ? null : () => onEdit!(r),
           onDelete: r.id != null ? () => onDelete(r.id!) : null,
         );
       },

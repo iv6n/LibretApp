@@ -1,14 +1,13 @@
 /// features \u203a directorio \u203a lotes \u203a view \u203a lote_form_page \u2014 form page for creating or editing a lote.
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/extensions/context_extensions.dart';
-import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
-import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
-import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 
@@ -60,28 +59,8 @@ class _LoteFormPageState extends State<LoteFormPage> {
     super.dispose();
   }
 
-  Future<bool> _dispatchAndAwait(LotesEvent event) async {
-    final bloc = context.read<LotesBloc>();
-    final future = bloc.stream
-        .skip(1)
-        .firstWhere(
-          (state) => state is! LotesActionInProgress,
-          orElse: () => bloc.state,
-        );
-
-    bloc.add(event);
-    final nextState = await future;
-
-    if (!mounted) return false;
-    if (nextState is LotesError) {
-      context.showErrorSnackBar(nextState.message);
-      return false;
-    }
-
-    return true;
-  }
-
   Future<void> _submit({LoteEntity? current}) async {
+    if (_saving) return;
     final nombre = _nombreController.text.trim();
     if (nombre.isEmpty) {
       context.showErrorSnackBar('Por favor ingresa un nombre para el lote');
@@ -95,49 +74,47 @@ class _LoteFormPageState extends State<LoteFormPage> {
       _saving = true;
     });
 
-    bool ok;
-    if (widget.isEdit) {
-      if (current == null) {
-        if (mounted) {
-          context.showErrorSnackBar('No se encontró el lote para editar');
+    try {
+      // Overlay routes opened from Registros do not inherit the directory's
+      // LotesBloc. Persist through the injected repository and let its streams
+      // update the directory after the operation has completed.
+      if (widget.isEdit) {
+        if (current == null) {
+          throw StateError('No se encontró el lote para editar');
         }
-        setState(() {
-          _saving = false;
-        });
-        return;
-      }
-
-      final updated = current.copyWith(
-        name: nombre,
-        description: _descripcionController.text.trim(),
-        notes: _notasController.text.trim(),
-        feedPricePerKg: economics.feedPricePerKg,
-        dailyFeedKgPerHead: economics.dailyFeedKgPerHead,
-        liveWeightPricePerKg: economics.liveWeightPricePerKg,
-        lastUpdateDate: DateTime.now(),
-        synced: false,
-      );
-      ok = await _dispatchAndAwait(UpdateLote(updated));
-    } else {
-      ok = await _dispatchAndAwait(
-        CreateLote(
-          name: nombre,
-          description: _descripcionController.text.trim(),
-          notes: _notasController.text.trim(),
+        await widget.repository.updateLote(
+          current.copyWith(
+            name: nombre,
+            description: _descripcionController.text.trim(),
+            notes: _notasController.text.trim(),
+            feedPricePerKg: economics.feedPricePerKg,
+            dailyFeedKgPerHead: economics.dailyFeedKgPerHead,
+            liveWeightPricePerKg: economics.liveWeightPricePerKg,
+            lastUpdateDate: DateTime.now(),
+            synced: false,
+          ),
+        );
+      } else {
+        await widget.repository.createLote(
+          nombre: nombre,
+          descripcion: _descripcionController.text.trim(),
+          notas: _notasController.text.trim(),
           feedPricePerKg: economics.feedPricePerKg,
           dailyFeedKgPerHead: economics.dailyFeedKgPerHead,
           liveWeightPricePerKg: economics.liveWeightPricePerKg,
-        ),
-      );
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _saving = false;
-    });
-
-    if (ok) {
-      Navigator.of(context).pop(true);
+        );
+      }
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (mounted) {
+        context.showErrorSnackBar(
+          error is StateError
+              ? error.message
+              : 'No se pudo guardar el lote. Intenta de nuevo.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -148,7 +125,13 @@ class _LoteFormPageState extends State<LoteFormPage> {
     return ShellChromeScope(
       visible: false,
       child: Scaffold(
-        appBar: AppBar(title: Text(title)),
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: title,
+            assetPath: RecordFormStyle.lot.assetPath,
+            fallbackIcon: RecordFormStyle.lot.icon,
+          ),
+        ),
         body: widget.isEdit
             ? FutureBuilder<LoteEntity?>(
                 future: _editFuture,
@@ -178,103 +161,84 @@ class _LoteFormPageState extends State<LoteFormPage> {
   }
 
   Widget _buildForm({LoteEntity? current}) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nombreController,
-              key: const ValueKey('lote-name'),
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Nombre del lote',
-                border: OutlineInputBorder(),
-              ),
+    return AppFormBody(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppRecordHeader(style: RecordFormStyle.lot),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nombreController,
+            key: const ValueKey('lote-name'),
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: 'Nombre del lote',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _descripcionController,
-              textInputAction: TextInputAction.next,
-              maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'Descripción (opcional)',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _descripcionController,
+            textInputAction: TextInputAction.next,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Descripción (opcional)',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _notasController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Notas (opcional)',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _notasController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Notas (opcional)',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Economía del lote (opcional)',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Economía del lote (opcional)',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _feedPriceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Precio alimento / kg',
+              prefixText: '\$ ',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _feedPriceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Precio alimento / kg',
-                prefixText: '\$ ',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _dailyFeedController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Consumo diario / cabeza (kg)',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _dailyFeedController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Consumo diario / cabeza (kg)',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _livePriceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Precio kg vivo (opcional)',
+              prefixText: '\$ ',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _livePriceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Precio kg vivo (opcional)',
-                prefixText: '\$ ',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                key: const ValueKey('lote-save'),
-                onPressed: _saving ? null : () => _submit(current: current),
-                icon: Icon(widget.isEdit ? Icons.save : Icons.add),
-                label: Text(_saving ? 'Guardando...' : 'Guardar'),
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: _saving ? null : () => Navigator.of(context).pop(),
-                child: const Text('Cancelar'),
-              ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          AppFormActions(
+            saveKey: const ValueKey('lote-save'),
+            saving: _saving,
+            onSave: () => _submit(current: current),
+            onCancel: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
     );
   }
@@ -325,7 +289,7 @@ class _LoteFormPageState extends State<LoteFormPage> {
 
   double? _parseEconomic(String value) => value.trim().isEmpty
       ? null
-      : double.tryParse(value.trim().replaceAll(',', '.'));
+      : parseFormDouble(value.trim().replaceAll(',', '.'));
 
   String _formatEconomic(double value) =>
       value.toStringAsFixed(value == value.roundToDouble() ? 0 : 2);

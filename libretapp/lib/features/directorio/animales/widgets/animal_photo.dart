@@ -46,6 +46,47 @@ ImageProvider<Object>? animalPhotoProvider(String? path) {
   return file.existsSync() ? FileImage(file) : null;
 }
 
+/// Species illustrations shown when a pet has no personal photograph.
+String? petIllustrationAsset(Species species) => switch (species) {
+  Species.canine => 'assets/images/canino.webp',
+  Species.feline => 'assets/images/felino.png',
+  _ => null,
+};
+
+Future<void> showAnimalPhoto(
+  BuildContext context, {
+  required String? path,
+  required String name,
+}) => showDialog<void>(
+  context: context,
+  useSafeArea: false,
+  builder: (context) => Dialog.fullscreen(
+    child: Scaffold(
+      appBar: AppBar(
+        title: Text(name),
+        leading: IconButton(
+          tooltip: 'Cerrar fotografía',
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: InteractiveViewer(
+          minScale: 0.75,
+          maxScale: 5,
+          child: Center(
+            child: AnimalPhotoImage(
+              path: path,
+              fit: BoxFit.contain,
+              fallback: const Text('Fotografía no disponible'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  ),
+);
+
 class AnimalPhotoField extends StatelessWidget {
   const AnimalPhotoField({
     super.key,
@@ -53,12 +94,14 @@ class AnimalPhotoField extends StatelessWidget {
     required this.species,
     required this.onChanged,
     this.enabled = true,
+    this.compact = false,
   });
 
   final String? photoPath;
   final Species species;
   final ValueChanged<String?> onChanged;
   final bool enabled;
+  final bool compact;
 
   Future<void> _pick(BuildContext context) async {
     final source = await showImageSourcePicker(context);
@@ -88,6 +131,48 @@ class AnimalPhotoField extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final hasPhoto = (photoPath ?? '').trim().isNotEmpty;
     final colorScheme = Theme.of(context).colorScheme;
+    if (compact) {
+      return Semantics(
+        label: hasPhoto
+            ? 'Fotografía del animal añadida'
+            : 'Fotografía opcional del animal',
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: AnimalPhotoImage(
+                  path: photoPath,
+                  fallback: _SpeciesFallback(species: species),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: enabled ? () => _pick(context) : null,
+                icon: Icon(
+                  hasPhoto
+                      ? Icons.cameraswitch_outlined
+                      : Icons.add_a_photo_outlined,
+                ),
+                label: Text(
+                  hasPhoto ? l10n.animalPhotoReplace : l10n.animalPhotoAdd,
+                ),
+              ),
+            ),
+            if (hasPhoto)
+              IconButton(
+                tooltip: l10n.animalPhotoRemove,
+                onPressed: enabled ? () => onChanged(null) : null,
+                icon: const Icon(Icons.delete_outline),
+              ),
+          ],
+        ),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -145,13 +230,23 @@ class _SpeciesFallback extends StatelessWidget {
   final Species species;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Icon(
-      _iconForSpecies(species),
-      size: 54,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  );
+  Widget build(BuildContext context) {
+    final illustration = petIllustrationAsset(species);
+    return Center(
+      child: illustration == null
+          ? Icon(
+              _iconForSpecies(species),
+              size: 54,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            )
+          : Image.asset(
+              illustration,
+              height: 132,
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
+    );
+  }
 
   static IconData _iconForSpecies(Species species) => switch (species) {
     Species.cattle => Icons.agriculture_outlined,
@@ -159,7 +254,7 @@ class _SpeciesFallback extends StatelessWidget {
     Species.sheep || Species.goat => Icons.pets_outlined,
     Species.pig => Icons.cruelty_free_outlined,
     Species.poultry => Icons.egg_outlined,
-    Species.canine => Icons.pets,
+    Species.canine || Species.feline => Icons.pets,
     Species.other => Icons.category_outlined,
   };
 }

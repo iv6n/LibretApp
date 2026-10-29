@@ -2,6 +2,7 @@
 library;
 
 import 'package:geolocator/geolocator.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 
 class GeoCapture {
   const GeoCapture({
@@ -19,6 +20,7 @@ class GeoCapture {
 
 class GpsCaptureService {
   Future<GeoCapture?> tryCapture() async {
+    if (!ReleaseFeatures.gpsCaptureEnabled) return null;
     try {
       if (!await Geolocator.isLocationServiceEnabled()) return null;
       var permission = await Geolocator.checkPermission();

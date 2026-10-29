@@ -1,7 +1,7 @@
 /// features › directorio › animales › infrastructure › cost_record_repository_isar
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_cost_record.dart';
@@ -31,7 +31,12 @@ class CostRecordRepositoryIsar
 
   @override
   IsarCostRecord toIsarModel(CostRecord record, String animalUuid) =>
-      record.toIsar(animalUuid);
+      _validated(record, animalUuid);
+
+  IsarCostRecord _validated(CostRecord record, String animalUuid) {
+    if (!record.amount.isFinite || record.amount <= 0) throw ArgumentError('Indica un importe finito y positivo.');
+    return record.toIsar(animalUuid);
+  }
 
   @override
   CostRecord toEntity(IsarCostRecord model) => model.toEntity();

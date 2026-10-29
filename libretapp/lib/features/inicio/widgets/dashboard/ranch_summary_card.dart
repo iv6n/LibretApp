@@ -19,9 +19,7 @@ class RanchSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: cs.outlineVariant.withValues(alpha: 0.55),
-        ),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -36,20 +34,19 @@ class RanchSummaryCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-            child: Row(
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 12,
+              runSpacing: 6,
               children: [
-                Expanded(
-                  child: Text(
-                    'Resumen del rancho',
-                    style: tt.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                Text(
+                  'Resumen del rancho',
+                  style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 Text(
-                  '${data.totalAnimals} animales',
+                  '${data.totalAnimals} ${data.totalAnimals == 1 ? 'animal' : 'animales'}',
                   style: tt.labelSmall?.copyWith(
-                    color: AppColors.primary,
+                    color: cs.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -71,8 +68,12 @@ class RanchSummaryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _RanchKpiTile(
-                    label: 'Capacidad',
-                    value: '${data.totalAnimalCapacity}',
+                    label: data.totalAnimalCapacity == 0
+                        ? 'Capacidad sin dato'
+                        : 'Capacidad',
+                    value: data.totalAnimalCapacity == 0
+                        ? '—'
+                        : '${data.totalAnimalCapacity}',
                     icon: Icons.square_foot_outlined,
                     color: AppColors.secondary,
                   ),
@@ -106,10 +107,10 @@ class RanchSummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const SizedBox(
-            height: 118,
+          SizedBox(
+            height: MediaQuery.sizeOf(context).height < 720 ? 64 : 118,
             width: double.infinity,
-            child: RanchLandscapeIllustration(),
+            child: const RanchLandscapeIllustration(),
           ),
         ],
       ),
@@ -208,7 +209,11 @@ class _RanchLandscapePainter extends CustomPainter {
     canvas.drawRect(sky, skyPaint);
 
     final sunPaint = Paint()..color = const Color(0xFFF2C94C);
-    canvas.drawCircle(Offset(size.width * 0.82, size.height * 0.22), 14, sunPaint);
+    canvas.drawCircle(
+      Offset(size.width * 0.82, size.height * 0.22),
+      14,
+      sunPaint,
+    );
 
     final backHill = Path()
       ..moveTo(0, size.height * 0.72)
@@ -250,7 +255,11 @@ class _RanchLandscapePainter extends CustomPainter {
 
     _drawBarn(canvas, Offset(size.width * 0.42, size.height * 0.52));
     _drawTree(canvas, Offset(size.width * 0.18, size.height * 0.58));
-    _drawTree(canvas, Offset(size.width * 0.72, size.height * 0.56), scale: 0.85);
+    _drawTree(
+      canvas,
+      Offset(size.width * 0.72, size.height * 0.56),
+      scale: 0.85,
+    );
     _drawFence(canvas, size);
   }
 
@@ -312,7 +321,11 @@ class _RanchLandscapePainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final y = size.height * 0.86;
-    canvas.drawLine(Offset(size.width * 0.08, y), Offset(size.width * 0.92, y), paint);
+    canvas.drawLine(
+      Offset(size.width * 0.08, y),
+      Offset(size.width * 0.92, y),
+      paint,
+    );
 
     for (var x = size.width * 0.12; x < size.width * 0.9; x += 18) {
       canvas.drawLine(Offset(x, y - 10), Offset(x, y + 4), paint);

@@ -2,6 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/record_save_scope.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -17,7 +19,7 @@ import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart'
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
 
-class CultivationDetailPage extends StatelessWidget {
+class CultivationDetailPage extends StatefulWidget {
   CultivationDetailPage({
     super.key,
     required this.cultivationUuid,
@@ -29,6 +31,33 @@ class CultivationDetailPage extends StatelessWidget {
   final String cultivationUuid;
   final CultivationRepository repository;
   final LocationRepository locationRepository;
+
+  @override
+  State<CultivationDetailPage> createState() => _CultivationDetailPageState();
+}
+
+class _CultivationDetailPageState extends State<CultivationDetailPage> {
+  late Stream<List<CultivationEntity>> _stream;
+  CultivationRepository get repository => widget.repository;
+  LocationRepository get locationRepository => widget.locationRepository;
+  String get cultivationUuid => widget.cultivationUuid;
+  @override
+  void initState() {
+    super.initState();
+    _subscribe();
+  }
+
+  void _subscribe() {
+    _stream = repository.watchAll(includeArchived: true);
+  }
+
+  @override
+  void didUpdateWidget(CultivationDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.repository != repository ||
+        oldWidget.cultivationUuid != cultivationUuid)
+      _subscribe();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +78,17 @@ class CultivationDetailPage extends StatelessWidget {
           ],
         ),
         body: StreamBuilder<List<CultivationEntity>>(
-          stream: repository.watchAll(includeArchived: true),
+          stream: _stream,
           builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return AppEmptyState(
+                title: 'No se pudo cargar el cultivo',
+                action: FilledButton(
+                  onPressed: () => setState(_subscribe),
+                  child: const Text('Reintentar'),
+                ),
+              );
+            }
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -81,7 +119,7 @@ class CultivationDetailPage extends StatelessWidget {
   }
 }
 
-class _CultivationDetailBody extends StatelessWidget {
+class _CultivationDetailBody extends StatefulWidget {
   const _CultivationDetailBody({
     required this.cultivation,
     required this.location,
@@ -91,6 +129,32 @@ class _CultivationDetailBody extends StatelessWidget {
   final CultivationEntity cultivation;
   final LocationEntity? location;
   final CultivationRepository repository;
+
+  @override
+  State<_CultivationDetailBody> createState() => _CultivationDetailBodyState();
+}
+
+class _CultivationDetailBodyState extends State<_CultivationDetailBody> {
+  CultivationEntity get cultivation => widget.cultivation;
+  LocationEntity? get location => widget.location;
+  CultivationRepository get repository => widget.repository;
+  bool _busy = false;
+  Future<void> _perform(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await action();
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo guardar. Vuelve a intentarlo.'),
+          ),
+        );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,39 +169,41 @@ class _CultivationDetailBody extends StatelessWidget {
         children: [
           _OverviewCard(cultivation: cultivation, location: location),
           const SizedBox(height: 12),
-          Text(
-            'Registrar actividad',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
+          if (cultivation.isActive)
+            Text(
+              'Registrar actividad',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _ActionButton(
-                icon: Icons.water_drop_outlined,
-                label: 'Riego',
-                onPressed: () => _addWatering(context),
-              ),
-              _ActionButton(
-                icon: Icons.agriculture_outlined,
-                label: 'Cosecha',
-                onPressed: () => _addHarvest(context),
-              ),
-              _ActionButton(
-                icon: Icons.health_and_safety_outlined,
-                label: 'Salud',
-                onPressed: () => _addHealth(context),
-              ),
-              _ActionButton(
-                icon: Icons.add_task_outlined,
-                label: 'Tarea',
-                onPressed: () => _addTask(context),
-              ),
-            ],
-          ),
+          if (cultivation.isActive)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _ActionButton(
+                  icon: Icons.water_drop_outlined,
+                  label: 'Riego',
+                  onPressed: () => _addWatering(context),
+                ),
+                _ActionButton(
+                  icon: Icons.agriculture_outlined,
+                  label: 'Cosecha',
+                  onPressed: () => _addHarvest(context),
+                ),
+                _ActionButton(
+                  icon: Icons.health_and_safety_outlined,
+                  label: 'Salud',
+                  onPressed: () => _addHealth(context),
+                ),
+                _ActionButton(
+                  icon: Icons.add_task_outlined,
+                  label: 'Tarea',
+                  onPressed: () => _addTask(context),
+                ),
+              ],
+            ),
           if (pending.isNotEmpty) ...[
             const SizedBox(height: 18),
             _SectionCard(
@@ -161,13 +227,15 @@ class _CultivationDetailBody extends StatelessWidget {
                     trailing: IconButton(
                       tooltip: 'Marcar como realizada',
                       icon: const Icon(Icons.check_circle_outline),
-                      onPressed: () async {
-                        await repository.completeTask(
-                          cultivation.uuid,
-                          task.uuid,
-                        );
-                        await _syncAgenda();
-                      },
+                      onPressed: _busy
+                          ? null
+                          : () => _perform(() async {
+                              await repository.completeTask(
+                                cultivation.uuid,
+                                task.uuid,
+                              );
+                              await _syncAgenda();
+                            }),
                     ),
                   ),
               ],
@@ -211,7 +279,7 @@ class _CultivationDetailBody extends StatelessWidget {
             OutlinedButton.icon(
               icon: const Icon(Icons.archive_outlined),
               label: const Text('Archivar cultivo'),
-              onPressed: () => _archive(context),
+              onPressed: _busy ? null : () => _perform(() => _archive(context)),
             ),
           ],
         ],
@@ -219,53 +287,64 @@ class _CultivationDetailBody extends StatelessWidget {
     );
   }
 
-  Future<T?> _openSheet<T>(BuildContext context, Widget child) {
-    return showModalBottomSheet<T>(
+  Future<T?> _openSheet<T>(
+    BuildContext context,
+    Widget child,
+    Future<void> Function(T) onSave,
+  ) {
+    return showAppBottomSheet<T>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => SingleChildScrollView(child: child),
+      builder: (_) => RecordSaveScope(
+        onSave: (value) => onSave(value as T),
+        child: SingleChildScrollView(child: child),
+      ),
     );
   }
 
   Future<void> _addWatering(BuildContext context) async {
-    final record = await _openSheet<CropWateringRecord>(
+    await _openSheet<CropWateringRecord>(
       context,
       CropWateringFormSheet(cropName: cultivation.name),
+      (value) async {
+        await repository.addWatering(cultivation.uuid, value);
+        await _syncAgenda();
+      },
     );
-    if (record == null) return;
-    await repository.addWatering(cultivation.uuid, record);
-    await _syncAgenda();
   }
 
   Future<void> _addHarvest(BuildContext context) async {
-    final record = await _openSheet<HarvestRecord>(
+    await _openSheet<HarvestRecord>(
       context,
       HarvestFormSheet(cropName: cultivation.name),
+      (value) async {
+        await repository.addHarvest(cultivation.uuid, value);
+        await _syncAgenda();
+      },
     );
-    if (record == null) return;
-    await repository.addHarvest(cultivation.uuid, record);
-    await _syncAgenda();
   }
 
   Future<void> _addHealth(BuildContext context) async {
-    final record = await _openSheet<CropHealthRecord>(
+    await _openSheet<CropHealthRecord>(
       context,
       CropHealthFormSheet(cropName: cultivation.name),
+      (value) async {
+        await repository.addHealth(cultivation.uuid, value);
+        await _syncAgenda();
+      },
     );
-    if (record == null) return;
-    await repository.addHealth(cultivation.uuid, record);
-    await _syncAgenda();
   }
 
   Future<void> _addTask(BuildContext context) async {
-    final task = await _openSheet<CropTask>(
+    await _openSheet<CropTask>(
       context,
       CropTaskFormSheet(cropName: cultivation.name),
+      (value) async {
+        await repository.addTask(cultivation.uuid, value);
+        await _syncAgenda();
+      },
     );
-    if (task == null) return;
-    await repository.addTask(cultivation.uuid, task);
-    await _syncAgenda();
   }
 
   Future<void> _archive(BuildContext context) async {
@@ -295,7 +374,11 @@ class _CultivationDetailBody extends StatelessWidget {
 
   Future<void> _syncAgenda() async {
     if (!locator.isRegistered<AgendaReminderSyncService>()) return;
-    await locator<AgendaReminderSyncService>().sync();
+    try {
+      await locator<AgendaReminderSyncService>().sync();
+    } catch (_) {
+      /* The record is already persisted; a later sync retries the projection. */
+    }
   }
 
   String _date(DateTime value) => '${value.day}/${value.month}/${value.year}';
@@ -349,7 +432,6 @@ class _OverviewCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Chip(label: Text(cultivation.status.displayName)),
               ],
             ),
             const SizedBox(height: 14),
@@ -357,6 +439,7 @@ class _OverviewCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
+                Chip(label: Text(cultivation.status.displayName)),
                 Chip(label: Text(cultivation.scale.displayName)),
                 Chip(label: Text(cultivation.measureLabel)),
                 Chip(label: Text(cultivation.growthStage.displayName)),

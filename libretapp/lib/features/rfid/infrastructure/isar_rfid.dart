@@ -1,7 +1,7 @@
 /// Isar persistence models for RFID associations and scan sessions.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/rfid/domain/rfid_models.dart';
 
 part 'isar_rfid.g.dart';

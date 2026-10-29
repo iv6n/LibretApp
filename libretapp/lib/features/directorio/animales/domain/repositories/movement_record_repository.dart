@@ -3,6 +3,17 @@ library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 
+class MovementBatchEntry {
+  const MovementBatchEntry(this.animalUuid, this.record);
+  final String animalUuid;
+  final MovementRecord record;
+}
+
+abstract interface class AtomicMovementRepository {
+  Future<List<MovementRecord>> addMovementRecordsAtomically(List<MovementBatchEntry> entries);
+  Future<void> moveLotAtomically(String lotUuid, String? destinationId);
+}
+
 abstract class MovementRecordRepository {
   Future<List<MovementRecord>> getMovementRecords(String animalUuid);
   Future<MovementRecord> addMovementRecord(

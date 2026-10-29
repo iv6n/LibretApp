@@ -3,11 +3,12 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 Future<ImageSource?> showImageSourcePicker(BuildContext context) {
   final l10n = AppLocalizations.of(context);
-  return showModalBottomSheet<ImageSource>(
+  return showAppBottomSheet<ImageSource>(
     context: context,
     useRootNavigator: true,
     builder: (sheetContext) => SafeArea(

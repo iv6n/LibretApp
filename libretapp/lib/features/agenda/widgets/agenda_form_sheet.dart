@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -19,7 +20,7 @@ Future<void> showAgendaFormSheet({
   AgendaEntry? entry,
   List<LocationEntity> locations = const [],
 }) async {
-  await showModalBottomSheet<void>(
+  await showAppBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
@@ -79,7 +80,8 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
   String? _locationUuid;
 
   late DateTime _fechaSeleccionada;
-  late String _tipoSeleccionado;
+  late bool _hasExplicitTime;
+  String? _tipoSeleccionado;
   late List<String> _selectedAnimalIds;
   late List<String> _selectedLoteIds;
   late String _prioridad;
@@ -105,7 +107,8 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
     );
 
     _fechaSeleccionada = widget.entry?.fecha ?? widget.initialDate;
-    _tipoSeleccionado = widget.entry?.tipo ?? agendaTipos.first;
+    _hasExplicitTime = widget.entry?.hasExplicitTime ?? false;
+    _tipoSeleccionado = widget.entry?.tipo;
     _selectedAnimalIds = List<String>.from(widget.entry?.animalIds ?? []);
     _selectedLoteIds = List<String>.from(widget.entry?.loteIds ?? []);
     _prioridad = widget.entry?.prioridad ?? AgendaPrioridad.normal;
@@ -172,7 +175,8 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
       titulo: _tituloController.text.trim(),
       descripcion: _descripcionController.text.trim(),
       fecha: _fechaSeleccionada,
-      tipo: _tipoSeleccionado,
+      hasExplicitTime: _hasExplicitTime,
+      tipo: _tipoSeleccionado!,
       animalIds: _selectedAnimalIds,
       loteIds: _selectedLoteIds,
       ubicacion: ubicacion,
@@ -223,21 +227,27 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
               ),
               const SizedBox(height: 12),
             ],
-            Text(
-              widget.entry == null ? 'Nueva tarea / evento' : 'Editar tarea',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 14),
+            if (widget.showDragHandle) ...[
+              Text(
+                widget.entry == null ? 'Nueva tarea / evento' : 'Editar tarea',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 14),
+            ],
             AppSelectField<String>(
               value: _tipoSeleccionado,
               items: agendaTipos,
               itemLabel: (tipo) => tipo,
               onChanged: (value) {
-                setState(() => _tipoSeleccionado = value ?? agendaTipos.first);
+                setState(() => _tipoSeleccionado = value);
               },
               labelText: 'Tipo de tarea',
+              hintText: 'Selecciona un tipo',
+              requiredField: true,
+              validator: (value) =>
+                  value == null ? 'Selecciona un tipo de tarea' : null,
               prefixIcon: const Icon(Icons.category_outlined),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -376,8 +386,9 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
               variant: AppButtonVariant.secondary,
               expanded: true,
               icon: Icons.schedule_outlined,
-              label:
-                  'Hora límite · ${DateFormat('HH:mm').format(_fechaSeleccionada)}',
+              label: _hasExplicitTime
+                  ? 'Hora límite · ${DateFormat('HH:mm').format(_fechaSeleccionada)}'
+                  : 'Sin hora · Añadir hora',
               onPressed: () async {
                 final picked = await showTimePicker(
                   context: context,
@@ -385,6 +396,7 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
                 );
                 if (picked == null) return;
                 setState(() {
+                  _hasExplicitTime = true;
                   _fechaSeleccionada = DateTime(
                     _fechaSeleccionada.year,
                     _fechaSeleccionada.month,
@@ -395,6 +407,18 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
                 });
               },
             ),
+            if (_hasExplicitTime)
+              TextButton(
+                onPressed: () => setState(() {
+                  _hasExplicitTime = false;
+                  _fechaSeleccionada = DateTime(
+                    _fechaSeleccionada.year,
+                    _fechaSeleccionada.month,
+                    _fechaSeleccionada.day,
+                  );
+                }),
+                child: const Text('Quitar hora'),
+              ),
             const SizedBox(height: AppSpacing.sm),
             AppSelectField<String>(
               value: _recurrenceRule ?? '',

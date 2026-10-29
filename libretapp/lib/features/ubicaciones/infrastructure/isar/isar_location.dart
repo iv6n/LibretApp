@@ -1,7 +1,7 @@
-﻿/// features \u203a ubicaciones \u203a infrastructure \u203a isar \u203a isar_location \u2014 Isar schema for the Location model.
+/// features \u203a ubicaciones \u203a infrastructure \u203a isar \u203a isar_location \u2014 Isar schema for the Location model.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';

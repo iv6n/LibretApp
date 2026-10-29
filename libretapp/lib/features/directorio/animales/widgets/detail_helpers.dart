@@ -9,17 +9,20 @@ import 'package:libretapp/features/directorio/animales/domain/entities/care_rule
 import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_indicator_snapshot.dart';
 
 /// Aggregated data for the animal detail screen.
 class DetailData {
   DetailData({
     required this.animal,
     required this.weights,
+    this.weanings = const [],
     required this.reproductions,
     required this.productions,
     required this.health,
     required this.commercial,
     required this.movements,
+    this.movementLocationNames = const <String, String>{},
     required this.costs,
     required this.milkingRecords,
     this.ancestors = const <String, AnimalEntity>{},
@@ -33,11 +36,13 @@ class DetailData {
 
   final AnimalEntity animal;
   final List<WeightRecord> weights;
+  final List<WeaningRecord> weanings;
   final List<ReproductionRecord> reproductions;
   final List<ProductionRecord> productions;
   final List<HealthRecord> health;
   final List<CommercialRecord> commercial;
   final List<MovementRecord> movements;
+  final Map<String, String> movementLocationNames;
   final List<CostRecord> costs;
   final List<MilkingRecord> milkingRecords;
 
@@ -54,6 +59,28 @@ class DetailData {
   /// entries remain available through [carePending] for compatibility, while
   /// health, reproduction, movement and production work is read from Agenda.
   final List<AgendaEntry> agendaPending;
+
+  AnimalIndicatorSnapshot get indicatorSnapshot {
+    final now = DateTime.now();
+    final withdrawals =
+        health
+            .where((record) => !record.date.isAfter(now))
+            .map((record) => record.withdrawalEndDate)
+            .whereType<DateTime>()
+            .where((date) => date.isAfter(now))
+            .toList()
+          ..sort();
+    final due = carePending.map((care) => care.dueAt).toList()..sort();
+    return buildAnimalIndicatorSnapshot(
+      animal: animal,
+      weights: weights,
+      reproductions: reproductions,
+      milkings: milkingRecords,
+      now: now,
+      withdrawalEndsOn: withdrawals.lastOrNull,
+      nextCareDueOn: due.firstOrNull,
+    );
+  }
 
   /// Every ancestor resolved for the pedigree tree, keyed by uuid. Parents
   /// recorded but missing from the herd (an outside sire) are simply absent,

@@ -335,80 +335,22 @@ void main() {
     );
   });
 
-  group('importFromJsonString — merge', () {
-    test('creates a new animal and updates an existing one by uuid', () async {
+  for (final mode in BackupImportMode.values) {
+    test('legacy $mode refuses nontransactional storage before writing', () async {
       final repos = _Repos();
-      final existing = _animal('a1');
-      await repos.animals.save(existing);
-      final service = repos.service();
-
-      final raw = _validBackupJson(
-        animals: [_animalDtoJson('a1'), _animalDtoJson('a2')],
-      );
-      final summary = await service.importFromJsonString(
-        raw,
-        mode: BackupImportMode.merge,
-      );
-
-      expect(summary.animalsImported, 2);
-      expect(repos.animals.byUuid.keys, containsAll(['a1', 'a2']));
-      expect(repos.animals.cleared, isFalse);
+      await repos.animals.save(_animal('original'));
+      await repos.lotes.upsert(_lote('lote-original'));
+      repos.agenda.entries.add(_agendaEntry('original'));
+      final raw = _validBackupJson(animals: [_animalDtoJson('incoming')]);
+      await expectLater(repos.service().importFromJsonString(raw, mode: mode), throwsStateError);
+      expect(repos.animals.byUuid.keys, ['original']);
+      expect(repos.lotes.byUuid.keys, ['lote-original']);
+      expect(repos.agenda.entries.single.id, 'original');
+      expect(repos.animals.cleared, false);
+      expect(repos.lotes.cleared, false);
     });
+  }
 
-    test('does not clear existing agenda/workforce/milking data', () async {
-      final repos = _Repos();
-      repos.agenda.entries.add(_agendaEntry('existing'));
-      final service = repos.service();
-
-      final raw = _validBackupJson();
-      await service.importFromJsonString(raw, mode: BackupImportMode.merge);
-
-      expect(repos.agenda.cleared, isFalse);
-      expect(repos.agenda.entries.map((e) => e.id), contains('existing'));
-    });
-  });
-
-  group('importFromJsonString — replaceAll', () {
-    test('clears repositories before importing', () async {
-      final repos = _Repos();
-      await repos.animals.save(_animal('stale'));
-      await repos.lotes.upsert(_lote('stale-lote'));
-      final service = repos.service();
-
-      final raw = _validBackupJson(animals: [_animalDtoJson('fresh')]);
-      await service.importFromJsonString(
-        raw,
-        mode: BackupImportMode.replaceAll,
-      );
-
-      expect(repos.animals.cleared, isTrue);
-      expect(repos.lotes.cleared, isTrue);
-      expect(repos.animals.byUuid.keys, ['fresh']);
-    });
-  });
-
-  test('round-trips export -> import through real DTOs', () async {
-    final source = _Repos();
-    await source.animals.save(_animal('roundtrip-1'));
-    await source.lotes.upsert(_lote('lote-1'));
-    source.agenda.entries.add(_agendaEntry('task-1'));
-    final sourceService = source.service();
-
-    final json = await sourceService.exportToJsonString();
-
-    final target = _Repos();
-    final targetService = target.service();
-    final summary = await targetService.importFromJsonString(
-      json,
-      mode: BackupImportMode.merge,
-    );
-
-    expect(summary.animalsImported, 1);
-    expect(summary.lotesImported, 1);
-    expect(summary.agendaEntriesImported, 1);
-    expect(target.animals.byUuid.keys, contains('roundtrip-1'));
-    expect(target.lotes.byUuid.keys, contains('lote-1'));
-  });
 }
 
 AnimalEntity _animal(String uuid) => buildAnimal().copyWith(uuid: uuid);

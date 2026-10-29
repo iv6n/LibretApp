@@ -6,7 +6,8 @@ library;
 double? parseFormDouble(String raw) {
   final normalized = raw.trim().replaceAll(',', '.');
   if (normalized.isEmpty) return null;
-  return double.tryParse(normalized);
+  final value = double.tryParse(normalized);
+  return value != null && value.isFinite ? value : null;
 }
 
 /// Parses a form field as an int, tolerating surrounding whitespace.

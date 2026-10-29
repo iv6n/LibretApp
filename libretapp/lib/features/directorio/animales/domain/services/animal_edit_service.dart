@@ -1,6 +1,8 @@
 /// features › directorio › animales › domain › services › animal_edit_service — canonical animal edit workflow.
 library;
 
+import 'package:libretapp/core/database/write_transaction.dart';
+
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
@@ -51,6 +53,7 @@ class AnimalEditService {
     required CareRepository careRepository,
     required AgendaReminderSyncService agendaReminderSyncService,
     CareCalendarService? careCalendarService,
+    this.transactionRunner,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _movementRepository = movementRepository,
@@ -59,6 +62,7 @@ class AnimalEditService {
        _careCalendarService =
            careCalendarService ?? CareCalendarService(careRepository);
 
+  final WriteTransactionRunner? transactionRunner;
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
   final MovementRecordRepository _movementRepository;
@@ -82,6 +86,19 @@ class AnimalEditService {
   /// when [draft] would create a duplicate ear tag or an invalid pedigree
   /// link (the animal as its own parent, or a cycle).
   Future<AnimalEntity> applyEdit({
+    required AnimalEntity original,
+    required AnimalEntity draft,
+  }) async {
+    final saved = transactionRunner == null
+        ? await _applyCore(original: original, draft: draft)
+        : await transactionRunner!.run(
+            () => _applyCore(original: original, draft: draft),
+          );
+    await _agendaReminderSyncService.sync();
+    return saved;
+  }
+
+  Future<AnimalEntity> _applyCore({
     required AnimalEntity original,
     required AnimalEntity draft,
   }) async {
@@ -124,9 +141,9 @@ class AnimalEditService {
 
     // Biology changed: age and life stage are derived, not user-entered,
     // so they must be recomputed rather than trusted from the draft.
-    if (next.species != persisted.species ||
+    if (next.hasKnownAge && (next.species != persisted.species ||
         next.sex != persisted.sex ||
-        next.birthDate != persisted.birthDate) {
+        next.birthDate != persisted.birthDate)) {
       final lifecycle = AnimalLifecycleCalculator.calculate(
         birthDate: next.birthDate,
         species: next.species,
@@ -152,12 +169,13 @@ class AnimalEditService {
         next.currentLocationId != persisted.currentLocationId;
     if (locationChanged) {
       final newLocation = next.currentLocationId;
-      if (newLocation != null) {
+      {
         await _movementRepository.addMovementRecord(
           uuid,
           MovementRecord(
             fromLocation: persisted.currentLocationId,
-            toLocation: newLocation,
+            toLocation: newLocation ?? '',
+            clearsLocation: newLocation == null,
             date: DateTime.now(),
             reason: MovementReason.paddockRotation,
           ),
@@ -211,8 +229,6 @@ class AnimalEditService {
     if (saved.status.isInActiveHerd) {
       await _careCalendarService.regenerateFor(saved);
     }
-    await _agendaReminderSyncService.sync();
-
     return saved;
   }
 

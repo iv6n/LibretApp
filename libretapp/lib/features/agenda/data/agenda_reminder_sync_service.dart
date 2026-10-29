@@ -1,6 +1,8 @@
 /// features › agenda › data › agenda_reminder_sync_service — syncs agenda with auto-generated reminders.
 library;
 
+import 'package:libretapp/features/directorio/animales/domain/services/reproductive_kpi_service.dart';
+
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
@@ -17,6 +19,7 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/agenda/domain/operational_work.dart';
+import 'package:libretapp/features/agenda/domain/agenda_entry_ownership.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_task_type.dart';
@@ -70,24 +73,37 @@ class AgendaReminderSyncService {
   }
 
   Future<int> _syncInternal({DateTime? now}) async {
-    final existing = await _agendaRepository.fetchEntries();
-    final manual = existing
-        .where((e) => !_isAutoEntry(e))
-        .toList(growable: true);
+    final desiredAuto = await _buildAutoEntries(now: now);
+    await _agendaRepository.updateEntries(
+      (existing) => _mergeEntries(existing, desiredAuto),
+    );
+    _refreshSignal?.notifyChanged();
+    return desiredAuto.length;
+  }
 
+  List<AgendaEntry> _mergeEntries(
+    List<AgendaEntry> existing,
+    List<AgendaEntry> desiredAuto,
+  ) {
+    final manual = existing
+        .where((entry) => !isGeneratorManagedAgendaEntry(entry))
+        .toList(growable: true);
+    final manualIds = manual.map((entry) => entry.id).toSet();
     final existingAuto = <String, AgendaEntry>{
-      for (final entry in existing.where(_isAutoEntry)) entry.id: entry,
+      for (final entry in existing.where(isGeneratorManagedAgendaEntry))
+        entry.id: entry,
     };
 
-    final desiredAuto = await _buildAutoEntries(now: now);
-
-    final desiredIds = desiredAuto.map((entry) => entry.id).toSet();
+    final safeDesired = desiredAuto
+        .where((entry) => !manualIds.contains(entry.id))
+        .toList(growable: false);
+    final desiredIds = safeDesired.map((entry) => entry.id).toSet();
     final successorByPrevious = <String, AgendaEntry>{
       for (final entry in existingAuto.values)
         if (entry.supersedesId != null && !_isTerminal(entry.estado))
           entry.supersedesId!: entry,
     };
-    final mergedAuto = desiredAuto
+    final mergedAuto = safeDesired
         .map((desired) {
           // A manually reprogrammed automatic occurrence wins over the
           // deterministic date that the source would otherwise recreate.
@@ -129,22 +145,13 @@ class AgendaReminderSyncService {
               !successorByPrevious.containsKey(entry.id)),
     );
 
-    final merged = <AgendaEntry>[
+    return <AgendaEntry>[
       ...manual,
       ...historicalAuto,
       ...preservedSuccessors,
       ...mergedAuto,
     ];
-
-    await _agendaRepository.replaceAll(merged);
-    _refreshSignal?.notifyChanged();
-    return desiredAuto.length;
   }
-
-  bool _isAutoEntry(AgendaEntry entry) =>
-      entry.id.startsWith('auto:') ||
-      (entry.sourceType != null &&
-          entry.sourceType != WorkSourceType.manual.name);
 
   bool _isTerminal(String status) =>
       status == AgendaEstado.completado ||
@@ -232,17 +239,24 @@ class AgendaReminderSyncService {
       final reproRecords = await _reproductionRepo.getReproductionRecords(
         animal.uuid,
       );
+      final currentCycle = ReproductiveKpiService.latestCycleOf(reproRecords);
       for (final record in reproRecords) {
+        if (record != currentCycle ||
+            record.hasCalved ||
+            record.serviceDate == null)
+          continue;
         final sourceId =
-            record.id ?? record.serviceDate.millisecondsSinceEpoch.toString();
+            record.id ?? record.serviceDate!.millisecondsSinceEpoch.toString();
         final schedule = _reproductionScheduler.estimate(
-          serviceDate: record.serviceDate,
+          serviceDate: record.serviceDate!,
         );
 
         final pregCheckDate =
             record.pregnancyCheckDate ?? schedule.pregnancyCheckDate;
         if (pregCheckDate != null &&
-            record.pregnancyResult != PregnancyCheckResult.positive) {
+            (record.pregnancyResult == null ||
+                record.pregnancyResult == PregnancyCheckResult.notChecked ||
+                record.pregnancyResult == PregnancyCheckResult.uncertain)) {
           final date = _startOfDay(pregCheckDate);
           final id =
               'auto:repro:${animal.uuid}:pregcheck:$sourceId:${_dateKey(date)}';
@@ -266,7 +280,8 @@ class AgendaReminderSyncService {
         }
 
         final expectedCalvingDate = record.expectedCalvingDate;
-        if (record.actualCalvingDate == null && expectedCalvingDate != null) {
+        if (record.pregnancyResult == PregnancyCheckResult.positive &&
+            expectedCalvingDate != null) {
           final dueDate = _startOfDay(expectedCalvingDate);
           final partoId =
               'auto:repro:${animal.uuid}:parto:$sourceId:${_dateKey(dueDate)}';

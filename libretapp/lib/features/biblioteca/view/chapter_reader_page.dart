@@ -6,6 +6,7 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -105,7 +106,12 @@ class _ChapterReaderView extends StatelessWidget {
           final profile = _resolveProfile(perfilState);
 
           return ListView(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md + ShellInsets.bottomSafePadding(context),
+            ),
             children: [
               if (adaptive != null)
                 Builder(

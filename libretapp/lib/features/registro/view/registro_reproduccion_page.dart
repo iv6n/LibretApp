@@ -7,27 +7,31 @@
 library;
 
 import 'dart:async';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:libretapp/features/directorio/animales/widgets/offspring_editor.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 /// Page wrapper that provides [RegistroBloc] for the reproduction registration form.
 class RegistroReproduccionPage extends StatelessWidget {
-  const RegistroReproduccionPage({this.preset, super.key});
+  const RegistroReproduccionPage({
+    this.preset,
+    this.animalUuid,
+    this.recordId,
+    super.key,
+  });
+  final String? animalUuid;
+  final String? recordId;
 
   final String? preset;
 
@@ -35,22 +39,26 @@ class RegistroReproduccionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => RegistroBloc(
-        weightRepo: locator<WeightRecordRepository>(),
-        healthRepo: locator<HealthRecordRepository>(),
-        productionRepo: locator<ProductionRecordRepository>(),
         reproductionRepo: locator<ReproductionRecordRepository>(),
-        commercialRepo: locator<CommercialRecordRepository>(),
-        movementRepo: locator<MovementRecordRepository>(),
-        costRepo: locator<CostRecordRepository>(),
       ),
-      child: _RegistroReproduccionView(preset: preset),
+      child: _RegistroReproduccionView(
+        preset: preset,
+        animalUuid: animalUuid,
+        recordId: recordId,
+      ),
     );
   }
 }
 
 /// Internal form view for reproduction registration.
 class _RegistroReproduccionView extends StatefulWidget {
-  const _RegistroReproduccionView({this.preset});
+  const _RegistroReproduccionView({
+    this.preset,
+    this.animalUuid,
+    this.recordId,
+  });
+  final String? animalUuid;
+  final String? recordId;
 
   final String? preset;
 
@@ -60,10 +68,17 @@ class _RegistroReproduccionView extends StatefulWidget {
 }
 
 class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
+  ReproductionRecord? _editing;
+  ReproductionRecord? _submitted;
+  bool _submitting = false;
+  bool _loading = false;
+  String? _loadError;
   var _serviceType = ServiceType.naturalService;
   var _serviceDate = DateTime.now();
   DateTime? _expectedCalvingDate;
-  String? _notes;
+  final _serviceNotesCtrl = TextEditingController();
+  final _calvingNotesCtrl = TextEditingController();
+  final _responsibleCtrl = TextEditingController();
   AnimalEntity? _selectedAnimal;
 
   /// Sire chosen from the herd. When set, the record carries his uuid and the
@@ -97,6 +112,97 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       _serviceType = ServiceType.naturalService;
     }
     _projectExpectedCalving();
+    if (widget.animalUuid != null) _loadInitial();
+  }
+
+  Future<void> _loadInitial() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid!,
+      );
+      if (animal == null) throw StateError('Animal no encontrado.');
+      await _onAnimalSelected(animal);
+      if (widget.recordId != null) {
+        final records = await locator<ReproductionRecordRepository>()
+            .getReproductionRecords(animal.uuid);
+        final record = records
+            .where((r) => r.id == widget.recordId)
+            .firstOrNull;
+        if (record == null) throw StateError('El registro ya no existe.');
+        final sire = record.maleSireUuid == null
+            ? null
+            : await locator<AnimalRepository>().getByUuid(record.maleSireUuid!);
+        if (!mounted) return;
+        setState(() {
+          _editing = record;
+          _selectedSire = sire;
+          _externalSireCtrl.text = sire == null
+              ? record.maleSireIdentifier ?? ''
+              : '';
+          _serviceDate = record.serviceDate ?? DateTime.now();
+          _serviceType = record.serviceType ?? ServiceType.naturalService;
+          _expectedCalvingDate = record.expectedCalvingDate;
+          _serviceNotesCtrl.text = record.notes ?? '';
+          _calvingNotesCtrl.text = record.calvingNotes ?? '';
+          _responsibleCtrl.text = record.servicedBy ?? '';
+          if (record.serviceDate != null) _pendingDiagnosis = record;
+          _openCycle = record;
+          _calvingMode = record.hasCalved;
+          _calvingDate = record.actualCalvingDate ?? DateTime.now();
+          _calvingOutcome = record.calvingOutcome ?? CalvingOutcome.liveBirth;
+          _calvingEase = record.calvingEase;
+          _diagnosisDate = record.pregnancyCheckDate ?? DateTime.now();
+          _diagnosisResult =
+              record.pregnancyResult ?? PregnancyCheckResult.positive;
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => _loadError = '$error');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _submit(ReproductionRecord record) {
+    try {
+      final animal = _selectedAnimal!;
+      AnimalRecordValidation.reproduction(record);
+      AnimalRecordValidation.operation(
+        animal,
+        record.eventDate,
+        editing: record.id != null,
+      );
+      if (animal.sex != Sex.female ||
+          !AnimalRegistrationPolicy.forSpecies(
+            animal.species,
+          ).supportsReproduction) {
+        throw ArgumentError('Selecciona una hembra reproductora.');
+      }
+      final submitted = record.copyWith(
+        servicedBy: _responsibleCtrl.text.trim().isEmpty
+            ? null
+            : _responsibleCtrl.text.trim(),
+        recordUuid: record.recordUuid ?? const Uuid().v4(),
+      );
+      setState(() {
+        _submitting = true;
+        _submitted = submitted;
+      });
+      context.read<RegistroBloc>().add(
+        RegistroReproduccionSubmitted(
+          animalUuid: animal.uuid,
+          record: submitted,
+        ),
+      );
+    } catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
   }
 
   /// Fills the expected calving from the service date using the standard
@@ -118,18 +224,34 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     });
     if (animal == null) return;
 
-    final records = await locator<ReproductionRecordRepository>()
-        .getReproductionRecords(animal.uuid);
-    if (!mounted) return;
+    late List<ReproductionRecord> records;
+    try {
+      records = await locator<ReproductionRecordRepository>()
+          .getReproductionRecords(animal.uuid);
+    } catch (error) {
+      if (mounted)
+        setState(() => _loadError = 'No se pudieron cargar los ciclos: $error');
+      return;
+    }
+    if (!mounted || _selectedAnimal?.uuid != animal.uuid) return;
 
     final open = ReproductiveKpiService.openCycleOf(records);
     final pending = ReproductiveKpiService.pendingDiagnosisOf(records);
+    final current = open ?? pending;
+    final sire = current?.maleSireUuid == null
+        ? null
+        : await locator<AnimalRepository>().getByUuid(current!.maleSireUuid!);
+    if (!mounted || _selectedAnimal?.uuid != animal.uuid) return;
     setState(() {
+      _loadError = null;
       _openCycle = open;
       _pendingDiagnosis = pending;
+      _selectedSire = sire;
+      _externalSireCtrl.text = current?.maleSireIdentifier ?? "";
+      _responsibleCtrl.text = current?.servicedBy ?? "";
       // Landing here from the "parición" shortcut means the calving is the
       // reason the user opened the page.
-      _calvingMode = open != null && widget.preset?.toLowerCase() == 'paricion';
+      _calvingMode = widget.preset?.toLowerCase() == 'paricion';
       if (open != null) {
         _calvingDate = DateTime.now();
         _calvingOutcome = CalvingOutcome.liveBirth;
@@ -144,7 +266,11 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   /// Males of the same species, excluding the cow's own descendants so her
   /// son can never be offered as her sire.
   bool _isEligibleSire(AnimalEntity candidate) {
-    if (candidate.sex != Sex.male) return false;
+    if (candidate.sex != Sex.male ||
+        !candidate.status.isInActiveHerd ||
+        candidate.reproductiveStatus == ReproductiveStatus.neutered ||
+        candidate.reproductiveStatus == ReproductiveStatus.retired)
+      return false;
     final cow = _selectedAnimal;
     if (cow == null) return true;
     return candidate.species == cow.species && candidate.uuid != cow.uuid;
@@ -153,20 +279,23 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   @override
   void dispose() {
     _externalSireCtrl.dispose();
+    _serviceNotesCtrl.dispose();
+    _calvingNotesCtrl.dispose();
+    _responsibleCtrl.dispose();
     super.dispose();
   }
 
   String _cycleSubtitle(ReproductionRecord cycle) {
     final expected = cycle.expectedCalvingDate;
     return expected == null
-        ? 'Servicio del ${DateFormat('dd/MM/yyyy').format(cycle.serviceDate)}'
+        ? 'Servicio del ${DateFormat('dd/MM/yyyy').format(cycle.eventDate)}'
         : 'Parto esperado el ${DateFormat('dd/MM/yyyy').format(expected)}';
   }
 
   void _saveDiagnosis(ScaffoldMessengerState messenger) {
     final pending = _pendingDiagnosis!;
 
-    if (_diagnosisDate.isBefore(pending.serviceDate)) {
+    if (_diagnosisDate.isBefore(pending.serviceDate!)) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text('El diagnóstico no puede ser anterior al servicio.'),
@@ -175,25 +304,22 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       return;
     }
 
-    // Keeps the id, so this updates the pending service instead of opening a
-    // second cycle for the same pregnancy.
-    context.read<RegistroBloc>().add(
-      RegistroReproduccionSubmitted(
-        animalUuid: _selectedAnimal!.uuid,
-        record: pending.copyWith(
-          pregnancyCheckDate: _diagnosisDate,
-          pregnancyResult: _diagnosisResult,
-          expectedCalvingDate:
-              pending.expectedCalvingDate ??
-              const ReproductionScheduler()
-                  .estimate(serviceDate: pending.serviceDate)
-                  .dueDate,
-        ),
+    _submit(
+      pending.copyWith(
+        pregnancyCheckDate: _diagnosisDate,
+        pregnancyResult: _diagnosisResult,
+        expectedCalvingDate: _diagnosisResult == PregnancyCheckResult.positive
+            ? pending.expectedCalvingDate ??
+                  const ReproductionScheduler()
+                      .estimate(serviceDate: pending.serviceDate!)
+                      .dueDate
+            : null,
       ),
     );
   }
 
   void _save() {
+    if (_submitting || _loading || _loadError != null) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -223,7 +349,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     }
 
     final external = _externalSireCtrl.text.trim();
-    final record = ReproductionRecord(
+    final record = (_editing ?? const ReproductionRecord()).copyWith(
+      kind: ReproductionRecordKind.service,
       serviceDate: _serviceDate,
       serviceType: _serviceType,
       maleSireUuid: _selectedSire?.uuid,
@@ -231,141 +358,89 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
           ? primaryAnimalLabel(_selectedSire!)
           : (external.isEmpty ? null : external),
       expectedCalvingDate: _expectedCalvingDate,
-      notes: _notes,
+      notes: _serviceNotesCtrl.text.trim().isEmpty
+          ? null
+          : _serviceNotesCtrl.text.trim(),
     );
-    context.read<RegistroBloc>().add(
-      RegistroReproduccionSubmitted(
-        animalUuid: _selectedAnimal!.uuid,
-        record: record,
-      ),
-    );
+    _submit(record);
   }
 
   /// Runs after the calving itself is stored: updates the dam and offers to
   /// register the newborn with its parentage already filled in.
-  Future<void> _afterCalvingSaved() async {
-    final dam = _selectedAnimal!;
-    final cycle = _openCycle!;
-
-    // The dam's status is updated by the repository hook when the calving is
-    // saved. Doing it here as well would write back a copy of her loaded when
-    // she was selected, reverting anything changed since.
-    final outcome = _calvingOutcome ?? CalvingOutcome.liveBirth;
-    if (outcome != CalvingOutcome.liveBirth) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    final registerCalf = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Parto registrado'),
-        content: const Text(
-          '¿Quieres dar de alta la cría ahora? Su padre y madre quedarán '
-          'enlazados automáticamente.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Más tarde'),
+  Future<void> _syncAgenda() async {
+    if (!locator.isRegistered<AgendaReminderSyncService>()) return;
+    try {
+      await locator<AgendaReminderSyncService>().sync();
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Registro guardado. La agenda se actualizará al abrirla.',
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Registrar cría'),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted) return;
-    if (registerCalf != true) {
-      Navigator.of(context).pop();
-      return;
+        );
     }
-
-    final seed = AnimalRegistrationSeed(
-      species: dam.species,
-      sex: Sex.female,
-      ageMonths: 0,
-      breed: dam.breed,
-      damUuid: dam.uuid,
-      sireUuid: cycle.maleSireUuid,
-      birthDate: _calvingDate,
-    );
-
-    final calfUuid = await context.pushNamed(
-      AppRoutes.nameAnimalNuevo,
-      extra: seed,
-    );
-    if (!mounted) return;
-
-    if (calfUuid is String && calfUuid.isNotEmpty) {
-      await _linkOffspring(dam.uuid, cycle, calfUuid);
-    }
-    if (!mounted) return;
-    Navigator.of(context).pop();
   }
 
-  Future<void> _linkOffspring(
-    String damUuid,
-    ReproductionRecord cycle,
-    String calfUuid,
-  ) async {
-    final repository = locator<ReproductionRecordRepository>();
-    // Re-read so the calving fields written a moment ago are not overwritten
-    // by this stale in-memory copy.
-    final records = await repository.getReproductionRecords(damUuid);
-    final stored = records.firstWhere(
-      (record) => record.id == cycle.id,
-      orElse: () => cycle,
-    );
+  Future<void> _finishService() async {
+    await _syncAgenda();
+    if (mounted) Navigator.of(context).pop(true);
+  }
 
-    await repository.addReproductionRecord(
-      damUuid,
-      stored.copyWith(offspringUuids: [...stored.offspringUuids, calfUuid]),
-    );
+  Future<void> _afterCalvingSaved() async {
+    await _syncAgenda();
+    late List<ReproductionRecord> records;
+    try {
+      records = await locator<ReproductionRecordRepository>()
+          .getReproductionRecords(_selectedAnimal!.uuid);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'El parto está guardado. Vincula la cría desde su historial. $error',
+            ),
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+      return;
+    }
+    final stored = records
+        .where(
+          (r) =>
+              r.recordUuid == _submitted?.recordUuid ||
+              (r.id != null && r.id == _submitted?.id),
+        )
+        .firstOrNull;
+    if (!mounted) return;
+    if (stored != null && stored.calvingOutcome == CalvingOutcome.liveBirth) {
+      await editOffspring(context, _selectedAnimal!, stored);
+    }
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   void _saveCalving(ScaffoldMessengerState messenger) {
-    final cycle = _openCycle!;
-
-    if (_calvingDate.isBefore(cycle.serviceDate)) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('El parto no puede ser anterior al servicio.'),
-        ),
-      );
-      return;
-    }
-
-    final gestation = _calvingDate.difference(cycle.serviceDate).inDays;
-    if (gestation < _minPlausibleGestationDays ||
-        gestation > _maxPlausibleGestationDays) {
-      // A gestation well outside the normal range usually means a mistyped
-      // date, but it can also be a real abortion — warn, never block.
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Gestación de $gestation días, fuera del rango habitual. '
-            'Verifica la fecha si no fue un aborto.',
-          ),
-        ),
-      );
-    }
-
-    // Keeping the id makes this an update of the open cycle rather than a new
-    // record: addReproductionRecord upserts when the record carries one.
-    context.read<RegistroBloc>().add(
-      RegistroReproduccionSubmitted(
-        animalUuid: _selectedAnimal!.uuid,
-        record: cycle.copyWith(
-          actualCalvingDate: _calvingDate,
-          calvingOutcome: _calvingOutcome ?? CalvingOutcome.liveBirth,
-          calvingEase: _calvingEase,
-          calvingNotes: _notes,
-        ),
-      ),
-    );
+    final cycle = _editing ?? _openCycle ?? _pendingDiagnosis;
+    final record =
+        (cycle ??
+                const ReproductionRecord(kind: ReproductionRecordKind.calving))
+            .copyWith(
+              maleSireUuid: _selectedSire?.uuid,
+              maleSireIdentifier: _selectedSire != null
+                  ? primaryAnimalLabel(_selectedSire!)
+                  : _externalSireCtrl.text.trim().isEmpty
+                  ? null
+                  : _externalSireCtrl.text.trim(),
+              actualCalvingDate: _calvingDate,
+              calvingOutcome: _calvingOutcome ?? CalvingOutcome.liveBirth,
+              calvingEase: _calvingEase,
+              calvingNotes: _calvingNotesCtrl.text.trim().isEmpty
+                  ? null
+                  : _calvingNotesCtrl.text.trim(),
+            );
+    _submit(record);
   }
 
   @override
@@ -380,11 +455,12 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
             unawaited(_afterCalvingSaved());
             return;
           }
-          Navigator.of(context).pop();
+          unawaited(_finishService());
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.detailFormReproductionSaved)),
           );
         } else if (state.status == RegistroStatus.failure) {
+          setState(() => _submitting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? l10n.errorGenericSave),
@@ -393,239 +469,199 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
           context.read<RegistroBloc>().add(const RegistroReset());
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          title: GeneratedAssetTitle(
-            title: widget.preset?.toLowerCase() == 'paricion'
-                ? l10n.detailFormReproductionParicionTitle
-                : l10n.detailFormReproductionTitle,
-            assetPath: widget.preset?.toLowerCase() == 'paricion'
-                ? AppAssetPaths.healthBirth
-                : AppAssetPaths.recordService,
-            fallbackIcon: Icons.pregnant_woman,
+      child: AppFormScaffold(
+        title: _calvingMode
+            ? l10n.detailFormReproductionParicionTitle
+            : _diagnosisMode
+            ? 'Diagnóstico de preñez'
+            : l10n.detailFormReproductionTitle,
+        recordStyle: _calvingMode
+            ? RecordFormStyle.birth
+            : RecordFormStyle.reproduction,
+        saving: _submitting,
+        loading: _loading,
+        errorMessage: _loadError,
+        onRetry: _loadInitial,
+        onSave: _save,
+        saveLabel: _diagnosisMode
+            ? 'Guardar diagnóstico'
+            : _calvingMode
+            ? 'Registrar parto'
+            : l10n.actionSave,
+        onCancel: () => Navigator.of(context).pop(),
+        cancelLabel: l10n.actionCancel,
+        fields: [
+          if (widget.animalUuid == null)
+            AnimalSelector(
+              eligible: (a) =>
+                  a.status.isInActiveHerd &&
+                  a.sex == Sex.female &&
+                  AnimalRegistrationPolicy.forSpecies(
+                    a.species,
+                  ).supportsReproduction,
+              selectedAnimal: _selectedAnimal,
+              onSelected: (a) => unawaited(_onAnimalSelected(a)),
+            ),
+          if (_selectedAnimal != null) ...[
+            const SizedBox(height: 12),
+            _CycleBanner(
+              icon: Icons.child_friendly,
+              title: _openCycle == null && _pendingDiagnosis == null
+                  ? 'Registrar parto sin servicio conocido'
+                  : 'Registrar el parto de este ciclo',
+              subtitle: _openCycle == null
+                  ? 'Sin servicio conocido: no se inventará una fecha de monta.'
+                  : _cycleSubtitle(_openCycle!),
+              value: _calvingMode,
+              onChanged: (value) => setState(() {
+                _calvingMode = value;
+                if (value) _diagnosisMode = false;
+              }),
+            ),
+          ],
+          if (_pendingDiagnosis != null) ...[
+            const SizedBox(height: 12),
+            _CycleBanner(
+              icon: Icons.pregnant_woman,
+              title: 'Registrar diagnóstico de preñez',
+              subtitle:
+                  'Servicio del '
+                  '${DateFormat('dd/MM/yyyy').format(_pendingDiagnosis!.serviceDate!)}'
+                  ' sin diagnosticar',
+              value: _diagnosisMode,
+              onChanged: (value) => setState(() {
+                _diagnosisMode = value;
+                if (value) _calvingMode = false;
+              }),
+            ),
+          ],
+          // Picking the sire from the herd is what fills maleSireUuid, and
+          // that is what links the calf's paternal side, feeds the bull's
+          // own service history and lets the inbreeding check work.
+          AnimalSelector(
+            label: l10n.detailFormReproductionSire,
+            selectedAnimal: _selectedSire,
+            eligible: _isEligibleSire,
+            onSelected: (sire) => setState(() {
+              _selectedSire = sire;
+              if (sire != null) _externalSireCtrl.clear();
+            }),
           ),
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimalSelector(
-                selectedAnimal: _selectedAnimal,
-                onSelected: (a) => unawaited(_onAnimalSelected(a)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _externalSireCtrl,
+            enabled: _selectedSire == null,
+            decoration: const InputDecoration(
+              labelText: 'O semental externo al hato',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _responsibleCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Responsable',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_diagnosisMode) ...[
+            _DiagnosisFields(
+              checkDate: _diagnosisDate,
+              result: _diagnosisResult,
+              onDateChanged: (value) => setState(() => _diagnosisDate = value),
+              onResultChanged: (value) =>
+                  setState(() => _diagnosisResult = value),
+            ),
+          ] else if (_calvingMode) ...[
+            _CalvingFields(
+              calvingDate: _calvingDate,
+              outcome: _calvingOutcome,
+              ease: _calvingEase,
+              onDateChanged: (value) => setState(() => _calvingDate = value),
+              onOutcomeChanged: (value) =>
+                  setState(() => _calvingOutcome = value),
+              onEaseChanged: (value) => setState(() => _calvingEase = value),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: InputDecoration(
+                labelText: l10n.detailFormReproductionNotes,
+                border: const OutlineInputBorder(),
               ),
-              if (_openCycle != null) ...[
-                const SizedBox(height: 12),
-                _CycleBanner(
-                  icon: Icons.child_friendly,
-                  title: 'Registrar el parto de este ciclo',
-                  subtitle: _cycleSubtitle(_openCycle!),
-                  value: _calvingMode,
-                  onChanged: (value) => setState(() {
-                    _calvingMode = value;
-                    if (value) _diagnosisMode = false;
-                  }),
-                ),
-              ] else if (_pendingDiagnosis != null) ...[
-                const SizedBox(height: 12),
-                _CycleBanner(
-                  icon: Icons.pregnant_woman,
-                  title: 'Registrar diagnóstico de preñez',
-                  subtitle:
-                      'Servicio del '
-                      '${DateFormat('dd/MM/yyyy').format(_pendingDiagnosis!.serviceDate)}'
-                      ' sin diagnosticar',
-                  value: _diagnosisMode,
-                  onChanged: (value) => setState(() => _diagnosisMode = value),
-                ),
-              ],
-              const SizedBox(height: 16),
-              if (_diagnosisMode) ...[
-                _DiagnosisFields(
-                  checkDate: _diagnosisDate,
-                  result: _diagnosisResult,
-                  onDateChanged: (value) =>
-                      setState(() => _diagnosisDate = value),
-                  onResultChanged: (value) =>
-                      setState(() => _diagnosisResult = value),
-                ),
-                const SizedBox(height: 24),
-                _SaveButton(onPressed: _save, label: 'Guardar diagnóstico'),
-              ] else if (_calvingMode) ...[
-                _CalvingFields(
-                  calvingDate: _calvingDate,
-                  outcome: _calvingOutcome,
-                  ease: _calvingEase,
-                  onDateChanged: (value) =>
-                      setState(() => _calvingDate = value),
-                  onOutcomeChanged: (value) =>
-                      setState(() => _calvingOutcome = value),
-                  onEaseChanged: (value) =>
-                      setState(() => _calvingEase = value),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormReproductionNotes,
-                    border: const OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  onChanged: (v) => _notes = v.trim().isEmpty ? null : v.trim(),
-                ),
-                const SizedBox(height: 24),
-                _SaveButton(onPressed: _save, label: 'Registrar parto'),
-              ] else ...[
-                DropdownButtonFormField<ServiceType>(
-                  initialValue: _serviceType,
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormReproductionServiceType,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: ServiceType.values
-                      .map(
-                        (s) => DropdownMenuItem(
-                          value: s,
-                          child: Text(
-                            s == ServiceType.naturalService
-                                ? l10n.detailFormReproductionServiceNatural
-                                : s == ServiceType.artificialInsemination
-                                ? l10n.detailFormReproductionServiceAi
-                                : l10n.detailFormReproductionServiceIvf,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _serviceType = v);
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.event),
-                        label: Text(
-                          DateFormat('dd/MM/yyyy').format(_serviceDate),
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _serviceDate,
-                            firstDate: DateTime(_serviceDate.year - 5),
-                            lastDate: DateTime(_serviceDate.year + 1),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _serviceDate = picked;
-                              _projectExpectedCalving();
-                            });
-                          }
-                        },
+              maxLines: 2,
+              controller: _calvingNotesCtrl,
+            ),
+            if (_editing?.hasCalved == true &&
+                _editing?.calvingOutcome == CalvingOutcome.liveBirth)
+              TextButton(
+                onPressed: () =>
+                    editOffspring(context, _selectedAnimal!, _editing!),
+                child: const Text('Crear o vincular cría'),
+              ),
+          ] else ...[
+            DropdownButtonFormField<ServiceType>(
+              isExpanded: true,
+              initialValue: _serviceType,
+              decoration: InputDecoration(
+                labelText: l10n.detailFormReproductionServiceType,
+                border: const OutlineInputBorder(),
+              ),
+              items: ServiceType.values
+                  .map(
+                    (s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(
+                        s == ServiceType.naturalService
+                            ? l10n.detailFormReproductionServiceNatural
+                            : s == ServiceType.artificialInsemination
+                            ? l10n.detailFormReproductionServiceAi
+                            : l10n.detailFormReproductionServiceIvf,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.child_friendly),
-                        label: Text(
-                          _expectedCalvingDate == null
-                              ? l10n.detailFormReproductionExpectedCalving
-                              : DateFormat(
-                                  'dd/MM/yyyy',
-                                ).format(_expectedCalvingDate!),
-                        ),
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _expectedCalvingDate ?? _serviceDate,
-                            firstDate: DateTime(_serviceDate.year - 1),
-                            lastDate: DateTime(_serviceDate.year + 2),
-                          );
-                          if (picked != null) {
-                            setState(() => _expectedCalvingDate = picked);
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Picking the sire from the herd is what fills maleSireUuid, and
-                // that is what links the calf's paternal side, feeds the bull's
-                // own service history and lets the inbreeding check work.
-                AnimalSelector(
-                  label: l10n.detailFormReproductionSire,
-                  selectedAnimal: _selectedSire,
-                  eligible: _isEligibleSire,
-                  onSelected: (sire) => setState(() {
-                    _selectedSire = sire;
-                    if (sire != null) _externalSireCtrl.clear();
-                  }),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _externalSireCtrl,
-                  enabled: _selectedSire == null,
-                  decoration: const InputDecoration(
-                    labelText: 'O semental externo al hato',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: InputDecoration(
-                    labelText: l10n.detailFormReproductionNotes,
-                    border: const OutlineInputBorder(),
-                  ),
-                  maxLines: 2,
-                  onChanged: (v) => _notes = v,
-                ),
-                const SizedBox(height: 24),
-                _SaveButton(onPressed: _save, label: l10n.actionSave),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Plausible bovine gestation window. Outside it the date is probably a typo,
-/// but an abortion is also real, so the form warns instead of blocking.
-const int _minPlausibleGestationDays = 230;
-const int _maxPlausibleGestationDays = 300;
-
-class _SaveButton extends StatelessWidget {
-  const _SaveButton({required this.onPressed, required this.label});
-
-  final VoidCallback onPressed;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<RegistroBloc, RegistroState>(
-      buildWhen: (prev, curr) => prev.status != curr.status,
-      builder: (context, state) {
-        final isSaving = state.status == RegistroStatus.loading;
-        return SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: isSaving ? null : onPressed,
-            child: isSaving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
                     ),
                   )
-                : Text(label),
-          ),
-        );
-      },
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _serviceType = v);
+              },
+            ),
+            const SizedBox(height: 12),
+            AppDateField(
+              labelText: 'Fecha de servicio',
+              value: _serviceDate,
+              firstDate: DateTime(_serviceDate.year - 5),
+              lastDate: DateTime(_serviceDate.year + 1),
+              onChanged: (date) {
+                if (date == null) return;
+                setState(() {
+                  _serviceDate = date;
+                  _projectExpectedCalving();
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            AppDateField(
+              labelText: l10n.detailFormReproductionExpectedCalving,
+              value: _expectedCalvingDate,
+              emptyLabel: 'Sin fecha estimada',
+              firstDate: DateTime(_serviceDate.year - 1),
+              lastDate: DateTime(_serviceDate.year + 2),
+              onChanged: (date) {
+                if (date != null) setState(() => _expectedCalvingDate = date);
+              },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: l10n.detailFormReproductionNotes,
+                border: const OutlineInputBorder(),
+              ),
+              maxLines: 2,
+              controller: _serviceNotesCtrl,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -710,6 +746,7 @@ class _DiagnosisFields extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<PregnancyCheckResult>(
+          isExpanded: true,
           initialValue: result,
           decoration: const InputDecoration(
             labelText: 'Resultado',
@@ -767,6 +804,7 @@ class _CalvingFields extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<CalvingOutcome>(
+          isExpanded: true,
           initialValue: outcome ?? CalvingOutcome.liveBirth,
           decoration: const InputDecoration(
             labelText: 'Desenlace',
@@ -786,6 +824,7 @@ class _CalvingFields extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int?>(
+          isExpanded: true,
           initialValue: ease,
           decoration: const InputDecoration(
             labelText: 'Dificultad del parto',

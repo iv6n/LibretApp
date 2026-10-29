@@ -1,7 +1,7 @@
 /// features › directorio › animales › infrastructure › commercial_record_repository_isar
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_commercial_record.dart';

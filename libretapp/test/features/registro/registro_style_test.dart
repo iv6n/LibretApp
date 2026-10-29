@@ -2,10 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/widgets/generated_asset_title.dart';
+import 'package:libretapp/core/widgets/record_form_style.dart';
 import 'package:libretapp/features/registro/widgets/registro_style.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('menu and form share the identity of every registration action', () {
+    for (final style in RecordFormStyle.values) {
+      if (style == RecordFormStyle.income || style == RecordFormStyle.expense) {
+        continue;
+      }
+      expect(styleForRegistroAction(style.label), style, reason: style.label);
+    }
+    expect(styleForRegistroAction('tipo desconocido'), isNull);
+    expect(
+      styleForRegistroAction('Destete')?.icon,
+      Icons.child_friendly_outlined,
+    );
+  });
 
   test('maps Registro menu actions to approved assets', () {
     expect(

@@ -167,38 +167,39 @@ class ReproductiveKpiService {
   /// wins over the older record. Shared with the calving flow so the
   /// definition of "open cycle" lives in exactly one place.
   static ReproductionRecord? openCycleOf(List<ReproductionRecord> records) {
-    final open = records
-        .where(
-          (record) =>
-              !record.hasCalved &&
-              record.pregnancyResult == PregnancyCheckResult.positive,
-        )
-        .toList()
-      ..sort((a, b) => a.serviceDate.compareTo(b.serviceDate));
-
-    return open.isEmpty ? null : open.last;
+    final latest = latestCycleOf(records);
+    return latest != null &&
+            !latest.hasCalved &&
+            latest.serviceDate != null &&
+            latest.pregnancyResult == PregnancyCheckResult.positive
+        ? latest
+        : null;
   }
 
-  /// The latest service still waiting for a pregnancy diagnosis.
-  ///
-  /// A record counts as undiagnosed while its result is absent, explicitly
-  /// `notChecked`, or `uncertain` — an inconclusive palpation still needs a
-  /// follow-up. Records that already calved are done regardless of result.
+  static ReproductionRecord? latestCycleOf(List<ReproductionRecord> records) {
+    final ordered = [...records]
+      ..sort((a, b) {
+        final date = a.eventDate.compareTo(b.eventDate);
+        if (date != 0) return date;
+        return (a.updatedAt ?? a.eventDate).compareTo(
+          b.updatedAt ?? b.eventDate,
+        );
+      });
+    return ordered.lastOrNull;
+  }
+
   static ReproductionRecord? pendingDiagnosisOf(
     List<ReproductionRecord> records,
   ) {
-    final pending = records
-        .where(
-          (record) =>
-              !record.hasCalved &&
-              (record.pregnancyResult == null ||
-                  record.pregnancyResult == PregnancyCheckResult.notChecked ||
-                  record.pregnancyResult == PregnancyCheckResult.uncertain),
-        )
-        .toList()
-      ..sort((a, b) => a.serviceDate.compareTo(b.serviceDate));
-
-    return pending.isEmpty ? null : pending.last;
+    final latest = latestCycleOf(records);
+    return latest != null &&
+            latest.serviceDate != null &&
+            !latest.hasCalved &&
+            (latest.pregnancyResult == null ||
+                latest.pregnancyResult == PregnancyCheckResult.notChecked ||
+                latest.pregnancyResult == PregnancyCheckResult.uncertain)
+        ? latest
+        : null;
   }
 
   AnimalReproductiveKpis forAnimal({
@@ -211,10 +212,11 @@ class ReproductiveKpiService {
     final reference = now ?? DateTime.now();
 
     final ordered = [...records]
-      ..sort((a, b) => a.serviceDate.compareTo(b.serviceDate));
+      ..sort((a, b) => a.eventDate.compareTo(b.eventDate));
 
     final calvingDates =
         ordered
+            .where((record) => record.calvingOutcome != CalvingOutcome.abortion)
             .map((record) => record.actualCalvingDate)
             .whereType<DateTime>()
             .toList()
@@ -229,10 +231,13 @@ class ReproductiveKpiService {
         ? null
         : intervals.reduce((a, b) => a + b) / intervals.length;
 
-    final confirmedPregnancies = ordered.where(_isConfirmedPregnancy).length;
+    final confirmedPregnancies = ordered
+        .where((r) => r.serviceDate != null && _isConfirmedPregnancy(r))
+        .length;
     final servicesPerConception = confirmedPregnancies == 0
         ? null
-        : ordered.length / confirmedPregnancies;
+        : ordered.where((r) => r.serviceDate != null).length /
+              confirmedPregnancies;
 
     final lastCalving = calvingDates.isEmpty ? null : calvingDates.last;
 
@@ -242,10 +247,11 @@ class ReproductiveKpiService {
       final nextConception = ordered
           .where(
             (record) =>
-                record.serviceDate.isAfter(lastCalving) &&
+                record.serviceDate != null &&
+                record.serviceDate!.isAfter(lastCalving) &&
                 _isConfirmedPregnancy(record),
           )
-          .map((record) => record.serviceDate)
+          .map((record) => record.serviceDate!)
           .fold<DateTime?>(
             null,
             (earliest, date) =>
@@ -263,13 +269,13 @@ class ReproductiveKpiService {
     final openCycle = openCycleOf(ordered);
 
     final currentGestationDays =
-        openCycle != null && !reference.isBefore(openCycle.serviceDate)
-        ? reference.difference(openCycle.serviceDate).inDays
+        openCycle != null && !reference.isBefore(openCycle.serviceDate!)
+        ? reference.difference(openCycle.serviceDate!).inDays
         : null;
 
     return AnimalReproductiveKpis(
       calvingCount: calvingDates.length,
-      serviceCount: ordered.length,
+      serviceCount: ordered.where((r) => r.serviceDate != null).length,
       calvingIntervalsDays: intervals,
       ageAtFirstCalvingMonths: birthDate == null || calvingDates.isEmpty
           ? null
@@ -296,38 +302,48 @@ class ReproductiveKpiService {
     required List<ReproductionRecord> records,
     Map<String, String> femaleByRecord = const {},
   }) {
-    if (records.isEmpty) return SireReproductiveKpis.empty;
+    final offspringCount = records
+        .expand((r) => r.offspringUuids)
+        .toSet()
+        .length;
+    records = records.where((r) => r.serviceDate != null).toList();
+    if (records.isEmpty)
+      return SireReproductiveKpis(
+        serviceCount: 0,
+        femalesServed: 0,
+        diagnosedCount: 0,
+        confirmedPregnancies: 0,
+        offspringCount: offspringCount,
+      );
 
     final diagnosed = records
         .where(
           (record) =>
               record.pregnancyResult != null &&
-              record.pregnancyResult != PregnancyCheckResult.notChecked,
+              (record.pregnancyResult == PregnancyCheckResult.positive ||
+                  record.pregnancyResult == PregnancyCheckResult.negative),
         )
         .toList();
     final confirmed = records.where(_isConfirmedPregnancy).length;
 
     final females = <String>{};
     for (final record in records) {
-      final female = femaleByRecord[record.id];
+      final female = record.animalUuid ?? femaleByRecord[record.id];
       if (female != null) females.add(female);
     }
 
     final lastService = records
-        .map((record) => record.serviceDate)
+        .map((record) => record.serviceDate!)
         .reduce((a, b) => a.isAfter(b) ? a : b);
 
     return SireReproductiveKpis(
       serviceCount: records.length,
       // Falls back to the service count when the caller did not supply the
       // mapping, rather than reporting zero females for real services.
-      femalesServed: females.isEmpty ? records.length : females.length,
+      femalesServed: females.length,
       diagnosedCount: diagnosed.length,
       confirmedPregnancies: confirmed,
-      offspringCount: records.fold(
-        0,
-        (total, record) => total + record.offspringUuids.length,
-      ),
+      offspringCount: offspringCount,
       conceptionRate: diagnosed.isEmpty ? null : confirmed / diagnosed.length,
       lastServiceDate: lastService,
     );
@@ -376,7 +392,8 @@ class ReproductiveKpiService {
 
       for (final record in entry.value) {
         final calving = record.actualCalvingDate;
-        if (calving == null) continue;
+        if (calving == null || record.calvingOutcome == CalvingOutcome.abortion)
+          continue;
         if (periodStart != null && calving.isBefore(periodStart)) continue;
         if (periodEnd != null && calving.isAfter(periodEnd)) continue;
         calvingsInPeriod++;

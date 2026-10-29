@@ -22,6 +22,10 @@ class _FakeFinanzasRepository implements FinanzasRepository {
   bool failOnGet = false;
 
   @override
+  Future<IncomeRecord> updateIncome(IncomeRecord record) async => throw UnsupportedError('Edición no disponible en este adaptador.');
+  @override
+  Future<GeneralExpenseRecord> updateExpense(GeneralExpenseRecord record) async => throw UnsupportedError('Edición no disponible en este adaptador.');
+  @override
   Future<List<IncomeRecord>> getIncomes(DateRange range) async {
     if (failOnGet) throw Exception('simulated repository error');
     return _incomes.where((r) => range.contains(r.date)).toList();

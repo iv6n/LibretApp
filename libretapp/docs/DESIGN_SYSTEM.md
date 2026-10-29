@@ -1,54 +1,88 @@
-# LibretApp — Design System
+# Sistema visual de LibretApp
 
-Every screen shares the same tokens and widgets. Use them instead of literal
-numbers, colors, or hand-rolled cards/empty states — that's what keeps the
-app consistent as it grows. This guide exists because an earlier audit found
-the tokens and shared widgets already existed but were barely used (`AppCard`
-and `AppChip` had zero real call sites); the goal here is to stop that from
-happening again.
+La misma identidad se aplica a Onboarding, Inicio, Directorio, Registro, Agenda,
+Ubicaciones y cultivos, Finanzas, Reportes, Perfil, Biblioteca, Exportar y demo.
+Los flujos y datos de cada módulo conservan su comportamiento.
 
-## Tokens (`lib/theme/app_theme.dart`)
+## Color
 
-| Token | Values | Use for |
+Los roles viven en [`lib/theme/app_theme.dart`](../lib/theme/app_theme.dart).
+En widgets se consulta `Theme.of(context).colorScheme`; los valores fijos solo
+se usan al definir el tema. Los colores de especie, salud y riesgo conservan
+su significado y siempre llevan texto o icono además del color.
+
+| Rol | Claro | Oscuro | Uso |
+|---|---|---|---|
+| Acción principal | `#2F5D50`, texto blanco | `#9DE5CB`, texto `#0C3027` | `ColorScheme.primary/onPrimary`, CTA, FAB, selección y foco |
+| Fondo | `#FFFDF8` | `#0F1B1F` | Página |
+| Superficie | `#FAF6EE` y crema `#F6F1E8` | `#0F1B1F` y `#15262C` | Tarjetas, controles y paneles |
+| Salvia | `#DDECE3`, texto `#18362D` | `#28473D`, texto `#DDECE3` | Paneles destacados y selecciones |
+| Café cuero | `#7B4B2A` | `#E8BA94` | Detalles y categorías de tierra; no CTA principal |
+| Información | `#366079` | `#9CCBE5` | Chip o aviso informativo |
+| Éxito | `#136F35` | `#9ADEA8` | Estado favorable |
+| Atención | `#8D5D00` | `#F3C677` | Advertencia |
+| Error | `#B91C1C` | `#FFB4AB` | Error y acción destructiva |
+
+Los tonos de estado se consultan mediante `AppStatusTheme`. Sus chips usan un
+fondo translúcido y texto del tono correspondiente. En superficies diferentes,
+comprobar contraste de texto y borde antes de usar el color.
+
+## Medidas y tipografía
+
+| Token | Valores | Uso |
 |---|---|---|
-| `AppSpacing` | `xxs` 4, `xs` 8, `sm` 12, `md` 16, `lg` 20, `xl` 24, `xxl` 32 | Any `EdgeInsets`, `SizedBox` gap, or `Row`/`Column` spacing. Never write a literal number like `EdgeInsets.all(14)`. |
-| `AppRadii` | `sm` 8, `md` 12, `lg` 16 | Any `BorderRadius.circular(...)`. Never write a literal radius. |
-| `AppControlMetrics` | 48 px controls, 40 px compact controls | Minimum size for primary actions and icon buttons. Use compact only for dense secondary chrome. |
-| `AppTextStyles` | `titleLg`, `titleMd`, `body`, `bodySmall`, `label` | These are integrated into the global `TextTheme`; prefer `Theme.of(context).textTheme` over local `TextStyle`. |
-| Colors | `Theme.of(context).colorScheme` / `AppColors` (`lib/core/widgets` imports) | Never hardcode `Color(0x...)`. If a color doesn't exist in the scheme, add it to `AppColors` rather than inlining a hex value in a screen. |
+| `AppSpacing` | 4, 8, 12, 16, 20, 24, 32 dp | Separaciones y márgenes |
+| `AppRadii` | 8, 12, 16, 24, 999 dp | 12 campos; 16 tarjetas y botones; 24 paneles ilustrados; píldora estados |
+| `AppControlMetrics` | 48 dp normal; 40 dp compacto | Interacción: objetivo táctil de 48 dp para acciones |
+| `AppTextStyles` | `titleLg`, `titleMd`, `body`, `bodySmall`, `label` | Título de página, sección/tarjeta, cuerpo, dato secundario y etiqueta |
 
-## Shared widgets (`lib/core/widgets/`, exported via `widgets.dart`)
+Roboto es la fuente funcional. Se toma `Theme.of(context).textTheme` en vez
+de fijar tamaños dentro de cada pantalla. El texto puede llegar al 200 %:
+permitir varias líneas y desplazamiento, sin truncar datos o acciones.
 
-| Situation | Use | Not |
-|---|---|---|
-| A tappable or informational block with a title/subtitle/leading/trailing/body | `AppCard` | raw `Card(...)` |
-| A small labeled tag/status/filter pill | `AppChip` (tones: `neutral`, `info`, `success`, `warning`, `error`) | raw `Container` + `BoxDecoration` chip |
-| A list/section with no data yet | `AppEmptyState` (icon, title, message, optional action) | a local `_buildEmpty`/`EmptyView` widget per screen |
-| A full-screen or inline loading state | `AppLoadingIndicator` (full-page, optional message) / `AppLoadingIndicator.inline()` (compact, for cards) | bare `Center(child: CircularProgressIndicator())` scattered per screen |
-| A search field with optional filter/clear actions | `AppSearchBar` | a custom `TextField` + manual clear/filter buttons |
-| A primary/secondary/tertiary action | `AppButton` | styling `FilledButton`/`OutlinedButton` differently in every screen |
-| An icon-only action | `AppIconButton` | a bare `IconButton` without a tooltip or semantic label |
-| A validated text input | `AppTextField` | repeating `TextFormField` decoration and required-label rules |
-| A select/dropdown input | `AppSelectField<T>` | repeating `DropdownButtonFormField` decoration |
-| A titled form section | `AppFormSection` | raw `Card` + local header/padding |
-| A page or section heading | `AppPageHeader` | a local row with custom icon, title and subtitle spacing |
+## Componentes
 
-## Button rules
+Los componentes compartidos están en `lib/core/widgets/` y se exportan desde
+`widgets.dart`.
 
-- `FilledButton`/`AppButton(primary)`: one main action per surface, such as saving or continuing.
-- `OutlinedButton`/`AppButton(secondary)`: secondary actions, navigation back, or save-as-draft.
-- `TextButton`/`AppButton(tertiary)`: low-emphasis actions such as cancel or edit.
-- Destructive actions use the error color, require confirmation, and should not share the primary action color.
-- Icon-only actions always expose a tooltip and a semantic label.
+| Necesidad | Componente |
+|---|---|
+| Acción principal, secundaria o terciaria | `AppButton` |
+| Acción de icono | `AppIconButton`, con descripción accesible |
+| Tarjeta genérica | `AppCard` |
+| Estado, filtro o selección | `AppChip` |
+| Lista sin datos | `AppEmptyState` |
+| Carga de página o sección | `AppLoadingIndicator` |
+| Búsqueda | `AppSearchBar` |
+| Texto, selección y sección de formulario | `AppTextField`, `AppSelectField`, `AppFormSection` |
+| Encabezado | `AppPageHeader` |
 
-If a real screen needs something one of these widgets doesn't expose yet
-(e.g. a different `AppCard` elevation), extend the shared widget with a new
-optional parameter — don't fork it into a local copy.
+Usar `AppButton(primary)` o `FilledButton` para la acción principal de una
+superficie. Los botones Flutter y el FAB toman `ColorScheme.primary/onPrimary`.
+Las acciones secundarias usan contorno o texto; las destructivas, el rol error.
+Cuando una tarjeta especializada requiere otro contenido, conserva su estructura
+pero adopta color, borde, espacio y estados del tema. Extender un componente
+compartido solo cuando aparece una variante real reutilizable.
 
-## Adding a new screen or section
+## Iconos, imágenes y lenguaje
 
-1. Reach for a shared widget from the table above first.
-2. If none fits, build with `AppSpacing`/`AppRadii`/`AppControlMetrics`/theme text styles and
-   colors — not literals.
-3. If you find yourself repeating a pattern across two or more screens,
-   promote it into `lib/core/widgets/` instead of copy-pasting.
+- Usar un tamaño constante por tipo de acción y un objetivo táctil de 48 dp.
+  Cada icono interactivo necesita etiqueta semántica o tooltip.
+- El catálogo de vaca, canino, felino, cultivos, ubicaciones y actividades es
+  la referencia visual: ilustración 2.5D amable, fondo transparente, figura
+  completa, encuadre centrado y nitidez suficiente para pantallas densas.
+- La bienvenida usa `onboarding_welcome_group.png`, una escena conjunta de
+  vaca, perro, gato y planta. La vista previa usa `vaca.webp` y
+  `onboarding_monstera_illustration.png`. Las tarjetas y textos son widgets,
+  no parte de una imagen plana. Las fotos subidas por usuarios son contenido.
+- Usar términos apropiados para mascotas, ganado y cultivos. En mascotas,
+  mostrar la etiqueta «Mascota» y evitar vocabulario de etapas ganaderas.
+
+## Estados y accesibilidad
+
+Revisar cada vista con contenido, vacío, carga, error y sin conexión en temas
+claro y oscuro. Mantener el foco visible, las acciones por encima del teclado,
+respeto a movimiento reducido y acceso con lector de pantalla. El estado o la
+selección se explica mediante texto o icono, nunca solo con color. Las vistas
+desplazables deben permitir llegar a todas las acciones en 320 × 568 con texto
+al 200 %.

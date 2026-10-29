@@ -333,7 +333,9 @@ class _MiniMapPreview extends StatelessWidget {
                 child: CustomPaint(
                   painter: _PolygonPreviewPainter(
                     points: points,
-                    fillColor: theme.colorScheme.primary.withValues(alpha: 0.18),
+                    fillColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.18,
+                    ),
                     strokeColor: theme.colorScheme.primary,
                   ),
                 ),
@@ -358,7 +360,9 @@ class _MiniMapPreview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  points.length >= 3 || hasPoint ? 'GPS guardado' : 'GPS pendiente',
+                  points.length >= 3 || hasPoint
+                      ? 'Coordenadas guardadas'
+                      : 'Sin coordenadas',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onPrimaryContainer,
                     fontWeight: FontWeight.w700,
@@ -386,13 +390,22 @@ class _PolygonPreviewPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final minX = points.map((point) => point[0]).reduce((a, b) => a < b ? a : b);
-    final maxX = points.map((point) => point[0]).reduce((a, b) => a > b ? a : b);
-    final minY = points.map((point) => point[1]).reduce((a, b) => a < b ? a : b);
-    final maxY = points.map((point) => point[1]).reduce((a, b) => a > b ? a : b);
+    final minX = points
+        .map((point) => point[0])
+        .reduce((a, b) => a < b ? a : b);
+    final maxX = points
+        .map((point) => point[0])
+        .reduce((a, b) => a > b ? a : b);
+    final minY = points
+        .map((point) => point[1])
+        .reduce((a, b) => a < b ? a : b);
+    final maxY = points
+        .map((point) => point[1])
+        .reduce((a, b) => a > b ? a : b);
     final width = (maxX - minX).abs();
     final height = (maxY - minY).abs();
-    final scale = (size.width / (width == 0 ? 1 : width)) <
+    final scale =
+        (size.width / (width == 0 ? 1 : width)) <
             (size.height / (height == 0 ? 1 : height))
         ? size.width / (width == 0 ? 1 : width)
         : size.height / (height == 0 ? 1 : height);

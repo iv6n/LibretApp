@@ -8,10 +8,12 @@
 library;
 
 import 'dart:io';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'advisor/rules/rule_test_fixtures.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproductive_kpi_service.dart';
@@ -69,6 +71,7 @@ void main() {
     await isar.writeTxn(() async {
       await isar.isarAnimals.clear();
       await isar.isarReproductionRecords.clear();
+      await isar.isarAnimals.put(buildAnimal(uuid: 'toro-1', sex: Sex.male).toIsar());
       await isar.isarAnimals.put(
         IsarAnimal()
           ..uuid = cowUuid
@@ -173,7 +176,7 @@ void main() {
     expect(midCycle.currentGestationDays, 100);
 
     // ── 3. Parto, también sobre el mismo registro ─────────────────────────
-    final calvingDate = DateTime(2026, 10, 20);
+    final calvingDate = DateTime(2026, 10, 1);
     await repo.addReproductionRecord(
       cowUuid,
       openCycle!.copyWith(
@@ -196,10 +199,9 @@ void main() {
     );
 
     // ── 4. Enlazar la cría ────────────────────────────────────────────────
-    await repo.addReproductionRecord(
-      cowUuid,
-      records.single.copyWith(offspringUuids: const [calfUuid]),
-    );
+    final isar = await db.initialize();
+    await isar.writeTxn(() => isar.isarAnimals.put(buildAnimal(uuid: calfUuid, ageMonths: 0).copyWith(birthDate: calvingDate).toIsar()));
+    await repo.linkOffspring(cowUuid, records.single.id!, calfUuid);
 
     records = await repo.getReproductionRecords(cowUuid);
     final closed = records.single;

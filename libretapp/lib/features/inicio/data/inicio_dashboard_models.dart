@@ -11,15 +11,23 @@ class CategorySummary extends Equatable {
     required this.total,
     required this.maleCount,
     required this.femaleCount,
+    this.unknownCount = 0,
   });
 
   final Category category;
   final int total;
   final int maleCount;
   final int femaleCount;
+  final int unknownCount;
 
   @override
-  List<Object?> get props => [category, total, maleCount, femaleCount];
+  List<Object?> get props => [
+    category,
+    total,
+    maleCount,
+    femaleCount,
+    unknownCount,
+  ];
 }
 
 enum InicioAlertSeverity { critical, warning, info }
@@ -67,6 +75,7 @@ class WeatherData extends Equatable {
     required this.condition,
     required this.humidity,
     required this.windSpeed,
+    this.weatherCode = 0,
   });
 
   final int temperature;
@@ -74,6 +83,7 @@ class WeatherData extends Equatable {
   final String condition;
   final int humidity;
   final int windSpeed;
+  final int weatherCode;
 
   @override
   List<Object?> get props => [
@@ -82,6 +92,7 @@ class WeatherData extends Equatable {
     condition,
     humidity,
     windSpeed,
+    weatherCode,
   ];
 }
 
@@ -177,6 +188,8 @@ class InicioDashboardData extends Equatable {
     required this.profileName,
     required this.farmName,
     required this.totalAnimals,
+    this.petCount = 0,
+    this.livestockCount = 0,
     required this.totalAnimalCapacity,
     required this.attentionAnimals,
     required this.activeLotes,
@@ -196,6 +209,8 @@ class InicioDashboardData extends Equatable {
   final String profileName;
   final String farmName;
   final int totalAnimals;
+  final int petCount;
+  final int livestockCount;
   final int totalAnimalCapacity;
   final int attentionAnimals;
   final int activeLotes;
@@ -216,6 +231,8 @@ class InicioDashboardData extends Equatable {
     profileName,
     farmName,
     totalAnimals,
+    petCount,
+    livestockCount,
     totalAnimalCapacity,
     attentionAnimals,
     activeLotes,

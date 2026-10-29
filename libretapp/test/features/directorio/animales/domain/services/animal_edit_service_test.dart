@@ -10,11 +10,13 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/database/isar_write_transaction.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
@@ -37,6 +39,19 @@ class _FakeAnimalRemoteDataSource implements AnimalRemoteDataSource {
       hash: 'h',
       lastUpdated: DateTime.now(),
     );
+  }
+}
+
+class _FailingCareCalendar extends CareCalendarService {
+  const _FailingCareCalendar(super.repository);
+
+  @override
+  Future<List<ScheduledCare>> regenerateFor(
+    AnimalEntity animal, {
+    DateTime? now,
+  }) async {
+    await super.regenerateFor(animal, now: now);
+    throw StateError('Injected failure after care writes');
   }
 }
 
@@ -142,6 +157,7 @@ void main() {
     );
 
     service = AnimalEditService(
+      transactionRunner: IsarWriteTransactionRunner(database),
       animalRepository: animalRepository,
       lotesRepository: lotesRepository,
       movementRepository: movementRepository,
@@ -326,6 +342,69 @@ void main() {
       // The active-herd query (what Milking/dashboard read) excludes her.
       final active = await animalRepository.getAll();
       expect(active.any((a) => a.uuid == 'prieta-1'), isFalse);
+    },
+  );
+
+  test(
+    'a late edit failure rolls back animal, movements, lot membership and care',
+    () async {
+      final original = _cow(
+        uuid: 'atomic-edit',
+        earTag: 'AT-1',
+        batchUuid: 'lote-vientres',
+        currentLocationId: 'location-a',
+      );
+      await animalRepository.save(original);
+      await lotesRepository.addAnimalToLote(
+        loteUuid: 'lote-vientres',
+        animalUuid: original.uuid,
+      );
+      final failing = AnimalEditService(
+        animalRepository: animalRepository,
+        lotesRepository: lotesRepository,
+        movementRepository: movementRepository,
+        careRepository: careRepository,
+        agendaReminderSyncService: AgendaReminderSyncService(
+          animalRepository: animalRepository,
+          careRepo: careRepository,
+          healthRepo: HealthRecordRepositoryIsar(database),
+          reproductionRepo: ReproductionRecordRepositoryIsar(database),
+          careCalendarService: CareCalendarService(careRepository),
+          agendaRepository: IsarAgendaRepository(
+            database,
+            SharedPrefsService(await SharedPreferences.getInstance()),
+          ),
+        ),
+        careCalendarService: _FailingCareCalendar(careRepository),
+        transactionRunner: IsarWriteTransactionRunner(database),
+      );
+      await expectLater(
+        failing.applyEdit(
+          original: original,
+          draft: original.copyWith(
+            customName: 'Should roll back',
+            batchUuid: 'lote-vaquillas',
+            currentLocationId: 'location-b',
+          ),
+        ),
+        throwsStateError,
+      );
+      final stored = (await animalRepository.getByUuid(original.uuid))!;
+      expect(stored.customName, original.customName);
+      expect(stored.currentLocationId, 'location-a');
+      expect(stored.batchUuid, 'lote-vientres');
+      expect(
+        await movementRepository.getMovementRecords(original.uuid),
+        isEmpty,
+      );
+      expect(
+        (await lotesRepository.getByUuid('lote-vientres'))!.animalUuids,
+        contains(original.uuid),
+      );
+      expect(
+        (await lotesRepository.getByUuid('lote-vaquillas'))!.animalUuids,
+        isNot(contains(original.uuid)),
+      );
     },
   );
 

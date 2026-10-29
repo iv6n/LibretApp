@@ -1,7 +1,8 @@
 /// features › directorio › animales › infrastructure › care_repository_isar
 library;
+import 'package:libretapp/core/database/isar_write_transaction.dart';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
@@ -37,7 +38,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> saveRule(CareRule rule) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       // recordUuid is the rule id and is a replacing unique index, so this
       // updates in place rather than piling up duplicates.
       await isar.isarCareRules.put(rule.toIsar());
@@ -47,7 +48,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> retireRule(String ruleId) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final stored = await isar.isarCareRules
           .where()
           .recordUuidEqualTo(ruleId)
@@ -85,7 +86,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> saveRecord(CareRecord record) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarCareRecords.put(record.toIsar());
       await AnimalActivityTracker.touch(isar, record.animalId, DateTime.now());
     });
@@ -94,7 +95,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> deleteRecord(String recordId) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final stored = await isar.isarCareRecords
           .where()
           .recordUuidEqualTo(recordId)
@@ -134,7 +135,7 @@ class CareRepositoryIsar implements CareRepository {
   Future<void> saveSchedules(List<ScheduledCare> schedules) async {
     if (schedules.isEmpty) return;
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarScheduledCares.putAll(
         schedules.map((task) => task.toIsar()).toList(growable: false),
       );
@@ -144,7 +145,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> markDone(String scheduleId) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final stored = await isar.isarScheduledCares
           .where()
           .recordUuidEqualTo(scheduleId)
@@ -158,7 +159,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> deleteAllForAnimal(String animalUuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final existingRecords = await isar.isarCareRecords
           .where()
           .animalUuidEqualTo(animalUuid)
@@ -180,7 +181,7 @@ class CareRepositoryIsar implements CareRepository {
   @override
   Future<void> clearGeneratedFor(String animalUuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       // Only the auto-generated, still-pending ones: a task the breeder added
       // by hand, or one already marked done, is history and stays.
       await isar.isarScheduledCares

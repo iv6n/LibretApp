@@ -1,7 +1,7 @@
 /// Complete Isar-backed implementation of the backup store.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/backup_store.dart';
 import 'package:libretapp/core/database/isar_database.dart';
@@ -18,6 +18,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weaning_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
 import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_migration_service.dart';
 import 'package:libretapp/features/directorio/cultivos/infrastructure/isar_cultivation.dart';
@@ -30,8 +31,12 @@ import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location
 import 'package:libretapp/features/rfid/infrastructure/isar_rfid.dart';
 import 'package:libretapp/core/persistence/isar_feature_record.dart';
 import 'package:uuid/uuid.dart';
+import 'backup_validator.dart';
+import 'legacy_backup_snapshot.dart';
+import 'package:libretapp/features/perfil/data/perfil_isar_repository.dart';
+import 'package:libretapp/features/perfil/data/perfil_model.dart';
 
-class IsarBackupStore implements BackupStore {
+class IsarBackupStore implements BackupStore, TransactionalLegacyBackupStore {
   IsarBackupStore({
     required IsarDatabase database,
     required PerfilRepository perfilRepository,
@@ -41,6 +46,7 @@ class IsarBackupStore implements BackupStore {
   static const collectionNames = <String>{
     'animals',
     'weightRecords',
+    'weaningRecords',
     'reproductionRecords',
     'productionRecords',
     'healthRecords',
@@ -74,55 +80,116 @@ class IsarBackupStore implements BackupStore {
     final isar = await _database.initialize();
     await _backfillRecordUuids(isar);
     final profile = await _perfilRepository.fetchPerfil();
-    final collections = await isar.txn(() async {
-      return <String, List<Map<String, dynamic>>>{
-        'animals': await isar.isarAnimals.where().exportJson(),
-        'weightRecords': await isar.isarWeightRecords.where().exportJson(),
-        'reproductionRecords': await isar.isarReproductionRecords
-            .where()
-            .exportJson(),
-        'productionRecords': await isar.isarProductionRecords
-            .where()
-            .exportJson(),
-        'healthRecords': await isar.isarHealthRecords.where().exportJson(),
-        'costRecords': await isar.isarCostRecords.where().exportJson(),
-        'commercialRecords': await isar.isarCommercialRecords
-            .where()
-            .exportJson(),
-        'movementRecords': await isar.isarMovementRecords.where().exportJson(),
-        'lotes': await isar.isarLotes.where().exportJson(),
-        'cultivations': await isar.isarCultivations.where().exportJson(),
-        'locations': await isar.isarLocations.where().exportJson(),
-        'incomeRecords': await isar.isarIncomeRecords.where().exportJson(),
-        'generalExpenseRecords': await isar.isarGeneralExpenseRecords
-            .where()
-            .exportJson(),
-        'milkingSessions': await isar.isarMilkingSessions.where().exportJson(),
-        'milkingEntries': await isar.isarMilkingEntrys.where().exportJson(),
-        'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
-        'agendaRegistrations': await isar.isarAgendaRegistrations
-            .where()
-            .exportJson(),
-        'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
-        'workTeams': await isar.isarWorkTeams.where().exportJson(),
-        'careRules': await isar.isarCareRules.where().exportJson(),
-        'careRecords': await isar.isarCareRecords.where().exportJson(),
-        'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
-        'rfidBindings': await isar.isarRfidBindings.where().exportJson(),
-        'rfidScanSessions': await isar.isarRfidScanSessions
-            .where()
-            .exportJson(),
-        'featureRecords': await isar.isarFeatureRecords.where().exportJson(),
-      };
-    });
+    final captured = await isar.txn(
+      () async => (
+        profile: _perfilRepository is PerfilIsarRepository
+            ? await PerfilIsarRepository.readWithinTransaction(isar)
+            : profile,
+        rows: await _readCollections(isar),
+      ),
+    );
     return BackupEnvelope(
       schemaVersion: BackupEnvelope.currentSchemaVersion,
       appVersion: BackupEnvelope.currentAppVersion,
       exportedAt: DateTime.now().toUtc(),
-      collections: collections,
-      profile: profile.toJson(),
+      collections: captured.rows,
+      profile: captured.profile.toJson(),
     );
   }
+
+  Future<Map<String, List<Map<String, dynamic>>>> _readCollections(
+    Isar isar,
+  ) async {
+    return <String, List<Map<String, dynamic>>>{
+      'animals': await isar.isarAnimals.where().exportJson(),
+      'weightRecords': await isar.isarWeightRecords.where().exportJson(),
+      'weaningRecords': await isar.isarWeaningRecords.where().exportJson(),
+      'reproductionRecords': await isar.isarReproductionRecords
+          .where()
+          .exportJson(),
+      'productionRecords': await isar.isarProductionRecords
+          .where()
+          .exportJson(),
+      'healthRecords': await isar.isarHealthRecords.where().exportJson(),
+      'costRecords': await isar.isarCostRecords.where().exportJson(),
+      'commercialRecords': await isar.isarCommercialRecords
+          .where()
+          .exportJson(),
+      'movementRecords': await isar.isarMovementRecords.where().exportJson(),
+      'lotes': await isar.isarLotes.where().exportJson(),
+      'cultivations': await isar.isarCultivations.where().exportJson(),
+      'locations': await isar.isarLocations.where().exportJson(),
+      'incomeRecords': await isar.isarIncomeRecords.where().exportJson(),
+      'generalExpenseRecords': await isar.isarGeneralExpenseRecords
+          .where()
+          .exportJson(),
+      'milkingSessions': await isar.isarMilkingSessions.where().exportJson(),
+      'milkingEntries': await isar.isarMilkingEntrys.where().exportJson(),
+      'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
+      'agendaRegistrations': await isar.isarAgendaRegistrations
+          .where()
+          .exportJson(),
+      'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
+      'workTeams': await isar.isarWorkTeams.where().exportJson(),
+      'careRules': await isar.isarCareRules.where().exportJson(),
+      'careRecords': await isar.isarCareRecords.where().exportJson(),
+      'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
+      'rfidBindings': await isar.isarRfidBindings.where().exportJson(),
+      'rfidScanSessions': await isar.isarRfidScanSessions.where().exportJson(),
+      'featureRecords': await isar.isarFeatureRecords.where().exportJson(),
+    };
+  }
+
+  Map<String, IsarCollection<dynamic>> collectionsForMaintenance(Isar db) => {
+    'animals': db.isarAnimals,
+    'weightRecords': db.isarWeightRecords,
+    'weaningRecords': db.isarWeaningRecords,
+    'reproductionRecords': db.isarReproductionRecords,
+    'productionRecords': db.isarProductionRecords,
+    'healthRecords': db.isarHealthRecords,
+    'costRecords': db.isarCostRecords,
+    'commercialRecords': db.isarCommercialRecords,
+    'movementRecords': db.isarMovementRecords,
+    'lotes': db.isarLotes,
+    'cultivations': db.isarCultivations,
+    'locations': db.isarLocations,
+    'incomeRecords': db.isarIncomeRecords,
+    'generalExpenseRecords': db.isarGeneralExpenseRecords,
+    'milkingSessions': db.isarMilkingSessions,
+    'milkingEntries': db.isarMilkingEntrys,
+    'agendaEntries': db.isarAgendaEntrys,
+    'agendaRegistrations': db.isarAgendaRegistrations,
+    'workerProfiles': db.isarWorkerProfiles,
+    'workTeams': db.isarWorkTeams,
+    'careRules': db.isarCareRules,
+    'careRecords': db.isarCareRecords,
+    'scheduledCares': db.isarScheduledCares,
+    'rfidBindings': db.isarRfidBindings,
+    'rfidScanSessions': db.isarRfidScanSessions,
+    'featureRecords': db.isarFeatureRecords,
+  };
+
+  Future<Map<String, List<Map<String, dynamic>>>> readForMaintenance({
+    bool inTransaction = false,
+  }) async {
+    final db = await _database.initialize();
+    if (inTransaction) return readDatabaseForMaintenance(db);
+    return db.txn(() => readDatabaseForMaintenance(db));
+  }
+
+  Future<Map<String, List<Map<String, dynamic>>>> readDatabaseForMaintenance(
+    Isar db,
+  ) async => {
+    for (final entry in collectionsForMaintenance(db).entries)
+      entry.key: await entry.value.where().exportJson(),
+    'profile': [
+      {
+        'payload': (await PerfilIsarRepository.readWithinTransaction(
+          db,
+        )).toJson(),
+      },
+    ],
+  };
 
   @override
   Future<BackupRestoreResult> restore(
@@ -132,6 +199,7 @@ class IsarBackupStore implements BackupStore {
     final isar = await _database.initialize();
     final compatibleCollections = <String, List<Map<String, dynamic>>>{
       ...envelope.collections,
+      'weaningRecords': envelope.collections['weaningRecords'] ?? const [],
       'agendaRegistrations':
           envelope.collections['agendaRegistrations'] ?? const [],
       // RFID collections were introduced in schema 7. Old snapshots remain
@@ -141,16 +209,36 @@ class IsarBackupStore implements BackupStore {
       'cultivations': envelope.collections['cultivations'] ?? const [],
       'featureRecords': envelope.collections['featureRecords'] ?? const [],
     };
-    final prepared = mode == BackupImportMode.merge
-        ? await _prepareMerge(isar, compatibleCollections)
-        : compatibleCollections;
-
+    BackupValidator.validate(envelope);
+    if (envelope.profile.isNotEmpty &&
+        _perfilRepository is! PerfilIsarRepository) {
+      throw StateError(
+        'El perfil requiere almacenamiento transaccional para restaurarse.',
+      );
+    }
+    late Map<String, List<Map<String, dynamic>>> prepared;
     await isar.writeTxn(() async {
-      if (mode == BackupImportMode.replaceAll) {
-        await _clearAll(isar);
+      {
+        for (final row in compatibleCollections['featureRecords']!) {
+          final old = await isar.isarFeatureRecords
+              .where()
+              .uuidEqualTo(row['uuid'] as String)
+              .findFirst();
+          if (old != null &&
+              (old.farmId != row['farmId'] || old.kind != row['kind'])) {
+            throw const FormatException(
+              'El UUID pertenece a otra finca o tipo de registro.',
+            );
+          }
+        }
       }
+      prepared = mode == BackupImportMode.merge
+          ? await _prepareMerge(isar, compatibleCollections)
+          : compatibleCollections;
+      if (mode == BackupImportMode.replaceAll) await _clearAll(isar);
       await isar.isarAnimals.importJson(prepared['animals']!);
       await isar.isarWeightRecords.importJson(prepared['weightRecords']!);
+      await isar.isarWeaningRecords.importJson(prepared['weaningRecords']!);
       await isar.isarReproductionRecords.importJson(
         prepared['reproductionRecords']!,
       );
@@ -190,31 +278,130 @@ class IsarBackupStore implements BackupStore {
       await isar.isarFeatureRecords.importJson(
         prepared['featureRecords'] ?? const [],
       );
+      if (envelope.schemaVersion < 9) {
+        await migrateLegacyCultivations(isar, inTransaction: true);
+      }
+      if (envelope.profile.isNotEmpty) {
+        final current = await PerfilIsarRepository.readWithinTransaction(isar);
+        final profile = Perfil.fromJson({
+          ...current.toJson(),
+          ...envelope.profile,
+        });
+        await PerfilIsarRepository.writeWithinTransaction(isar, profile);
+      }
+      await _validateCurrent(isar);
     });
-    if (envelope.schemaVersion < 9) {
-      await migrateLegacyCultivations(isar);
-    }
-    if (envelope.profile.isNotEmpty) {
-      final current = await _perfilRepository.fetchPerfil();
-      await _perfilRepository.updatePerfil(
-        current.copyWith(
-          id: envelope.profile['id'] as String? ?? '',
-          nombre: envelope.profile['nombre'] as String? ?? '',
-          apellido: envelope.profile['apellido'] as String? ?? '',
-          email: envelope.profile['email'] as String? ?? '',
-          telefono: envelope.profile['telefono'] as String? ?? '',
-          finca: envelope.profile['finca'] as String? ?? '',
-          direccion: envelope.profile['direccion'] as String? ?? '',
-          upp: envelope.profile['upp'] as String? ?? '',
-        ),
-      );
-    }
     // Counts come from [prepared], not from the envelope: a merge drops rows
     // whose local copy is newer, so the incoming totals would over-report what
     // was actually written.
     return BackupRestoreResult({
       for (final entry in prepared.entries) entry.key: entry.value.length,
     });
+  }
+
+  bool _isNewer(DateTime? local, DateTime? incoming) =>
+      local != null && (incoming == null || local.isAfter(incoming));
+
+  Future<void> _validateCurrent(Isar db) async {
+    BackupValidator.validate(
+      BackupEnvelope(
+        schemaVersion: BackupEnvelope.currentSchemaVersion,
+        appVersion: BackupEnvelope.currentAppVersion,
+        exportedAt: DateTime.now(),
+        collections: await _readCollections(db),
+        profile: const {},
+      ),
+    );
+  }
+
+  @override
+  Future<BackupRestoreResult> restoreLegacy(
+    LegacyBackupSnapshot snapshot, {
+    required BackupImportMode mode,
+  }) async {
+    final db = await _database.initialize();
+    final counts = <String, int>{};
+    await db.writeTxn(() async {
+      if (mode == BackupImportMode.replaceAll) await _clearAll(db);
+      for (final entity in snapshot.animals) {
+        final old = await db.isarAnimals
+            .where()
+            .uuidEqualTo(entity.uuid)
+            .findFirst();
+        if (old != null && old.lastUpdateDate.isAfter(entity.lastUpdateDate))
+          continue;
+        final model = entity.toIsar()..id = old?.id ?? Isar.autoIncrement;
+        await db.isarAnimals.put(model);
+        counts.update('animals', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.lotes) {
+        final old = await db.isarLotes
+            .where()
+            .uuidEqualTo(entity.uuid)
+            .findFirst();
+        if (old != null && old.lastUpdateDate.isAfter(entity.lastUpdateDate))
+          continue;
+        await db.isarLotes.put(
+          entity.toIsarLote()..id = old?.id ?? Isar.autoIncrement,
+        );
+        counts.update('lotes', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.agenda) {
+        final old = await db.isarAgendaEntrys
+            .where()
+            .uuidEqualTo(entity.id)
+            .findFirst();
+        final model = entity.toIsar()
+          ..isarId = old?.isarId ?? Isar.autoIncrement;
+        if (old != null && _isNewer(old.updatedAt, model.updatedAt)) continue;
+        await db.isarAgendaEntrys.put(model);
+        counts.update('agendaEntries', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.workers) {
+        final old = await db.isarWorkerProfiles
+            .where()
+            .uuidEqualTo(entity.id)
+            .findFirst();
+        final model = entity.toIsar()
+          ..isarId = old?.isarId ?? Isar.autoIncrement;
+        if (old != null && _isNewer(old.updatedAt, model.updatedAt)) continue;
+        await db.isarWorkerProfiles.put(model);
+        counts.update('workerProfiles', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.teams) {
+        final old = await db.isarWorkTeams
+            .where()
+            .uuidEqualTo(entity.id)
+            .findFirst();
+        final model = entity.toIsar()
+          ..isarId = old?.isarId ?? Isar.autoIncrement;
+        if (old != null && _isNewer(old.updatedAt, model.updatedAt)) continue;
+        await db.isarWorkTeams.put(model);
+        counts.update('workTeams', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.milkingSessions) {
+        final old = await db.isarMilkingSessions
+            .where()
+            .uuidEqualTo(entity.uuid)
+            .findFirst();
+        final model = entity.toIsar()..id = old?.id ?? Isar.autoIncrement;
+        if (old != null && _isNewer(old.updatedAt, model.updatedAt)) continue;
+        await db.isarMilkingSessions.put(model);
+        counts.update('milkingSessions', (n) => n + 1, ifAbsent: () => 1);
+      }
+      for (final entity in snapshot.milkingEntries) {
+        final old = await db.isarMilkingEntrys
+            .where()
+            .uuidEqualTo(entity.uuid)
+            .findFirst();
+        final model = entity.toIsar()..id = old?.id ?? Isar.autoIncrement;
+        if (old != null && _isNewer(old.updatedAt, model.updatedAt)) continue;
+        await db.isarMilkingEntrys.put(model);
+        counts.update('milkingEntries', (n) => n + 1, ifAbsent: () => 1);
+      }
+      await _validateCurrent(db);
+    });
+    return BackupRestoreResult(counts);
   }
 
   Future<void> _backfillRecordUuids(Isar isar) async {
@@ -275,50 +462,11 @@ class IsarBackupStore implements BackupStore {
     Isar isar,
     Map<String, List<Map<String, dynamic>>> incoming,
   ) async {
-    final existing = await isar.txn(() async {
-      return <String, List<Map<String, dynamic>>>{
-        'animals': await isar.isarAnimals.where().exportJson(),
-        'weightRecords': await isar.isarWeightRecords.where().exportJson(),
-        'reproductionRecords': await isar.isarReproductionRecords
-            .where()
-            .exportJson(),
-        'productionRecords': await isar.isarProductionRecords
-            .where()
-            .exportJson(),
-        'healthRecords': await isar.isarHealthRecords.where().exportJson(),
-        'costRecords': await isar.isarCostRecords.where().exportJson(),
-        'commercialRecords': await isar.isarCommercialRecords
-            .where()
-            .exportJson(),
-        'movementRecords': await isar.isarMovementRecords.where().exportJson(),
-        'lotes': await isar.isarLotes.where().exportJson(),
-        'cultivations': await isar.isarCultivations.where().exportJson(),
-        'locations': await isar.isarLocations.where().exportJson(),
-        'incomeRecords': await isar.isarIncomeRecords.where().exportJson(),
-        'generalExpenseRecords': await isar.isarGeneralExpenseRecords
-            .where()
-            .exportJson(),
-        'milkingSessions': await isar.isarMilkingSessions.where().exportJson(),
-        'milkingEntries': await isar.isarMilkingEntrys.where().exportJson(),
-        'agendaEntries': await isar.isarAgendaEntrys.where().exportJson(),
-        'agendaRegistrations': await isar.isarAgendaRegistrations
-            .where()
-            .exportJson(),
-        'workerProfiles': await isar.isarWorkerProfiles.where().exportJson(),
-        'workTeams': await isar.isarWorkTeams.where().exportJson(),
-        'careRules': await isar.isarCareRules.where().exportJson(),
-        'careRecords': await isar.isarCareRecords.where().exportJson(),
-        'scheduledCares': await isar.isarScheduledCares.where().exportJson(),
-        'rfidBindings': await isar.isarRfidBindings.where().exportJson(),
-        'rfidScanSessions': await isar.isarRfidScanSessions
-            .where()
-            .exportJson(),
-        'featureRecords': await isar.isarFeatureRecords.where().exportJson(),
-      };
-    });
+    final existing = await _readCollections(isar);
     const stableFields = <String, String>{
       'animals': 'uuid',
       'weightRecords': 'recordUuid',
+      'weaningRecords': 'recordUuid',
       'reproductionRecords': 'recordUuid',
       'productionRecords': 'recordUuid',
       'healthRecords': 'recordUuid',
@@ -379,6 +527,7 @@ class IsarBackupStore implements BackupStore {
     'agendaRegistrations': 'updatedAt',
     'healthRecords': 'updatedAt',
     'weightRecords': 'updatedAt',
+    'weaningRecords': 'updatedAt',
     'movementRecords': 'updatedAt',
     'reproductionRecords': 'updatedAt',
     'workerProfiles': 'updatedAt',
@@ -387,6 +536,8 @@ class IsarBackupStore implements BackupStore {
     'milkingEntries': 'updatedAt',
     'rfidBindings': 'updatedAt',
     'featureRecords': 'updatedAt',
+    'incomeRecords': 'updatedAt',
+    'generalExpenseRecords': 'updatedAt',
   };
 
   /// Reconciles [incoming] against [existing] by stable id.
@@ -462,6 +613,7 @@ class IsarBackupStore implements BackupStore {
   Future<void> _clearAll(Isar isar) async {
     await isar.isarAnimals.clear();
     await isar.isarWeightRecords.clear();
+    await isar.isarWeaningRecords.clear();
     await isar.isarReproductionRecords.clear();
     await isar.isarProductionRecords.clear();
     await isar.isarHealthRecords.clear();

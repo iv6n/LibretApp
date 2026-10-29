@@ -8,6 +8,7 @@ import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/location/gps_capture_service.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -44,6 +45,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   bool _loading = false;
+  String? _loadError;
   bool _captureGps = false;
   AnimalEntity? _animal;
   MovementRecord? _editing;
@@ -55,48 +57,54 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
     _toController = TextEditingController();
     _notesController = TextEditingController();
     _movedByController = TextEditingController();
-    _loadAnimal();
-    if (widget.isEditing) _load();
-  }
-
-  Future<void> _loadAnimal() async {
-    final animal = await locator<AnimalRepository>().getByUuid(
-      widget.animalUuid,
-    );
-    if (!mounted) return;
-    setState(() => _animal = animal);
+    _load();
   }
 
   /// Hydrates the form from the movement being corrected.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final records = await locator<MovementRecordRepository>()
-        .getMovementRecords(widget.animalUuid);
-    if (!mounted) return;
-
-    final record = records
-        .where((candidate) => candidate.id == widget.recordId)
-        .firstOrNull;
-    if (record == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).recordEditNotFound),
-        ),
-      );
-      context.pop(false);
-      return;
-    }
-
     setState(() {
-      _editing = record;
-      _fromController.text = record.fromLocation ?? '';
-      _toController.text = record.toLocation;
-      _notesController.text = record.notes ?? '';
-      _movedByController.text = record.movedBy ?? '';
-      _reason = record.reason;
-      _date = record.date;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid,
+      );
+      if (!mounted) return;
+      setState(() => _animal = animal);
+      if (!widget.isEditing) return;
+      final records = await locator<MovementRecordRepository>()
+          .getMovementRecords(widget.animalUuid);
+      if (!mounted) return;
+
+      final record = records
+          .where((candidate) => candidate.id == widget.recordId)
+          .firstOrNull;
+      if (record == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).recordEditNotFound),
+          ),
+        );
+        context.pop(false);
+        return;
+      }
+
+      setState(() {
+        _editing = record;
+        _fromController.text = record.fromLocation ?? '';
+        _toController.text = record.toLocation;
+        _notesController.text = record.notes ?? '';
+        _movedByController.text = record.movedBy ?? '';
+        _reason = record.reason;
+        _date = record.date;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'load');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -121,7 +129,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
 
     setState(() => _saving = true);
     try {
-      final geo = _captureGps
+      final geo = ReleaseFeatures.gpsCaptureEnabled && _captureGps
           ? await locator<GpsCaptureService>().tryCapture()
           : null;
       final repository = locator<MovementRecordRepository>();
@@ -196,12 +204,17 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadError != null) return RecordLoadFailure(onRetry: _load);
     final l10n = AppLocalizations.of(context);
 
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.movement,
+      onCancel: () => Navigator.of(context).pop(),
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormMovementTitle,
+      contextLabel: animalRecordContextLabel(_animal),
+      contextIcon: Icons.pets_outlined,
       saving: _saving,
       loading: _loading,
       onSave: _save,
@@ -251,18 +264,19 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
           labelText: l10n.detailFormMovementMovedBy,
         ),
         const SizedBox(height: 16),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          value: _captureGps,
-          onChanged: _saving
-              ? null
-              : (value) => setState(() => _captureGps = value),
-          title: const Text('Capturar ubicación GPS'),
-          subtitle: const Text(
-            'Opcional; si falla, el movimiento se guarda manualmente.',
+        if (ReleaseFeatures.gpsCaptureEnabled)
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            value: _captureGps,
+            onChanged: _saving
+                ? null
+                : (value) => setState(() => _captureGps = value),
+            title: const Text('Capturar ubicación GPS'),
+            subtitle: const Text(
+              'Opcional; si falla, el movimiento se guarda manualmente.',
+            ),
+            secondary: const Icon(Icons.gps_fixed_outlined),
           ),
-          secondary: const Icon(Icons.gps_fixed_outlined),
-        ),
         const SizedBox(height: 16),
         if (_animal != null) ...[
           AdvisorTipsPanel(

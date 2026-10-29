@@ -1,7 +1,7 @@
 /// features › directorio › animales › infrastructure › production_record_repository_isar
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';

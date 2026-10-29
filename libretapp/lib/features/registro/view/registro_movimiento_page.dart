@@ -150,6 +150,7 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.movement,
             title: l10n.detailFormMovementTitle,
             assetPath: AppAssetPaths.recordMovement,
             fallbackIcon: Icons.swap_horiz,
@@ -176,18 +177,19 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
                 },
               ),
               const SizedBox(height: AppSpacing.md),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                value: _captureGps,
-                onChanged: isSaving
-                    ? null
-                    : (value) => setState(() => _captureGps = value),
-                title: const Text('Capturar ubicación GPS'),
-                subtitle: const Text(
-                  'Opcional; si falla, el movimiento se guarda manualmente.',
+              if (ReleaseFeatures.gpsCaptureEnabled)
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: _captureGps,
+                  onChanged: isSaving
+                      ? null
+                      : (value) => setState(() => _captureGps = value),
+                  title: const Text('Capturar ubicación GPS'),
+                  subtitle: const Text(
+                    'Opcional; si falla, el movimiento se guarda manualmente.',
+                  ),
+                  secondary: const Icon(Icons.gps_fixed_outlined),
                 ),
-                secondary: const Icon(Icons.gps_fixed_outlined),
-              ),
               const SizedBox(height: AppSpacing.md),
               AppTextField(
                 controller: _fromCtrl,

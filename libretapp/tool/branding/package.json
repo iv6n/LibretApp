@@ -1,0 +1,16 @@
+{
+  "name": "libretapp-branding-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Reproducible LibretApp icon and platform asset exporter",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "generate": "node generate_brand_assets.cjs",
+    "check": "node generate_brand_assets.cjs --check"
+  },
+  "devDependencies": {
+    "sharp": "0.35.5"
+  }
+}

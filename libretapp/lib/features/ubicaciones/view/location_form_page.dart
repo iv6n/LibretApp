@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/extensions/context_extensions.dart';
@@ -68,7 +69,11 @@ class _LocationFormPageState extends State<LocationFormPage> {
       visible: false,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.isEdit ? 'Editar ubicación' : 'Nueva ubicación'),
+          title: GeneratedAssetTitle(
+            title: widget.isEdit ? 'Editar ubicación' : 'Nueva ubicación',
+            assetPath: RecordFormStyle.location.assetPath,
+            fallbackIcon: RecordFormStyle.location.icon,
+          ),
         ),
         body: widget.isEdit
             ? FutureBuilder<LocationEntity?>(

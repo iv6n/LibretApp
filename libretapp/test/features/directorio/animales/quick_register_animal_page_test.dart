@@ -5,13 +5,23 @@ import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-Widget _testApp() => const MaterialApp(
-  localizationsDelegates: AppLocalizations.localizationsDelegates,
-  supportedLocales: AppLocalizations.supportedLocales,
-  locale: Locale('es'),
-  home: QuickRegisterAnimalPage(),
-);
+Widget _testApp({double textScale = 1, double keyboardInset = 0}) =>
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('es'),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+          viewInsets: EdgeInsets.only(bottom: keyboardInset),
+        ),
+        child: child!,
+      ),
+      home: const QuickRegisterAnimalPage(),
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +36,47 @@ void main() {
   tearDown(() async {
     await locator.reset();
   });
+
+  for (final width in <double>[320, 360, 412]) {
+    testWidgets('muestra identificación y Guardar a ${width.toInt()} dp', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(_testApp());
+      await tester.pumpAndSettle();
+      final identification = find.byKey(
+        const ValueKey('animal-quick-identification'),
+      );
+      expect(tester.getTopLeft(identification).dy, lessThan(580));
+      expect(find.byKey(const ValueKey('animal-quick-save')), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final width in <double>[320, 360, 412]) {
+    testWidgets(
+      'mantiene Guardar sobre el teclado a ${width.toInt()} dp con texto ampliado',
+      (tester) async {
+        tester.view.physicalSize = Size(width, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(_testApp(textScale: 1.4, keyboardInset: 300));
+        await tester.pumpAndSettle();
+
+        final save = find.byKey(const ValueKey('animal-quick-save'));
+        expect(tester.getBottomLeft(save).dy, lessThanOrEqualTo(500));
+        expect(
+          find.byKey(const ValueKey('animal-quick-identification')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('uses compact sex controls and a two-wheel age picker', (
     tester,
@@ -43,9 +94,9 @@ void main() {
       expect(tester.getSize(find.byWidget(element.widget)).height, 48);
     }
 
-    await tester.ensureVisible(find.text('1 año'));
+    await tester.ensureVisible(find.text('No lo sé'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('1 año'));
+    await tester.tap(find.text('No lo sé'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ListWheelScrollView), findsNWidgets(2));
@@ -74,6 +125,25 @@ void main() {
     expect(find.text('Registrar otro'), findsOneWidget);
     expect(find.text('Completar ficha'), findsOneWidget);
     expect(find.text('Volver al directorio'), findsOneWidget);
+  });
+
+  testWidgets('offers a discreet backup link after the first animal', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    locator.registerSingleton<SharedPrefsService>(
+      SharedPrefsService(await SharedPreferences.getInstance()),
+    );
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(_fieldByLabel('Nombre o alias — opcional'), 'Luna');
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar animal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Guardar como pendiente'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Proteger mis datos · Ver respaldos'), findsOneWidget);
   });
 
   testWidgets('adapts identification and purposes for equines', (tester) async {

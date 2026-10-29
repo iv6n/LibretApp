@@ -5,6 +5,7 @@ import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/domain/operational_work.dart';
+import 'package:libretapp/features/agenda/domain/agenda_entry_ownership.dart';
 
 class OperationalPlanningService {
   OperationalPlanningService({required AgendaRepository agendaRepository})
@@ -210,55 +211,102 @@ class OperationalPlanningService {
     required WorkTargetRef target,
     required List<WorkOccurrence> desired,
   }) async {
-    final existing = await _agendaRepository.fetchEntries();
-    final targetEntries = existing.where(
-      (entry) => entry.targetRefs.contains(target),
-    );
     final desiredIds = desired.map((entry) => entry.id).toSet();
-    final untouched = existing.where(
-      (entry) =>
-          !entry.targetRefs.contains(target) ||
-          (!_isAutomatic(entry) && !desiredIds.contains(entry.id)),
-    );
-    final history = targetEntries.where(
-      (entry) => _isTerminal(entry.estado) && !desiredIds.contains(entry.id),
-    );
-    await _agendaRepository.replaceAll([...untouched, ...history, ...desired]);
+    await _agendaRepository.updateEntries((existing) {
+      final byId = {for (final entry in existing) entry.id: entry};
+      final targetEntries = existing.where(
+        (entry) => entry.targetRefs.contains(target),
+      );
+      final untouched = existing.where(
+        (entry) =>
+            !isGeneratorManagedAgendaEntry(entry) ||
+            !entry.targetRefs.contains(target),
+      );
+      final userOwnedIds = existing
+          .where((entry) => !isGeneratorManagedAgendaEntry(entry))
+          .map((entry) => entry.id)
+          .toSet();
+      final history = targetEntries.where(
+        (entry) =>
+            isGeneratorManagedAgendaEntry(entry) &&
+            _isTerminal(entry.estado) &&
+            !desiredIds.contains(entry.id),
+      );
+      final mergedDesired = desired
+          .where((candidate) => !userOwnedIds.contains(candidate.id))
+          .map((candidate) {
+            final previous = byId[candidate.id];
+            if (previous == null) return candidate;
+            if (!isGeneratorManagedAgendaEntry(previous)) return previous;
+            if (_isTerminal(previous.estado)) return previous;
+            return candidate.copyWith(
+              estado: previous.estado,
+              completedAnimalIds: previous.completedAnimalIds,
+              notas: previous.notas,
+              fechaCompletado: previous.fechaCompletado,
+              prioridad: previous.prioridad,
+              assigneeId: previous.assigneeId,
+              collaboratorIds: previous.collaboratorIds,
+              workTeamId: previous.workTeamId,
+              createdById: previous.createdById,
+              createdAt: previous.createdAt,
+              updatedAt: previous.updatedAt,
+              blockedReason: previous.blockedReason,
+              checklist: previous.checklist,
+              activities: previous.activities,
+              evidence: previous.evidence,
+            );
+          });
+      return [...untouched, ...history, ...mergedDesired];
+    });
   }
 
   /// Reconciliation is injected as a generator by the startup composition
   /// root. Keeping it optional makes this service usable in isolated tests.
   Future<int> reconcileAll({Future<int> Function()? generator}) async {
     if (generator != null) return generator();
-    final entries = await _agendaRepository.fetchEntries();
-    final deduplicated = <WorkOccurrence>[];
-    final groupedSources = <String, List<WorkOccurrence>>{};
-    for (final entry in entries) {
-      final sourceKey = entry.sourceType == null || entry.sourceId == null
-          ? null
-          : '${entry.sourceType}:${entry.sourceId}';
-      if (sourceKey == null || !_isAutomatic(entry)) {
-        deduplicated.add(entry);
-        continue;
+    var resultCount = 0;
+    await _agendaRepository.updateEntries((entries) {
+      final deduplicated = <WorkOccurrence>[];
+      final groupedSources = <String, List<WorkOccurrence>>{};
+      for (final entry in entries) {
+        if (!_isAutomatic(entry) || entry.sourceId == null) {
+          deduplicated.add(entry);
+          continue;
+        }
+        final targets =
+            entry.targetRefs
+                .map((target) => '${target.type.name}:${target.id}')
+                .toList()
+              ..sort();
+        final sourceKey = [
+          entry.sourceType,
+          entry.sourceId,
+          entry.actionKind,
+          entry.fecha.toIso8601String(),
+          if (entry.actionKind == WorkActionType.recordCare.name) entry.id,
+          ...targets,
+        ].join('|');
+        groupedSources.putIfAbsent(sourceKey, () => []).add(entry);
       }
-      groupedSources.putIfAbsent(sourceKey, () => []).add(entry);
-    }
-    for (final sourceEntries in groupedSources.values) {
-      deduplicated.addAll(
-        sourceEntries.where((entry) => _isTerminal(entry.estado)),
-      );
-      final active = sourceEntries.where((entry) => !_isTerminal(entry.estado));
-      final preferred = active.fold<WorkOccurrence?>(
-        null,
-        (previous, entry) =>
-            previous == null || _prefer(entry, previous) ? entry : previous,
-      );
-      if (preferred != null) deduplicated.add(preferred);
-    }
-    if (deduplicated.length != entries.length) {
-      await _agendaRepository.replaceAll(deduplicated);
-    }
-    return deduplicated.length;
+      for (final sourceEntries in groupedSources.values) {
+        deduplicated.addAll(
+          sourceEntries.where((entry) => _isTerminal(entry.estado)),
+        );
+        final active = sourceEntries.where(
+          (entry) => !_isTerminal(entry.estado),
+        );
+        final preferred = active.fold<WorkOccurrence?>(
+          null,
+          (previous, entry) =>
+              previous == null || _prefer(entry, previous) ? entry : previous,
+        );
+        if (preferred != null) deduplicated.add(preferred);
+      }
+      resultCount = deduplicated.length;
+      return deduplicated;
+    });
+    return resultCount;
   }
 
   String? _targetId(List<WorkTargetRef> targets, WorkTargetType type) {
@@ -269,7 +317,7 @@ class OperationalPlanningService {
   }
 
   bool _isAutomatic(WorkOccurrence entry) =>
-      entry.sourceType != null || entry.id.startsWith('auto:');
+      isGeneratorManagedAgendaEntry(entry);
 
   bool _isTerminal(String status) =>
       status == AgendaEstado.completado ||

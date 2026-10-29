@@ -3,12 +3,18 @@
 /// Defines all named routes, shell routes, and redirect logic.
 library;
 
+import 'package:libretapp/features/directorio/animales/view/animal_weaning_form_page.dart';
+import 'package:libretapp/features/directorio/animales/view/herd_import_page.dart';
+import 'package:libretapp/features/registro/lotes/batch_record_page.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/app_shell.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/core/demo/demo_scenario_service.dart';
+import 'package:libretapp/core/workspace/workspace_manager.dart';
+import 'package:libretapp/features/onboarding/phone_auth_sheet.dart';
+import 'package:libretapp/core/security/ports/phone_auth_port.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -32,32 +38,106 @@ import 'package:libretapp/features/inicio/inicio.dart';
 import 'package:libretapp/features/milking/milking.dart';
 import 'package:libretapp/features/onboarding/onboarding_page.dart';
 import 'package:libretapp/features/perfil/perfil.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/features/lite/lite_task_form_page.dart';
+import 'package:libretapp/features/lite/lite_pages.dart' show LitePetFormPage;
 import 'package:libretapp/features/reportes/reportes.dart';
 import 'package:libretapp/features/registro/registro.dart';
 import 'package:libretapp/features/exportar/exportar.dart';
 import 'package:libretapp/features/ubicaciones/ubicaciones.dart';
 
-GoRouter createAppRouter({required String initialLocation}) => GoRouter(
+GoRouter createAppRouter({
+  required String initialLocation,
+  String? onboardingError,
+}) => GoRouter(
   initialLocation: initialLocation,
   overridePlatformDefaultLocation: initialLocation == AppRoutes.onboarding,
   observers: [NavigationTracer.observer],
   errorBuilder: (context, state) => const _RouterErrorPage(),
+  redirect: (context, state) async {
+    if (!locator.isRegistered<WorkspaceManager>()) return null;
+    final manager = locator<WorkspaceManager>();
+    if (manager.current == null) {
+      return state.matchedLocation == AppRoutes.onboarding
+          ? null
+          : AppRoutes.onboarding;
+    }
+    if (manager.isDemo) {
+      return state.matchedLocation == AppRoutes.onboardingProfile ||
+              state.matchedLocation == AppRoutes.onboardingExperience
+          ? AppRoutes.inicio
+          : null;
+    }
+    final preferences = locator<SharedPrefsService>();
+    if (state.matchedLocation == AppRoutes.onboardingExperience) {
+      await preferences.remove(PrefsKeys.experienceSetupPendingV1);
+      return AppRoutes.inicio;
+    }
+    if (state.matchedLocation == AppRoutes.onboardingProfile) {
+      return AppRoutes.perfil;
+    }
+    if (preferences.getBool(PrefsKeys.experienceSetupPendingV1) == true) {
+      await preferences.remove(PrefsKeys.experienceSetupPendingV1);
+    }
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: AppRoutes.onboardingExperience,
+      name: AppRoutes.nameOnboardingExperience,
+      redirect: (context, state) => AppRoutes.inicio,
+    ),
+    GoRoute(
+      path: AppRoutes.onboardingProfile,
+      name: AppRoutes.nameOnboardingProfile,
+      redirect: (context, state) => AppRoutes.perfil,
+    ),
     GoRoute(
       path: AppRoutes.onboarding,
       name: AppRoutes.nameOnboarding,
-      builder: (context, state) => OnboardingPage(
-        onStartEmpty: () => OnboardingStartupService(
-          preferences: locator<SharedPrefsService>(),
-          animalRepository: locator<AnimalRepository>(),
-        ).markCompleted(),
-        onInstallDemo: () async {
-          await locator<DemoScenarioService>().install(reset: false);
-          await OnboardingStartupService(
-            preferences: locator<SharedPrefsService>(),
-            animalRepository: locator<AnimalRepository>(),
-          ).markCompleted();
-        },
+      pageBuilder: (context, state) => _onboardingFadePage(
+        context,
+        state,
+        OnboardingPage(
+          initialPage: _initialOnboardingPage(locator<SharedPrefsService>()),
+          initialError: onboardingError,
+          onProgress: (page) => locator<SharedPrefsService>().setInt(
+            'onboarding.intro.page.v1',
+            page,
+          ),
+          onCreatePhone:
+              locator.isRegistered<WorkspaceManager>() &&
+                  locator<WorkspaceManager>().auth.available
+              ? () => showPhoneAuth(
+                  context,
+                  locator<WorkspaceManager>(),
+                  intent: PhoneAccessIntent.createAccount,
+                )
+              : null,
+          onSignInPhone:
+              locator.isRegistered<WorkspaceManager>() &&
+                  locator<WorkspaceManager>().auth.available
+              ? () => showPhoneAuth(
+                  context,
+                  locator<WorkspaceManager>(),
+                  intent: PhoneAccessIntent.signIn,
+                )
+              : null,
+          onStartEmpty: () => locator.isRegistered<WorkspaceManager>()
+              ? locator<WorkspaceManager>().openGuest()
+              : OnboardingStartupService(
+                  preferences: locator<SharedPrefsService>(),
+                  animalRepository: locator<AnimalRepository>(),
+                ).markCompleted(),
+          onInstallDemo: (experience) async {
+            if (!locator.isRegistered<WorkspaceManager>()) {
+              throw StateError(
+                'No se pudo abrir un espacio demo independiente.',
+              );
+            }
+            await locator<WorkspaceManager>().openDemo(experience: experience);
+          },
+        ),
       ),
     ),
     StatefulShellRoute.indexedStack(
@@ -113,6 +193,14 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                       initialSeed: state.extra is AnimalRegistrationSeed
                           ? state.extra! as AnimalRegistrationSeed
                           : null,
+                      initialSpecies: AppExperienceScope.maybeOf(
+                        context,
+                      )?.value.preferredSpecies.firstOrNull,
+                      preferredSpecies:
+                          AppExperienceScope.maybeOf(
+                            context,
+                          )?.value.preferredSpecies.toList() ??
+                          const [],
                     ),
                   ),
                 ),
@@ -121,7 +209,18 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                   name: AppRoutes.nameAnimalNuevoRapido,
                   pageBuilder: (context, state) => _buildOverlayDetailPage(
                     state: state,
-                    child: const QuickRegisterAnimalPage(),
+                    child: state.uri.queryParameters['kind'] == 'pet'
+                        ? const LitePetFormPage(initialSpecies: Species.canine)
+                        : QuickRegisterAnimalPage(
+                            initialSpecies: AppExperienceScope.maybeOf(
+                              context,
+                            )?.value.preferredSpecies.firstOrNull,
+                            preferredSpecies:
+                                AppExperienceScope.maybeOf(
+                                  context,
+                                )?.value.preferredSpecies.toList() ??
+                                const [],
+                          ),
                   ),
                 ),
                 GoRoute(
@@ -164,7 +263,12 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                     final uuid = state.pathParameters['uuid'] ?? '';
                     return _buildOverlayDetailPage(
                       state: state,
-                      child: RegisterAnimalPage(animalUuid: uuid),
+                      child: RegisterAnimalPage(
+                        animalUuid: uuid,
+                        initialSeed: state.extra is AnimalRegistrationSeed
+                            ? state.extra! as AnimalRegistrationSeed
+                            : null,
+                      ),
                     );
                   },
                 ),
@@ -178,6 +282,17 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                       child: AnimalEditPage(animalUuid: uuid),
                     );
                   },
+                ),
+                GoRoute(
+                  path: 'animales/:uuid/registros/destete',
+                  name: AppRoutes.nameAnimalRegistroDestete,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: AnimalWeaningFormPage(
+                      animalUuid: state.pathParameters['uuid'],
+                      recordId: state.uri.queryParameters['recordId'],
+                    ),
+                  ),
                 ),
                 GoRoute(
                   path: 'animales/:uuid/registros/peso',
@@ -434,7 +549,9 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
                           registrationReadService:
                               locator<AgendaRegistrationReadService>(),
                         ),
-                        child: AgendaEntryFormPage(initialDate: initialDate),
+                        child: state.uri.queryParameters['kind'] == 'reminder'
+                            ? const LiteTaskFormPage()
+                            : AgendaEntryFormPage(initialDate: initialDate),
                       ),
                     );
                   },
@@ -503,7 +620,9 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
             GoRoute(
               path: AppRoutes.perfil,
               name: AppRoutes.namePerfil,
-              builder: (context, state) => const PerfilPage(),
+              builder: (context, state) => PerfilPage(
+                openBackups: state.uri.queryParameters['backups'] == '1',
+              ),
               routes: [
                 GoRoute(
                   path: 'biblioteca/:id',
@@ -578,6 +697,14 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
           pageBuilder: (context, state) => _buildOverlayDetailPage(
             state: state,
             child: const RegistroSanitarioPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'destete',
+          name: AppRoutes.nameRegistroDestete,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const AnimalWeaningFormPage(),
           ),
         ),
         GoRoute(
@@ -664,6 +791,24 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
             child: const BulkHealthRegistroPage(),
           ),
         ),
+        GoRoute(
+          path: 'importar-hato',
+          name: AppRoutes.nameHerdImport,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: const HerdImportPage(),
+          ),
+        ),
+        GoRoute(
+          path: 'lotes',
+          name: AppRoutes.nameBatchRecords,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: BatchRecordPage(
+              initialLotUuid: state.uri.queryParameters['lote'],
+            ),
+          ),
+        ),
       ],
     ),
     GoRoute(
@@ -690,6 +835,33 @@ GoRouter createAppRouter({required String initialLocation}) => GoRouter(
     ),
   ],
 );
+
+CustomTransitionPage<void> _onboardingFadePage(
+  BuildContext context,
+  GoRouterState state,
+  Widget child,
+) => CustomTransitionPage<void>(
+  key: state.pageKey,
+  child: child,
+  transitionDuration: Duration(
+    milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 240,
+  ),
+  reverseTransitionDuration: Duration(
+    milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 240,
+  ),
+  transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+      FadeTransition(opacity: animation, child: child),
+);
+
+int _initialOnboardingPage(SharedPrefsService preferences) {
+  if (preferences.getBool(PrefsKeys.onboardingCompletedV1) == true) return 1;
+
+  final currentProgress = preferences.getInt('onboarding.intro.page.v1');
+  if (currentProgress != null) return currentProgress.clamp(0, 1);
+
+  final legacyProgress = preferences.getInt('onboarding.page.v2');
+  return legacyProgress == null || legacyProgress <= 0 ? 0 : 1;
+}
 
 CustomTransitionPage<void> _buildOverlayDetailPage({
   required GoRouterState state,

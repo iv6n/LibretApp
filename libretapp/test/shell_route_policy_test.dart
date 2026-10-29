@@ -40,11 +40,14 @@ void main() {
       }
     });
 
-    test('hides chrome on lot and location descendants', () {
+    test('hides chrome on lot, crop and location descendants', () {
       const overlayRoutes = <String>[
         '/directorio/lotes/nuevo',
         '/directorio/lotes/lote-1',
         '/directorio/lotes/lote-1/editar',
+        '/directorio/cultivos/nuevo',
+        '/directorio/cultivos/crop-1',
+        '/directorio/cultivos/crop-1/editar',
         '/directorio/ubicaciones/nueva',
         '/directorio/ubicaciones/location-1',
         '/directorio/ubicaciones/location-1/editar',

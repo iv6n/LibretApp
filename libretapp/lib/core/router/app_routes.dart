@@ -6,6 +6,9 @@ class AppRoutes {
   static const directorio = '/directorio';
   static const inicio = '/';
   static const onboarding = '/bienvenida';
+  static const onboardingExperience = '/bienvenida/experiencia';
+  static const onboardingProfile = '/bienvenida/perfil';
+  static const nameOnboardingExperience = 'onboarding-experience';
   static const animales = '/directorio?tab=animales';
   static const animalNuevo = '/directorio/animales/nuevo';
   static const animalNuevoRapido = '/directorio/animales/nuevo-rapido';
@@ -56,6 +59,8 @@ class AppRoutes {
   static const registroIngreso = '/registro/ingreso';
   static const registroGastoGeneral = '/registro/gasto-general';
   static const registroTratarLote = '/registro/tratar-lote';
+  static const herdImport = '/registro/importar-hato';
+  static const batchRecords = '/registro/lotes';
   static const finanzas = '/finanzas';
   static const exportar = '/exportar';
   static const rfid = '/rfid';
@@ -65,9 +70,12 @@ class AppRoutes {
   static const nameDirectorio = 'directorio';
   static const nameInicio = 'inicio';
   static const nameOnboarding = 'onboarding';
+  static const nameOnboardingProfile = 'onboarding_profile';
   static const nameAnimalNuevo = 'animal_nuevo';
   static const nameAnimalNuevoRapido = 'animal_nuevo_rapido';
   static const nameAnimalDetalle = 'animal_detalle';
+  static const nameAnimalRegistroDestete = 'animal_registro_destete';
+  static const nameRegistroDestete = 'registro_destete';
   static const nameAnimalRegistroPeso = 'animal_registro_peso';
   static const nameAnimalRegistroReproduccion = 'animal_registro_reproduccion';
   static const nameAnimalRegistroSalud = 'animal_registro_salud';
@@ -95,6 +103,8 @@ class AppRoutes {
   static const nameUbicacionEditar = 'ubicacion_editar';
   static const namePerfil = 'perfil';
   static const nameRegistro = 'registro';
+  static const nameHerdImport = 'importar_hato';
+  static const nameBatchRecords = 'registro_lotes';
   static const nameRegistroSanitario = 'registro_sanitario';
   static const nameRegistroPeso = 'registro_peso';
   static const nameRegistroProduccion = 'registro_produccion';
@@ -174,6 +184,7 @@ class AppRoutes {
     }
     return path.toString();
   }
+
   static String ubicacionNuevaPath() => '/directorio/ubicaciones/nueva';
   static String ubicacionDetallePath(String uuid) =>
       '/directorio/ubicaciones/$uuid';

@@ -8,10 +8,14 @@ class ShellChromeVisibility extends InheritedWidget {
   const ShellChromeVisibility({
     super.key,
     required this.visible,
+    bool? navigationEnabled,
     required super.child,
-  });
+  }) : navigationEnabled = navigationEnabled ?? visible;
 
   final bool visible;
+
+  /// Whether this route uses the dock when the keyboard is closed.
+  final bool navigationEnabled;
 
   static ShellChromeVisibility? of(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<ShellChromeVisibility>();
@@ -19,7 +23,8 @@ class ShellChromeVisibility extends InheritedWidget {
 
   @override
   bool updateShouldNotify(ShellChromeVisibility oldWidget) {
-    return oldWidget.visible != visible;
+    return oldWidget.visible != visible ||
+        oldWidget.navigationEnabled != navigationEnabled;
   }
 }
 

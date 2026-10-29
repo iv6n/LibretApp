@@ -198,6 +198,7 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.production,
             title: l10n.detailFormProductionTitle,
             assetPath: AppAssetPaths.recordProduction,
             fallbackIcon: Icons.agriculture_outlined,

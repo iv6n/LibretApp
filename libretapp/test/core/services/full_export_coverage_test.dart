@@ -55,6 +55,7 @@ void main() {
       'locations',
       'events',
       'weights',
+      'weanings',
       'health',
       'reproduction',
       'movements',
@@ -72,6 +73,7 @@ void main() {
       'Ubicaciones',
       'Eventos',
       'Pesos',
+      'Destetes',
       'Salud',
       'Reproducción',
       'Movimientos',
@@ -86,7 +88,7 @@ void main() {
     for (final name in expectedNames) {
       expect(
         workbook.tables[name]!.maxRows,
-        greaterThan(1),
+        name == 'Destetes' ? greaterThanOrEqualTo(1) : greaterThan(1),
         reason: '$name should include a header and at least one demo row',
       );
     }

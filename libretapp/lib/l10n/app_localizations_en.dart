@@ -45,6 +45,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get animalsEmptySubtitle => 'Adjust filters or search';
 
   @override
+  String get animalsFirstTitle => 'No animals yet';
+
+  @override
+  String get animalsFirstSubtitle =>
+      'Register the first animal to start tracking it.';
+
+  @override
+  String get animalsFirstAction => 'Register animal';
+
+  @override
   String get animalsSearchHint => 'Search by ear tag, name or breed';
 
   @override

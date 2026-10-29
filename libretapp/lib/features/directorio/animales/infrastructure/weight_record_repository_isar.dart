@@ -1,7 +1,12 @@
 /// features › directorio › animales › infrastructure › weight_record_repository_isar
 library;
+import 'package:libretapp/core/database/isar_write_transaction.dart';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
+import 'package:uuid/uuid.dart';
+import '../domain/services/animal_record_validation.dart';
+import 'isar/isar_animal.dart';
+import 'isar/isar_weaning_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
@@ -84,12 +89,47 @@ class WeightRecordRepositoryIsar
   Future<WeightRecord> addWeightRecord(
     String animalUuid,
     WeightRecord record,
-  ) => addRecordFor(
-    animalUuid,
-    record,
-    onSaved: (isar, _) =>
-        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
-  );
+  ) async => (await addWeightRecordsAtomically([
+    WeightBatchEntry(animalUuid: animalUuid,
+      record: record.copyWith(recordUuid: record.recordUuid ?? const Uuid().v4())),
+  ])).single;
+
+  @override
+  Future<List<WeightRecord>> addWeightRecordsAtomically(List<WeightBatchEntry> entries) async {
+    final db = await isar;
+    final saved = <WeightRecord>[];
+    final identities = <String>{};
+    await withIsarWriteTransaction(db, () async {
+      for (final entry in entries) {
+        final record = entry.record;
+        final uuid = record.recordUuid;
+        if (uuid == null || uuid.trim().isEmpty || !identities.add(uuid)) {
+          throw ArgumentError('Cada pesaje necesita una identidad estable y única.');
+        }
+        final previous = await db.isarWeightRecords.where().recordUuidEqualTo(uuid).findFirst();
+        if (previous != null) {
+          if (previous.animalUuid != entry.animalUuid || previous.date != record.date ||
+              previous.weight != record.weight || previous.method != record.method.name ||
+              previous.lotUuid != record.lotUuid || previous.notes != record.notes ||
+              previous.measuredBy != record.measuredBy) {
+            throw ArgumentError('La identidad del pesaje ya corresponde a otra captura.');
+          }
+          saved.add(previous.toEntity());
+          continue;
+        }
+        await _prepare(db, entry.animalUuid, record);
+        final requestedId = int.tryParse(record.id ?? '');
+        if (requestedId != null && await db.isarWeightRecords.get(requestedId) != null) {
+          throw ArgumentError('El identificador local ya pertenece a otro pesaje.');
+        }
+        final model = record.toIsar(entry.animalUuid)..id = requestedId ?? Isar.autoIncrement;
+        await db.isarWeightRecords.put(model);
+        await _project(db, entry.animalUuid, model);
+        saved.add(model.toEntity());
+      }
+    });
+    return saved;
+  }
 
   @override
   Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(
@@ -117,16 +157,83 @@ class WeightRecordRepositoryIsar
   }
 
   @override
-  Future<void> deleteWeightRecord(String recordId) =>
-      deleteRecordById(recordId);
+  Future<void> deleteWeightRecord(String recordId) async {
+    final db = await isar;
+    final id = int.tryParse(recordId);
+    if (id == null) return;
+    await withIsarWriteTransaction(db, () async {
+      final stored = await db.isarWeightRecords.get(id);
+      if (stored == null) return;
+      await AnimalProjectionRecalculator.prepareWeightProjection(
+        db,
+        stored.animalUuid,
+      );
+      final owner = await db.isarWeaningRecords
+          .filter()
+          .weightRecordUuidEqualTo(stored.recordUuid)
+          .findFirst();
+      if (owner != null) {
+        owner.weightKg = null;
+        owner.updatedAt = DateTime.now();
+        await db.isarWeaningRecords.put(owner);
+      }
+      await db.isarWeightRecords.delete(id);
+      await AnimalProjectionRecalculator.recalculate(db, stored.animalUuid);
+    });
+  }
+
+  Future<void> _prepare(Isar db, String animalUuid, WeightRecord record) async {
+    if (!record.weight.isFinite || record.weight <= 0)
+      throw ArgumentError('Ingresa un peso positivo en kg.');
+    final animal = await db.isarAnimals
+        .where()
+        .uuidEqualTo(animalUuid)
+        .findFirst();
+    if (animal == null) throw StateError('Animal no encontrado.');
+    AnimalRecordValidation.operation(
+      animal.toEntity(),
+      record.date,
+      editing: record.id != null,
+    );
+    if (record.recordUuid != null) {
+      final previous = await db.isarWeightRecords
+          .where()
+          .recordUuidEqualTo(record.recordUuid!)
+          .findFirst();
+      if (previous != null && previous.animalUuid != animalUuid)
+        throw ArgumentError('El pesaje pertenece a otro animal.');
+    }
+    await AnimalProjectionRecalculator.prepareWeightProjection(db, animalUuid);
+  }
+
+  Future<void> _project(
+    Isar db,
+    String animalUuid,
+    IsarWeightRecord saved,
+  ) async {
+    final owner = await db.isarWeaningRecords
+        .filter()
+        .weightRecordUuidEqualTo(saved.recordUuid)
+        .findFirst();
+    if (owner != null) {
+      owner
+        ..date = saved.date
+        ..weightKg = saved.weight
+        ..weightMethod = saved.method
+        ..performedBy = saved.measuredBy
+        ..updatedAt = DateTime.now();
+      await db.isarWeaningRecords.put(owner);
+    }
+    await AnimalProjectionRecalculator.recalculate(db, animalUuid);
+  }
 
   @override
   Future<WeightRecord> updateRecord(String animalUuid, WeightRecord record) =>
       updateRecordFor(
         animalUuid,
         record,
-        onSaved: (isar, _) =>
-            AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+        beforeWrite: (isar) => _prepare(isar, animalUuid, record),
+        onSaved: (isar, saved) => _project(isar, animalUuid, saved),
       );
 
   static void _sortNewestFirst(List<WeightRecord> records) {

@@ -215,6 +215,22 @@ class AnimalRegistrationPolicy {
           supportsCastration: true,
           supportsReproduction: true,
         );
+      case Species.feline:
+        return AnimalRegistrationPolicy(
+          species: species,
+          identificationKind: AnimalIdentificationKind.microchipOrPlate,
+          identificationLabel: 'Microchip o placa',
+          identificationHint: 'Opcional',
+          tracksPendingEarTag: false,
+          purposeOptions: const [ProductionPurpose.companion],
+          productionSystems: const [],
+          housingOptions: const ['Casa', 'Libre', 'Mixto'],
+          coatLabel: 'Color / pelaje',
+          supportsEarTagColor: false,
+          supportsBodyConditionScore: true,
+          supportsCastration: true,
+          supportsReproduction: true,
+        );
       case Species.other:
         return AnimalRegistrationPolicy(
           species: species,

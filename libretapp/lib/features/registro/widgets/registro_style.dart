@@ -1,7 +1,7 @@
 /// Asset mapping for the Registro entry cards.
 library;
 
-import 'package:libretapp/core/assets/app_asset_paths.dart';
+import 'package:libretapp/core/widgets/record_form_style.dart';
 
 String _registroKey(String value) => value
     .toLowerCase()
@@ -19,46 +19,51 @@ String _registroKey(String value) => value
 ///
 /// Every known Registro card resolves to a centralized asset; unknown or
 /// future actions return null so the caller can keep its fallback.
-String? assetForRegistroAction(String action) {
+String? assetForRegistroAction(String action) =>
+    styleForRegistroAction(action)?.assetPath;
+
+RecordFormStyle? styleForRegistroAction(String action) {
   switch (_registroKey(action)) {
     case 'rfid':
-      return AppAssetPaths.recordRfid;
+      return RecordFormStyle.rfid;
     case 'animal':
-      return AppAssetPaths.recordAnimal;
+      return RecordFormStyle.animal;
     case 'lote':
-      return AppAssetPaths.recordLot;
+      return RecordFormStyle.lot;
     case 'paricion':
-      return AppAssetPaths.healthBirth;
+      return RecordFormStyle.birth;
     case 'tratar_lote':
-      return AppAssetPaths.healthTreatment;
+      return RecordFormStyle.bulkHealth;
+    case 'destete':
+      return RecordFormStyle.weaning;
     case 'sanitario':
-      return AppAssetPaths.healthVaccine;
+      return RecordFormStyle.health;
     case 'peso':
-      return AppAssetPaths.healthWeight;
+      return RecordFormStyle.weight;
     case 'costo':
-      return AppAssetPaths.recordCost;
+      return RecordFormStyle.cost;
     case 'cambio_de_ubicacion':
-      return AppAssetPaths.recordMovement;
+      return RecordFormStyle.movement;
     case 'produccion':
-      return AppAssetPaths.recordProduction;
+      return RecordFormStyle.production;
     case 'ordena':
-      return AppAssetPaths.healthMilkProduction;
+      return RecordFormStyle.milking;
     case 'reproduccion':
-      return AppAssetPaths.recordReproduction;
+      return RecordFormStyle.reproduction;
     case 'comercial':
-      return AppAssetPaths.recordSale;
+      return RecordFormStyle.commercial;
     case 'cultivo':
-      return AppAssetPaths.cropField;
+      return RecordFormStyle.crop;
     case 'cosecha':
-      return AppAssetPaths.cropHarvested;
+      return RecordFormStyle.harvest;
     case 'ubicacion':
-      return AppAssetPaths.recordLocation;
+      return RecordFormStyle.location;
     case 'riego':
-      return AppAssetPaths.recordIrrigation;
+      return RecordFormStyle.watering;
     case 'salud_de_cultivo':
-      return AppAssetPaths.recordCropHealth;
+      return RecordFormStyle.cropHealth;
     case 'tarea':
-      return AppAssetPaths.recordTask;
+      return RecordFormStyle.task;
     default:
       return null;
   }

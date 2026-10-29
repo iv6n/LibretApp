@@ -24,7 +24,7 @@ class ReportSummaryHeader extends StatelessWidget {
     final updatedAt = DateFormat(
       'd MMM, HH:mm',
       locale,
-    ).format(summary.generatedAt);
+    ).format(summary.generatedAt.toLocal());
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),

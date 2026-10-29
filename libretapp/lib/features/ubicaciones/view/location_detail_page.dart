@@ -4,6 +4,8 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/record_save_scope.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
@@ -90,12 +92,28 @@ class _LocationDetailView extends StatelessWidget {
       visible: false,
       child: Scaffold(
         appBar: AppBar(title: const Text('Ubicación')),
-        body: BlocBuilder<LocationDetailCubit, LocationDetailState>(
+        body: BlocConsumer<LocationDetailCubit, LocationDetailState>(
+          listenWhen: (previous, current) =>
+              current.errorMessage != null &&
+              current.errorMessage != previous.errorMessage &&
+              current.location != null,
+          listener: (context, state) => ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.errorMessage!))),
           builder: (context, state) {
             if (state.isLoading) {
               return const AppLoadingIndicator();
             }
 
+            if (state.errorMessage != null && state.location == null) {
+              return AppEmptyState(
+                title: 'No se pudo cargar la ubicación',
+                action: FilledButton(
+                  onPressed: context.read<LocationDetailCubit>().retry,
+                  child: const Text('Reintentar'),
+                ),
+              );
+            }
             if (state.isNotFound) {
               return const Center(child: Text('Ubicación no encontrada'));
             }
@@ -302,12 +320,26 @@ class _LocationDetailView extends StatelessWidget {
     ).showSnackBar(const SnackBar(content: Text('Animales actualizados')));
   }
 
-  Future<T?> _openRecordFormPage<T>(BuildContext context, Widget child) {
+  Future<T?> _openRecordFormPage<T>(
+    BuildContext context,
+    Widget child, {
+    Future<void> Function(T)? onSave,
+  }) {
     return Navigator.of(context).push<T>(
       MaterialPageRoute<T>(
         fullscreenDialog: true,
         builder: (context) {
-          return ShellChromeScope(visible: false, child: Scaffold(body: child));
+          return ShellChromeScope(
+            visible: false,
+            child: Scaffold(
+              body: onSave == null
+                  ? child
+                  : RecordSaveScope(
+                      onSave: (value) => onSave(value as T),
+                      child: child,
+                    ),
+            ),
+          );
         },
       ),
     );
@@ -317,130 +349,112 @@ class _LocationDetailView extends StatelessWidget {
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<VisitRecord>(
+    await _openRecordFormPage<VisitRecord>(
       context,
       VisitRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addVisit(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addVisit(record);
-    }
   }
 
   Future<void> _showWaterSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<WaterRecord>(
+    await _openRecordFormPage<WaterRecord>(
       context,
       WaterRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addWater(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addWater(record);
-    }
   }
 
   Future<void> _showSaltSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<SaltRecord>(
+    await _openRecordFormPage<SaltRecord>(
       context,
       SaltRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addSalt(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addSalt(record);
-    }
   }
 
   Future<void> _showShadeSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<ShadeRecord>(
+    await _openRecordFormPage<ShadeRecord>(
       context,
       ShadeRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addShade(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addShade(record);
-    }
   }
 
   Future<void> _showPastureSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<PastureRecord>(
+    await _openRecordFormPage<PastureRecord>(
       context,
       PastureRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addPasture(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addPasture(record);
-    }
   }
 
   Future<void> _showSeedingSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<SeedingRecord>(
+    await _openRecordFormPage<SeedingRecord>(
       context,
       SeedingRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addSeeding(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addSeeding(record);
-    }
   }
 
   Future<void> _showIrrigationSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<IrrigationRecord>(
+    await _openRecordFormPage<IrrigationRecord>(
       context,
       IrrigationRecordSheet(locationName: location.name),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addIrrigation(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addIrrigation(record);
-    }
   }
 
   Future<void> _showRainSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<RainRecord>(
+    await _openRecordFormPage<RainRecord>(
       context,
       RainRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addRain(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addRain(record);
-    }
   }
 
   Future<void> _showMaintenanceSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<MaintenanceRecord>(
+    await _openRecordFormPage<MaintenanceRecord>(
       context,
       MaintenanceRecordSheet(locationName: location.name),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addMaintenance(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addMaintenance(record);
-    }
   }
 
   Future<void> _showCostSheet(
     BuildContext context,
     LocationEntity location,
   ) async {
-    final record = await _openRecordFormPage<LocationCostRecord>(
+    await _openRecordFormPage<LocationCostRecord>(
       context,
       CostRecordSheet(locationName: location.name),
+      onSave: (value) => context.read<LocationDetailCubit>().addCost(value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addCost(record);
-    }
   }
 
   Future<void> _showCropFormSheet(
@@ -448,18 +462,13 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location, {
     CropRecord? initial,
   }) async {
-    final crop = await _openRecordFormPage<CropRecord>(
+    await _openRecordFormPage<CropRecord>(
       context,
       CropFormSheet(locationName: location.name, initial: initial),
+      onSave: (crop) => initial == null
+          ? context.read<LocationDetailCubit>().addCrop(crop)
+          : context.read<LocationDetailCubit>().updateCrop(crop),
     );
-    if (crop == null || !context.mounted) return;
-
-    final cubit = context.read<LocationDetailCubit>();
-    if (initial != null) {
-      await cubit.updateCrop(crop);
-    } else {
-      await cubit.addCrop(crop);
-    }
   }
 
   Future<void> _confirmDeleteCrop(
@@ -498,16 +507,12 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await _openRecordFormPage<CropWateringRecord>(
+    await _openRecordFormPage<CropWateringRecord>(
       context,
       CropWateringFormSheet(cropName: crop.cropName),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addCropWatering(crop.uuid, value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addCropWatering(
-        crop.uuid,
-        record,
-      );
-    }
   }
 
   Future<void> _showHarvestSheet(
@@ -515,13 +520,12 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await _openRecordFormPage<HarvestRecord>(
+    await _openRecordFormPage<HarvestRecord>(
       context,
       HarvestFormSheet(cropName: crop.cropName),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addHarvest(crop.uuid, value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addHarvest(crop.uuid, record);
-    }
   }
 
   Future<void> _showCropHealthSheet(
@@ -529,16 +533,12 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final record = await _openRecordFormPage<CropHealthRecord>(
+    await _openRecordFormPage<CropHealthRecord>(
       context,
       CropHealthFormSheet(cropName: crop.cropName),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addCropHealth(crop.uuid, value),
     );
-    if (record != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addCropHealth(
-        crop.uuid,
-        record,
-      );
-    }
   }
 
   Future<void> _showCropTaskSheet(
@@ -546,13 +546,12 @@ class _LocationDetailView extends StatelessWidget {
     LocationEntity location,
     CropRecord crop,
   ) async {
-    final task = await _openRecordFormPage<CropTask>(
+    await _openRecordFormPage<CropTask>(
       context,
       CropTaskFormSheet(cropName: crop.cropName),
+      onSave: (value) =>
+          context.read<LocationDetailCubit>().addCropTask(crop.uuid, value),
     );
-    if (task != null && context.mounted) {
-      await context.read<LocationDetailCubit>().addCropTask(crop.uuid, task);
-    }
   }
 
   bool _hasUpcomingTasks(LocationEntity location) {

@@ -1,4 +1,4 @@
-/// app › widgets › shell_insets — inherited widget exposing bottom inset for shell chrome.
+/// app › widgets › shell_insets — shared content and FAB spacing for the shell.
 library;
 
 import 'package:flutter/widgets.dart';
@@ -9,32 +9,13 @@ class ShellInsets {
   // unnecessary space from the working area.
   static const double defaultBarHeight = 65;
   static const double defaultBarBottomGap = 6;
+  static const double fabContentClearance = 64;
 
-  /// Computes bottom padding needed to keep content above the nav bar or keyboard.
-  static double bottomSafePadding(
-    BuildContext context, {
-    double barHeight = defaultBarHeight,
-    double barBottomGap = defaultBarBottomGap,
-    double extra = 2,
-  }) {
-    final chromeVisible = ShellChromeVisibility.of(context)?.visible ?? true;
-    final effectiveBarHeight = chromeVisible ? barHeight : 0;
-    final effectiveBarBottomGap = chromeVisible ? barBottomGap : 0;
-    final effectiveExtra = chromeVisible ? extra : 0;
-
-    final media = MediaQuery.of(context);
-    final safeBottom = media.padding.bottom;
-    final keyboard = media.viewInsets.bottom;
-    final inset =
-        effectiveBarHeight +
-        effectiveBarBottomGap +
-        effectiveExtra +
-        safeBottom;
-    final effective = keyboard > 0
-        ? keyboard + effectiveBarBottomGap + 4
-        : inset;
-    return effective.clamp(0, 260).toDouble();
-  }
+  /// Space at the end of a scrollable, or below fixed page content. With the
+  /// dock visible, Scaffold includes its full height in MediaQuery.padding;
+  /// otherwise only the remaining system safe area is included.
+  static double bottomSafePadding(BuildContext context) =>
+      MediaQuery.paddingOf(context).bottom;
 
   /// Padding to dock the shell FAB just above the nav bar.
   static double fabDockPadding(
@@ -45,11 +26,8 @@ class ShellInsets {
   }) {
     final chromeVisible = ShellChromeVisibility.of(context)?.visible ?? true;
     if (!chromeVisible) return 0;
-    final inset = bottomSafePadding(
-      context,
-      barHeight: barHeight,
-      barBottomGap: barBottomGap,
-    );
+    final inset =
+        barHeight + barBottomGap + 2 + MediaQuery.paddingOf(context).bottom;
     return (inset - (barHeight - 20) + lift).clamp(0, 220).toDouble();
   }
 }

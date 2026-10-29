@@ -4,17 +4,18 @@ library;
 import 'package:flutter/material.dart';
 
 class ProfileAvatar extends StatelessWidget {
-  const ProfileAvatar({this.initials, super.key});
+  const ProfileAvatar({this.initials, this.size = 100, super.key});
 
   final String? initials;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final hasInitials = initials != null && initials!.isNotEmpty;
     return Container(
-      width: 100,
-      height: 100,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
         shape: BoxShape.circle,
@@ -30,7 +31,7 @@ class ProfileAvatar extends StatelessWidget {
             )
           : Icon(
               Icons.person,
-              size: 50,
+              size: size / 2,
               color: theme.colorScheme.onPrimaryContainer,
             ),
     );

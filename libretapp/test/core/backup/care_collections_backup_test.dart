@@ -4,6 +4,8 @@
 /// from capture/restore/merge/clear/validate again.
 library;
 
+import 'package:libretapp/features/perfil/data/perfil_isar_repository.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -29,29 +31,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/care_repos
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
-import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-class _MemoryPerfilRepository implements PerfilRepository {
-  Perfil perfil = const Perfil(
-    id: 'profile-1',
-    nombre: 'Ana',
-    apellido: 'Piloto',
-    email: '',
-    telefono: '',
-    finca: 'Finca piloto',
-    direccion: '',
-  );
-
-  @override
-  Future<Perfil> fetchPerfil() async => perfil;
-
-  @override
-  Future<void> savePerfil(Perfil perfil) async => this.perfil = perfil;
-
-  @override
-  Future<void> updatePerfil(Perfil perfil) => savePerfil(perfil);
-}
 
 class _FakeAnimalRemoteDataSource implements AnimalRemoteDataSource {
   @override
@@ -133,7 +113,7 @@ void main() {
   late IsarDatabase database;
   late CareRepositoryIsar careRepository;
   late AnimalRepositoryIsar animalRepository;
-  late _MemoryPerfilRepository profiles;
+  late PerfilIsarRepository profiles;
   late IsarBackupStore store;
 
   const ruleVaccinationId = 'rule-vaccination';
@@ -209,7 +189,21 @@ void main() {
       SharedPrefsService(sharedPrefs),
       _FakeAnimalRemoteDataSource(),
     );
-    profiles = _MemoryPerfilRepository();
+    profiles = PerfilIsarRepository(
+      database,
+      SharedPrefsService(await SharedPreferences.getInstance()),
+    );
+    await profiles.savePerfil(
+      const Perfil(
+        id: 'profile-1',
+        nombre: 'Ana',
+        apellido: 'Piloto',
+        email: '',
+        telefono: '',
+        finca: 'Finca piloto',
+        direccion: '',
+      ),
+    );
     store = IsarBackupStore(database: database, perfilRepository: profiles);
 
     await animalRepository.save(

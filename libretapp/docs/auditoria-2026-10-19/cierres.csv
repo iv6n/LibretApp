@@ -1,0 +1,28 @@
+id,estado,correccion,pruebas,evidencia,pendiente
+D01,Corregido,Restauracion antigua y moderna transaccional con validacion del resultado,backup_integrity y native_recovery y core/backup,full-suite-accepted.log,
+D02,Corregido,Pesaje atomico e idempotente con captura congelada y error visible,capture_integrity y records_repository_isar,full-suite-accepted.log,
+D03,Corregido,Adaptador no disponible y proteccion de boton y accion,offline_scale y offline_pilot y integracion Android,full-suite-accepted.log,
+D04,Corregido,Validacion finita en parser formularios repositorios e importacion; incidencias historicas visibles,backend_integrity y shared_store_integrity y native_recovery,full-suite-accepted.log,
+D05,Corregido,Procedencia de ubicacion y reconstruccion tras correccion o borrado; sin ubicacion explicita,backend_integrity y animal_edit_service y shared scope rollback,atomic-workflows-final.log,
+D06,Corregido,Marcas manuales separadas de registros derivados; origen antiguo conservado para revision,backend_integrity y native_recovery,full-suite-accepted.log,
+D07,Corregido,Perfil completo por espacio en transaccion; campos antiguos omitidos conservados,core/backup y native_recovery e integracion Android,full-suite-accepted.log,
+D08,Corregido,Carga fallida finaliza y ofrece error y reintento en cinco formularios,editing_retry_ui,full-suite-accepted.log,
+U01,Corregido con aceptacion fisica pendiente,Paleta y seleccion accesibles; texto y metadata legibles,offline_accessibility_ui y matrices visuales a 320 360 412 dp texto 200 por ciento,full-suite-accepted.log,TalkBack y revision fisica final
+U02,Corregido,Onboarding y Ajustes segun disponibilidad; invitado y demo en piloto,workspace_app_host y offline_pilot y phone_auth_sheet,full-suite-accepted.log,
+U03,Corregido,Edicion financiera conserva identidad y fecha; borrado confirmado,offline_accessibility_ui y backend_integrity y finanzas,full-suite-accepted.log,
+U04,Corregido,Listar exportar y restaurar copias desde Ajustes; respaldo nativo previo a limpieza,native_recovery y offline_accessibility_ui e integracion Android,atomic-workflows-final.log,
+PUB-01,Pendiente externo,Generador de tienda exige responsable correo y privacidad HTTPS reales,candidate_gates,candidate-gates.log,Datos reales y politica publicada
+P02,Corregido,Montajes corregidos y expectativas ajustadas al contraste y alcance offline,Suite completa 1193 aprobadas y analizador sin errores ni advertencias,full-suite-accepted.log;flutter-analyze-accepted.log,
+P03,QA verificado; tienda pendiente,Fallo JVM aislado por proceso y generador QA con inspeccion firma y hash,AAB y APK nuevos; firma manifiesto hash ELF y ZIP 16 KB; instalacion y reapertura en dos emuladores,candidate-qa/;acceptance.json;android-package-acceptance.json,Metadatos reales y aceptacion fisica e historica antes del candidato de tienda
+P04,Pendiente parcial,Integracion nativa en API 28 y API 36 con 16 KB; cobertura automatizada ampliada,Altas registros edicion borrado exportacion y recuperacion,android-integration-api28-verified.log;android-integration-16kb-verified.log,Aceptacion fisica TalkBack permisos rendimiento y actualizacion con firma historica
+P05,Implementado pendiente ejecucion remota,CI fija Flutter 3.47.5 y Java 17; QA bundle y matriz de integracion; documentacion vigente,Workflow y generador local,.github/workflows/flutter_test.yml;candidate-gates.log,Resultado del workflow en GitHub
+PUB-02,Fuera del piloto,Cuentas ocultas y autenticacion deshabilitada,offline_pilot y workspace_app_host,full-suite-accepted.log,Implementar eliminacion de cuenta antes de habilitar cuentas
+PUB-03,Fuera del piloto,SMS y proveedores deshabilitados,offline_pilot y phone_auth_sheet,full-suite-accepted.log,Aceptacion real OTP y servidor antes de habilitar SMS
+PUB-04,Aislado del piloto,Variante offline elimina Internet GPS Bluetooth y oculta proveedores,Manifest y release features,candidate-qa/bundle-inspection.json,Certificar capacidades antes de distribuir standard
+S01,Preparado no desplegado,Migracion separa lectura y escritura y bloquea cambios de identidad,feature_records_rls_test.sql preparado,supabase/tests/feature_records_rls_test.sql,Docker no operativo; SQL/RLS sin ejecutar; nube deshabilitada
+S02,Fuera del piloto,Nube y sincronizacion deshabilitadas,offline_pilot,full-suite-accepted.log,Integracion y concurrencia remotas antes de habilitar nube
+S03,Corregido,UUID existente no puede cambiar finca ni tipo; comprobacion y escritura atomicas,shared_store_integrity para Isar y Drift y backup restore,full-suite-accepted.log,
+S04,Corregido,Traslado con debito y credito conserva cantidad y valor; saldo y reintento atomicos,shared_store_integrity para Isar y Drift,full-suite-accepted.log,
+S05,Fuera del piloto,Paridad web excluida del lanzamiento Android,Contrato Drift probado solo en alcance compartido,full-suite-accepted.log,Paridad y aceptacion web completas
+F01,Fuera del piloto,Reportes futuros no se anuncian como disponibles,Revision de alcance y documentacion,IMPLEMENTACION.md,Implementar y validar reportes antes de ofrecerlos
+F02,Fuera del piloto,Avisos del sistema no se anuncian como disponibles,Revision de alcance y documentacion,IMPLEMENTACION.md,Implementar y validar notificaciones antes de ofrecerlas

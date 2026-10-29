@@ -1,7 +1,7 @@
 /// Isar-backed agenda repository with a lossless SharedPreferences migration.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
@@ -9,7 +9,7 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_entry.dart';
 
-class IsarAgendaRepository implements AgendaRepository {
+class IsarAgendaRepository implements AgendaRepository, AtomicAgendaRepository {
   IsarAgendaRepository(this._database, this._prefs);
 
   final IsarDatabase _database;
@@ -50,13 +50,18 @@ class IsarAgendaRepository implements AgendaRepository {
   Future<List<AgendaEntry>> fetchEntries() async {
     final isar = await _isar;
     final records = await isar.isarAgendaEntrys.where().sortByFecha().findAll();
-    return List<AgendaEntry>.unmodifiable(records.map((record) => record.toEntity()));
+    return List<AgendaEntry>.unmodifiable(
+      records.map((record) => record.toEntity()),
+    );
   }
 
   @override
   Future<AgendaEntry> getEntry(String id) async {
     final isar = await _isar;
-    final record = await isar.isarAgendaEntrys.where().uuidEqualTo(id).findFirst();
+    final record = await isar.isarAgendaEntrys
+        .where()
+        .uuidEqualTo(id)
+        .findFirst();
     if (record == null) {
       throw StateError('No existe la tarea de Agenda $id.');
     }
@@ -67,12 +72,32 @@ class IsarAgendaRepository implements AgendaRepository {
   Future<void> saveEntry(AgendaEntry entry) => _upsert(entry);
 
   @override
+  Future<void> saveEntries(List<AgendaEntry> entries) async {
+    if (entries.isEmpty) return;
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      for (final entry in entries) {
+        final model = entry.toIsar();
+        final existing = await isar.isarAgendaEntrys
+            .where()
+            .uuidEqualTo(entry.id)
+            .findFirst();
+        if (existing != null) model.isarId = existing.isarId;
+        await isar.isarAgendaEntrys.put(model);
+      }
+    });
+  }
+
+  @override
   Future<void> updateEntry(AgendaEntry entry) => _upsert(entry);
 
   Future<void> _upsert(AgendaEntry entry) async {
     final isar = await _isar;
     final model = entry.toIsar();
-    final existing = await isar.isarAgendaEntrys.where().uuidEqualTo(entry.id).findFirst();
+    final existing = await isar.isarAgendaEntrys
+        .where()
+        .uuidEqualTo(entry.id)
+        .findFirst();
     if (existing != null) model.isarId = existing.isarId;
     await isar.writeTxn(() => isar.isarAgendaEntrys.put(model));
   }
@@ -93,6 +118,36 @@ class IsarAgendaRepository implements AgendaRepository {
       await isar.isarAgendaEntrys.putAll(
         entries.map((entry) => entry.toIsar()).toList(growable: false),
       );
+    });
+  }
+
+  @override
+  Future<void> reconcileEntries(
+    List<AgendaEntry> Function(List<AgendaEntry> current) update,
+  ) async {
+    final isar = await _isar;
+    await isar.writeTxn(() async {
+      final records = await isar.isarAgendaEntrys.where().findAll();
+      final current = records.map((record) => record.toEntity()).toList();
+      final next = update(List<AgendaEntry>.of(current));
+      final ids = next.map((entry) => entry.id).toSet();
+      if (ids.length != next.length) {
+        throw StateError(
+          'La actualización de Agenda produjo identificadores duplicados.',
+        );
+      }
+      final isarIds = {
+        for (final record in records) record.uuid: record.isarId,
+      };
+      final models = next
+          .map((entry) {
+            final model = entry.toIsar();
+            model.isarId = isarIds[entry.id] ?? model.isarId;
+            return model;
+          })
+          .toList(growable: false);
+      await isar.isarAgendaEntrys.clear();
+      await isar.isarAgendaEntrys.putAll(models);
     });
   }
 

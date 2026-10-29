@@ -1,7 +1,10 @@
 /// features > directorio > animales > infrastructure > isar_record_repository_base
 library;
+import 'package:libretapp/core/database/isar_write_transaction.dart';
 
-import 'package:isar/isar.dart';
+import 'package:libretapp/core/utils/numeric_validation.dart';
+
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/core/services/logger_service.dart';
@@ -72,11 +75,14 @@ abstract class IsarRecordRepositoryBase<
     String animalUuid,
     TEntity record, {
     Future<void> Function(Isar isar, TIsarModel savedModel)? onSaved,
+    Future<void> Function(Isar isar)? beforeWrite,
   }) async {
     final db = await isar;
+    requireFiniteNumbers(record);
     final model = toIsarModel(record, animalUuid);
     final activityAt = DateTime.now();
-    await db.writeTxn(() async {
+    await withIsarWriteTransaction(db, () async {
+      await beforeWrite?.call(db);
       if (model.recordUuid.isEmpty) {
         final existing = model.id == Isar.autoIncrement
             ? null
@@ -114,8 +120,10 @@ abstract class IsarRecordRepositoryBase<
     String animalUuid,
     TEntity record, {
     Future<void> Function(Isar isar, TIsarModel savedModel)? onSaved,
+    Future<void> Function(Isar isar)? beforeWrite,
   }) async {
     final db = await isar;
+    requireFiniteNumbers(record);
     final model = toIsarModel(record, animalUuid);
 
     if (model.id == Isar.autoIncrement) {
@@ -127,18 +135,21 @@ abstract class IsarRecordRepositoryBase<
       );
     }
 
-    final stored = await collection(db).get(model.id);
-    if (stored == null) {
-      throw StateError(
-        'No existe un registro con id ${model.id} para actualizar.',
-      );
-    }
-    // Keep the identity the rest of the app refers to, whatever the caller
-    // passed: agenda registrations and care cycles resolve records by uuid.
-    if (model.recordUuid.isEmpty) model.recordUuid = stored.recordUuid;
-
     final editedAt = DateTime.now();
-    await db.writeTxn(() async {
+    await withIsarWriteTransaction(db, () async {
+      final stored = await collection(db).get(model.id);
+      if (stored == null) {
+        throw StateError(
+          'No existe un registro con id ${model.id} para actualizar.',
+        );
+      }
+      if (stored.animalUuid != animalUuid)
+        throw ArgumentError('El registro pertenece a otro animal.');
+      // Keep the identity the rest of the app refers to, whatever the caller
+      // passed: agenda registrations and care cycles resolve records by uuid.
+      model.recordUuid = stored.recordUuid;
+
+      await beforeWrite?.call(db);
       final id = await collection(db).put(model);
       assignId(model, id);
       if (onSaved == null) {
@@ -157,9 +168,15 @@ abstract class IsarRecordRepositoryBase<
     final db = await isar;
     final id = int.tryParse(recordId);
     if (id == null) return;
-    await db.writeTxn(() async {
+    await withIsarWriteTransaction(db, () async {
       final stored = await collection(db).get(id);
       final animalUuid = stored?.animalUuid;
+      if (animalUuid != null)
+        await AnimalProjectionRecalculator.recalculate(
+          db,
+          animalUuid,
+          updateActivityTimestamp: false,
+        );
       await collection(db).delete(id);
       if (animalUuid != null && animalUuid.isNotEmpty) {
         await AnimalActivityTracker.recalculate(db, animalUuid);

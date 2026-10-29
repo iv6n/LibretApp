@@ -15,7 +15,7 @@
 ///       launches skip it entirely.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
@@ -30,21 +30,23 @@ class LocationEnumMigrationService {
   const LocationEnumMigrationService({
     required Isar isar,
     required SharedPreferences prefs,
+    this.preferencePrefix = '',
   }) : _isar = isar,
        _prefs = prefs;
 
   final Isar _isar;
   final SharedPreferences _prefs;
+  final String preferencePrefix;
 
   /// Run migration if it has not yet been applied.
   ///
   /// Safe to call multiple times — subsequent calls are no-ops.
   Future<void> runIfNeeded() async {
-    if (_prefs.getBool(_kMigrationFlagKey) == true) return;
+    if (_prefs.getBool('$preferencePrefix$_kMigrationFlagKey') == true) return;
 
     await _migrate();
 
-    await _prefs.setBool(_kMigrationFlagKey, true);
+    if (!await _prefs.setBool('$preferencePrefix$_kMigrationFlagKey', true)) throw StateError('No se pudo guardar la migración.');
   }
 
   Future<void> _migrate() async {

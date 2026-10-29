@@ -67,8 +67,8 @@ void main() {
         ),
       ],
     );
-    expect(sameDay.gainKg, 4);
-    expect(sameDay.daysBetween, 0);
+    expect(sameDay.gainKg, isNull);
+    expect(sameDay.daysBetween, isNull);
     expect(sameDay.adgKgPerDay, isNull);
 
     final loss = calculator.calculateAnimalPerformance(

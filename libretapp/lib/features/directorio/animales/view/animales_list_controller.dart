@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_indicator_snapshot.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
@@ -125,8 +126,6 @@ class AnimalesListController extends ChangeNotifier {
   final WeightRecordRepository? _weightRepository;
   final MilkingRepository? _milkingRepository;
 
-  static const _kpiService = ReproductiveKpiService();
-
   /// Window used for the average daily yield shown on dairy cards. A week
   /// smooths out the difference between a heavy morning and a light evening
   /// milking without lagging behind a real drop in production.
@@ -134,6 +133,7 @@ class AnimalesListController extends ChangeNotifier {
 
   AnimalesListState _state;
   bool _disposed = false;
+  int _snapshotGeneration = 0;
   final Set<String> _indicatorLoadsInFlight = <String>{};
   AnimalesListState get state => _state;
 
@@ -230,6 +230,7 @@ class AnimalesListController extends ChangeNotifier {
     _indicatorLoadsInFlight.addAll(uuids);
 
     final reference = now ?? DateTime.now();
+    final generation = _snapshotGeneration;
 
     // The four sources are independent. Start each one before waiting so a
     // page of cards pays one round-trip's latency rather than four in series.
@@ -294,7 +295,7 @@ class AnimalesListController extends ChangeNotifier {
       // until it finishes; the error still propagates to the caller.
       await Future.wait<void>(queries, eagerError: false);
 
-      if (_disposed) return;
+      if (_disposed || generation != _snapshotGeneration) return;
 
       final byUuid = {for (final animal in animalList) animal.uuid: animal};
       final snapshots = Map<String, AnimalIndicatorSnapshot>.from(
@@ -305,67 +306,26 @@ class AnimalesListController extends ChangeNotifier {
         final records = reproductions[uuid] ?? const <ReproductionRecord>[];
         final animalWeights = weights[uuid] ?? const <WeightRecord>[];
 
-        snapshots[uuid] = AnimalIndicatorSnapshot(
-          reproductiveKpis: records.isEmpty
-              ? null
-              : _kpiService.forAnimal(
-                  records: records,
-                  birthDate: byUuid[uuid]?.birthDate,
-                ),
+        snapshots[uuid] = buildAnimalIndicatorSnapshot(
+          animal: byUuid[uuid]!,
+          reproductions: records,
+          weights: animalWeights,
+          milkings: milkings[uuid] ?? const <MilkingRecord>[],
+          now: reference,
           withdrawalEndsOn: withdrawals[uuid],
-          lastWeightKg: animalWeights.isEmpty
-              ? null
-              : animalWeights.first.weight,
-          averageDailyGainKg: _dailyGain(animalWeights),
-          milkLitersPerDay: _litersPerDay(
-            milkings[uuid] ?? const <MilkingRecord>[],
-          ),
         );
       }
 
       _setState(_state.copyWith(indicatorSnapshots: snapshots));
     } finally {
       _indicatorLoadsInFlight.removeAll(uuids);
+      if (!_disposed && generation != _snapshotGeneration) notifyListeners();
     }
   }
 
-  /// Gain per day between the two most recent weighings.
-  ///
-  /// Measured rather than estimated, which is the point: it is the only figure
-  /// that shows an animal losing weight. Returns null when there is nothing to
-  /// compare against, or when both weighings landed on the same day.
-  static double? _dailyGain(List<WeightRecord> weights) {
-    if (weights.length < 2) return null;
-
-    final latest = weights[0];
-    final previous = weights[1];
-    final days = latest.date.difference(previous.date).inDays;
-    if (days <= 0) return null;
-
-    return (latest.weight - previous.weight) / days;
-  }
-
-  /// Average litres per calendar day the animal was actually milked.
-  ///
-  /// Dividing by days milked rather than by the window length keeps a cow that
-  /// was only milked twice this week from looking like a poor producer.
-  static double? _litersPerDay(List<MilkingRecord> records) {
-    if (records.isEmpty) return null;
-
-    final litersByDay = <DateTime, double>{};
-    for (final record in records) {
-      final occurred = record.session.occurredAt;
-      final day = DateTime(occurred.year, occurred.month, occurred.day);
-      litersByDay.update(
-        day,
-        (value) => value + record.entry.liters,
-        ifAbsent: () => record.entry.liters,
-      );
-    }
-
-    if (litersByDay.isEmpty) return null;
-    final total = litersByDay.values.reduce((a, b) => a + b);
-    return total / litersByDay.length;
+  void invalidateIndicatorSnapshots() {
+    _snapshotGeneration++;
+    _setState(_state.copyWith(indicatorSnapshots: const {}));
   }
 
   Future<void> refreshLocations() async {

@@ -84,6 +84,7 @@ LivestockTip? _pregnantAnimalTreatment(
 
 /// Crías jóvenes: ajustar dosis por peso.
 LivestockTip? _youngAnimalDosage(AnimalEntity animal, HealthRecord record) {
+  if (!animal.hasKnownAge) return null;
   if (animal.ageMonths > 6) return null;
   if (record.type == HealthRecordType.checkup ||
       record.type == HealthRecordType.other) {

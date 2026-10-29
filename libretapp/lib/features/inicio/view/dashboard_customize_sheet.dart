@@ -2,6 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
@@ -12,12 +14,14 @@ Future<void> showDashboardCustomizeSheet({
   required BuildContext context,
   required List<DashboardWidgetConfig> widgets,
   required List<DashboardQuickAction> actions,
+  CareProfile? profile,
   required void Function(
     List<DashboardWidgetConfig>,
     List<DashboardQuickAction>,
-  ) onSaved,
+  )
+  onSaved,
 }) {
-  return showModalBottomSheet<void>(
+  return showAppBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
@@ -25,6 +29,7 @@ Future<void> showDashboardCustomizeSheet({
     builder: (_) => _DashboardCustomizeSheet(
       initialWidgets: List.of(widgets),
       initialActions: List.of(actions),
+      profile: profile,
       onSaved: onSaved,
     ),
   );
@@ -34,15 +39,15 @@ class _DashboardCustomizeSheet extends StatefulWidget {
   const _DashboardCustomizeSheet({
     required this.initialWidgets,
     required this.initialActions,
+    required this.profile,
     required this.onSaved,
   });
 
   final List<DashboardWidgetConfig> initialWidgets;
   final List<DashboardQuickAction> initialActions;
-  final void Function(
-    List<DashboardWidgetConfig>,
-    List<DashboardQuickAction>,
-  ) onSaved;
+  final CareProfile? profile;
+  final void Function(List<DashboardWidgetConfig>, List<DashboardQuickAction>)
+  onSaved;
 
   @override
   State<_DashboardCustomizeSheet> createState() =>
@@ -57,7 +62,8 @@ class _DashboardCustomizeSheetState extends State<_DashboardCustomizeSheet> {
   void initState() {
     super.initState();
     _widgets = List.of(widgetsSorted(widget.initialWidgets));
-    _actions = List.of(widget.initialActions)..sort((a, b) => a.order.compareTo(b.order));
+    _actions = List.of(widget.initialActions)
+      ..sort((a, b) => a.order.compareTo(b.order));
   }
 
   List<DashboardWidgetConfig> widgetsSorted(List<DashboardWidgetConfig> list) {
@@ -78,12 +84,52 @@ class _DashboardCustomizeSheetState extends State<_DashboardCustomizeSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  Future<void> _reset() async {
-    final repo = locator<DashboardConfigRepository>();
-    await repo.resetToDefaults();
-    _widgets = widgetsSorted(defaultDashboardWidgets());
-    _actions = List.of(defaultQuickActions());
-    setState(() {});
+  Future<void> _previewSuggestions() async {
+    final suggestions = defaultQuickActions(profile: widget.profile);
+    final selected = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Configuración sugerida'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Perfil: ${widget.profile?.label ?? 'General'}'),
+              const SizedBox(height: 8),
+              const Text('Accesos propuestos'),
+              for (final action in suggestions)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(action.icon),
+                  title: Text(action.label),
+                ),
+              const Text(
+                'También se actualizará el orden y la visibilidad de los bloques de Inicio.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Aplicar sugerida'),
+          ),
+        ],
+      ),
+    );
+    if (selected != true || !mounted) return;
+    setState(() {
+      _widgets = widgetsSorted(
+        defaultDashboardWidgets(profile: widget.profile),
+      );
+      _actions = List.of(suggestions);
+    });
   }
 
   @override
@@ -104,7 +150,10 @@ class _DashboardCustomizeSheetState extends State<_DashboardCustomizeSheet> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const Spacer(),
-                TextButton(onPressed: _reset, child: const Text('Restablecer')),
+                TextButton(
+                  onPressed: _previewSuggestions,
+                  child: const Text('Aplicar sugerida'),
+                ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),

@@ -1,7 +1,12 @@
 /// app › shell_route_policy — route-based shell chrome visibility.
 library;
 
-const _directoryOverlaySections = <String>{'animales', 'lotes', 'ubicaciones'};
+const _directoryOverlaySections = <String>{
+  'animales',
+  'lotes',
+  'cultivos',
+  'ubicaciones',
+};
 
 /// Returns whether [uri] represents a route that must hide the shell chrome.
 ///

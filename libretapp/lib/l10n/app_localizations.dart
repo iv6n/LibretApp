@@ -170,6 +170,24 @@ abstract class AppLocalizations {
   /// **'Ajusta los filtros o la búsqueda'**
   String get animalsEmptySubtitle;
 
+  /// No description provided for @animalsFirstTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no hay animales'**
+  String get animalsFirstTitle;
+
+  /// No description provided for @animalsFirstSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Registra el primero para empezar a llevar su seguimiento.'**
+  String get animalsFirstSubtitle;
+
+  /// No description provided for @animalsFirstAction.
+  ///
+  /// In es, this message translates to:
+  /// **'Registrar animal'**
+  String get animalsFirstAction;
+
   /// No description provided for @animalsSearchHint.
   ///
   /// In es, this message translates to:

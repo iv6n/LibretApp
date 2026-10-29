@@ -44,6 +44,7 @@ app.*.map.json
 
 # Android Studio will place build artifacts here
 /android/.kotlin/
+/android/.gradle-tmp/
 /android/app/debug
 /android/app/profile
 /android/app/release
@@ -57,3 +58,9 @@ app.*.map.json
 # Native Isar library copied locally to run desktop/CI tests (see .github/workflows)
 /libisar.so
 /isar.dll
+
+/libisar.dll
+
+# Reproducible branding tools and Sites have their own source repository.
+**/node_modules/
+/sites/libretapp-public/.openai/.local/

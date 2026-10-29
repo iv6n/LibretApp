@@ -2,6 +2,7 @@
 library;
 
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
 
 enum DashboardWidgetType {
   animalSummary,
@@ -49,7 +50,6 @@ extension DashboardWidgetTypeLabel on DashboardWidgetType {
 }
 
 class DashboardWidgetConfig extends Equatable {
-
   factory DashboardWidgetConfig.fromJson(Map<String, dynamic> json) {
     return DashboardWidgetConfig(
       id: json['id'] as String? ?? '',
@@ -118,7 +118,7 @@ class DashboardWidgetConfig extends Equatable {
 }
 
 /// Default widget layout for new users.
-List<DashboardWidgetConfig> defaultDashboardWidgets() {
+List<DashboardWidgetConfig> defaultDashboardWidgets({CareProfile? profile}) {
   const types = [
     DashboardWidgetType.healthAlerts,
     DashboardWidgetType.upcomingCalvings,
@@ -137,13 +137,31 @@ List<DashboardWidgetConfig> defaultDashboardWidgets() {
       id: types[i].name,
       title: types[i].label,
       type: types[i],
-      enabled: types[i] != DashboardWidgetType.inventory &&
+      enabled:
+          types[i] != DashboardWidgetType.inventory &&
           types[i] != DashboardWidgetType.animalSummary &&
-          types[i] != DashboardWidgetType.weather,
+          types[i] != DashboardWidgetType.weather &&
+          (profile != CareProfile.pets ||
+              types[i] != DashboardWidgetType.upcomingCalvings) &&
+          (profile != CareProfile.pets ||
+              types[i] != DashboardWidgetType.activeLocations),
       order: i,
       size: types[i] == DashboardWidgetType.financeMonth
           ? DashboardWidgetSize.expanded
           : DashboardWidgetSize.compact,
     ),
+  )..addAll(
+    profile == CareProfile.pets || profile == CareProfile.mixed
+        ? [
+            DashboardWidgetConfig(
+              id: 'animalSummary',
+              title: 'Resumen de animales',
+              type: DashboardWidgetType.animalSummary,
+              enabled: true,
+              order: -1,
+              size: DashboardWidgetSize.expanded,
+            ),
+          ]
+        : const <DashboardWidgetConfig>[],
   );
 }

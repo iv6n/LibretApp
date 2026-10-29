@@ -11,7 +11,7 @@ class ThemeRepository {
   final SharedPrefsService _prefs;
 
   Future<ThemeMode> loadThemeMode({
-    ThemeMode fallback = ThemeMode.system,
+    ThemeMode fallback = ThemeMode.light,
   }) async {
     final saved = _prefs.getString(PrefsKeys.appTheme);
     switch (saved) {

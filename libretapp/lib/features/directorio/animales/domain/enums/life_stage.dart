@@ -34,7 +34,9 @@ enum LifeStage {
   puppy,
   youngDog,
   workingDog,
-  guardDog;
+  guardDog,
+  cat,
+  unknown;
 
   String get displayName {
     switch (this) {
@@ -108,6 +110,10 @@ enum LifeStage {
         return 'Adulto trabajo';
       case LifeStage.guardDog:
         return 'Adulto guardia';
+      case LifeStage.cat:
+        return 'Gato';
+      case LifeStage.unknown:
+        return 'Sin dato';
     }
   }
 
@@ -152,6 +158,9 @@ enum LifeStage {
       case LifeStage.horse:
       case LifeStage.mare:
         return 36;
+      case LifeStage.cat:
+      case LifeStage.unknown:
+        return 0;
     }
   }
 
@@ -195,6 +204,9 @@ enum LifeStage {
       case LifeStage.rooster:
       case LifeStage.workingDog:
       case LifeStage.guardDog:
+        return null;
+      case LifeStage.cat:
+      case LifeStage.unknown:
         return null;
     }
   }

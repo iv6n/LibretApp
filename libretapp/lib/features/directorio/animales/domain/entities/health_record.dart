@@ -1,7 +1,9 @@
-﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a health_record \u2014 entity for a veterinary/health record.
+/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a health_record \u2014 entity for a veterinary/health record.
 library;
 
 import 'package:libretapp/core/models/timestamped_record.dart';
+
+const Object _unset = Object();
 
 /// Tipos de registro de salud del animal.
 enum HealthRecordType {
@@ -78,14 +80,14 @@ class HealthRecord extends TimestampedRecord {
     DateTime? date,
     HealthRecordType? type,
     String? product,
-    String? dose,
-    String? appliedBy,
-    String? notes,
-    DateTime? nextDueDate,
-    String? cause,
-    String? medicineBatch,
-    int? withdrawalDays,
-    DateTime? withdrawalEndDate,
+    Object? dose = _unset,
+    Object? appliedBy = _unset,
+    Object? notes = _unset,
+    Object? nextDueDate = _unset,
+    Object? cause = _unset,
+    Object? medicineBatch = _unset,
+    Object? withdrawalDays = _unset,
+    Object? withdrawalEndDate = _unset,
     String? recordUuid,
     DateTime? updatedAt,
     String? id,
@@ -94,14 +96,22 @@ class HealthRecord extends TimestampedRecord {
       date: date ?? this.date,
       type: type ?? this.type,
       product: product ?? this.product,
-      dose: dose ?? this.dose,
-      appliedBy: appliedBy ?? this.appliedBy,
-      notes: notes ?? this.notes,
-      nextDueDate: nextDueDate ?? this.nextDueDate,
-      cause: cause ?? this.cause,
-      medicineBatch: medicineBatch ?? this.medicineBatch,
-      withdrawalDays: withdrawalDays ?? this.withdrawalDays,
-      withdrawalEndDate: withdrawalEndDate ?? this.withdrawalEndDate,
+      dose: dose == _unset ? this.dose : dose as String?,
+      appliedBy: appliedBy == _unset ? this.appliedBy : appliedBy as String?,
+      notes: notes == _unset ? this.notes : notes as String?,
+      nextDueDate: nextDueDate == _unset
+          ? this.nextDueDate
+          : nextDueDate as DateTime?,
+      cause: cause == _unset ? this.cause : cause as String?,
+      medicineBatch: medicineBatch == _unset
+          ? this.medicineBatch
+          : medicineBatch as String?,
+      withdrawalDays: withdrawalDays == _unset
+          ? this.withdrawalDays
+          : withdrawalDays as int?,
+      withdrawalEndDate: withdrawalEndDate == _unset
+          ? this.withdrawalEndDate
+          : withdrawalEndDate as DateTime?,
       recordUuid: recordUuid ?? this.recordUuid,
       updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,

@@ -38,7 +38,7 @@ class DeviceWeatherPositionProvider implements WeatherPositionProvider {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
+          accuracy: LocationAccuracy.low,
           timeLimit: Duration(seconds: 10),
         ),
       );
@@ -61,6 +61,20 @@ abstract class WeatherService {
     required List<LocationEntity> locations,
     required String address,
   });
+
+  /// These explicit methods are used only after the user configures weather.
+  Future<WeatherCoordinates?> coordinatesForCity(String city) async => null;
+  Future<WeatherCoordinates?> requestCurrentCoordinates() async => null;
+  Future<WeatherData?> getWeatherAt(WeatherCoordinates coordinates) async =>
+      null;
+}
+
+class LocalOnlyWeatherService extends WeatherService {
+  @override
+  Future<WeatherData?> getCurrentWeather({
+    required List<LocationEntity> locations,
+    required String address,
+  }) async => null;
 }
 
 class OpenMeteoWeatherService implements WeatherService {
@@ -68,8 +82,7 @@ class OpenMeteoWeatherService implements WeatherService {
     http.Client? client,
     WeatherPositionProvider? positionProvider,
   }) : _client = client ?? http.Client(),
-       _positionProvider =
-           positionProvider ?? DeviceWeatherPositionProvider();
+       _positionProvider = positionProvider ?? DeviceWeatherPositionProvider();
 
   final http.Client _client;
   final WeatherPositionProvider _positionProvider;
@@ -81,10 +94,22 @@ class OpenMeteoWeatherService implements WeatherService {
   }) async {
     final coordinates =
         _coordinatesFromLocations(locations) ??
-        await _coordinatesFromAddress(address) ??
-        await _positionProvider.getCurrentCoordinates();
+        await _coordinatesFromAddress(address);
     if (coordinates == null) return null;
 
+    return getWeatherAt(coordinates);
+  }
+
+  @override
+  Future<WeatherCoordinates?> coordinatesForCity(String city) =>
+      _coordinatesFromAddress(city);
+
+  @override
+  Future<WeatherCoordinates?> requestCurrentCoordinates() =>
+      _positionProvider.getCurrentCoordinates();
+
+  @override
+  Future<WeatherData?> getWeatherAt(WeatherCoordinates coordinates) async {
     final uri = Uri.https('api.open-meteo.com', '/v1/forecast', {
       'latitude': coordinates.latitude.toString(),
       'longitude': coordinates.longitude.toString(),
@@ -107,8 +132,7 @@ class OpenMeteoWeatherService implements WeatherService {
     }
     final current = payload['current'];
     final daily = payload['daily'];
-    if (current is! Map<String, dynamic> ||
-        daily is! Map<String, dynamic>) {
+    if (current is! Map<String, dynamic> || daily is! Map<String, dynamic>) {
       throw const FormatException('Weather response is incomplete');
     }
 
@@ -134,6 +158,7 @@ class OpenMeteoWeatherService implements WeatherService {
       condition: weatherConditionForCode(weatherCode.round()),
       humidity: humidity.round(),
       windSpeed: windSpeed.round(),
+      weatherCode: weatherCode.round(),
     );
   }
 

@@ -54,6 +54,8 @@ String _vaccineProduct(Species species) {
       return 'Vacuna preventiva aves DEMO';
     case Species.canine:
       return 'Vacuna preventiva canina DEMO';
+    case Species.feline:
+      return 'Vacuna preventiva felina DEMO';
     case Species.other:
       return 'Vacuna preventiva general DEMO';
   }

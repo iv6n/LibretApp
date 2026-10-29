@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/cloud_backup_repository.dart';
 import 'package:libretapp/core/services/backup_service.dart';
+import 'backup_operation_lock.dart';
 
 class CloudBackupService {
   CloudBackupService({
@@ -18,13 +19,16 @@ class CloudBackupService {
 
   bool get isAvailable => _repository.isAvailable;
 
-  Future<CloudBackupMetadata> backupNow() async {
+  Future<CloudBackupMetadata> backupNow({
+    Future<void> Function()? beforeUpload,
+  }) => BackupOperationLock().run(() async {
     if (!isAvailable) {
       throw const CloudBackupUnavailable(
         'Esta compilación no tiene respaldo en la nube configurado.',
       );
     }
     final bytes = await _backupService.createArchiveBytes();
+    await beforeUpload?.call();
     final metadata = await _repository.uploadSnapshot(
       bytes: bytes,
       sha256: _backupService.digestArchive(bytes),
@@ -32,8 +36,16 @@ class CloudBackupService {
       appVersion: BackupEnvelope.currentAppVersion,
     );
     await _backupService.markCloudBackup();
+    try {
+      final downloaded = await _repository.downloadSnapshot(metadata);
+      if (sha256.convert(downloaded).toString() == metadata.sha256) {
+        await _backupService.markVerifiedCloudBackup();
+      }
+    } catch (_) {
+      // Upload succeeded, but an unverified copy must remain labelled as such.
+    }
     return metadata;
-  }
+  });
 
   Future<List<CloudBackupMetadata>> listSnapshots() =>
       _repository.listSnapshots();
@@ -45,7 +57,7 @@ class CloudBackupService {
   Future<BackupImportSummary> restore(
     CloudBackupMetadata metadata, {
     required BackupImportMode mode,
-  }) async {
+  }) => BackupOperationLock().run(() async {
     final bytes = await _repository.downloadSnapshot(metadata);
     final actualDigest = sha256.convert(bytes).toString();
     if (actualDigest != metadata.sha256) {
@@ -54,5 +66,5 @@ class CloudBackupService {
       );
     }
     return _backupService.importArchiveBytes(bytes, mode: mode);
-  }
+  });
 }

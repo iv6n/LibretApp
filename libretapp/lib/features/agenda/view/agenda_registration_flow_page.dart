@@ -1,5 +1,8 @@
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -195,7 +198,7 @@ class _AgendaRegistrationFlowPageState
         final id = _activeRows.first.animalId;
         if (id != null) {
           _reproductionBases[id] = value;
-          _serviceTypes[id] = value.serviceType;
+          _serviceTypes[id] = value.serviceType ?? ServiceType.naturalService;
           _sireControllers[id]?.text = value.maleSireIdentifier ?? '';
           _pregnancyResults[id] =
               value.pregnancyResult ?? PregnancyCheckResult.positive;
@@ -445,7 +448,7 @@ class _AgendaRegistrationFlowPageState
                             border: OutlineInputBorder(),
                           ),
                           validator: (value) {
-                            final parsed = double.tryParse(
+                            final parsed = parseFormDouble(
                               (value ?? '').replaceAll(',', '.'),
                             );
                             return parsed == null || parsed <= 0

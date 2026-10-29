@@ -3,19 +3,15 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
+import 'package:libretapp/features/perfil/data/profile_input.dart';
 import 'package:libretapp/features/perfil/widgets/profile_avatar.dart';
-import 'package:libretapp/features/perfil/widgets/profile_info_row.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class ProfileHeaderCard extends StatelessWidget {
-  const ProfileHeaderCard({
-    required this.perfil,
-    this.onSettingsTap,
-    super.key,
-  });
+  const ProfileHeaderCard({required this.perfil, this.onEditTap, super.key});
 
   final Perfil perfil;
-  final VoidCallback? onSettingsTap;
+  final VoidCallback? onEditTap;
 
   String _initials() {
     final n = perfil.nombre.isNotEmpty ? perfil.nombre[0] : '';
@@ -27,12 +23,13 @@ class ProfileHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final name = perfil.fullName.isEmpty ? 'Sin nombre' : perfil.fullName;
+    final hasDetails = hasProfileDetails(perfil);
+    final name = perfil.fullName.trim().isEmpty ? 'Mi perfil' : perfil.fullName;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md,
-        MediaQuery.of(context).padding.top + AppSpacing.sm,
+        AppSpacing.sm,
         AppSpacing.md,
         AppSpacing.md,
       ),
@@ -52,7 +49,7 @@ class ProfileHeaderCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              ProfileAvatar(initials: _initials()),
+              ProfileAvatar(initials: _initials(), size: 100),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -60,7 +57,7 @@ class ProfileHeaderCard extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
@@ -69,84 +66,79 @@ class ProfileHeaderCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      perfil.finca.isEmpty ? 'Rancho sin nombre' : perfil.finca,
-                      maxLines: 1,
+                      perfil.finca.trim().isEmpty
+                          ? 'Ganado y campo'
+                          : perfil.finca,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: AppColors.primary,
+                        color: perfil.finca.trim().isEmpty
+                            ? cs.onSurfaceVariant
+                            : cs.primary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (onSettingsTap != null) ...[
-                const SizedBox(width: AppSpacing.xs),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: cs.surface.withValues(alpha: 0.78),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: cs.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.settings_outlined),
-                    tooltip: 'Ajustes',
-                    onPressed: onSettingsTap,
-                  ),
-                ),
-              ],
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            decoration: BoxDecoration(
-              color: cs.surface.withValues(alpha: 0.82),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.48),
+          if (onEditTap != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: onEditTap,
+                icon: const Icon(Icons.edit_outlined),
+                label: Text(
+                  hasDetails ? 'Editar perfil' : 'Añadir datos opcionales',
+                ),
               ),
             ),
-            child: Column(
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (perfil.upp.isNotEmpty)
-                      _IdentityChip(
-                        icon: Icons.badge_outlined,
-                        label: 'UPP',
-                        value: perfil.upp,
-                      ),
-                    _IdentityChip(
-                      icon: Icons.email_outlined,
-                      label: 'Correo',
-                      value: perfil.email.isEmpty ? 'Sin correo' : perfil.email,
-                    ),
-                    _IdentityChip(
-                      icon: Icons.phone_outlined,
-                      label: 'Telefono',
-                      value: perfil.telefono.isEmpty
-                          ? 'Sin telefono'
-                          : perfil.telefono,
-                    ),
-                  ],
+          ],
+          if (perfil.upp.isNotEmpty ||
+              perfil.email.isNotEmpty ||
+              perfil.telefono.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+              decoration: BoxDecoration(
+                color: cs.surface.withValues(alpha: 0.82),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: cs.outlineVariant.withValues(alpha: 0.48),
                 ),
-                if (perfil.upp.isEmpty) ...[
-                  const SizedBox(height: 8),
-                  const ProfileInfoRow(
-                    icon: Icons.info_outline,
-                    label: 'Identidad',
-                    value: 'Agrega UPP desde ajustes para completar el perfil.',
-                    isLast: true,
+              ),
+              child: Column(
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (perfil.upp.isNotEmpty)
+                        _IdentityChip(
+                          icon: Icons.badge_outlined,
+                          label: 'UPP',
+                          value: perfil.upp,
+                        ),
+                      if (perfil.email.isNotEmpty)
+                        _IdentityChip(
+                          icon: Icons.email_outlined,
+                          label: 'Correo',
+                          value: perfil.email,
+                        ),
+                      if (perfil.telefono.isNotEmpty)
+                        _IdentityChip(
+                          icon: Icons.phone_outlined,
+                          label: 'Teléfono',
+                          value: perfil.telefono,
+                        ),
+                    ],
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -168,7 +160,7 @@ class _IdentityChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      constraints: const BoxConstraints(minWidth: 118, maxWidth: 190),
+      constraints: const BoxConstraints(minWidth: 118, maxWidth: 240),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
@@ -186,7 +178,7 @@ class _IdentityChip extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,

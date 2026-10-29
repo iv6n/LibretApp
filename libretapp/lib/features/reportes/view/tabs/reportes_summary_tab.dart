@@ -11,6 +11,7 @@ import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
 import 'package:libretapp/features/reportes/data/report_summary.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
+import 'package:libretapp/features/reportes/widgets/report_tiles.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class ReportesSummaryTab extends StatefulWidget {
@@ -107,13 +108,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
   }
 
   Widget _metricsGrid(ReportSummary summary) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 1.35,
+    return ReportTiles(
       children: [
         SummaryMetricCard(
           label: 'Total animales',
@@ -263,13 +258,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
     return ReportSectionCard(
       title: 'Generar reporte',
       margin: EdgeInsets.zero,
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: AppSpacing.sm,
-        crossAxisSpacing: AppSpacing.sm,
-        childAspectRatio: 1.15,
+      child: ReportTiles(
         children: [
           ReportCard(
             icon: ReportType.financial.icon,
@@ -282,26 +271,10 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
             subtitle: 'Excel / respaldo',
             onTap: () => context.push(AppRoutes.exportar),
           ),
-          ReportCard(
-            icon: ReportType.sanitary.icon,
-            title: ReportType.sanitary.label,
-            comingSoon: true,
-            onTap: () => _comingSoon(context),
-          ),
-          ReportCard(
-            icon: ReportType.reproductive.icon,
-            title: ReportType.reproductive.label,
-            comingSoon: true,
-            onTap: () => _comingSoon(context),
-          ),
+
         ],
       ),
     );
   }
 
-  void _comingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reporte detallado — próximamente')),
-    );
-  }
 }

@@ -46,6 +46,7 @@ class AnimalPalette {
       case Species.poultry:
         return poultry;
       case Species.canine:
+      case Species.feline:
         return canine;
       case Species.other:
         return AppColors.secondary;

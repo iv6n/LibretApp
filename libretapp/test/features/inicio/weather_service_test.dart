@@ -5,7 +5,9 @@ import 'package:libretapp/features/inicio/data/weather_service.dart';
 
 void main() {
   test('loads real current conditions from Open-Meteo coordinates', () async {
+    var requests = 0;
     final client = MockClient((request) async {
+      requests++;
       expect(request.url.host, 'api.open-meteo.com');
       expect(request.url.path, '/v1/forecast');
       expect(request.url.queryParameters['latitude'], '29.0729');
@@ -39,9 +41,15 @@ void main() {
       ),
     );
 
-    final weather = await service.getCurrentWeather(
+    final unconfigured = await service.getCurrentWeather(
       locations: const [],
       address: '',
+    );
+    expect(unconfigured, isNull);
+    expect(requests, 0);
+
+    final weather = await service.getWeatherAt(
+      const WeatherCoordinates(latitude: 29.0729, longitude: -110.9559),
     );
 
     expect(weather, isNotNull);
@@ -50,14 +58,14 @@ void main() {
     expect(weather.condition, 'Parcialmente nublado');
     expect(weather.humidity, 38);
     expect(weather.windSpeed, 14);
+    expect(weather.weatherCode, 2);
   });
 
   test('extracts a representative coordinate from GeoJSON', () {
     final point = coordinatesFromGeoJson(
       '{"type":"Point","coordinates":[-110.9559,29.0729]}',
     );
-    final polygon = coordinatesFromGeoJson(
-      '''
+    final polygon = coordinatesFromGeoJson('''
       {
         "type": "Polygon",
         "coordinates": [[
@@ -67,8 +75,7 @@ void main() {
           [-111.0, 30.0]
         ]]
       }
-      ''',
-    );
+      ''');
 
     expect(point, isNotNull);
     expect(point!.latitude, closeTo(29.0729, 0.00001));

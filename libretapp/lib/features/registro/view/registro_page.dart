@@ -5,15 +5,23 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/router/app_routes.dart';
-import 'package:libretapp/core/widgets/generated_asset_icon.dart';
+import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/features/ubicaciones/widgets/crop_sheets.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
+import 'package:libretapp/core/widgets/record_save_scope.dart';
 import 'package:libretapp/features/registro/widgets/registro_style.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 class RegistroPage extends StatefulWidget {
@@ -25,11 +33,103 @@ class RegistroPage extends StatefulWidget {
 
 class _RegistroPageState extends State<RegistroPage> {
   late final LocationRepository _locationRepository;
+  CultivationRepository? _cultivationRepository;
+  int? _animalCount;
+  List<AnimalEntity> _activeAnimals = const [];
+  bool _showAllAnimalActions = false;
 
   @override
   void initState() {
     super.initState();
     _locationRepository = locator<LocationRepository>();
+    if (locator.isRegistered<CultivationRepository>()) {
+      _cultivationRepository = locator<CultivationRepository>();
+    }
+    if (locator.isRegistered<AnimalRepository>()) {
+      locator<AnimalRepository>()
+          .getAll()
+          .then((animals) {
+            if (mounted)
+              setState(() {
+                _activeAnimals = animals;
+                _animalCount = animals.length;
+              });
+          })
+          .catchError((Object _) {
+            if (mounted) setState(() => _animalCount = -1);
+          });
+    }
+  }
+
+  List<_RegistroSection> _animalSections(
+    BuildContext context,
+    List<_RegistroSection> original,
+  ) {
+    final actions = {
+      for (final section in original)
+        for (final item in section.items) item.label: item,
+    };
+    final selectedProfile = AppExperienceScope.maybeOf(
+      context,
+    )?.value.careProfile;
+    final profile = _activeAnimals.isEmpty
+        ? selectedProfile
+        : inferCareProfileFromAnimals(_activeAnimals) ?? selectedProfile;
+    final firstLabel = profile == CareProfile.pets
+        ? 'Añadir mascota'
+        : 'Añadir animal';
+    final animal = actions['Animal']!;
+    final starter = _RegistroCardItem(
+      icon: animal.icon,
+      label: firstLabel,
+      subtitle: 'Crear una ficha nueva',
+      color: animal.color,
+      onTap: animal.onTap,
+    );
+    final task = _RegistroCardItem(
+      icon: Icons.event_available_outlined,
+      label: 'Programar tarea',
+      subtitle: 'Crear un recordatorio en Agenda',
+      color: AppColors.secondary,
+      onTap: (context) => context.pushNamed(AppRoutes.nameAgendaNuevo),
+    );
+    final labels = _animalCount == 0
+        ? <String>[]
+        : switch (profile) {
+            CareProfile.pets => <String>['Sanitario', 'Peso'],
+            CareProfile.livestock => <String>['Lote', 'Tratar lote', 'Peso'],
+            _ => <String>['Lote', 'Sanitario', 'Peso'],
+          };
+    final primary = <_RegistroCardItem>[
+      starter,
+      task,
+      for (final label in labels)
+        if (actions[label] != null) actions[label]!,
+    ];
+    return [
+      _RegistroSection(
+        label: _animalCount == 0 ? 'Para empezar' : 'Acciones principales',
+        items: primary,
+      ),
+      _RegistroSection(
+        label: 'Más opciones',
+        items: [
+          _RegistroCardItem(
+            icon: _showAllAnimalActions
+                ? Icons.expand_less
+                : Icons.apps_outlined,
+            label: _showAllAnimalActions
+                ? 'Ocultar funciones'
+                : 'Ver todas las funciones',
+            subtitle: 'Registros, importación y herramientas',
+            color: AppColors.primary,
+            onTap: (_) =>
+                setState(() => _showAllAnimalActions = !_showAllAnimalActions),
+          ),
+        ],
+      ),
+      if (_showAllAnimalActions) ...original,
+    ];
   }
 
   @override
@@ -38,19 +138,41 @@ class _RegistroPageState extends State<RegistroPage> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Menu de registros'),
+          title: const Text('Menú de registros'),
           elevation: 0,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Animal'),
-              Tab(text: 'Ubicacion'),
+              Tab(text: 'Ubicación'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
             _RegistroTabContent(
-              sections: [
+              sections: _animalSections(context, [
+                _RegistroSection(
+                  label: 'Herramientas de captura',
+                  items: [
+                    if (!ReleaseFeatures.demoMode)
+                      _RegistroCardItem(
+                        icon: Icons.upload_file_outlined,
+                        label: 'Importar hato',
+                        subtitle: 'Excel o CSV con vista previa',
+                        color: AppColors.primary,
+                        onTap: (context) =>
+                            context.pushNamed(AppRoutes.nameHerdImport),
+                      ),
+                    _RegistroCardItem(
+                      icon: Icons.playlist_add_check_outlined,
+                      label: 'Registro por lotes',
+                      subtitle: 'Capturar y continuar sin señal',
+                      color: AppColors.secondary,
+                      onTap: (context) =>
+                          context.pushNamed(AppRoutes.nameBatchRecords),
+                    ),
+                  ],
+                ),
                 _RegistroSection(
                   label: 'Nuevo',
                   items: [
@@ -60,7 +182,6 @@ class _RegistroPageState extends State<RegistroPage> {
                         label: 'RFID',
                         subtitle: 'Escanear y asignar aretes',
                         color: Colors.deepOrange,
-                        assetPath: assetForRegistroAction('RFID'),
                         onTap: (context) =>
                             context.pushNamed(AppRoutes.nameRfid),
                       ),
@@ -69,8 +190,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Animal',
                       subtitle: 'Nuevo animal',
                       color: AppColors.primary,
-                      assetPath: assetForRegistroAction('Animal'),
-                      large: true,
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameAnimalNuevo),
                     ),
@@ -79,19 +198,14 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Lote',
                       subtitle: 'Nuevo lote',
                       color: AppColors.secondary,
-                      assetPath: assetForRegistroAction('Lote'),
-                      large: true,
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameLoteNuevo),
                     ),
                     _RegistroCardItem(
                       icon: Icons.child_care,
-                      label: 'Paricion',
-                      subtitle: 'Registro de paricion',
+                      label: 'Parición',
+                      subtitle: 'Registro de parición',
                       color: Colors.pink,
-                      assetPath: assetForRegistroAction('Parición'),
-                      featured: true,
-                      large: true,
                       onTap: (context) => context.pushNamed(
                         AppRoutes.nameRegistroReproduccion,
                         queryParameters: {'preset': 'paricion'},
@@ -107,16 +221,22 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Tratar lote',
                       subtitle: 'Vacunar o tratar varios animales',
                       color: Colors.teal.shade700,
-                      assetPath: assetForRegistroAction('Tratar lote'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroTratarLote),
+                    ),
+                    _RegistroCardItem(
+                      icon: Icons.child_friendly_outlined,
+                      label: 'Destete',
+                      subtitle: 'Fecha y peso del becerro',
+                      color: Colors.brown,
+                      onTap: (context) =>
+                          context.pushNamed(AppRoutes.nameRegistroDestete),
                     ),
                     _RegistroCardItem(
                       icon: Icons.monitor_weight,
                       label: 'Peso',
                       subtitle: 'Peso del animal',
                       color: Colors.green,
-                      assetPath: assetForRegistroAction('Peso'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroPeso),
                     ),
@@ -125,7 +245,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Sanitario',
                       subtitle: 'Vacunas y tratamiento',
                       color: Colors.teal,
-                      assetPath: assetForRegistroAction('Sanitario'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroSanitario),
                     ),
@@ -134,25 +253,22 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Costo',
                       subtitle: 'Costos de manejo',
                       color: Colors.brown,
-                      assetPath: assetForRegistroAction('Costo'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroCosto),
                     ),
                     _RegistroCardItem(
                       icon: Icons.swap_horiz,
-                      label: 'Cambio de ubicacion',
+                      label: 'Cambio de ubicación',
                       subtitle: 'Movimiento interno',
                       color: Colors.indigo,
-                      assetPath: assetForRegistroAction('Cambio de ubicacion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroMovimiento),
                     ),
                     _RegistroCardItem(
                       icon: Icons.analytics,
-                      label: 'Produccion',
-                      subtitle: 'Ganancia o condicion',
+                      label: 'Producción',
+                      subtitle: 'Ganancia o condición',
                       color: Colors.blue,
-                      assetPath: assetForRegistroAction('Produccion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroProduccion),
                     ),
@@ -161,17 +277,14 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Ordeña',
                       subtitle: 'Leche por vaca o lote',
                       color: Colors.lightBlue.shade700,
-                      assetPath: assetForRegistroAction('Ordeña'),
-                      featured: true,
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroOrdena),
                     ),
                     _RegistroCardItem(
                       icon: Icons.favorite,
-                      label: 'Reproduccion',
-                      subtitle: 'Servicio o paricion',
+                      label: 'Reproducción',
+                      subtitle: 'Servicio o parición',
                       color: Colors.deepOrange,
-                      assetPath: assetForRegistroAction('Reproduccion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroReproduccion),
                     ),
@@ -180,13 +293,12 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Comercial',
                       subtitle: 'Compra y venta',
                       color: Colors.purple,
-                      assetPath: assetForRegistroAction('Comercial'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameRegistroComercial),
                     ),
                   ],
                 ),
-              ],
+              ]),
             ),
             _RegistroTabContent(
               sections: [
@@ -195,10 +307,9 @@ class _RegistroPageState extends State<RegistroPage> {
                   items: [
                     _RegistroCardItem(
                       icon: Icons.place,
-                      label: 'Ubicacion',
-                      subtitle: 'Nueva ubicacion',
+                      label: 'Ubicación',
+                      subtitle: 'Nueva ubicación',
                       color: AppColors.accent,
-                      assetPath: assetForRegistroAction('Ubicacion'),
                       onTap: (context) =>
                           context.pushNamed(AppRoutes.nameUbicacionNueva),
                     ),
@@ -207,7 +318,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Cultivo',
                       subtitle: 'Nuevo cultivo',
                       color: Colors.lightGreen,
-                      assetPath: assetForRegistroAction('Cultivo'),
                       onTap: (context) {
                         _handleNewCrop(context);
                       },
@@ -222,7 +332,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Cosecha',
                       subtitle: 'Rendimiento de cultivo',
                       color: Colors.orange,
-                      assetPath: assetForRegistroAction('Cosecha'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -235,7 +344,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Riego',
                       subtitle: 'Riego de cultivo',
                       color: Colors.blueAccent,
-                      assetPath: assetForRegistroAction('Riego'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -248,7 +356,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Salud de cultivo',
                       subtitle: 'Problemas y tratamiento',
                       color: Colors.redAccent,
-                      assetPath: assetForRegistroAction('Salud de cultivo'),
                       onTap: (context) {
                         _handleCropRecord(
                           context,
@@ -261,7 +368,6 @@ class _RegistroPageState extends State<RegistroPage> {
                       label: 'Tarea',
                       subtitle: 'Nueva tarea de cultivo',
                       color: Colors.amber,
-                      assetPath: assetForRegistroAction('Tarea'),
                       onTap: (context) {
                         _handleCropRecord(context, _CropRecordMenuAction.task);
                       },
@@ -277,6 +383,11 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   Future<void> _handleNewCrop(BuildContext context) async {
+    final cultivationRepository = _cultivationRepository;
+    if (cultivationRepository == null) {
+      _showMessage('El catálogo de cultivos no está disponible.');
+      return;
+    }
     final locations = await _locationRepository.getAll();
     if (!mounted || !context.mounted) return;
     if (locations.isEmpty) {
@@ -287,15 +398,11 @@ class _RegistroPageState extends State<RegistroPage> {
     final location = await _pickLocation(context, locations);
     if (!mounted || !context.mounted || location == null) return;
 
-    final crop = await showModalBottomSheet<CropRecord>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => CropFormSheet(locationName: location.name),
+    final saved = await context.pushNamed(
+      AppRoutes.nameCultivoNuevo,
+      queryParameters: {'location': location.uuid},
     );
-    if (!mounted || !context.mounted || crop == null) return;
-
-    await _locationRepository.addCrop(location.uuid, crop);
+    if (!mounted || !context.mounted || saved != true) return;
     if (!mounted) return;
     _showMessage('Cultivo registrado en ${location.name}.');
   }
@@ -304,77 +411,113 @@ class _RegistroPageState extends State<RegistroPage> {
     BuildContext context,
     _CropRecordMenuAction action,
   ) async {
+    final cultivationRepository = _cultivationRepository;
+    if (cultivationRepository == null) {
+      _showMessage('El catálogo de cultivos no está disponible.');
+      return;
+    }
     final locations = await _locationRepository.getAll();
     if (!mounted || !context.mounted) return;
+    final byLocation = <String, List<CultivationEntity>>{};
+    final cultivations = await cultivationRepository.getAll();
+    for (final cultivation in cultivations.where((item) => item.isActive)) {
+      final locationUuid = cultivation.locationUuid;
+      if (locationUuid == null) continue;
+      (byLocation[locationUuid] ??= <CultivationEntity>[]).add(cultivation);
+    }
+    if (!mounted || !context.mounted) return;
     final withCrops = locations
-        .where((location) => location.crops.isNotEmpty)
+        .where((location) => (byLocation[location.uuid] ?? const []).isNotEmpty)
         .toList();
     if (withCrops.isEmpty) {
       _showMessage('No hay cultivos disponibles para registrar.');
       return;
     }
 
-    final selection = await _pickLocationAndCrop(context, withCrops, action);
+    final selection = await _pickLocationAndCrop(
+      context,
+      withCrops,
+      byLocation,
+      action,
+    );
     if (!mounted || !context.mounted || selection == null) return;
 
-    final location = selection.location;
-    final crop = selection.crop;
+    final crop = selection.cultivation;
 
     switch (action) {
       case _CropRecordMenuAction.harvest:
-        final record = await showModalBottomSheet<HarvestRecord>(
+        final harvestSaved = await showAppBottomSheet<Object?>(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
-          builder: (sheetContext) => HarvestFormSheet(cropName: crop.cropName),
+          builder: (sheetContext) => RecordSaveScope(
+            onSave: (value) async {
+              await cultivationRepository.addHarvest(
+                crop.uuid,
+                value as HarvestRecord,
+              );
+              await _syncAgenda();
+            },
+            child: HarvestFormSheet(cropName: crop.name),
+          ),
         );
-        if (!mounted || !context.mounted || record == null) return;
-        await _locationRepository.addHarvest(location.uuid, crop.uuid, record);
+        if (!mounted || !context.mounted || harvestSaved == null) return;
         break;
       case _CropRecordMenuAction.watering:
-        final record = await showModalBottomSheet<CropWateringRecord>(
+        final wateringSaved = await showAppBottomSheet<Object?>(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
-          builder: (sheetContext) =>
-              CropWateringFormSheet(cropName: crop.cropName),
+          builder: (sheetContext) => RecordSaveScope(
+            onSave: (value) async {
+              await cultivationRepository.addWatering(
+                crop.uuid,
+                value as CropWateringRecord,
+              );
+              await _syncAgenda();
+            },
+            child: CropWateringFormSheet(cropName: crop.name),
+          ),
         );
-        if (!mounted || !context.mounted || record == null) return;
-        await _locationRepository.addCropWatering(
-          location.uuid,
-          crop.uuid,
-          record,
-        );
+        if (!mounted || !context.mounted || wateringSaved == null) return;
         break;
       case _CropRecordMenuAction.health:
-        final record = await showModalBottomSheet<CropHealthRecord>(
+        final healthSaved = await showAppBottomSheet<Object?>(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
-          builder: (sheetContext) =>
-              CropHealthFormSheet(cropName: crop.cropName),
+          builder: (sheetContext) => RecordSaveScope(
+            onSave: (value) async {
+              await cultivationRepository.addHealth(
+                crop.uuid,
+                value as CropHealthRecord,
+              );
+              await _syncAgenda();
+            },
+            child: CropHealthFormSheet(cropName: crop.name),
+          ),
         );
-        if (!mounted || !context.mounted || record == null) return;
-        await _locationRepository.addCropHealth(
-          location.uuid,
-          crop.uuid,
-          record,
-        );
+        if (!mounted || !context.mounted || healthSaved == null) return;
         break;
       case _CropRecordMenuAction.task:
-        final task = await showModalBottomSheet<CropTask>(
+        final taskSaved = await showAppBottomSheet<Object?>(
           context: context,
           useRootNavigator: true,
           isScrollControlled: true,
-          builder: (sheetContext) => CropTaskFormSheet(cropName: crop.cropName),
+          builder: (sheetContext) => RecordSaveScope(
+            onSave: (value) async {
+              await cultivationRepository.addTask(crop.uuid, value as CropTask);
+              await _syncAgenda();
+            },
+            child: CropTaskFormSheet(cropName: crop.name),
+          ),
         );
-        if (!mounted || !context.mounted || task == null) return;
-        await _locationRepository.addCropTask(location.uuid, crop.uuid, task);
+        if (!mounted || !context.mounted || taskSaved == null) return;
         break;
     }
 
-    if (!mounted) return;
-    _showMessage('${action.successMessage} en ${crop.cropName}.');
+    if (!mounted || !context.mounted) return;
+    _showMessage('${action.successMessage} en ${crop.name}.');
   }
 
   Future<LocationEntity?> _pickLocation(
@@ -388,10 +531,10 @@ class _RegistroPageState extends State<RegistroPage> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (stateContext, setDialogState) => AlertDialog(
-            title: const Text('Seleccionar ubicacion'),
+            title: const Text('Seleccionar ubicación'),
             content: DropdownButtonFormField<String>(
               initialValue: selectedUuid,
-              decoration: const InputDecoration(labelText: 'Ubicacion'),
+              decoration: const InputDecoration(labelText: 'Ubicación'),
               isExpanded: true,
               items: locations
                   .map(
@@ -430,10 +573,11 @@ class _RegistroPageState extends State<RegistroPage> {
   Future<_LocationCropSelection?> _pickLocationAndCrop(
     BuildContext context,
     List<LocationEntity> locations,
+    Map<String, List<CultivationEntity>> byLocation,
     _CropRecordMenuAction action,
   ) {
     String locationUuid = locations.first.uuid;
-    String cropUuid = locations.first.crops.first.uuid;
+    String cropUuid = byLocation[locations.first.uuid]!.first.uuid;
 
     return showDialog<_LocationCropSelection>(
       context: context,
@@ -444,7 +588,9 @@ class _RegistroPageState extends State<RegistroPage> {
             final selectedLocation = locations.firstWhere(
               (location) => location.uuid == locationUuid,
             );
-            final crops = selectedLocation.crops;
+            final crops =
+                byLocation[selectedLocation.uuid] ??
+                const <CultivationEntity>[];
             if (!crops.any((crop) => crop.uuid == cropUuid)) {
               cropUuid = crops.first.uuid;
             }
@@ -456,7 +602,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 children: [
                   DropdownButtonFormField<String>(
                     initialValue: locationUuid,
-                    decoration: const InputDecoration(labelText: 'Ubicacion'),
+                    decoration: const InputDecoration(labelText: 'Ubicación'),
                     isExpanded: true,
                     items: locations
                         .map(
@@ -482,7 +628,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         .map(
                           (crop) => DropdownMenuItem<String>(
                             value: crop.uuid,
-                            child: Text(crop.cropName),
+                            child: Text(crop.name),
                           ),
                         )
                         .toList(),
@@ -505,11 +651,15 @@ class _RegistroPageState extends State<RegistroPage> {
                     final location = locations.firstWhere(
                       (item) => item.uuid == locationUuid,
                     );
-                    final crop = location.crops.firstWhere(
-                      (item) => item.uuid == cropUuid,
-                    );
+                    final crop =
+                        (byLocation[locationUuid] ??
+                                const <CultivationEntity>[])
+                            .firstWhere((item) => item.uuid == cropUuid);
                     Navigator.of(dialogContext).pop(
-                      _LocationCropSelection(location: location, crop: crop),
+                      _LocationCropSelection(
+                        location: location,
+                        cultivation: crop,
+                      ),
                     );
                   },
                   child: const Text('Continuar'),
@@ -526,6 +676,15 @@ class _RegistroPageState extends State<RegistroPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _syncAgenda() async {
+    if (!locator.isRegistered<AgendaReminderSyncService>()) return;
+    try {
+      await locator<AgendaReminderSyncService>().sync();
+    } catch (_) {
+      // El registro ya quedó persistido; una sincronización posterior reintenta.
+    }
   }
 }
 
@@ -553,14 +712,29 @@ class _RegistroTabContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xl,
+      ),
       children: [
-        for (final section in sections) ...[
-          _SectionLabel(label: section.label),
-          const SizedBox(height: 10),
-          _RegistroCardGrid(items: section.items),
-          const SizedBox(height: 20),
-        ],
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final section in sections) ...[
+                  _SectionLabel(label: section.label),
+                  const SizedBox(height: AppSpacing.xs),
+                  _RegistroCardGrid(items: section.items),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -573,34 +747,42 @@ class _RegistroCardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <Widget>[];
-    int i = 0;
-    while (i < items.length) {
-      final item = items[i];
-      if (item.featured) {
-        rows.add(_RegistroCard(item: item));
-        i++;
-      } else {
-        final next = (i + 1 < items.length && !items[i + 1].featured)
-            ? items[i + 1]
-            : null;
-        rows.add(
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
+        if (constraints.maxWidth < 600 || largeText) {
+          return Column(
             children: [
-              Expanded(child: _RegistroCard(item: item)),
-              const SizedBox(width: 10),
-              if (next != null)
-                Expanded(child: _RegistroCard(item: next))
-              else
-                const Expanded(child: SizedBox()),
+              for (final item in items) ...[
+                _RegistroCard(item: item),
+                if (item != items.last) const SizedBox(height: AppSpacing.xs),
+              ],
             ],
-          ),
-        );
-        i += next != null ? 2 : 1;
-      }
-      if (i < items.length) rows.add(const SizedBox(height: 10));
-    }
-    return Column(children: rows);
+          );
+        }
+
+        final rows = <Widget>[];
+        int i = 0;
+        while (i < items.length) {
+          final next = i + 1 < items.length ? items[i + 1] : null;
+          rows.add(
+            Row(
+              children: [
+                Expanded(child: _RegistroCard(item: items[i])),
+                const SizedBox(width: 10),
+                if (next != null)
+                  Expanded(child: _RegistroCard(item: next))
+                else
+                  const Expanded(child: SizedBox()),
+              ],
+            ),
+          );
+          i += next != null ? 2 : 1;
+          if (i < items.length) rows.add(const SizedBox(height: 10));
+        }
+        return Column(children: rows);
+      },
+    );
   }
 }
 
@@ -655,85 +837,90 @@ class _RegistroCardState extends State<_RegistroCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final theme = Theme.of(context);
-    final bgColor = item.featured
-        ? item.color.withValues(alpha: 0.08)
-        : theme.colorScheme.surfaceContainerLow;
-    final iconSize = item.large ? 60.0 : 48.0;
-    final iconInnerSize = item.large ? 34.0 : 26.0;
-    final chevronSize = item.large ? 24.0 : 20.0;
-    final chevronIcon = item.large ? 14.0 : 12.0;
-    final hPad = item.large ? 10.0 : 8.0;
-    final vPad = item.large ? 18.0 : 12.0;
-    final iconGap = item.large ? 14.0 : 8.0;
-    final titleStyle = item.large
-        ? theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)
-        : theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700);
+    final baseColor = styleForRegistroAction(item.label)?.color ?? item.color;
+    final color = theme.brightness == Brightness.dark
+        ? Color.lerp(baseColor, Colors.white, 0.42)!
+        : baseColor;
+    final bgColor = theme.colorScheme.surfaceContainerLow;
+    const iconSize = 44.0;
+    const iconInnerSize = 24.0;
+    const chevronSize = 20.0;
+    const chevronIcon = 14.0;
+    const hPad = AppSpacing.sm;
+    const vPad = AppSpacing.xs;
+    const iconGap = AppSpacing.sm;
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
     return Material(
       color: bgColor,
       borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: _opening ? null : _open,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-          child: Row(
-            children: [
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                  color: item.color.withValues(alpha: 0.15),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _opening ? null : _open,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: hPad,
+              vertical: vPad,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    color: color.withValues(alpha: 0.15),
+                  ),
+                  child: Icon(item.icon, color: color, size: iconInnerSize),
                 ),
-                child: item.assetPath == null
-                    ? Icon(item.icon, color: item.color, size: iconInnerSize)
-                    : GeneratedAssetIcon(
-                        assetPath: item.assetPath!,
-                        fallbackIcon: item.icon,
-                        size: iconInnerSize,
+                const SizedBox(width: iconGap),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        item.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: titleStyle,
                       ),
-              ),
-              SizedBox(width: iconGap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: titleStyle,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 2),
+                      Text(
+                        item.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: chevronSize,
-                height: chevronSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: item.color.withValues(alpha: 0.15),
+                const SizedBox(width: 8),
+                Container(
+                  width: chevronSize,
+                  height: chevronSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.15),
+                  ),
+                  child: Icon(
+                    _opening ? Icons.hourglass_top : Icons.chevron_right,
+                    color: _opening ? color.withValues(alpha: 0.55) : color,
+                    size: chevronIcon,
+                  ),
                 ),
-                child: Icon(
-                  _opening ? Icons.hourglass_top : Icons.chevron_right,
-                  color: _opening
-                      ? item.color.withValues(alpha: 0.55)
-                      : item.color,
-                  size: chevronIcon,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -755,9 +942,6 @@ class _RegistroCardItem {
     required this.subtitle,
     required this.color,
     required this.onTap,
-    this.assetPath,
-    this.featured = false,
-    this.large = false,
   });
 
   final IconData icon;
@@ -765,9 +949,6 @@ class _RegistroCardItem {
   final String subtitle;
   final Color color;
   final void Function(BuildContext context) onTap;
-  final String? assetPath;
-  final bool featured;
-  final bool large;
 
   @override
   bool operator ==(Object other) {
@@ -776,12 +957,11 @@ class _RegistroCardItem {
         other.icon == icon &&
         other.label == label &&
         other.subtitle == subtitle &&
-        other.color == color &&
-        other.assetPath == assetPath;
+        other.color == color;
   }
 
   @override
-  int get hashCode => Object.hash(icon, label, subtitle, color, assetPath);
+  int get hashCode => Object.hash(icon, label, subtitle, color);
 }
 
 enum _CropRecordMenuAction {
@@ -797,8 +977,11 @@ enum _CropRecordMenuAction {
 }
 
 class _LocationCropSelection {
-  const _LocationCropSelection({required this.location, required this.crop});
+  const _LocationCropSelection({
+    required this.location,
+    required this.cultivation,
+  });
 
   final LocationEntity location;
-  final CropRecord crop;
+  final CultivationEntity cultivation;
 }

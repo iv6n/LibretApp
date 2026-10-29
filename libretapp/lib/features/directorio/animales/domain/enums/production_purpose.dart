@@ -36,7 +36,7 @@ enum ProductionPurpose {
       case ProductionPurpose.guard:
         return 'Guardia';
       case ProductionPurpose.undefined:
-        return 'Por Definir';
+        return 'Pendiente';
       case ProductionPurpose.other:
         return 'Otro';
     }

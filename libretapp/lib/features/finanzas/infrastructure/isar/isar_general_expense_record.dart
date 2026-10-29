@@ -1,7 +1,7 @@
 /// features \u203a finanzas \u203a infrastructure \u203a isar \u203a isar_general_expense_record \u2014 Isar schema for GeneralExpenseRecord.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 
@@ -21,6 +21,7 @@ class IsarGeneralExpenseRecord implements StableRecordModel {
 
   late String type;
   late double amount;
+  DateTime? updatedAt;
   String? currency;
   String? notes;
 }
@@ -34,6 +35,7 @@ extension IsarGeneralExpenseRecordMapper on IsarGeneralExpenseRecord {
       amount: amount,
       currency: currency,
       recordUuid: recordUuid,
+      updatedAt: updatedAt,
       notes: notes,
     );
   }
@@ -45,6 +47,7 @@ extension GeneralExpenseRecordToIsar on GeneralExpenseRecord {
       ..date = date
       ..type = type.name
       ..amount = amount
+      ..updatedAt = updatedAt
       ..currency = currency
       ..recordUuid = recordUuid ?? ''
       ..notes = notes;

@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_tip.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -66,9 +67,13 @@ class _Header extends StatelessWidget {
       children: [
         Icon(Icons.auto_stories, color: theme.colorScheme.primary, size: 20),
         const SizedBox(width: AppSpacing.xs),
-        Text(
-          'Biblia Ganadera',
-          style: AppTextStyles.label.copyWith(color: theme.colorScheme.primary),
+        Expanded(
+          child: Text(
+            'Biblia Ganadera',
+            style: AppTextStyles.label.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
         ),
         const SizedBox(width: AppSpacing.xs),
         Container(
@@ -241,7 +246,7 @@ Future<void> showAdvisorTipsSheet(
 }) async {
   if (tips.isEmpty) return;
 
-  await showModalBottomSheet<void>(
+  await showAppBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,

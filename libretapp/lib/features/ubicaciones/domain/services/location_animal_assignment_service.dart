@@ -6,15 +6,14 @@ import 'package:libretapp/features/directorio/animales/domain/entities/movement_
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:uuid/uuid.dart';
 
 class LocationAnimalAssignmentService {
   const LocationAnimalAssignmentService({
     required AnimalRepository animalRepository,
     required MovementRecordRepository movementRepository,
-  }) : _animalRepository = animalRepository,
-       _movementRepository = movementRepository;
+  }) : _movementRepository = movementRepository;
 
-  final AnimalRepository _animalRepository;
   final MovementRecordRepository _movementRepository;
 
   Future<void> assign({
@@ -23,39 +22,33 @@ class LocationAnimalAssignmentService {
     required Set<String> selectedUuids,
   }) async {
     final now = DateTime.now();
-    final updateTasks = <Future<void>>[];
-    final movementTasks = <Future<void>>[];
+    final entries = <MovementBatchEntry>[];
 
     for (final animal in animals) {
-      final oldLocId = animal.currentLocationId ?? animal.initialLocationId;
+      final oldLocId = animal.currentLocationId;
       final shouldBeHere = selectedUuids.contains(animal.uuid);
       final alreadyHere = oldLocId == location.uuid;
       if (shouldBeHere == alreadyHere) continue;
 
       final newLocId = shouldBeHere ? location.uuid : null;
-      final updated = animal.copyWith(
-        currentLocationId: newLocId,
-        initialLocationId: animal.initialLocationId ?? newLocId,
-        lastMovementDate: shouldBeHere ? now : animal.lastMovementDate,
-        lastUpdateDate: now,
-        synced: false,
-      );
-      updateTasks.add(_animalRepository.update(updated));
-
       if (newLocId != null || oldLocId != null) {
         final record = MovementRecord(
           fromLocation: oldLocId,
-          toLocation: newLocId ?? oldLocId ?? '',
+          toLocation: newLocId ?? '',
+          clearsLocation: newLocId == null,
+          recordUuid: const Uuid().v4(),
           date: now,
           reason: MovementReason.paddockRotation,
         );
-        movementTasks.add(
-          _movementRepository.addMovementRecord(animal.uuid, record),
-        );
+        entries.add(MovementBatchEntry(animal.uuid, record));
       }
     }
 
-    await Future.wait(updateTasks);
-    await Future.wait(movementTasks);
+    if (entries.isEmpty) return;
+    final repository = _movementRepository;
+    if (repository is! AtomicMovementRepository) {
+      throw StateError('Este almacenamiento no admite asignaciones atómicas.');
+    }
+    await (repository as AtomicMovementRepository).addMovementRecordsAtomically(entries);
   }
 }

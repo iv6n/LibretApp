@@ -6,8 +6,12 @@
 /// [DemoDataIntegrityValidator], and that real (non-demo) data is never
 /// touched.
 library;
+import 'package:libretapp/features/perfil/data/perfil_isar_repository.dart';
 
 import 'dart:io';
+import 'package:libretapp/core/services/backup_service.dart';
+import 'package:libretapp/core/backup/backup_models.dart';
+import 'package:libretapp/core/backup/isar_backup_store.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -213,12 +217,12 @@ void main() {
   }
 
   test(
-    'install seeds exactly 35 animals with the expected breakdown',
+    'install seeds exactly 40 animals with the expected breakdown',
     () async {
       await service.install(referenceDate: referenceDate);
 
       final animals = await animalRepository.getAllIncludingInactive();
-      expect(animals, hasLength(35));
+      expect(animals, hasLength(40));
 
       final cattle = animals.where((a) => a.species == Species.cattle).toList();
       expect(cattle, hasLength(22));
@@ -236,11 +240,17 @@ void main() {
       expect(animals.where((a) => a.species == Species.goat), hasLength(4));
       expect(animals.where((a) => a.species == Species.sheep), hasLength(3));
       expect(animals.where((a) => a.species == Species.equine), hasLength(2));
-      expect(animals.where((a) => a.species == Species.pig), hasLength(1));
-      expect(animals.where((a) => a.species == Species.poultry), hasLength(2));
-      expect(animals.where((a) => a.species == Species.canine), hasLength(1));
+      expect(animals.where((a) => a.species == Species.pig), hasLength(2));
+      expect(animals.where((a) => a.species == Species.poultry), hasLength(3));
+      expect(animals.where((a) => a.species == Species.canine), hasLength(2));
 
       expect(animals.every((a) => a.uuid.startsWith('demo-')), isTrue);
+      const fixturePath = String.fromEnvironment(
+        'LIBRET_LEGACY_FIXTURE_OUTPUT',
+      );
+      if (fixturePath.isNotEmpty) {
+        await database.isar.copyToFile(fixturePath);
+      }
     },
   );
 
@@ -253,13 +263,13 @@ void main() {
     final second = await service.install(referenceDate: referenceDate);
     expect(second.alreadyInstalled, isTrue);
     final afterNoop = await animalRepository.getAllIncludingInactive();
-    expect(afterNoop, hasLength(35));
+    expect(afterNoop, hasLength(40));
     expect(afterNoop.map((a) => a.uuid).toSet(), firstUuids);
 
-    // An explicit reset reseeds, but still converges to the same 35 uuids.
+    // An explicit reset reseeds, but still converges to the same 40 uuids.
     await service.install(referenceDate: referenceDate, reset: true);
     final afterReset = await animalRepository.getAllIncludingInactive();
-    expect(afterReset, hasLength(35));
+    expect(afterReset, hasLength(40));
     expect(afterReset.map((a) => a.uuid).toSet(), firstUuids);
 
     final lotes = await LotesRepositoryIsar(database).getAll();
@@ -317,8 +327,8 @@ void main() {
           )
           .toList();
 
-      expect(vaccines, hasLength(32));
-      expect(vaccines.map((entry) => entry.id).toSet(), hasLength(32));
+      expect(vaccines, hasLength(37));
+      expect(vaccines.map((entry) => entry.id).toSet(), hasLength(37));
       expect(
         vaccines.every((entry) => entry.id.startsWith('auto:health:')),
         isTrue,
@@ -330,7 +340,7 @@ void main() {
       );
       final campaignCards = groups
           .expand((category) => category.events)
-          .where((event) => event.animalCount == 32);
+          .where((event) => event.animalCount == 37);
       expect(campaignCards, isNotEmpty);
     },
   );
@@ -406,6 +416,7 @@ void main() {
         templates[i].copyWith(
           uuid: demoId('animal', slug),
           customName: 'Obsoleto $slug',
+            earTagNumber: 'OLD-$slug',
         ),
       );
     }
@@ -419,7 +430,7 @@ void main() {
     for (final slug in obsoleteSlugs) {
       expect(await animalRepository.getByUuid(demoId('animal', slug)), isNull);
     }
-    expect(await animalRepository.getAllIncludingInactive(), hasLength(35));
+    expect(await animalRepository.getAllIncludingInactive(), hasLength(40));
   });
 
   test(
@@ -497,7 +508,7 @@ void main() {
       expect(stillThere!.customName, 'Animal real del usuario');
 
       final all = await animalRepository.getAllIncludingInactive();
-      expect(all, hasLength(36)); // 35 demo + 1 real
+      expect(all, hasLength(41)); // 40 demo + 1 real
     },
   );
 
@@ -512,6 +523,91 @@ void main() {
     expect(prefs.getInt(PrefsKeys.demoScenarioInstalledVersion), isNotNull);
   });
 
+  test(
+    'full archive restores photos, relationships and every collection to a clean directory',
+    () async {
+      await service.install(referenceDate: referenceDate);
+      final originalDirectory = tempDir;
+      final cleanDirectory = await Directory.systemTemp.createTemp(
+        'libret_clean_restore_',
+      );
+      final photo = File('${originalDirectory.path}/animal.webp');
+      final photoBytes = await File('assets/images/becerro.webp').readAsBytes();
+      await photo.writeAsBytes(photoBytes);
+      final source = (await animalRepository.getAllIncludingInactive())
+          .firstWhere((a) => a.damUuid != null);
+      await animalRepository.update(
+        source.copyWith(profilePhoto: photo.path, gallery: [photo.path]),
+      );
+      final store = IsarBackupStore(
+        database: database,
+        perfilRepository: PerfilIsarRepository(database, prefs),
+      );
+      final backup = BackupService(
+        animalRepository: animalRepository,
+        lotesRepository: LotesRepositoryIsar(database),
+        agendaRepository: IsarAgendaRepository(database, prefs),
+        workforceRepository: IsarWorkforceRepository(database),
+        milkingRepository: MilkingRepositoryIsar(database),
+        backupStore: store,
+        statusPrefs: prefs,
+      );
+      final before = await store.capture();
+      final archive = await backup.createArchiveBytes();
+      final exportPath = Platform.environment['LIBRET_EXPORT_DEMO_BACKUP'];
+      if (exportPath != null) {
+        final target = File(exportPath);
+        await target.parent.create(recursive: true);
+        await target.writeAsBytes(archive);
+      }
+      await database.close();
+      await photo.delete();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            pathProviderChannel,
+            (_) async => cleanDirectory.path,
+          );
+      try {
+        await database.initialize();
+        final empty = await store.capture();
+        expect(empty.collections.values.every((rows) => rows.isEmpty), isTrue);
+        await backup.importArchiveBytes(
+          archive,
+          mode: BackupImportMode.replaceAll,
+        );
+        final restored = await store.capture();
+        for (final name in before.collections.keys) {
+          expect(
+            restored.collections[name]!.length,
+            before.collections[name]!.length,
+            reason: name,
+          );
+        }
+        final animal = await animalRepository.getByUuid(source.uuid);
+        expect(animal!.damUuid, source.damUuid);
+        expect(animal.batchUuid, source.batchUuid);
+        expect(animal.currentLocationId, source.currentLocationId);
+        expect(await File(animal.profilePhoto!).readAsBytes(), photoBytes);
+        expect(animal.gallery, [animal.profilePhoto]);
+        expect(restored.profile, before.profile);
+        await database.close();
+        await database.initialize();
+        expect(
+          (await animalRepository.getByUuid(source.uuid))!.damUuid,
+          source.damUuid,
+        );
+      } finally {
+        await database.close();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              pathProviderChannel,
+              (_) async => originalDirectory.path,
+            );
+        await cleanDirectory.delete(recursive: true);
+      }
+    },
+  );
+
   group('uninstall', () {
     test('removes every demo-owned row across every collection', () async {
       await service.install(referenceDate: referenceDate);
@@ -519,7 +615,7 @@ void main() {
       final result = await service.uninstall();
 
       expect(result.removed, isTrue);
-      expect(result.counts['animals'], 35);
+      expect(result.counts['animals'], 40);
       expect(result.counts['locations'], 16);
       expect(result.counts['cultivations'], 4);
       expect(result.counts['lotes'], 6);

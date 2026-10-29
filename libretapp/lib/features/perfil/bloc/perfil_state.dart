@@ -1,4 +1,4 @@
-﻿/// features \u203a perfil \u203a bloc \u203a perfil_state \u2014 state for PerfilBloc.
+/// features \u203a perfil \u203a bloc \u203a perfil_state \u2014 state for PerfilBloc.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -28,11 +28,20 @@ class PerfilLoaded extends PerfilState {
 }
 
 class PerfilError extends PerfilState {
-  const PerfilError(this.message);
+  const PerfilError(this.message, {this.perfil});
   final String message;
+  final Perfil? perfil;
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, ?perfil];
+}
+
+class PerfilSaving extends PerfilState {
+  const PerfilSaving(this.perfil);
+  final Perfil perfil;
+
+  @override
+  List<Object> get props => [perfil];
 }
 
 class PerfilUpdated extends PerfilState {

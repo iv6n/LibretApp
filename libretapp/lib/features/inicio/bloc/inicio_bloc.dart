@@ -1,4 +1,4 @@
-﻿/// features › inicio › bloc › inicio_bloc — BLoC for the home dashboard.
+/// features › inicio › bloc › inicio_bloc — BLoC for the home dashboard.
 library;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,15 +44,9 @@ class InicioBloc extends Bloc<InicioEvent, InicioState> {
     await _loadData(emit, refreshing: true);
   }
 
-  void _onUpdateConfig(
-    UpdateDashboardConfig event,
-    Emitter<InicioState> emit,
-  ) {
+  void _onUpdateConfig(UpdateDashboardConfig event, Emitter<InicioState> emit) {
     emit(
-      state.copyWith(
-        widgetConfigs: event.widgets,
-        quickActions: event.actions,
-      ),
+      state.copyWith(widgetConfigs: event.widgets, quickActions: event.actions),
     );
   }
 
@@ -69,14 +63,18 @@ class InicioBloc extends Bloc<InicioEvent, InicioState> {
 
     try {
       final dashboardFuture = _dashboardService.loadDashboard();
-      final widgetsFuture = _configRepository.loadWidgets();
-      final actionsFuture = _configRepository.loadQuickActions();
       final financeFuture = _financeService.loadForPreset();
       final libraryFuture = _libraryRepository.getAll();
 
       final dashboard = await dashboardFuture;
-      final widgets = await widgetsFuture;
-      final actions = await actionsFuture;
+      final profile = _configRepository.resolveProfile(
+        pets: dashboard.petCount,
+        livestock: dashboard.livestockCount,
+      );
+      final widgets = await _configRepository.loadWidgets(profile: profile);
+      final actions = await _configRepository.loadQuickActions(
+        profile: profile,
+      );
       final finance = await financeFuture;
       final library = await libraryFuture;
 

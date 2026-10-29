@@ -1,7 +1,7 @@
 /// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_reproduction_record \u2014 Isar schema for ReproductionRecord.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 
@@ -20,8 +20,9 @@ class IsarReproductionRecord implements StableAnimalRecordModel {
   @override
   late String animalUuid;
 
-  late DateTime serviceDate;
-  late String serviceType;
+  DateTime? serviceDate;
+  String? serviceType;
+  String? kind;
 
   /// Indexed so a bull's service history can be derived from the cow-side
   /// records instead of duplicating a row on his side.
@@ -53,8 +54,10 @@ extension IsarReproductionRecordMapper on IsarReproductionRecord {
   ReproductionRecord toEntity() {
     return ReproductionRecord(
       id: id.toString(),
+      animalUuid: animalUuid,
+      kind: kind == ReproductionRecordKind.calving.name ? ReproductionRecordKind.calving : ReproductionRecordKind.service,
       serviceDate: serviceDate,
-      serviceType: ServiceType.values.byName(serviceType),
+      serviceType: serviceType == null ? null : ServiceType.values.byName(serviceType!),
       maleSireUuid: maleSireUuid,
       maleSireIdentifier: maleSireIdentifier,
       pregnancyCheckDate: pregnancyCheckDate,
@@ -82,7 +85,8 @@ extension ReproductionRecordToIsar on ReproductionRecord {
     final model = IsarReproductionRecord()
       ..animalUuid = animalUuid
       ..serviceDate = serviceDate
-      ..serviceType = serviceType.name
+      ..serviceType = serviceType?.name
+      ..kind = kind.name
       ..maleSireUuid = maleSireUuid
       ..maleSireIdentifier = maleSireIdentifier
       ..pregnancyCheckDate = pregnancyCheckDate

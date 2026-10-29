@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/services.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -267,7 +268,11 @@ class _RfidScannerPageState extends State<RfidScannerPage> {
     final statusColor = scanning ? Colors.green : Colors.blueGrey;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear RFID'),
+        title: GeneratedAssetTitle(
+          title: 'Escanear RFID',
+          assetPath: RecordFormStyle.rfid.assetPath,
+          fallbackIcon: RecordFormStyle.rfid.icon,
+        ),
         actions: [
           IconButton(
             tooltip: 'Recargar animales',
@@ -276,155 +281,161 @@ class _RfidScannerPageState extends State<RfidScannerPage> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.md,
-          AppSpacing.lg,
-          AppSpacing.xxl,
-        ),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.sensors_outlined, color: statusColor),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: Text(
-                          _device?.name ?? 'Simulador RFID',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      Chip(
-                        label: Text(_reader.state.name),
-                        backgroundColor: statusColor.withValues(alpha: .12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'Etiquetas únicas: ${_reads.length} · lecturas: $_rawCount',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _busy
-                              ? null
-                              : connected
-                              ? _disconnect
-                              : _connect,
-                          icon: Icon(
-                            connected
-                                ? Icons.bluetooth_disabled
-                                : Icons.bluetooth_searching,
+      body: AppFormBody(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const AppRecordHeader(style: RecordFormStyle.rfid),
+            const SizedBox(height: AppSpacing.md),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.sensors_outlined, color: statusColor),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            _device?.name ?? 'Simulador RFID',
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
-                          label: Text(connected ? 'Desconectar' : 'Conectar'),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _busy ? null : _toggleScan,
-                          icon: Icon(scanning ? Icons.stop : Icons.play_arrow),
-                          label: Text(scanning ? 'Detener' : 'Escanear'),
+                        Chip(
+                          label: Text(_reader.state.name),
+                          backgroundColor: statusColor.withValues(alpha: .12),
                         ),
-                      ),
-                    ],
-                  ),
-                  if (_error != null) ...[
+                      ],
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      _error!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                      'Etiquetas únicas: ${_reads.length} · lecturas: $_rawCount',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _busy
+                                ? null
+                                : connected
+                                ? _disconnect
+                                : _connect,
+                            icon: Icon(
+                              connected
+                                  ? Icons.bluetooth_disabled
+                                  : Icons.bluetooth_searching,
+                            ),
+                            label: Text(connected ? 'Desconectar' : 'Conectar'),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _busy ? null : _toggleScan,
+                            icon: Icon(
+                              scanning ? Icons.stop : Icons.play_arrow,
+                            ),
+                            label: Text(scanning ? 'Detener' : 'Escanear'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _selectedAnimalUuid,
+              decoration: const InputDecoration(
+                labelText: 'Animal para asignar',
+                prefixIcon: Icon(Icons.pets_outlined),
+              ),
+              items: _animals
+                  .map(
+                    (animal) => DropdownMenuItem<String>(
+                      value: animal.uuid,
+                      child: Text(
+                        animal.label,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ],
-              ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) => setState(() => _selectedAnimalUuid = value),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          DropdownButtonFormField<String>(
-            isExpanded: true,
-            initialValue: _selectedAnimalUuid,
-            decoration: const InputDecoration(
-              labelText: 'Animal para asignar',
-              prefixIcon: Icon(Icons.pets_outlined),
-            ),
-            items: _animals
-                .map(
-                  (animal) => DropdownMenuItem<String>(
-                    value: animal.uuid,
-                    child: Text(animal.label, overflow: TextOverflow.ellipsis),
-                  ),
-                )
-                .toList(growable: false),
-            onChanged: (value) => setState(() => _selectedAnimalUuid = value),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _manualController,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _emitManualRead(),
-            decoration: InputDecoration(
-              labelText: 'EPC manual / lector teclado',
-              prefixIcon: const Icon(Icons.keyboard_outlined),
-              suffixIcon: IconButton(
-                tooltip: 'Agregar lectura',
-                onPressed: _emitManualRead,
-                icon: const Icon(Icons.add_circle_outline),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (_reads.isEmpty)
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  'Conecta el simulador y escanea. Las etiquetas desconocidas aparecerán aquí para asignarlas.',
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: _manualController,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _emitManualRead(),
+              decoration: InputDecoration(
+                labelText: 'EPC manual / lector teclado',
+                prefixIcon: const Icon(Icons.keyboard_outlined),
+                suffixIcon: IconButton(
+                  tooltip: 'Agregar lectura',
+                  onPressed: _emitManualRead,
+                  icon: const Icon(Icons.add_circle_outline),
                 ),
               ),
-            )
-          else
-            ..._reads.entries.map((entry) {
-              final binding = _bindings[entry.key];
-              final animal = binding == null
-                  ? null
-                  : _animals
-                        .where((item) => item.uuid == binding.animalUuid)
-                        .firstOrNull;
-              return Card(
-                child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.sell_outlined)),
-                  title: Text(entry.key),
-                  subtitle: Text(
-                    animal == null
-                        ? 'Sin asignar · RSSI ${entry.value.rssi ?? '—'}'
-                        : 'Asignada a ${animal.label}',
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (_reads.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: Text(
+                    'Conecta el simulador y escanea. Las etiquetas desconocidas aparecerán aquí para asignarlas.',
                   ),
-                  trailing: binding == null
-                      ? FilledButton.tonal(
-                          onPressed: () => _assign(entry.key),
-                          child: const Text('Asignar'),
-                        )
-                      : FilledButton.tonal(
-                          onPressed: () => _assign(entry.key),
-                          child: const Text('Cambiar'),
-                        ),
                 ),
-              );
-            }),
-        ],
+              )
+            else
+              ..._reads.entries.map((entry) {
+                final binding = _bindings[entry.key];
+                final animal = binding == null
+                    ? null
+                    : _animals
+                          .where((item) => item.uuid == binding.animalUuid)
+                          .firstOrNull;
+                return Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.sell_outlined),
+                    ),
+                    title: Text(entry.key),
+                    subtitle: Text(
+                      animal == null
+                          ? 'Sin asignar · RSSI ${entry.value.rssi ?? '—'}'
+                          : 'Asignada a ${animal.label}',
+                    ),
+                    trailing: binding == null
+                        ? FilledButton.tonal(
+                            onPressed: () => _assign(entry.key),
+                            child: const Text('Asignar'),
+                          )
+                        : FilledButton.tonal(
+                            onPressed: () => _assign(entry.key),
+                            child: const Text('Cambiar'),
+                          ),
+                  ),
+                );
+              }),
+          ],
+        ),
       ),
     );
   }

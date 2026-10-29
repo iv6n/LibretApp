@@ -2,10 +2,130 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_style.dart';
 
-enum CalendarMode { month, twoWeeks }
+enum CalendarMode { week, twoWeeks, month }
+
+/// Calendar-day calculations shared by the header and its grid.
+class AgendaCalendarPeriod {
+  const AgendaCalendarPeriod._();
+
+  static const double rowHeight = 48;
+  static const double weekdayHeight = 20;
+  static const double weekdayGap = 4;
+
+  static DateTime day(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  static DateTime startOfWeek(DateTime value) =>
+      DateTime(value.year, value.month, value.day - value.weekday + 1);
+
+  static List<DateTime> days(CalendarMode mode, DateTime visibleDate) {
+    if (mode != CalendarMode.month) {
+      final start = startOfWeek(visibleDate);
+      final count = mode == CalendarMode.week ? 7 : 14;
+      return List<DateTime>.generate(
+        count,
+        (index) => DateTime(start.year, start.month, start.day + index),
+      );
+    }
+
+    final firstOfMonth = DateTime(visibleDate.year, visibleDate.month);
+    final start = startOfWeek(firstOfMonth);
+    final count =
+        firstOfMonth.weekday -
+        DateTime.monday +
+        DateUtils.getDaysInMonth(visibleDate.year, visibleDate.month);
+    final cells = ((count + 6) ~/ 7) * 7;
+    return List<DateTime>.generate(
+      cells,
+      (index) => DateTime(start.year, start.month, start.day + index),
+    );
+  }
+
+  static DateTimeRange range(CalendarMode mode, DateTime visibleDate) {
+    if (mode == CalendarMode.month) {
+      return DateTimeRange(
+        start: DateTime(visibleDate.year, visibleDate.month),
+        end: DateTime(visibleDate.year, visibleDate.month + 1, 0),
+      );
+    }
+    final visibleDays = days(mode, visibleDate);
+    return DateTimeRange(start: visibleDays.first, end: visibleDays.last);
+  }
+
+  static DateTime navigate(CalendarMode mode, DateTime selectedDay, int delta) {
+    if (mode == CalendarMode.month) {
+      final targetMonth = DateTime(selectedDay.year, selectedDay.month + delta);
+      final lastDay = DateUtils.getDaysInMonth(
+        targetMonth.year,
+        targetMonth.month,
+      );
+      return DateTime(
+        targetMonth.year,
+        targetMonth.month,
+        selectedDay.day.clamp(1, lastDay),
+      );
+    }
+    final span = mode == CalendarMode.week ? 7 : 14;
+    return DateTime(
+      selectedDay.year,
+      selectedDay.month,
+      selectedDay.day + span * delta,
+    );
+  }
+
+  static String label(CalendarMode mode, DateTime visibleDate, String locale) {
+    if (mode == CalendarMode.month) {
+      return DateFormat.yMMMM(locale).format(visibleDate);
+    }
+    final period = range(mode, visibleDate);
+    final start = period.start;
+    final end = period.end;
+    if (start.year != end.year) {
+      return '${DateFormat('d MMM y', locale).format(start)} – '
+          '${DateFormat('d MMM y', locale).format(end)}';
+    }
+    if (start.month != end.month) {
+      return '${DateFormat('d MMM', locale).format(start)} – '
+          '${DateFormat('d MMM y', locale).format(end)}';
+    }
+    return '${start.day}–${DateFormat('d MMM y', locale).format(end)}';
+  }
+
+  static String compactLabel(
+    CalendarMode mode,
+    DateTime visibleDate,
+    String locale, {
+    bool numeric = false,
+  }) {
+    if (mode == CalendarMode.month) {
+      return DateFormat('MMM y', locale).format(visibleDate);
+    }
+    final period = range(mode, visibleDate);
+    final start = period.start;
+    final end = period.end;
+    if (numeric) {
+      return '${start.day}/${start.month}–${end.day}/${end.month}';
+    }
+    final endLabel = DateFormat('d MMM', locale).format(end);
+    if (start.year != end.year) {
+      return '${DateFormat('d MMM yy', locale).format(start)}–'
+          '${DateFormat('d MMM yy', locale).format(end)}';
+    }
+    if (start.month != end.month) {
+      return '${DateFormat('d MMM', locale).format(start)}–$endLabel';
+    }
+    return '${start.day}–$endLabel';
+  }
+
+  static double height(CalendarMode mode, DateTime visibleDate) =>
+      weekdayHeight +
+      weekdayGap +
+      (days(mode, visibleDate).length ~/ 7) * rowHeight;
+}
 
 class AgendaCalendar extends StatelessWidget {
   const AgendaCalendar({
@@ -27,36 +147,40 @@ class AgendaCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     const dayHeaders = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-    final dias = _diasParaCalendario(mode, visibleDate);
+    final dias = AgendaCalendarPeriod.days(mode, visibleDate);
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: dayHeaders
-              .map(
-                (d) => Expanded(
-                  child: Center(
-                    child: Text(
-                      d,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+        SizedBox(
+          height: AgendaCalendarPeriod.weekdayHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: dayHeaders
+                .map(
+                  (d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              )
-              .toList(),
+                )
+                .toList(),
+          ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AgendaCalendarPeriod.weekdayGap),
         SizedBox(
-          height: mode == CalendarMode.month ? 215 : 90,
+          height: (dias.length ~/ 7) * AgendaCalendarPeriod.rowHeight,
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.2,
+              mainAxisExtent: AgendaCalendarPeriod.rowHeight,
             ),
             itemCount: dias.length,
             itemBuilder: (context, index) {
@@ -96,15 +220,19 @@ class AgendaCalendar extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '${dia.day}',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: isDelMes
-                                    ? theme.colorScheme.onSurface
-                                    : theme.disabledColor,
-                                fontWeight: seleccionado
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
+                            Flexible(
+                              child: Text(
+                                '${dia.day}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: isDelMes
+                                      ? theme.colorScheme.onSurface
+                                      : theme.disabledColor,
+                                  fontWeight: seleccionado
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
                               ),
                             ),
                             if (entries.isNotEmpty)
@@ -147,34 +275,5 @@ class AgendaCalendar extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  List<DateTime> _diasParaCalendario(CalendarMode mode, DateTime base) {
-    if (mode == CalendarMode.twoWeeks) {
-      final inicio = _inicioSemana(base);
-      return List<DateTime>.generate(
-        14,
-        (index) => inicio.add(Duration(days: index)),
-      );
-    }
-
-    final primerDiaMes = DateTime(base.year, base.month, 1);
-    final diasAntes = primerDiaMes.weekday - 1;
-    final primerDiaVista = primerDiaMes.subtract(Duration(days: diasAntes));
-    final totalDiasMes = DateUtils.getDaysInMonth(base.year, base.month);
-    final totalCeldas = diasAntes + totalDiasMes;
-    final filas = (totalCeldas / 7).ceil();
-    final celdas = filas * 7;
-
-    return List<DateTime>.generate(
-      celdas,
-      (index) => primerDiaVista.add(Duration(days: index)),
-    );
-  }
-
-  DateTime _inicioSemana(DateTime fecha) {
-    final normalizada = DateTime(fecha.year, fecha.month, fecha.day);
-    final diasARestar = normalizada.weekday - DateTime.monday;
-    return normalizada.subtract(Duration(days: diasARestar));
   }
 }

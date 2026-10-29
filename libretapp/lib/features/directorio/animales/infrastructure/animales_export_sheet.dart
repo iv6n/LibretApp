@@ -6,6 +6,7 @@ import 'package:excel/excel.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/services/exportable_sheet.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
 
 class AnimalesExportSheet implements ExportableSheet {
   AnimalesExportSheet(this._animalRepository);
@@ -33,6 +34,7 @@ class AnimalesExportSheet implements ExportableSheet {
       'Sexo',
       'Raza',
       'Fecha Nac.',
+      'Precisión nacimiento',
       'Edad (meses)',
       'Peso (kg)',
       'Estado',
@@ -49,10 +51,11 @@ class AnimalesExportSheet implements ExportableSheet {
         a.customName ?? '',
         a.species.name,
         a.category.name,
-        a.sex.name,
+        a.sex == Sex.unknown ? '' : a.sex.name,
         a.breed,
-        DateFormat('dd/MM/yyyy').format(a.birthDate),
-        a.ageMonths,
+        a.hasKnownAge ? DateFormat('dd/MM/yyyy').format(a.birthDate) : '',
+        a.birthDatePrecision.name,
+        a.hasKnownAge ? a.ageMonths : '',
         a.weight ?? '',
         a.status.name,
         a.healthStatus.name,

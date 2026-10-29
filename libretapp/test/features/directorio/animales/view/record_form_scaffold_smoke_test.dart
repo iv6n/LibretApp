@@ -16,6 +16,10 @@ class _FakeWeightRecordRepository implements WeightRecordRepository {
   bool addCalled = false;
 
   @override
+  Future<List<WeightRecord>> addWeightRecordsAtomically(List<WeightBatchEntry> entries) async {
+    throw UnsupportedError('El pesaje atómico no está disponible en este adaptador.');
+  }
+  @override
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) async => [];
 
   @override

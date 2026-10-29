@@ -27,9 +27,11 @@ class FinancialPeriodSummary extends Equatable {
     required this.totalGeneralExpenses,
     required this.totalAnimalCosts,
     required this.totalAnimalSales,
+    this.invalidRecordCount = 0,
   });
 
   final DateRange period;
+  final int invalidRecordCount;
 
   /// Ingresos generales (IncomeRecord) en el período.
   final double totalIncome;
@@ -64,5 +66,6 @@ class FinancialPeriodSummary extends Equatable {
     totalGeneralExpenses,
     totalAnimalCosts,
     totalAnimalSales,
+    invalidRecordCount,
   ];
 }

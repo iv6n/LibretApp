@@ -1,4 +1,4 @@
-﻿/// features › perfil › view › perfil_page — root page for the user profile feature.
+/// features › perfil › view › perfil_page — root page for the user profile feature.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,7 +12,9 @@ import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/perfil/view/perfil_view.dart';
 
 class PerfilPage extends StatelessWidget {
-  const PerfilPage({super.key});
+  const PerfilPage({super.key, this.openBackups = false});
+
+  final bool openBackups;
 
   @override
   Widget build(BuildContext context) {
@@ -23,12 +25,11 @@ class PerfilPage extends StatelessWidget {
               PerfilBloc(locator<PerfilRepository>())..add(const LoadPerfil()),
         ),
         BlocProvider(
-          create: (_) => BibliotecaCubit(
-            libraryRepository: locator<LibraryRepository>(),
-          ),
+          create: (_) =>
+              BibliotecaCubit(libraryRepository: locator<LibraryRepository>()),
         ),
       ],
-      child: const Scaffold(body: PerfilView()),
+      child: Scaffold(body: PerfilView(openBackups: openBackups)),
     );
   }
 }

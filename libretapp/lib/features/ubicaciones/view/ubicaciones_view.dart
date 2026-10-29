@@ -31,13 +31,19 @@ class UbicacionesView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Computed here so MediaQuery changes (keyboard, orientation) always
     // invalidate the padding even when the bloc state hasn't changed.
-    // Keep the final location card fully visible above the shell FAB and nav.
-    final listBottomPadding = ShellInsets.bottomSafePadding(context) + 240;
+    // Keep the last item above the dock and its floating action at scroll end.
+    final listBottomPadding =
+        ShellInsets.bottomSafePadding(context) +
+        ShellInsets.fabContentClearance;
 
     // The FAB scope lives outside BlocBuilder so it stays stable. The
     // onPressed reads the current bloc state at press-time instead of
     // capturing selectedUuid at build-time (ShellFabConfig.== ignores onPressed).
-    final fabConfig = shellInteractionsEnabled
+    final currentState = context.watch<UbicacionesBloc>().state;
+    final isInitiallyEmpty =
+        currentState is UbicacionesLoaded &&
+        currentState.allUbicaciones.isEmpty;
+    final fabConfig = shellInteractionsEnabled && !isInitiallyEmpty
         ? ShellFabConfig(
             id: 'ubicaciones',
             label: 'Nueva',

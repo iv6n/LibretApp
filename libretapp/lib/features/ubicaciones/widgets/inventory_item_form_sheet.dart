@@ -1,6 +1,9 @@
 /// features › ubicaciones › widgets › inventory_item_form_sheet — bottom sheet to add/edit an inventory item.
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
@@ -138,7 +141,7 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                       prefixIcon: const Icon(Icons.numbers),
                       requiredField: true,
                       validator: (v) {
-                        final n = double.tryParse(
+                        final n = parseFormDouble(
                           v?.replaceAll(',', '.') ?? '',
                         );
                         if (n == null || n < 0) return 'Cantidad inválida';
@@ -174,7 +177,7 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                 hintText: 'Alerta cuando baje de este valor',
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return null;
-                  final n = double.tryParse(v.replaceAll(',', '.'));
+                  final n = parseFormDouble(v.replaceAll(',', '.'));
                   if (n == null || n < 0) return 'Valor inválido';
                   return null;
                 },
@@ -229,7 +232,7 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
                   prefixIcon: const Icon(Icons.payments_outlined),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) return null;
-                    final cost = double.tryParse(value.replaceAll(',', '.'));
+                    final cost = parseFormDouble(value.replaceAll(',', '.'));
                     return cost == null || cost < 0 ? 'Valor inválido' : null;
                   },
                 ),
@@ -266,12 +269,12 @@ class _InventoryItemFormSheetState extends State<InventoryItemFormSheet> {
     final reorderRaw = _reorderController.text.trim();
     final reorder = reorderRaw.isEmpty
         ? null
-        : double.tryParse(reorderRaw.replaceAll(',', '.'));
+        : parseFormDouble(reorderRaw.replaceAll(',', '.'));
     final notes = _notesController.text.trim();
     final activeIngredient = _activeIngredientController.text.trim();
     final batch = _batchController.text.trim();
     final withdrawalDays = int.tryParse(_withdrawalController.text.trim());
-    final unitCost = double.tryParse(
+    final unitCost = parseFormDouble(
       _unitCostController.text.trim().replaceAll(',', '.'),
     );
 

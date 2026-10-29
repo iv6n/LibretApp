@@ -33,6 +33,7 @@ class IncomeRecord extends TimestampedRecord {
     this.currency,
     this.animalUuid,
     this.recordUuid,
+    this.updatedAt,
     super.notes,
     super.id,
   });
@@ -44,6 +45,7 @@ class IncomeRecord extends TimestampedRecord {
   /// UUID del animal al que se asocia este ingreso (opcional).
   final String? animalUuid;
   final String? recordUuid;
+  final DateTime? updatedAt;
 
   IncomeRecord copyWith({
     DateTime? date,
@@ -52,6 +54,7 @@ class IncomeRecord extends TimestampedRecord {
     String? currency,
     String? animalUuid,
     String? recordUuid,
+    DateTime? updatedAt,
     String? notes,
     String? id,
   }) {
@@ -62,6 +65,7 @@ class IncomeRecord extends TimestampedRecord {
       currency: currency ?? this.currency,
       animalUuid: animalUuid ?? this.animalUuid,
       recordUuid: recordUuid ?? this.recordUuid,
+      updatedAt: updatedAt ?? this.updatedAt,
       notes: notes ?? this.notes,
       id: id ?? this.id,
     );
@@ -75,5 +79,6 @@ class IncomeRecord extends TimestampedRecord {
     currency,
     animalUuid,
     recordUuid,
+    updatedAt,
   ];
 }

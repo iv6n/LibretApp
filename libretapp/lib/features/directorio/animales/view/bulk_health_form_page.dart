@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../domain/services/animal_record_validation.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -68,7 +69,18 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
           : _causeController.text.trim(),
     );
 
-    final ok = await widget.onSubmit(record);
+    late bool ok;
+    try {
+      ok = await widget.onSubmit(record);
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
+      }
+      return;
+    }
     if (!mounted) return;
     if (ok) {
       Navigator.of(context).pop(true);
@@ -81,6 +93,8 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.bulkHealth,
+      onCancel: () => Navigator.of(context).pop(),
       title: l10n.animalsBulkMaintenanceAction(widget.selectedCount),
       saving: _saving,
       onSave: _submit,
@@ -101,9 +115,10 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
         AppTextField(
           controller: _productController,
           labelText: l10n.detailFormHealthProduct,
-          requiredField: true,
+          requiredField: AnimalRecordValidation.requiresProduct(_type),
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
+            if (AnimalRecordValidation.requiresProduct(_type) &&
+                (value == null || value.trim().isEmpty)) {
               return l10n.detailFormHealthProductRequired;
             }
             return null;

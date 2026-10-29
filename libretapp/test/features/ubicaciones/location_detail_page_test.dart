@@ -42,6 +42,9 @@ class _FakeAgendaRepository implements AgendaRepository {
   Future<void> saveEntry(AgendaEntry entry) async {}
 
   @override
+  Future<void> saveEntries(List<AgendaEntry> entries) async {}
+
+  @override
   Future<void> deleteEntry(String id) async {}
 
   @override

@@ -1,0 +1,137 @@
+{
+  "verifiedAtUtc": "2026-10-09T05:59:58.289295+00:00",
+  "candidate": {
+    "applicationId": "app.libret",
+    "flavor": "offline",
+    "version": "0.1.2+5",
+    "backupSchema": 10,
+    "minSdk": 24,
+    "targetSdk": 36
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/bovinos/libretapp-offline-0.1.2+5.apk",
+      "bytes": 93571309,
+      "sha256": "473f6363e39dcc02df685b79031da3a1e98e175e85048d393f92261cd2ffa76e"
+    },
+    {
+      "path": "artifacts/bovinos/libretapp-offline-0.1.2+5.aab",
+      "bytes": 87195991,
+      "sha256": "85d802b78afd130a410e323385d438261ea4c62c51cbdf3dae283e6db4e4834a"
+    }
+  ],
+  "analysis": {
+    "errors": 0,
+    "warnings": 0,
+    "informationalIssues": 188,
+    "log": "build/bovine-analyze-final.log"
+  },
+  "tests": [
+    {
+      "scope": "Suite completa antes del ajuste final de texto del resumen",
+      "passed": 1037,
+      "log": "build/bovine-tests-final.log"
+    },
+    {
+      "scope": "Verificación posterior al ajuste final: perfiles de todas las especies, ciclo bovino y destete",
+      "passed": 66,
+      "log": "build/bovine-profile-final.log"
+    },
+    {
+      "scope": "Configuración offline explícita",
+      "passed": 1,
+      "log": "build/bovine-offline.log"
+    }
+  ],
+  "signing": {
+    "apkV2Verified": true,
+    "aabJarVerified": true,
+    "apkZipAlignment16kbVerified": true,
+    "apkLog": "build/bovine-apk-signature.log",
+    "aabLog": "build/bovine-aab-signature.log",
+    "bundleVerification": "artifacts/bovinos/release-verification.json"
+  },
+  "android": {
+    "device": "Emulador dedicado libret_16kb / emulator-5554",
+    "api": 36,
+    "pageSizeBytes": 16384,
+    "activeDefaultNetwork": "none",
+    "testData": "40 animales DEMO; no datos reales del productor",
+    "verified": [
+      "Actualización firmada de 0.1.1+4 a 0.1.2+5 conservando 40 animales y preferencias",
+      "Parto sin servicio desde Registros; guardar y cancelar vínculo posterior de cría",
+      "Destete con peso de báscula 185.5 kg desde Registros; pesaje asociado y perfil actualizados",
+      "Exportación SAF esquema 10 con fotografía",
+      "Restauración tras borrar únicamente datos DEMO de este emulador y comenzar vacío",
+      "Segundo respaldo exportado: identidades, genealogía, nacimientos, destetes, pesajes, reproducción y bytes de la fotografía iguales"
+    ],
+    "restoreVerification": {
+      "schemaVersion": 10,
+      "appVersion": "0.1.2+5",
+      "counts": {
+        "animals": 40,
+        "weightRecords": 19,
+        "weaningRecords": 1,
+        "reproductionRecords": 6,
+        "productionRecords": 4,
+        "healthRecords": 44,
+        "costRecords": 5,
+        "commercialRecords": 3,
+        "movementRecords": 2,
+        "lotes": 6,
+        "cultivations": 4,
+        "locations": 16,
+        "incomeRecords": 7,
+        "generalExpenseRecords": 14,
+        "milkingSessions": 32,
+        "milkingEntries": 115,
+        "agendaEntries": 155,
+        "agendaRegistrations": 0,
+        "workerProfiles": 4,
+        "workTeams": 1,
+        "careRules": 7,
+        "careRecords": 8,
+        "scheduledCares": 116,
+        "rfidBindings": 0,
+        "rfidScanSessions": 0,
+        "featureRecords": 4
+      },
+      "countsEqual": true,
+      "allCollectionIdentitiesEqual": true,
+      "mediaEqual": true,
+      "mediaHashes": {
+        "media/6eb42283c7b957d42242241385b1a445953c6a4f6b79e0dfd93d57a51d63fd22.webp": "6eb42283c7b957d42242241385b1a445953c6a4f6b79e0dfd93d57a51d63fd22"
+      },
+      "genealogyBirthMediaEqual": true,
+      "weaningRecordsEqual": true,
+      "weightRecordsEqual": true,
+      "reproductionRecordsEqual": true
+    },
+    "captures": "artifacts/bovinos/android",
+    "backupBefore": "artifacts/bovinos/android-export.libretbackup",
+    "backupAfter": "artifacts/bovinos/android-restored-export.libretbackup"
+  },
+  "publication": {
+    "acceptedForProduction": false,
+    "knownAutomatedDataLossOrCoreFunctionFailures": 0,
+    "pending": [
+      "Recorrido manual completo servicio → diagnóstico → parto → cría → destete → pesajes desde ambos accesos en teléfono físico",
+      "TalkBack y comportamiento con permisos de cámara/fotos rechazados en teléfono físico",
+      "Titular real, tipo de cuenta Play Console y acceso a producción",
+      "Correo real de soporte y política HTTPS con responsable real",
+      "Recursos definitivos de tienda y declaraciones reales de Play Console",
+      "Prueba cerrada de Google Play si aplica a la cuenta"
+    ],
+    "matrix": "docs/bovinos/publicacion.csv"
+  },
+  "sources": [
+    {
+      "url": "https://extension.okstate.edu/fact-sheets/print-publications/cr/cow-calf-production-record-software-cr-3279-a.pdf",
+      "purpose": "Referencia de registros de madre, toro, cría, parto, destete y pesajes"
+    },
+    {
+      "url": "https://support.google.com/googleplay/android-developer/answer/14151465?hl=es",
+      "purpose": "Requisitos de pruebas según la cuenta real; consultado 2026-10-09 UTC"
+    }
+  ]
+}

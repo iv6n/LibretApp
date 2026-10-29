@@ -6,13 +6,14 @@ import 'package:flutter/material.dart';
 class AppColors {
   static const primary = Color(0xFF2F5D50); // Verde Bosque
   static const primaryDark = Color(0xFF18362D); // Verde Bosque deep
+  static const sage = Color(0xFFDDECE3);
   static const secondary = Color(0xFF4A7C95); // Azul Vaquero
   static const accent = Color(0xFF7B4B2A); // Cafe Cuero
   static const earth = Color(0xFFB08968); // Cafe Tierra
   static const info = secondary;
   static const amber = Color(0xFFC58B2A);
-  static const success = Color(0xFF15803D);
-  static const warning = amber;
+  static const success = Color(0xFF136F35);
+  static const warning = Color(0xFF8D5D00);
   static const error = Color(0xFFB91C1C);
 }
 
@@ -123,6 +124,44 @@ class ShellChromeTheme extends ThemeExtension<ShellChromeTheme> {
   }
 }
 
+class AppStatusTheme extends ThemeExtension<AppStatusTheme> {
+  const AppStatusTheme({
+    required this.info,
+    required this.success,
+    required this.warning,
+    required this.error,
+  });
+
+  final Color info;
+  final Color success;
+  final Color warning;
+  final Color error;
+
+  @override
+  AppStatusTheme copyWith({
+    Color? info,
+    Color? success,
+    Color? warning,
+    Color? error,
+  }) => AppStatusTheme(
+    info: info ?? this.info,
+    success: success ?? this.success,
+    warning: warning ?? this.warning,
+    error: error ?? this.error,
+  );
+
+  @override
+  AppStatusTheme lerp(ThemeExtension<AppStatusTheme>? other, double t) {
+    if (other is! AppStatusTheme) return this;
+    return AppStatusTheme(
+      info: Color.lerp(info, other.info, t)!,
+      success: Color.lerp(success, other.success, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      error: Color.lerp(error, other.error, t)!,
+    );
+  }
+}
+
 class AppSpacing {
   static const double xxs = 4;
   static const double xs = 8;
@@ -137,6 +176,8 @@ class AppRadii {
   static const double sm = 8;
   static const double md = 12;
   static const double lg = 16;
+  static const double xl = 24;
+  static const double pill = 999;
 }
 
 class AppControlMetrics {
@@ -160,14 +201,14 @@ class AppTextStyles {
   );
 
   static const TextStyle body = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
     height: 1.4,
   );
 
   static const TextStyle bodySmall = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
     height: 1.35,
   );
 
@@ -220,7 +261,7 @@ class AppTheme {
       ),
       shape: WidgetStatePropertyAll<OutlinedBorder>(
         RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
       ),
       backgroundColor: WidgetStateProperty.resolveWith((states) {
@@ -277,6 +318,8 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: baseScheme.copyWith(
         primary: AppColors.primary,
+        primaryContainer: AppColors.sage,
+        onPrimaryContainer: AppColors.primaryDark,
         secondary: AppColors.secondary,
         tertiary: AppColors.accent,
         surface: LightColors.cardSurface,
@@ -288,18 +331,25 @@ class AppTheme {
         onSecondary: Colors.white,
         onTertiary: Colors.white,
         onSurface: LightColors.textPrimary,
+        onSurfaceVariant: LightColors.textSecondary,
         outline: LightColors.border,
         outlineVariant: LightColors.borderSoft,
       ),
       scaffoldBackgroundColor: LightColors.background,
       extensions: const [
+        AppStatusTheme(
+          info: Color(0xFF366079),
+          success: AppColors.success,
+          warning: AppColors.warning,
+          error: AppColors.error,
+        ),
         // Shell chrome palette (nav background/shadow, FAB colors).
         ShellChromeTheme(
           navBackground: LightColors.navBackground,
           navShadow: Color(0x24000000),
           navSelectedItem: AppColors.primary,
           navUnselectedItem: LightColors.textMuted,
-          fabBackground: AppColors.accent,
+          fabBackground: AppColors.primary,
           fabForeground: Colors.white,
         ),
       ],
@@ -327,7 +377,7 @@ class AppTheme {
         shadowColor: AppColors.accent.withValues(alpha: 0.08),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           side: const BorderSide(color: LightColors.border),
         ),
       ),
@@ -349,7 +399,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.6),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
@@ -372,30 +422,30 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minHeight: AppControlMetrics.minHeight,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minHeight: AppControlMetrics.minHeight,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.primary,
           minHeight: AppControlMetrics.minHeight,
           outlined: true,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.accent,
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.primary,
           minHeight: AppControlMetrics.minHeight,
           outlined: true,
         ).copyWith(side: const WidgetStatePropertyAll<BorderSide?>(null)),
@@ -413,7 +463,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
         labelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
@@ -425,7 +475,7 @@ class AppTheme {
           vertical: AppSpacing.xs,
         ),
         side: const BorderSide(color: LightColors.border),
-        selectedColor: AppColors.accent.withValues(alpha: 0.14),
+        selectedColor: AppColors.sage,
         backgroundColor: LightColors.cardSurface,
       ),
       dividerTheme: const DividerThemeData(
@@ -434,7 +484,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: LightColors.navBackground,
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: AppColors.primary,
         unselectedItemColor: LightColors.textSecondary,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
@@ -450,7 +500,7 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accent,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       textTheme: lightTextTheme,
@@ -473,26 +523,40 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: baseScheme.copyWith(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        tertiary: AppColors.accent,
+        primary: const Color(0xFF9DE5CB),
+        primaryContainer: const Color(0xFF28473D),
+        onPrimaryContainer: AppColors.sage,
+        secondary: const Color(0xFF9CCBE5),
+        tertiary: const Color(0xFFE8BA94),
         surface: DarkColors.surface,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-        onTertiary: Colors.white,
+        surfaceContainerLow: DarkColors.surface,
+        surfaceContainer: DarkColors.surfaceAlt,
+        surfaceContainerHigh: DarkColors.surfaceAlt,
+        surfaceContainerHighest: const Color(0xFF1D3338),
+        onPrimary: const Color(0xFF0C3027),
+        onSecondary: DarkColors.surface,
+        onTertiary: DarkColors.surface,
         onSurface: DarkColors.textPrimary,
+        onSurfaceVariant: DarkColors.textSecondary,
         outline: DarkColors.border,
+        outlineVariant: DarkColors.border,
       ),
       scaffoldBackgroundColor: DarkColors.surface,
       extensions: [
+        const AppStatusTheme(
+          info: Color(0xFF9CCBE5),
+          success: Color(0xFF9ADEA8),
+          warning: Color(0xFFF3C677),
+          error: Color(0xFFFFB4AB),
+        ),
         // Shell chrome palette for dark mode.
         const ShellChromeTheme(
           navBackground: DarkColors.navBackground,
           navShadow: Color(0x66000000),
           navSelectedItem: DarkColors.textPrimary,
           navUnselectedItem: DarkColors.textMuted,
-          fabBackground: AppColors.accent,
-          fabForeground: Colors.white,
+          fabBackground: Color(0xFF9DE5CB),
+          fabForeground: Color(0xFF0C3027),
         ),
       ],
       appBarTheme: const AppBarTheme(
@@ -516,7 +580,7 @@ class AppTheme {
         shadowColor: AppColors.primary.withValues(alpha: 0.16),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
           side: const BorderSide(color: DarkColors.border),
         ),
       ),
@@ -538,15 +602,15 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.6),
+          borderSide: const BorderSide(color: Color(0xFF9DE5CB), width: 1.6),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: const BorderSide(color: Color(0xFFFFB4AB)),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.md),
-          borderSide: const BorderSide(color: AppColors.error, width: 1.6),
+          borderSide: const BorderSide(color: Color(0xFFFFB4AB), width: 1.6),
         ),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         alignLabelWithHint: true,
@@ -555,36 +619,36 @@ class AppTheme {
         labelStyle: const TextStyle(color: DarkColors.textMuted),
         hintStyle: const TextStyle(color: DarkColors.textMuted),
         errorStyle: const TextStyle(
-          color: AppColors.error,
+          color: Color(0xFFFFB4AB),
           fontWeight: FontWeight.w600,
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFF9DE5CB),
+          foregroundColor: const Color(0xFF0C3027),
           minHeight: AppControlMetrics.minHeight,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFF9DE5CB),
+          foregroundColor: const Color(0xFF0C3027),
           minHeight: AppControlMetrics.minHeight,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.accent,
+          backgroundColor: const Color(0xFF9DE5CB),
+          foregroundColor: const Color(0xFF9DE5CB),
           minHeight: AppControlMetrics.minHeight,
           outlined: true,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: _buttonStyle(
-          backgroundColor: AppColors.accent,
-          foregroundColor: AppColors.accent,
+          backgroundColor: const Color(0xFF9DE5CB),
+          foregroundColor: const Color(0xFF9DE5CB),
           minHeight: AppControlMetrics.minHeight,
           outlined: true,
         ).copyWith(side: const WidgetStatePropertyAll<BorderSide?>(null)),
@@ -602,7 +666,7 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.sm),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
         labelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
@@ -614,7 +678,7 @@ class AppTheme {
           vertical: AppSpacing.xs,
         ),
         side: const BorderSide(color: DarkColors.border),
-        selectedColor: AppColors.accent.withValues(alpha: 0.22),
+        selectedColor: const Color(0xFF28473D),
         backgroundColor: const Color(0xFF123430),
       ),
       dividerTheme: const DividerThemeData(
@@ -623,7 +687,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: DarkColors.navBackground,
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: DarkColors.textPrimary,
         unselectedItemColor: DarkColors.textSecondary,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
@@ -639,8 +703,8 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
+        backgroundColor: Color(0xFF9DE5CB),
+        foregroundColor: Color(0xFF0C3027),
       ),
       textTheme: darkTextTheme,
       primaryTextTheme: darkTextTheme,

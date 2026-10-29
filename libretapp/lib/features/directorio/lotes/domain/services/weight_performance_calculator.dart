@@ -172,13 +172,16 @@ class WeightPerformanceCalculator {
     required DateTime measuredAt,
     required Iterable<WeightRecord> history,
     String? currentRecordUuid,
+    WeightMethod currentMethod = WeightMethod.scale,
   }) {
     final sorted = history.toList(growable: false)..sort(_compareNewestFirst);
-    final previous = _findPrevious(
-      sorted,
-      measuredAt: measuredAt,
-      currentRecordUuid: currentRecordUuid,
-    );
+    final previous = currentMethod == WeightMethod.scale
+        ? _findPrevious(
+            sorted,
+            measuredAt: measuredAt,
+            currentRecordUuid: currentRecordUuid,
+          )
+        : null;
     final gain = calculateWeightGain(
       currentWeightKg: currentWeightKg,
       previousWeightKg: previous?.weight,
@@ -230,6 +233,7 @@ class WeightPerformanceCalculator {
             measuredAt: current.date,
             history: histories[animalUuid] ?? const [],
             currentRecordUuid: current.recordUuid,
+            currentMethod: current.method,
           ),
         );
       }
@@ -311,6 +315,7 @@ class WeightPerformanceCalculator {
               measuredAt: item.value.date,
               history: history,
               currentRecordUuid: item.value.recordUuid,
+              currentMethod: item.value.method,
             );
           })
           .toList(growable: false);
@@ -504,7 +509,9 @@ class WeightPerformanceCalculator {
       if (currentRecordUuid != null && record.recordUuid == currentRecordUuid) {
         continue;
       }
-      if (record.date.isAfter(measuredAt)) continue;
+      if (record.method != WeightMethod.scale ||
+          !_dateOnly(record.date).isBefore(_dateOnly(measuredAt)))
+        continue;
       return record;
     }
     return null;

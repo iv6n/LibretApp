@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/core/widgets/app_search_bar.dart';
@@ -78,9 +79,7 @@ class _BibliotecaTabState extends State<BibliotecaTab>
               ),
             ),
             if (state.status == BibliotecaLoadStatus.loading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
+              const Expanded(child: Center(child: CircularProgressIndicator()))
             else if (state.status == BibliotecaLoadStatus.error)
               Expanded(
                 child: AppEmptyState(
@@ -100,7 +99,12 @@ class _BibliotecaTabState extends State<BibliotecaTab>
             else
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md,
+                    AppSpacing.md + ShellInsets.bottomSafePadding(context),
+                  ),
                   children: [
                     for (final book in state.books)
                       Padding(

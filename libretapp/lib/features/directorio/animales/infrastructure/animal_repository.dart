@@ -81,3 +81,9 @@ abstract class AnimalRepository {
   Future<int> count();
   Future<Map<String, dynamic>> getStatistics();
 }
+
+/// Reads species already represented in a workspace without loading the full
+/// directory or triggering unrelated history migrations.
+abstract interface class RegisteredAnimalSpeciesReader {
+  Future<Set<Species>> getRegisteredSpecies();
+}

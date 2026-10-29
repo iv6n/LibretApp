@@ -15,25 +15,13 @@ class LocationEmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppEmptyState(
-      icon: Icons.map_outlined,
-      title: 'No hay ubicaciones registradas',
-      message: 'Agrega tu primera ubicación para empezar a gestionarla.',
-      action: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FilledButton.icon(
-            onPressed: onCreate,
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: const Text('Crear ubicación'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () =>
-                context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Recargar'),
-          ),
-        ],
+      illustrationAsset: 'assets/images/location_property.webp',
+      title: 'Da un lugar a cada registro',
+      message: 'Crea tu primera ubicación para organizar lo que cuidas.',
+      action: FilledButton.icon(
+        onPressed: onCreate,
+        icon: const Icon(Icons.add_location_alt_outlined),
+        label: const Text('Crear ubicación'),
       ),
     );
   }

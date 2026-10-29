@@ -14,6 +14,7 @@ const defaultDirectorioSectionConfig = DirectorioSectionConfig(
 
 const _storageKey = 'directorio.section_config.v1';
 const _cultivosMigrationKey = 'directorio.section_config.cultivos.v1';
+const _animalViewModeStorageKey = 'directorio.animales.view_mode.v1';
 
 class DirectorioSectionConfig extends Equatable {
   const DirectorioSectionConfig({
@@ -89,27 +90,33 @@ class DirectorioConfigRepository {
 
   final SharedPrefsService _prefs;
 
+  Future<AnimalDirectoryViewMode> loadAnimalViewMode() async {
+    final stored = _prefs.getString(_animalViewModeStorageKey);
+    for (final mode in AnimalDirectoryViewMode.values) {
+      if (mode.name == stored) return mode;
+    }
+    return AnimalDirectoryViewMode.cards;
+  }
+
+  Future<void> saveAnimalViewMode(AnimalDirectoryViewMode mode) =>
+      _prefs.setString(_animalViewModeStorageKey, mode.name);
+
   Future<DirectorioSectionConfig> load() async {
     final raw = _prefs.getString(_storageKey);
     if (raw == null || raw.isEmpty) {
+      final config = const DirectorioSectionConfig(
+        orderedSections: defaultDirectorioSectionOrder,
+        visibleSections: defaultDirectorioVisibleSections,
+      ).normalized();
+      await save(config);
       await _prefs.setBool(_cultivosMigrationKey, true);
-      return defaultDirectorioSectionConfig;
+      return config;
     }
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      var config = DirectorioSectionConfig.fromJson(json);
-      if (!(_prefs.getBool(_cultivosMigrationKey) ?? false)) {
-        config = DirectorioSectionConfig(
-          orderedSections: config.orderedSections,
-          visibleSections: {
-            ...config.visibleSections,
-            DirectorioSection.cultivos,
-          },
-        ).normalized();
-        await save(config);
-        await _prefs.setBool(_cultivosMigrationKey, true);
-      }
-      return config;
+      // An existing config is an explicit user choice. In particular, keep a
+      // section hidden when the owner intentionally removed it.
+      return DirectorioSectionConfig.fromJson(json);
     } catch (_) {
       return defaultDirectorioSectionConfig;
     }

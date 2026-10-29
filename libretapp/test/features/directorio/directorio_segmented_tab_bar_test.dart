@@ -4,6 +4,61 @@ import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 void main() {
+  testWidgets('four equal tabs stay accessible at 320 dp and 200% text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: DefaultTabController(
+          length: 4,
+          child: Builder(
+            builder: (context) => Scaffold(
+              appBar: AppBar(
+                bottom: AppSegmentedTabBar(
+                  controller: DefaultTabController.of(context),
+                  variant: AppSegmentedTabBarVariant.colorAccented,
+                  textScale: 2,
+                  items: const [
+                    AppSegmentedTabItem(label: 'Animales', icon: Icons.pets),
+                    AppSegmentedTabItem(
+                      label: 'Plantas y cultivos',
+                      compactLabel: 'Plantas',
+                      icon: Icons.eco,
+                    ),
+                    AppSegmentedTabItem(label: 'Lotes', icon: Icons.fence),
+                    AppSegmentedTabItem(
+                      label: 'Ubicaciones',
+                      compactLabel: 'Lugares',
+                      icon: Icons.place,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.bySemanticsLabel('Plantas y cultivos'), findsOneWidget);
+    expect(find.bySemanticsLabel('Ubicaciones'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
   testWidgets('renders the segmented tab bar style and changes tabs on tap', (
     tester,
   ) async {
@@ -152,9 +207,25 @@ void main() {
     await tester.tap(find.text('Cultivos'));
     await tester.pumpAndSettle();
     expect(controller.index, 2);
+    final cropBackground =
+        tester
+                .widget<AnimatedContainer>(
+                  find.byKey(
+                    const ValueKey<String>('segmented_tab_background_2'),
+                  ),
+                )
+                .decoration!
+            as BoxDecoration;
+    final cropForeground = tester
+        .widget<Icon>(find.byIcon(Icons.eco_outlined))
+        .color!;
+    final luminances = [
+      cropForeground.computeLuminance(),
+      cropBackground.color!.computeLuminance(),
+    ]..sort();
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.eco_outlined)).color,
-      AppColors.amber,
+      (luminances.last + 0.05) / (luminances.first + 0.05),
+      greaterThanOrEqualTo(4.5),
     );
   });
 

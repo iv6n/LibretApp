@@ -1,7 +1,7 @@
-﻿/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_animal \u2014 Isar schema for the Animal model.
+/// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_animal \u2014 Isar schema for the Animal model.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
@@ -77,8 +77,13 @@ class IsarAnimal {
 
   // ─── VITAL ─────────────────────────────────────────────────────────
   late DateTime birthDate;
+  String? birthDatePrecision;
   late int ageMonths;
   double? weight;
+  double? registrationWeight;
+  bool? weightProjectionInitialized;
+  bool? herdStatusProjected;
+  bool? reproductionProjected;
   late String status;
 
   // ─── HEALTH ────────────────────────────────────────────────────────
@@ -130,6 +135,17 @@ class IsarAnimal {
   String? currentLocationId;
   String? initialLocationId;
   DateTime? lastMovementDate;
+  bool? locationProjectionInitialized;
+  String? registrationLocationId;
+  DateTime? registrationMovementDate;
+  bool? locationProjectionUncertain;
+  bool? manualVaccinated;
+  bool? manualDewormed;
+  bool? manualHasVitamins;
+  bool? manualUnderObservation;
+  bool? manualRequiresAttention;
+  bool? monitoringNeedsReview;
+
 
   // ─── MONITORING ────────────────────────────────────────────────────
   late bool underObservation;
@@ -177,6 +193,7 @@ extension IsarAnimalMapper on IsarAnimal {
       breed: breed,
       crossBreed: crossBreed,
       birthDate: birthDate,
+      birthDatePrecision: BirthDatePrecision.values.where((v) => v.name == birthDatePrecision).firstOrNull ?? BirthDatePrecision.unknown,
       ageMonths: ageMonths,
       weight: weight,
       sireUuid: sireUuid,
@@ -228,6 +245,11 @@ extension IsarAnimalMapper on IsarAnimal {
       initialLocationId: initialLocationId,
       lastMovementDate: lastMovementDate,
       underObservation: underObservation,
+      manualVaccinated: manualVaccinated,
+      manualDewormed: manualDewormed,
+      manualHasVitamins: manualHasVitamins,
+      manualUnderObservation: manualUnderObservation,
+      manualRequiresAttention: manualRequiresAttention,
       requiresAttention: requiresAttention,
       riskLevel: _enumByName(RiskLevel.values, riskLevel),
       profilePhoto: profilePhoto,
@@ -272,6 +294,7 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..generation = generation
       // ─── VITAL ─────────────────────────────────────────────────────
       ..birthDate = birthDate
+      ..birthDatePrecision = birthDatePrecision.name
       ..ageMonths = ageMonths
       ..weight = weight
       ..status = status.name
@@ -320,6 +343,11 @@ extension AnimalEntityToIsar on AnimalEntity {
       ..initialLocationId = initialLocationId
       ..lastMovementDate = lastMovementDate
       // ─── MONITORING ────────────────────────────────────────────────
+      ..manualVaccinated = manualVaccinated
+      ..manualDewormed = manualDewormed
+      ..manualHasVitamins = manualHasVitamins
+      ..manualUnderObservation = manualUnderObservation
+      ..manualRequiresAttention = manualRequiresAttention
       ..underObservation = underObservation
       ..requiresAttention = requiresAttention
       ..riskLevel = riskLevel.name

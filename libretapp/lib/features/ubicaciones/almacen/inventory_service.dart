@@ -13,14 +13,24 @@ class InventoryService {
 
   Future<StockBalance> balance(String farmId, String productId, {String? locationId, String? lotNumber}) async {
     final rows = await kardex(farmId, productId);
-    final filtered = rows.where((row) => (locationId == null || row.locationId == locationId) && (lotNumber == null || row.lotNumber == lotNumber));
+    final filtered = rows.where((row) => lotNumber == null || row.lotNumber == lotNumber);
     var quantity = 0.0;
     var value = 0;
     var unit = '';
     for (final row in filtered) {
-      quantity += row.signedQuantity;
+      if (!row.quantity.isFinite) continue;
+      var delta = row.signedQuantity;
+      if (row.type == InventoryTransactionType.transfer) {
+        if (row.locationId == null || row.destinationLocationId == null ||
+            row.locationId == row.destinationLocationId) continue;
+        delta = locationId == null ? 0 : locationId == row.locationId ? -row.quantity
+            : locationId == row.destinationLocationId ? row.quantity : 0;
+      } else if (locationId != null && row.locationId != locationId) {
+        continue;
+      }
+      quantity += delta;
       unit = row.unit;
-      if (row.unitCostCents != null) value += (row.signedQuantity * row.unitCostCents!).round();
+      if (row.unitCostCents != null) value += (delta * row.unitCostCents!).round();
     }
     return StockBalance(productId: productId, unit: unit, quantity: quantity, valueCents: value);
   }
@@ -39,27 +49,51 @@ class InventoryService {
     String? notes,
     String? uuid,
   }) async {
-    if (quantity <= 0) throw const InventoryValidationException('La cantidad debe ser mayor a cero.');
+    return _repository.runTransaction((scoped) async {
+    final service = InventoryService(scoped);
+    if (!quantity.isFinite || quantity <= 0) throw const InventoryValidationException('La cantidad debe ser mayor a cero.');
     if (unit.trim().isEmpty) throw const InventoryValidationException('La unidad es obligatoria.');
-    final existing = await _findExisting(
+    if (unitCostCents != null && unitCostCents < 0) throw const InventoryValidationException('El costo no puede ser negativo.');
+    if (type == InventoryTransactionType.transfer &&
+        (locationId == null || locationId.trim().isEmpty || destinationLocationId == null ||
+         destinationLocationId.trim().isEmpty || locationId == destinationLocationId)) {
+      throw const InventoryValidationException('Indica origen y destino diferentes.');
+    }
+    final productRows = await service.kardex(farmId, productId);
+    if (productRows.any((row) => row.unit != unit.trim())) {
+      throw const InventoryValidationException('La unidad debe coincidir con la del producto.');
+    }
+    final existing = await service._findExisting(
       farmId: farmId,
       uuid: uuid,
       sourceUuid: sourceUuid,
       productId: productId,
       type: type,
     );
-    if (existing != null) return existing;
+    if (existing != null) {
+      if (existing.quantity != quantity || existing.unit != unit.trim() ||
+          existing.productId != productId || existing.type != type ||
+          existing.locationId != locationId || existing.destinationLocationId != destinationLocationId ||
+          existing.lotNumber != lotNumber || (unitCostCents != null && existing.unitCostCents != unitCostCents) ||
+          existing.notes != notes) throw const InventoryValidationException('El movimiento ya existe con datos diferentes.');
+      return existing;
+    }
     if (type == InventoryTransactionType.consumption || type == InventoryTransactionType.transfer) {
-      final current = await balance(farmId, productId, locationId: locationId, lotNumber: lotNumber);
+      final current = await service.balance(farmId, productId, locationId: locationId, lotNumber: lotNumber);
       if (current.quantity < quantity) throw const InventoryValidationException('Existencia insuficiente para el movimiento.');
     }
+    final origin = type == InventoryTransactionType.transfer
+        ? await service.balance(farmId, productId, locationId: locationId, lotNumber: lotNumber) : null;
+    final transferCost = origin != null && origin.quantity > 0
+        ? (origin.valueCents / origin.quantity).round() : null;
     final transaction = InventoryTransaction(
       uuid: uuid ?? const Uuid().v4(), farmId: farmId, productId: productId, type: type,
       quantity: quantity, unit: unit.trim(), date: DateTime.now().toUtc(), lotNumber: lotNumber,
-      locationId: locationId, destinationLocationId: destinationLocationId, unitCostCents: unitCostCents,
+      locationId: locationId, destinationLocationId: destinationLocationId, unitCostCents: unitCostCents ?? transferCost,
       sourceUuid: sourceUuid, notes: notes,
     );
-    return _repository.save(farmId: farmId, value: transaction, uuid: transaction.uuid);
+    return scoped.save(farmId: farmId, value: transaction, uuid: transaction.uuid);
+    });
   }
 
   Future<InventoryTransaction?> _findExisting({

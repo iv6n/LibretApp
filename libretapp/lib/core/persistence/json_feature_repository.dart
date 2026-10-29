@@ -16,6 +16,15 @@ class JsonFeatureRepository<T> {
   final JsonDecoder<T> decode;
   final JsonEncoder<T> encode;
 
+  Future<R> runTransaction<R>(Future<R> Function(JsonFeatureRepository<T> repository) action) {
+    final transactional = store;
+    if (transactional is! TransactionalFeatureRecordStore) {
+      throw StateError('El almacenamiento no admite una operación atómica.');
+    }
+    return (transactional as TransactionalFeatureRecordStore).runTransaction((scoped) => action(JsonFeatureRepository<T>(
+      store: scoped, kind: kind, decode: decode, encode: encode)));
+  }
+
   Future<List<T>> list(String farmId) async => (await store.list(farmId, kind)).map((r) => decode(r.payload)).toList(growable: false);
 
   Future<T?> get(String farmId, String uuid) async {

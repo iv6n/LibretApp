@@ -50,6 +50,13 @@ void main() {
     expect(await service.shouldShowWelcome(), isFalse);
     expect(repository.lookupCount, 0);
   });
+
+  test('an installation with other modules populated keeps its existing access', () async {
+    final prefs = await preferences({});
+    final service = OnboardingStartupService(preferences: prefs, animalRepository: _AnimalRepository(const []), hasOtherUserData: () async => true);
+    expect(await service.shouldShowWelcome(), isFalse);
+    expect(prefs.getBool(PrefsKeys.onboardingCompletedV1), isTrue);
+  });
 }
 
 class _AnimalRepository implements AnimalRepository {

@@ -61,6 +61,15 @@ class SetDirectorioSectionConfig extends DirectorioEvent {
   List<Object> get props => [orderedSections, visibleSections, activeSection];
 }
 
+class SetAnimalDirectoryViewMode extends DirectorioEvent {
+  const SetAnimalDirectoryViewMode(this.mode);
+
+  final AnimalDirectoryViewMode mode;
+
+  @override
+  List<Object> get props => [mode];
+}
+
 /// Evento para iniciar la búsqueda
 class StartSearch extends DirectorioEvent {
   const StartSearch();

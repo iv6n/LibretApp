@@ -2,6 +2,7 @@
 library;
 
 import 'package:equatable/equatable.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
@@ -98,8 +99,13 @@ class LoteWeighingCubit extends Cubit<LoteWeighingState> {
   final LotesRepository _lotesRepository;
   final WeightRecordRepository _weightRepository;
   final WeightPerformanceCalculator _calculator;
+  bool _savingInFlight = false;
+  final Map<String, String> _recordUuids = {};
+
 
   Future<void> load(String loteUuid) async {
+    if (_savingInFlight) return;
+    _recordUuids.clear();
     emit(state.copyWith(status: LoteWeighingStatus.loading));
     try {
       final lote = await _findLote(loteUuid);
@@ -137,6 +143,7 @@ class LoteWeighingCubit extends Cubit<LoteWeighingState> {
   }
 
   void setMeasuredAt(DateTime value) {
+    if (_savingInFlight || state.status == LoteWeighingStatus.saved) return;
     emit(
       state.copyWith(
         measuredAt: _dateOnly(value),
@@ -146,6 +153,7 @@ class LoteWeighingCubit extends Cubit<LoteWeighingState> {
   }
 
   void setWeight(String animalUuid, String rawValue) {
+    if (_savingInFlight || state.status == LoteWeighingStatus.saved) return;
     final value = double.tryParse(rawValue.trim().replaceAll(',', '.'));
     final weights = {...state.weights};
     final errors = {...state.errors}..remove(animalUuid);
@@ -190,7 +198,7 @@ class LoteWeighingCubit extends Cubit<LoteWeighingState> {
   }
 
   Future<void> save() async {
-    if (state.isSaving) return;
+    if (_savingInFlight || state.status == LoteWeighingStatus.saved) return;
     if (state.errors.isNotEmpty) {
       emit(state.copyWith(errorMessage: 'Corrige los pesos marcados.'));
       return;
@@ -203,40 +211,27 @@ class LoteWeighingCubit extends Cubit<LoteWeighingState> {
       return;
     }
 
+    final capturedAt = DateTime.now();
+    final entries = [for (final animal in state.animals)
+      if (state.weights.containsKey(animal.uuid)) WeightBatchEntry(
+        animalUuid: animal.uuid,
+        record: WeightRecord(animalUuid: animal.uuid, lotUuid: lote.uuid,
+          date: measuredAt, weight: state.weights[animal.uuid]!,
+          method: WeightMethod.scale, createdAt: capturedAt,
+          recordUuid: _recordUuids.putIfAbsent(animal.uuid, () => const Uuid().v4())),
+      ),
+    ];
+    _savingInFlight = true;
     emit(state.copyWith(status: LoteWeighingStatus.saving, errorMessage: null));
-    var saved = 0;
     try {
-      for (final animal in state.animals) {
-        final weight = state.weights[animal.uuid];
-        if (weight == null) continue;
-        await _weightRepository.addWeightRecord(
-          animal.uuid,
-          WeightRecord(
-            animalUuid: animal.uuid,
-            lotUuid: lote.uuid,
-            date: measuredAt,
-            weight: weight,
-            method: WeightMethod.scale,
-            createdAt: DateTime.now(),
-          ),
-        );
-        saved++;
-      }
-      emit(
-        state.copyWith(
-          status: LoteWeighingStatus.saved,
-          savedCount: saved,
-          errorMessage: null,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: LoteWeighingStatus.failure,
-          savedCount: saved,
-          errorMessage: 'Se guardaron $saved pesos. Error: $error',
-        ),
-      );
+      final saved = await _weightRepository.addWeightRecordsAtomically(entries);
+      if (!isClosed) emit(state.copyWith(status: LoteWeighingStatus.saved,
+          savedCount: saved.length, errorMessage: null));
+    } catch (_) {
+      if (!isClosed) emit(state.copyWith(status: LoteWeighingStatus.failure,
+          savedCount: 0, errorMessage: 'No se guardó ningún peso. Revisa la captura e inténtalo de nuevo.'));
+    } finally {
+      _savingInFlight = false;
     }
   }
 

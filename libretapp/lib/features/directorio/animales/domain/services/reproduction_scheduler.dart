@@ -47,8 +47,9 @@ class ReproductionScheduler {
     int dryOffBeforeDays = 60,
     int closeUpBeforeDays = 21,
   }) {
+    if (record.serviceDate == null) return record;
     final schedule = estimate(
-      serviceDate: record.serviceDate,
+      serviceDate: record.serviceDate!,
       gestationDays: gestationDays,
       pregCheckAfterDays: pregCheckAfterDays,
       dryOffBeforeDays: dryOffBeforeDays,

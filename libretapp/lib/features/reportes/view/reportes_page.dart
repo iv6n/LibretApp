@@ -55,6 +55,7 @@ class _ReportesViewState extends State<_ReportesView>
       appBar: AppBar(
         title: const Text('Reportes'),
         bottom: AppSegmentedTabBar(
+                            textScale: MediaQuery.textScalerOf(context).scale(1),
           controller: _tabController,
           items: const [
             AppSegmentedTabItem(

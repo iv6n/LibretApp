@@ -45,6 +45,16 @@ void main() {
       expect(earTagDisplay(animal), 'Arete pendiente');
       expect(primaryAnimalLabel(animal), Species.cattle.displayName);
     });
+
+    test(
+      'identifies record forms with the animal name and tag, not its UUID',
+      () {
+        final animal = _animal(earTag: '000103', customName: 'Lucero');
+
+        expect(animalRecordContextLabel(animal), 'Animal: Lucero · 000103');
+        expect(animalRecordContextLabel(animal), isNot(contains('animal-1')));
+      },
+    );
   });
 }
 
@@ -52,11 +62,13 @@ AnimalEntity _animal({
   String earTag = 'TAG-1',
   String breed = 'Criolla',
   String? crossBreed,
+  String? customName,
 }) {
   final now = DateTime(2025, 1, 1);
   return AnimalEntity(
     uuid: 'animal-1',
     earTagNumber: earTag,
+    customName: customName,
     species: Species.cattle,
     category: Category.cow,
     lifeStage: LifeStage.cow,

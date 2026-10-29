@@ -2,18 +2,16 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/theme.dart';
 
 class RegistroGastoGeneralPage extends StatefulWidget {
-  const RegistroGastoGeneralPage({super.key});
+  const RegistroGastoGeneralPage({this.record, super.key});
+  final GeneralExpenseRecord? record;
 
   @override
   State<RegistroGastoGeneralPage> createState() =>
@@ -30,6 +28,19 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    final existing = widget.record;
+    if (existing != null) {
+      _amountCtrl.text = existing.amount.isFinite ? existing.amount.toString() : '';
+      _currencyCtrl.text = existing.currency ?? '';
+      _notesCtrl.text = existing.notes ?? '';
+      _type = existing.type;
+      _date = existing.date;
+    }
+  }
+
+  @override
   void dispose() {
     _amountCtrl.dispose();
     _currencyCtrl.dispose();
@@ -38,6 +49,7 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -60,6 +72,8 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
     setState(() => _saving = true);
 
     final record = GeneralExpenseRecord(
+      id: widget.record?.id,
+      recordUuid: widget.record?.recordUuid,
       date: _date,
       type: _type,
       amount: amount,
@@ -70,14 +84,11 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
     );
 
     try {
-      final finanzasBloc = context.read<FinanzasBloc?>();
-      if (finanzasBloc != null) {
-        finanzasBloc.add(AddExpense(record));
-      } else {
-        await locator<FinanzasRepository>().addExpense(record);
-      }
+      final repository = locator<FinanzasRepository>();
+      if (widget.record == null) { await repository.addExpense(record); }
+      else { await repository.updateExpense(record); }
       if (!mounted) return;
-      navigator.pop();
+      navigator.pop(true);
       messenger.showSnackBar(SnackBar(content: Text(l10n.financeExpenseSaved)));
     } catch (e) {
       if (!mounted) return;
@@ -91,7 +102,8 @@ class _RegistroGastoGeneralPageState extends State<RegistroGastoGeneralPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AppFormScaffold(
-      title: l10n.financeRegisterExpense,
+      recordStyle: RecordFormStyle.expense,
+      title: widget.record == null ? l10n.financeRegisterExpense : 'Corregir gasto',
       formKey: _formKey,
       saving: _saving,
       onSave: _save,

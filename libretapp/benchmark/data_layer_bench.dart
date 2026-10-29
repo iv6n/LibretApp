@@ -12,7 +12,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
@@ -41,7 +41,7 @@ class _NoRemote implements AnimalRemoteDataSource {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const shape = HerdShape();
+  const shape = HerdShape(animals: int.fromEnvironment('BENCH_ANIMALS', defaultValue: 2000));
   const outPath = String.fromEnvironment(
     'BENCH_OUT',
     defaultValue: 'benchmark/results/latest.json',
@@ -56,6 +56,8 @@ void main() {
   final suite = BenchSuite(shape.label);
 
   setUpAll(() async {
+    // Benchmark runs under flutter_test against disposable data.
+    // ignore: invalid_use_of_visible_for_testing_member
     SharedPreferences.setMockInitialValues({
       // Skip the one-time activity backfill: it is a migration, not a hot
       // path, and letting it run would rewrite the seeded timestamps.

@@ -4,6 +4,8 @@
 /// state changes.
 library;
 
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -32,8 +34,33 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   final SharedPrefsService _prefs;
   final Set<String> _supportedLanguageCodes;
+  Future<void>? _startup;
+  Future<void>? _shutdown;
 
-  Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) async {
+  Future<void> _onAppStarted(AppStarted event, Emitter<AppState> emit) =>
+      _startup ??= _initializeWorkspace(emit);
+
+  @override
+  Future<void> close() async {
+    final closing = _shutdown;
+    if (closing != null) return closing;
+    final completion = Completer<void>();
+    _shutdown = completion.future;
+    // The startup job uses scoped repositories. Drain it before the host
+    // closes their database or replaces GetIt's registrations.
+    try {
+      await _startup;
+    } catch (_) {
+      /* The event handler reports startup failures. */
+    }
+    try {
+      await super.close();
+    } finally {
+      completion.complete();
+    }
+  }
+
+  Future<void> _initializeWorkspace(Emitter<AppState> emit) async {
     await _preloadCareDefaults();
 
     // Ejecutar migración de enums de ubicaciones (Spanish → English strings)

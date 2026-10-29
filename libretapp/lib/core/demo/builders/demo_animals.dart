@@ -1,4 +1,4 @@
-/// core › demo › builders › demo_animals — the 35-animal demo herd.
+/// core › demo › builders › demo_animals — the 40-animal demo herd.
 ///
 /// Every animal's `ageMonths`/`lifeStage`/`category` is derived from its
 /// `birthDate` through the same [AnimalLifecycleCalculator] /
@@ -728,6 +728,57 @@ final List<_Spec> _specs = [
     bodyConditionScore: 4,
     notes: 'Perro de trabajo para manejo de ganado. Registro de demostración.',
   ),
+  // Additional audit cases: all eight species, both sexes, and no records.
+  const _Spec(
+    slug: 'otro-macho',
+    earTag: 'OTRO-01',
+    name: 'Otro macho',
+    species: Species.other,
+    sex: Sex.male,
+    breed: 'Sin especificar',
+    birthMonthsAgo: 24,
+    productionPurpose: ProductionPurpose.other,
+  ),
+  const _Spec(
+    slug: 'otra-hembra',
+    earTag: 'OTRO-02',
+    name: 'Otra hembra',
+    species: Species.other,
+    sex: Sex.female,
+    breed: 'Sin especificar',
+    birthMonthsAgo: 18,
+    productionPurpose: ProductionPurpose.undefined,
+  ),
+  const _Spec(
+    slug: 'perra-compania',
+    earTag: 'CHIP-DEMO-02',
+    name: 'Luna',
+    species: Species.canine,
+    sex: Sex.female,
+    breed: 'Mestiza',
+    birthMonthsAgo: 28,
+    productionPurpose: ProductionPurpose.companion,
+  ),
+  const _Spec(
+    slug: 'porcino-macho',
+    earTag: 'POR-DEMO-02',
+    name: 'Porcino de engorde',
+    species: Species.pig,
+    sex: Sex.male,
+    breed: 'Yorkshire',
+    birthMonthsAgo: 8,
+    productionPurpose: ProductionPurpose.meat,
+  ),
+  const _Spec(
+    slug: 'ave-joven',
+    earTag: 'ANILLA-DEMO-03',
+    name: 'Ave joven',
+    species: Species.poultry,
+    sex: Sex.female,
+    breed: 'Criolla',
+    birthMonthsAgo: 2,
+    productionPurpose: ProductionPurpose.eggs,
+  ),
 ];
 
 /// Builds the 35 demo animals: 22 cattle (19 active + sold + dead +
@@ -737,7 +788,7 @@ final List<_Spec> _specs = [
 /// [externalSireIdentifier] in `demo_reproduction.dart`) — it does not back
 /// a missing [AnimalEntity].
 List<AnimalEntity> buildDemoAnimals({required DateTime reference}) {
-  assert(_specs.length == 35, 'La demo debe tener exactamente 35 animales.');
+  assert(_specs.length == 40, 'La demo debe tener exactamente 40 animales.');
 
   final byUuid = <String, String>{
     for (final spec in _specs) spec.slug: demoId('animal', spec.slug),
@@ -871,6 +922,7 @@ double _estimatedWeightKg(Species species, Sex sex, int ageMonths) {
       final adult = sex == Sex.male ? 3.2 : 2.4;
       return scaleByAge(adult, 5);
     case Species.canine:
+    case Species.feline:
       return scaleByAge(22.0, 12);
     case Species.other:
       return scaleByAge(50.0, 24);

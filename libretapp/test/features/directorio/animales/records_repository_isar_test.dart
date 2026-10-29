@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
+import 'advisor/rules/rule_test_fixtures.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,60 +50,103 @@ void main() {
     await IsarDatabase().close();
   });
 
+  setUp(() async {
+    final database = IsarDatabase();
+    final isar = await database.initialize();
+    await database.clearAllCollections();
+    await isar.writeTxn(() async {
+      for (final uuid in [
+        'animal-comm-1',
+        'animal-comm-X',
+        'animal-comm-Y',
+        'animal-comm-del',
+        'animal-cost-1',
+        'animal-cost-X',
+        'animal-cost-Y',
+        'animal-cost-del',
+        'animal-health-1',
+        'animal-health-A',
+        'animal-health-B',
+        'animal-health-del',
+        'animal-limit',
+        'animal-move-1',
+        'animal-move-X',
+        'animal-move-Y',
+        'animal-move-del',
+        'animal-prod-1',
+        'animal-prod-X',
+        'animal-prod-Y',
+        'animal-prod-del',
+        'animal-recent-a',
+        'animal-recent-b',
+        'animal-recent-c',
+        'animal-repro-1',
+        'animal-repro-X',
+        'animal-repro-Y',
+        'animal-repro-del',
+        'animal-weight-1',
+        'animal-weight-X',
+        'animal-weight-Y',
+        'animal-weight-del',
+        'animal-weight-lot-1',
+        'animal-weight-undo',
+      ]) {
+        await isar.isarAnimals.put(
+          buildAnimal(
+            uuid: uuid,
+            sex: Sex.female,
+          ).copyWith(earTagNumber: uuid).toIsar(),
+        );
+      }
+    });
+  });
+
   // ─── HealthRecord ──────────────────────────────────────────────────────────
 
   group('HealthRecordRepositoryIsar', () {
-    test(
-      'guarda y lee un registro de salud con todos sus campos',
-      () async {
-        final repo = HealthRecordRepositoryIsar(IsarDatabase());
-        const uuid = 'animal-health-1';
+    test('guarda y lee un registro de salud con todos sus campos', () async {
+      final repo = HealthRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-health-1';
 
-        final saved = await repo.addHealthRecord(
-          uuid,
-          HealthRecord(
-            date: DateTime(2025, 3, 15),
-            type: HealthRecordType.vaccine,
-            product: 'Vacuna Triple',
-            dose: '5 ml',
-            appliedBy: 'Dr. López',
-            notes: 'Sin reacciones adversas',
-          ),
-        );
+      final saved = await repo.addHealthRecord(
+        uuid,
+        HealthRecord(
+          date: DateTime(2025, 3, 15),
+          type: HealthRecordType.vaccine,
+          product: 'Vacuna Triple',
+          dose: '5 ml',
+          appliedBy: 'Dr. López',
+          notes: 'Sin reacciones adversas',
+        ),
+      );
 
-        expect(saved.id, isNotNull);
+      expect(saved.id, isNotNull);
 
-        final records = await repo.getHealthRecords(uuid);
+      final records = await repo.getHealthRecords(uuid);
 
-        expect(records, hasLength(1));
-        expect(records.first.type, HealthRecordType.vaccine);
-        expect(records.first.product, 'Vacuna Triple');
-        expect(records.first.dose, '5 ml');
-        expect(records.first.appliedBy, 'Dr. López');
-        expect(records.first.notes, 'Sin reacciones adversas');
-      },
-      skip: !_canRunIsarNative(),
-    );
+      expect(records, hasLength(1));
+      expect(records.first.type, HealthRecordType.vaccine);
+      expect(records.first.product, 'Vacuna Triple');
+      expect(records.first.dose, '5 ml');
+      expect(records.first.appliedBy, 'Dr. López');
+      expect(records.first.notes, 'Sin reacciones adversas');
+    }, skip: !_canRunIsarNative());
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = HealthRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = HealthRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addHealthRecord(
-          'animal-health-A',
-          HealthRecord(
-            date: DateTime(2025, 3, 15),
-            type: HealthRecordType.deworming,
-            product: 'Ivermectina',
-          ),
-        );
+      await repo.addHealthRecord(
+        'animal-health-A',
+        HealthRecord(
+          date: DateTime(2025, 3, 15),
+          type: HealthRecordType.deworming,
+          product: 'Ivermectina',
+        ),
+      );
 
-        final recordsB = await repo.getHealthRecords('animal-health-B');
-        expect(recordsB, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final recordsB = await repo.getHealthRecords('animal-health-B');
+      expect(recordsB, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = HealthRecordRepositoryIsar(IsarDatabase());
@@ -125,35 +171,31 @@ void main() {
   // ─── WeightRecord ─────────────────────────────────────────────────────────
 
   group('WeightRecordRepositoryIsar', () {
-    test(
-      'guarda y lee un registro de peso con todos sus campos',
-      () async {
-        final repo = WeightRecordRepositoryIsar(IsarDatabase());
-        const uuid = 'animal-weight-1';
+    test('guarda y lee un registro de peso con todos sus campos', () async {
+      final repo = WeightRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-weight-1';
 
-        final saved = await repo.addWeightRecord(
-          uuid,
-          WeightRecord(
-            date: DateTime(2025, 4, 10),
-            weight: 385.5,
-            method: WeightMethod.scale,
-            measuredBy: 'Juan Pérez',
-            notes: 'Pesaje mensual',
-          ),
-        );
+      final saved = await repo.addWeightRecord(
+        uuid,
+        WeightRecord(
+          date: DateTime(2025, 4, 10),
+          weight: 385.5,
+          method: WeightMethod.scale,
+          measuredBy: 'Juan Pérez',
+          notes: 'Pesaje mensual',
+        ),
+      );
 
-        expect(saved.id, isNotNull);
+      expect(saved.id, isNotNull);
 
-        final records = await repo.getWeightRecords(uuid);
+      final records = await repo.getWeightRecords(uuid);
 
-        expect(records, hasLength(1));
-        expect(records.first.weight, 385.5);
-        expect(records.first.method, WeightMethod.scale);
-        expect(records.first.measuredBy, 'Juan Pérez');
-        expect(records.first.notes, 'Pesaje mensual');
-      },
-      skip: !_canRunIsarNative(),
-    );
+      expect(records, hasLength(1));
+      expect(records.first.weight, 385.5);
+      expect(records.first.method, WeightMethod.scale);
+      expect(records.first.measuredBy, 'Juan Pérez');
+      expect(records.first.notes, 'Pesaje mensual');
+    }, skip: !_canRunIsarNative());
 
     test(
       'conserva el lote, el animal hidratado y la fecha de creación',
@@ -187,25 +229,21 @@ void main() {
       skip: !_canRunIsarNative(),
     );
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = WeightRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = WeightRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addWeightRecord(
-          'animal-weight-X',
-          WeightRecord(
-            date: DateTime(2025, 4, 10),
-            weight: 200.0,
-            method: WeightMethod.estimated,
-          ),
-        );
+      await repo.addWeightRecord(
+        'animal-weight-X',
+        WeightRecord(
+          date: DateTime(2025, 4, 10),
+          weight: 200.0,
+          method: WeightMethod.estimated,
+        ),
+      );
 
-        final records = await repo.getWeightRecords('animal-weight-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getWeightRecords('animal-weight-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('deshacer restaura la misma identidad estable', () async {
       final repo = WeightRecordRepositoryIsar(IsarDatabase());
@@ -250,55 +288,47 @@ void main() {
   // ─── CostRecord ───────────────────────────────────────────────────────────
 
   group('CostRecordRepositoryIsar', () {
-    test(
-      'guarda y lee un registro de costo con todos sus campos',
-      () async {
-        final repo = CostRecordRepositoryIsar(IsarDatabase());
-        const uuid = 'animal-cost-1';
+    test('guarda y lee un registro de costo con todos sus campos', () async {
+      final repo = CostRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-cost-1';
 
-        final saved = await repo.addCostRecord(
-          uuid,
-          CostRecord(
-            date: DateTime(2025, 5, 1),
-            type: CostType.medication,
-            amount: 75.0,
-            currency: 'USD',
-            notes: 'Antibiótico preventivo',
-          ),
-        );
+      final saved = await repo.addCostRecord(
+        uuid,
+        CostRecord(
+          date: DateTime(2025, 5, 1),
+          type: CostType.medication,
+          amount: 75.0,
+          currency: 'USD',
+          notes: 'Antibiótico preventivo',
+        ),
+      );
 
-        expect(saved.id, isNotNull);
+      expect(saved.id, isNotNull);
 
-        final records = await repo.getCostRecords(uuid);
+      final records = await repo.getCostRecords(uuid);
 
-        expect(records, hasLength(1));
-        expect(records.first.type, CostType.medication);
-        expect(records.first.amount, 75.0);
-        expect(records.first.currency, 'USD');
-        expect(records.first.notes, 'Antibiótico preventivo');
-      },
-      skip: !_canRunIsarNative(),
-    );
+      expect(records, hasLength(1));
+      expect(records.first.type, CostType.medication);
+      expect(records.first.amount, 75.0);
+      expect(records.first.currency, 'USD');
+      expect(records.first.notes, 'Antibiótico preventivo');
+    }, skip: !_canRunIsarNative());
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = CostRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = CostRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addCostRecord(
-          'animal-cost-X',
-          CostRecord(
-            date: DateTime(2025, 5, 1),
-            type: CostType.feeding,
-            amount: 50.0,
-          ),
-        );
+      await repo.addCostRecord(
+        'animal-cost-X',
+        CostRecord(
+          date: DateTime(2025, 5, 1),
+          type: CostType.feeding,
+          amount: 50.0,
+        ),
+      );
 
-        final records = await repo.getCostRecords('animal-cost-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getCostRecords('animal-cost-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = CostRecordRepositoryIsar(IsarDatabase());
@@ -355,25 +385,21 @@ void main() {
       skip: !_canRunIsarNative(),
     );
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = MovementRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = MovementRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addMovementRecord(
-          'animal-move-X',
-          MovementRecord(
-            date: DateTime(2025, 6, 20),
-            toLocation: 'Corral',
-            reason: MovementReason.quarantine,
-          ),
-        );
+      await repo.addMovementRecord(
+        'animal-move-X',
+        MovementRecord(
+          date: DateTime(2025, 6, 20),
+          toLocation: 'Corral',
+          reason: MovementReason.quarantine,
+        ),
+      );
 
-        final records = await repo.getMovementRecords('animal-move-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getMovementRecords('animal-move-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = MovementRecordRepositoryIsar(IsarDatabase());
@@ -461,56 +487,48 @@ void main() {
   });
 
   group('ProductionRecordRepositoryIsar', () {
-    test(
-      'guarda y lee un registro productivo con todos sus campos',
-      () async {
-        final repo = ProductionRecordRepositoryIsar(IsarDatabase());
-        const uuid = 'animal-prod-1';
+    test('guarda y lee un registro productivo con todos sus campos', () async {
+      final repo = ProductionRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-prod-1';
 
-        final saved = await repo.addProductionRecord(
-          uuid,
-          ProductionRecord(
-            date: DateTime(2025, 7, 1),
-            type: ProductionRecordType.production,
-            value: 18.5,
-            unit: 'L',
-            notes: 'Producción diaria de leche',
-          ),
-        );
+      final saved = await repo.addProductionRecord(
+        uuid,
+        ProductionRecord(
+          date: DateTime(2025, 7, 1),
+          type: ProductionRecordType.production,
+          value: 18.5,
+          unit: 'L',
+          notes: 'Producción diaria de leche',
+        ),
+      );
 
-        expect(saved.id, isNotNull);
+      expect(saved.id, isNotNull);
 
-        final records = await repo.getProductionRecords(uuid);
+      final records = await repo.getProductionRecords(uuid);
 
-        expect(records, hasLength(1));
-        expect(records.first.type, ProductionRecordType.production);
-        expect(records.first.value, 18.5);
-        expect(records.first.unit, 'L');
-        expect(records.first.notes, 'Producción diaria de leche');
-      },
-      skip: !_canRunIsarNative(),
-    );
+      expect(records, hasLength(1));
+      expect(records.first.type, ProductionRecordType.production);
+      expect(records.first.value, 18.5);
+      expect(records.first.unit, 'L');
+      expect(records.first.notes, 'Producción diaria de leche');
+    }, skip: !_canRunIsarNative());
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = ProductionRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = ProductionRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addProductionRecord(
-          'animal-prod-X',
-          ProductionRecord(
-            date: DateTime(2025, 7, 1),
-            type: ProductionRecordType.weighing,
-            value: 400.0,
-            unit: 'kg',
-          ),
-        );
+      await repo.addProductionRecord(
+        'animal-prod-X',
+        ProductionRecord(
+          date: DateTime(2025, 7, 1),
+          type: ProductionRecordType.weighing,
+          value: 400.0,
+          unit: 'kg',
+        ),
+      );
 
-        final records = await repo.getProductionRecords('animal-prod-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getProductionRecords('animal-prod-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = ProductionRecordRepositoryIsar(IsarDatabase());
@@ -566,24 +584,20 @@ void main() {
       skip: !_canRunIsarNative(),
     );
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addReproductionRecord(
-          'animal-repro-X',
-          ReproductionRecord(
-            serviceDate: DateTime(2025, 2, 14),
-            serviceType: ServiceType.naturalService,
-          ),
-        );
+      await repo.addReproductionRecord(
+        'animal-repro-X',
+        ReproductionRecord(
+          serviceDate: DateTime(2025, 2, 14),
+          serviceType: ServiceType.naturalService,
+        ),
+      );
 
-        final records = await repo.getReproductionRecords('animal-repro-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getReproductionRecords('animal-repro-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
@@ -607,57 +621,49 @@ void main() {
   // ─── CommercialRecord ─────────────────────────────────────────────────────
 
   group('CommercialRecordRepositoryIsar', () {
-    test(
-      'guarda y lee un registro comercial con todos sus campos',
-      () async {
-        final repo = CommercialRecordRepositoryIsar(IsarDatabase());
-        const uuid = 'animal-comm-1';
+    test('guarda y lee un registro comercial con todos sus campos', () async {
+      final repo = CommercialRecordRepositoryIsar(IsarDatabase());
+      const uuid = 'animal-comm-1';
 
-        final saved = await repo.addCommercialRecord(
-          uuid,
-          CommercialRecord(
-            date: DateTime(2025, 8, 10),
-            type: CommercialRecordType.sale,
-            amount: 2500.0,
-            currency: 'USD',
-            counterparty: 'Comprador Martínez',
-            notes: 'Venta en feria ganadera',
-          ),
-        );
+      final saved = await repo.addCommercialRecord(
+        uuid,
+        CommercialRecord(
+          date: DateTime(2025, 8, 10),
+          type: CommercialRecordType.sale,
+          amount: 2500.0,
+          currency: 'USD',
+          counterparty: 'Comprador Martínez',
+          notes: 'Venta en feria ganadera',
+        ),
+      );
 
-        expect(saved.id, isNotNull);
+      expect(saved.id, isNotNull);
 
-        final records = await repo.getCommercialRecords(uuid);
+      final records = await repo.getCommercialRecords(uuid);
 
-        expect(records, hasLength(1));
-        expect(records.first.type, CommercialRecordType.sale);
-        expect(records.first.amount, 2500.0);
-        expect(records.first.currency, 'USD');
-        expect(records.first.counterparty, 'Comprador Martínez');
-        expect(records.first.notes, 'Venta en feria ganadera');
-      },
-      skip: !_canRunIsarNative(),
-    );
+      expect(records, hasLength(1));
+      expect(records.first.type, CommercialRecordType.sale);
+      expect(records.first.amount, 2500.0);
+      expect(records.first.currency, 'USD');
+      expect(records.first.counterparty, 'Comprador Martínez');
+      expect(records.first.notes, 'Venta en feria ganadera');
+    }, skip: !_canRunIsarNative());
 
-    test(
-      'no retorna registros pertenecientes a otro animal',
-      () async {
-        final repo = CommercialRecordRepositoryIsar(IsarDatabase());
+    test('no retorna registros pertenecientes a otro animal', () async {
+      final repo = CommercialRecordRepositoryIsar(IsarDatabase());
 
-        await repo.addCommercialRecord(
-          'animal-comm-X',
-          CommercialRecord(
-            date: DateTime(2025, 8, 10),
-            type: CommercialRecordType.purchase,
-            amount: 1000.0,
-          ),
-        );
+      await repo.addCommercialRecord(
+        'animal-comm-X',
+        CommercialRecord(
+          date: DateTime(2025, 8, 10),
+          type: CommercialRecordType.purchase,
+          amount: 1000.0,
+        ),
+      );
 
-        final records = await repo.getCommercialRecords('animal-comm-Y');
-        expect(records, isEmpty);
-      },
-      skip: !_canRunIsarNative(),
-    );
+      final records = await repo.getCommercialRecords('animal-comm-Y');
+      expect(records, isEmpty);
+    }, skip: !_canRunIsarNative());
 
     test('elimina el registro y deja la colección vacía', () async {
       final repo = CommercialRecordRepositoryIsar(IsarDatabase());

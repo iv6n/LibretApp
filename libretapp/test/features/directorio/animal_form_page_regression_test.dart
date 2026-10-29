@@ -116,11 +116,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Registrar nuevo animal'), findsOneWidget);
+      expect(find.text('Nuevo animal'), findsOneWidget);
       expect(find.text('Siguiente'), findsOneWidget);
     });
 
-    for (final width in [320.0, 360.0, 600.0, 840.0]) {
+    for (final width in [320.0, 360.0, 412.0, 600.0, 840.0]) {
       testWidgets('renders step 1 without overflow at ${width.toInt()} dp', (
         tester,
       ) async {
@@ -144,6 +144,45 @@ void main() {
 
         expect(tester.takeException(), isNull);
       });
+    }
+
+    for (final width in [320.0, 360.0, 412.0]) {
+      testWidgets(
+        'keeps first field and actions accessible at ${width.toInt()} dp with larger text and keyboard',
+        (tester) async {
+          locator
+            ..registerSingleton<AnimalRepository>(
+              _FakeAnimalRepository(allAnimals: const []),
+            )
+            ..registerSingleton<LotesRepository>(
+              _FakeLotesRepository(activeLotes: const []),
+            )
+            ..registerSingleton<LocationRepository>(
+              _FakeLocationRepository(allLocations: const []),
+            );
+          tester.view.physicalSize = Size(width, 1000);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+
+          await tester.pumpWidget(
+            _testApp(
+              const RegisterAnimalPage(),
+              textScale: 1.4,
+              keyboardInset: 300,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('N.º de arete / caravana'), findsOneWidget);
+          expect(find.text('Guardar borrador'), findsOneWidget);
+          expect(
+            tester.getBottomLeft(find.text('Siguiente')).dy,
+            lessThan(700),
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
 
     testWidgets('hydrates all quick-registration seed values', (tester) async {
@@ -208,7 +247,7 @@ void main() {
       await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Ayuda'));
+      await tester.tap(find.byTooltip('Ayuda'));
       await tester.pumpAndSettle();
       expect(find.text('Cómo funciona el registro'), findsOneWidget);
       await tester.tap(find.text('Entendido'));
@@ -261,7 +300,7 @@ void main() {
       expect(find.text('Editar animal'), findsOneWidget);
     });
 
-    testWidgets('auto-adjusts species and category with feedback messages', (
+    testWidgets('keeps category neutral when new age and sex are unknown', (
       tester,
     ) async {
       final now = DateTime(2025, 1, 1);
@@ -282,13 +321,14 @@ void main() {
       await tester.pumpWidget(_testApp(const RegisterAnimalPage()));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Équido'));
       await tester.tap(find.text('Équido'));
       await tester.pumpAndSettle();
 
       final categoryField = tester.widget<DropdownButtonFormField<Category>>(
         find.byType(DropdownButtonFormField<Category>),
       );
-      expect(categoryField.initialValue, Category.grower);
+      expect(categoryField.initialValue, Category.other);
       expect(tester.takeException(), isNull);
     });
 
@@ -320,7 +360,7 @@ void main() {
 
       expect(find.text('Siguiente'), findsOneWidget);
       expect(find.text('Anterior'), findsNothing);
-      expect(find.text('Registrar nuevo animal'), findsOneWidget);
+      expect(find.text('Nuevo animal'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -440,7 +480,7 @@ void main() {
           find.textContaining('No se pudo guardar el animal'),
           findsOneWidget,
         );
-        expect(find.text('Registrar nuevo animal'), findsOneWidget);
+        expect(find.text('Nuevo animal'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -764,11 +804,22 @@ class _TestEditAnimalForm extends StatelessWidget {
   }
 }
 
-Widget _testApp(Widget child) {
+Widget _testApp(
+  Widget child, {
+  double textScale = 1,
+  double keyboardInset = 0,
+}) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     locale: const Locale('es'),
+    builder: (context, child) => MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(textScale),
+        viewInsets: EdgeInsets.only(bottom: keyboardInset),
+      ),
+      child: child!,
+    ),
     home: child,
   );
 }
@@ -1039,6 +1090,13 @@ class _FakeAgendaRepository implements AgendaRepository {
   @override
   Future<void> saveEntry(AgendaEntry entry) async {
     _entries = [..._entries.where((e) => e.id != entry.id), entry];
+  }
+
+  @override
+  Future<void> saveEntries(List<AgendaEntry> entries) async {
+    for (final entry in entries) {
+      await saveEntry(entry);
+    }
   }
 
   @override

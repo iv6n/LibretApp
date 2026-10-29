@@ -112,13 +112,20 @@ class FinanceSummaryService {
     final expenses = topResults[1] as List<GeneralExpenseRecord>;
     final animals = topResults[2] as List;
 
+    var invalidRecordCount = 0;
+    bool valid(double? value) {
+      if (value != null && value.isFinite && value > 0) return true;
+      invalidRecordCount++; return false;
+    }
+    final validIncomes = incomes.where((i) => valid(i.amount)).toList();
+    final validExpenses = expenses.where((e) => valid(e.amount)).toList();
     double totalAnimalCosts = 0;
     double totalAnimalSales = 0;
     final categoryTotals = <String, double>{};
     final movements = <FinanceMovementItem>[];
     final sales = <FinanceMovementItem>[];
 
-    for (final income in incomes) {
+    for (final income in validIncomes) {
       movements.add(
         FinanceMovementItem(
           kind: FinanceMovementKind.income,
@@ -130,7 +137,7 @@ class FinanceSummaryService {
       );
     }
 
-    for (final expense in expenses) {
+    for (final expense in validExpenses) {
       movements.add(
         FinanceMovementItem(
           kind: FinanceMovementKind.expense,
@@ -163,6 +170,7 @@ class FinanceSummaryService {
 
     for (final data in animalRecords) {
       for (final cost in data.costs.where((c) => period.contains(c.date))) {
+        if (!valid(cost.amount)) continue;
         totalAnimalCosts += cost.amount;
         categoryTotals.update(
           _costTypeLabel(cost.type),
@@ -184,7 +192,8 @@ class FinanceSummaryService {
         (c) =>
             c.type == CommercialRecordType.sale && period.contains(c.date),
       )) {
-        final amount = commercial.amount ?? 0;
+        if (!valid(commercial.amount)) continue;
+        final amount = commercial.amount!;
         totalAnimalSales += amount;
         final saleItem = FinanceMovementItem(
           kind: FinanceMovementKind.sale,
@@ -208,10 +217,11 @@ class FinanceSummaryService {
 
     final summary = FinancialPeriodSummary(
       period: period,
-      totalIncome: incomes.fold(0.0, (s, i) => s + i.amount),
-      totalGeneralExpenses: expenses.fold(0.0, (s, e) => s + e.amount),
+      totalIncome: validIncomes.fold(0.0, (s, i) => s + i.amount),
+      totalGeneralExpenses: validExpenses.fold(0.0, (s, e) => s + e.amount),
       totalAnimalCosts: totalAnimalCosts,
       totalAnimalSales: totalAnimalSales,
+      invalidRecordCount: invalidRecordCount,
     );
 
     return FinanceSummaryDetail(

@@ -7,6 +7,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'registro_ingreso_page.dart';
+import 'registro_gasto_general_page.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
@@ -99,6 +102,7 @@ class _FinanzasViewState extends State<_FinanzasView>
           ),
         ],
         bottom: TabBar(
+          isScrollable: MediaQuery.sizeOf(context).width < 400 || MediaQuery.textScalerOf(context).scale(14) > 18,
           controller: _tabController,
           tabs: const [
             Tab(text: 'Resumen'),
@@ -123,11 +127,25 @@ class _FinanzasViewState extends State<_FinanzasView>
               ResumenTab(summary: state.summary),
               IngresosList(
                 incomes: state.incomes,
+                onEdit: (record) async {
+                  final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+                    builder: (_) => RegistroIngresoPage(record: record)));
+                  if (changed == true && context.mounted && state.period != null) {
+                    context.read<FinanzasBloc>().add(LoadPeriod(state.period!));
+                  }
+                },
                 onDelete: (id) =>
                     context.read<FinanzasBloc>().add(DeleteIncome(id)),
               ),
               GastosList(
                 expenses: state.expenses,
+                onEdit: (record) async {
+                  final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(
+                    builder: (_) => RegistroGastoGeneralPage(record: record)));
+                  if (changed == true && context.mounted && state.period != null) {
+                    context.read<FinanzasBloc>().add(LoadPeriod(state.period!));
+                  }
+                },
                 onDelete: (id) =>
                     context.read<FinanzasBloc>().add(DeleteExpense(id)),
               ),

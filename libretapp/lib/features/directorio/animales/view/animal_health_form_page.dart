@@ -44,6 +44,8 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   late final TextEditingController _causeController;
   late final TextEditingController _notesController;
 
+  final _medicineBatchController = TextEditingController();
+  final _withdrawalController = TextEditingController();
   HealthRecordType _type = HealthRecordType.vaccine;
   DateTime _date = DateTime.now();
   DateTime? _nextDate;
@@ -52,6 +54,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   AnimalEntity? _animal;
   HealthRecord? _lastRecord;
   HealthRecord? _editing;
+  String? _loadError;
 
   @override
   void initState() {
@@ -61,57 +64,50 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     _appliedByController = TextEditingController();
     _causeController = TextEditingController();
     _notesController = TextEditingController();
-    _loadAnimal();
-    if (widget.isEditing) _load();
+    _load();
   }
 
-  /// Hydrates the form from the record being corrected.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final records = await locator<HealthRecordRepository>().getHealthRecords(
-      widget.animalUuid,
-    );
-    if (!mounted) return;
-
-    final record = records
-        .where((candidate) => candidate.id == widget.recordId)
-        .firstOrNull;
-    if (record == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).recordEditNotFound),
-        ),
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid,
       );
-      context.pop(false);
-      return;
+      if (animal == null) throw StateError('Animal no encontrado.');
+      final records = await locator<HealthRecordRepository>().getHealthRecords(
+        widget.animalUuid,
+      );
+      final record = widget.isEditing
+          ? records.where((r) => r.id == widget.recordId).firstOrNull
+          : null;
+      if (widget.isEditing && record == null)
+        throw StateError('El registro ya no existe.');
+      if (!mounted) return;
+      setState(() {
+        _animal = animal;
+        _lastRecord = records.firstOrNull;
+        _editing = record;
+        if (record != null) {
+          _productController.text = record.product;
+          _medicineBatchController.text = record.medicineBatch ?? '';
+          _withdrawalController.text = record.withdrawalDays?.toString() ?? '';
+          _doseController.text = record.dose ?? '';
+          _appliedByController.text = record.appliedBy ?? '';
+          _causeController.text = record.cause ?? '';
+          _notesController.text = record.notes ?? '';
+          _type = record.type;
+          _date = record.date;
+          _nextDate = record.nextDueDate;
+        }
+      });
+    } catch (error) {
+      if (mounted) setState(() => _loadError = '$error');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-
-    setState(() {
-      _editing = record;
-      _productController.text = record.product;
-      _doseController.text = record.dose ?? '';
-      _appliedByController.text = record.appliedBy ?? '';
-      _causeController.text = record.cause ?? '';
-      _notesController.text = record.notes ?? '';
-      _type = record.type;
-      _date = record.date;
-      _nextDate = record.nextDueDate;
-      _loading = false;
-    });
-  }
-
-  Future<void> _loadAnimal() async {
-    final animal = await locator<AnimalRepository>().getByUuid(
-      widget.animalUuid,
-    );
-    final records = await locator<HealthRecordRepository>().getHealthRecords(
-      widget.animalUuid,
-    );
-    if (!mounted) return;
-    setState(() {
-      _animal = animal;
-      _lastRecord = records.isNotEmpty ? records.first : null;
-    });
   }
 
   void _applyLastRecord() {
@@ -130,6 +126,8 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
 
   @override
   void dispose() {
+    _medicineBatchController.dispose();
+    _withdrawalController.dispose();
     _productController.dispose();
     _doseController.dispose();
     _appliedByController.dispose();
@@ -139,13 +137,26 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   }
 
   Future<void> _save() async {
-    if (_saving || _loading || (widget.isEditing && _editing == null)) return;
+    if (_saving ||
+        _loading ||
+        _loadError != null ||
+        (widget.isEditing && _editing == null))
+      return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _saving = true);
     try {
+      final animal =
+          _animal ??
+          await locator<AnimalRepository>().getByUuid(widget.animalUuid);
+      if (animal == null) throw StateError('Animal no encontrado.');
+      AnimalRecordValidation.operation(
+        animal,
+        _date,
+        editing: widget.isEditing,
+      );
       final repository = locator<HealthRecordRepository>();
       final edited = _editing;
       final record = HealthRecord(
@@ -166,9 +177,16 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
         cause: _causeController.text.trim().isEmpty
             ? null
             : _causeController.text.trim(),
-        medicineBatch: edited?.medicineBatch,
-        withdrawalDays: edited?.withdrawalDays,
-        withdrawalEndDate: edited?.withdrawalEndDate,
+        medicineBatch: _medicineBatchController.text.trim().isEmpty
+            ? null
+            : _medicineBatchController.text.trim(),
+        withdrawalDays: int.tryParse(_withdrawalController.text.trim()),
+        withdrawalEndDate:
+            (int.tryParse(_withdrawalController.text.trim()) ?? 0) > 0
+            ? _date.add(
+                Duration(days: int.parse(_withdrawalController.text.trim())),
+              )
+            : null,
         recordUuid: edited?.recordUuid,
         updatedAt: edited?.updatedAt,
       );
@@ -229,9 +247,13 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
     final l10n = AppLocalizations.of(context);
 
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.health,
+      onCancel: () => Navigator.of(context).pop(),
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormHealthTitle,
+      contextLabel: animalRecordContextLabel(_animal),
+      contextIcon: Icons.pets_outlined,
       saving: _saving,
       loading: _loading,
       formKey: _formKey,
@@ -240,6 +262,10 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
       assetPath: assetForHealthRecordType(_type) ?? AppAssetPaths.healthVaccine,
       fallbackIcon: fallbackIconForHealthRecordType(_type),
       fields: [
+        if (_loadError != null) ...[
+          Text(_loadError!),
+          TextButton(onPressed: _load, child: const Text('Reintentar')),
+        ],
         if (_lastRecord != null) ...[
           AppChip(
             icon: Icons.replay,
@@ -253,7 +279,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
         AppSelectField<HealthRecordType>(
           value: _type,
           labelText: l10n.detailFormHealthType,
-          requiredField: true,
+          requiredField: AnimalRecordValidation.requiresProduct(_type),
           items: HealthRecordType.values,
           itemLabel: (type) => type.displayName,
           onChanged: (value) {
@@ -265,8 +291,10 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
         AppTextField(
           controller: _productController,
           labelText: l10n.detailFormHealthProduct,
-          requiredField: true,
-          validator: (value) => value == null || value.trim().isEmpty
+          requiredField: AnimalRecordValidation.requiresProduct(_type),
+          validator: (value) =>
+              AnimalRecordValidation.requiresProduct(_type) &&
+                  (value == null || value.trim().isEmpty)
               ? l10n.detailFormHealthProductRequired
               : null,
         ),
@@ -287,6 +315,24 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _medicineBatchController,
+          labelText: l10n.detailFormHealthMedicineBatch,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _withdrawalController,
+          labelText: l10n.detailFormHealthWithdrawalDays,
+          helperText: l10n.detailFormHealthWithdrawalHelper,
+          keyboardType: TextInputType.number,
+          validator: (value) => value == null || value.trim().isEmpty
+              ? null
+              : (int.tryParse(value.trim()) == null ||
+                        int.parse(value.trim()) < 0
+                    ? l10n.detailFormNumberInvalid
+                    : null),
         ),
         const SizedBox(height: AppSpacing.md),
         AppDateField(

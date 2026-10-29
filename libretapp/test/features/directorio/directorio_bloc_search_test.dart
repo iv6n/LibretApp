@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -15,12 +16,14 @@ import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
+import 'package:libretapp/features/directorio/data/directorio_config_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_status.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('DirectorioBloc search behavior', () {
@@ -65,6 +68,74 @@ void main() {
       await animalesTabBloc.close();
       await lotesTabBloc.close();
       await ubicacionesTabBloc.close();
+    });
+
+    test('restores and persists the animal directory view mode', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'directorio.animales.view_mode.v1': 'compact',
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final configRepository = DirectorioConfigRepository(
+        SharedPrefsService(prefs),
+      );
+      await directorioBloc.close();
+      animalesTabBloc = AnimalesTabBloc(_FakeAnimalRepository());
+      lotesTabBloc = LotesTabBloc(_FakeLotesRepository());
+      ubicacionesTabBloc = UbicacionesTabBloc(_FakeLocationRepository());
+      directorioBloc = DirectorioBloc(
+        animalesTabBloc: animalesTabBloc,
+        lotesTabBloc: lotesTabBloc,
+        ubicacionesTabBloc: ubicacionesTabBloc,
+        configRepository: configRepository,
+      );
+      final loaded = directorioBloc.stream.firstWhere(
+        (state) => state is DirectorioLoaded,
+      );
+      directorioBloc.add(const LoadDirectorioData());
+      expect(
+        (await loaded as DirectorioLoaded).animalViewMode,
+        AnimalDirectoryViewMode.compact,
+      );
+
+      final changed = directorioBloc.stream.firstWhere(
+        (state) =>
+            state is DirectorioLoaded &&
+            state.animalViewMode == AnimalDirectoryViewMode.cards,
+      );
+      directorioBloc.add(
+        const SetAnimalDirectoryViewMode(AnimalDirectoryViewMode.cards),
+      );
+      await changed;
+
+      expect(
+        await configRepository.loadAnimalViewMode(),
+        AnimalDirectoryViewMode.cards,
+      );
+    });
+
+    test('changing animal view keeps the active section and search', () async {
+      directorioBloc.add(
+        const ChangeDirectorioSection(DirectorioSection.ubicaciones),
+      );
+      directorioBloc.add(const StartSearch());
+      directorioBloc.add(const PerformCombinedSearch('potrero'));
+      await _flushEvents();
+      final before = directorioBloc.state as DirectorioLoaded;
+
+      final changed = directorioBloc.stream.firstWhere(
+        (state) =>
+            state is DirectorioLoaded &&
+            state.animalViewMode == AnimalDirectoryViewMode.compact,
+      );
+      directorioBloc.add(
+        const SetAnimalDirectoryViewMode(AnimalDirectoryViewMode.compact),
+      );
+      final after = await changed as DirectorioLoaded;
+
+      expect(
+        after,
+        before.copyWith(animalViewMode: AnimalDirectoryViewMode.compact),
+      );
     });
 
     test(

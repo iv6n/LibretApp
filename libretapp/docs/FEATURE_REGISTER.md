@@ -13,3 +13,5 @@
 | Contabilidad, fiscal y pagos | `finanzas` | adaptador sandbox | contratos pendientes | Facturapi/Stripe sandbox |
 | Nómina, canal y maquila | `agenda/personal`, `registro/comercial`, `finanzas/maquila` | implementada localmente | flujos UI pendientes | proveedores/certificados |
 | Asistente, proyecciones, suscripción y cacería | `inicio`, `perfil`, `ubicaciones` | adaptador/control local | evaluación pendiente | OpenAI/Stripe server-side |
+| Importación revisada del hato Excel/CSV | `core/services/herd_import_service.dart`, `directorio/animales/view/herd_import_page.dart` | verificada localmente | exportación actual, duplicados, ceros iniciales, cambios de finca y rollback con Isar real | sin servicio externo |
+| Sesiones por lotes sin conexión | `registro/lotes`, `core/di/web` | verificada en aplicación instalada y web | borradores reanudables, confirmación atómica, versiones, barrera de persistencia y recarga real sin red en Chrome | caché inicial con conexión en web; no requiere hardware |

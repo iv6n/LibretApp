@@ -67,6 +67,52 @@ void main() {
   });
 
   group('Registro pages validations', () {
+    testWidgets(
+      'tratamiento por lote permite seleccionar con texto grande y teclado',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 900);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('es'),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(2),
+                viewInsets: const EdgeInsets.only(bottom: 260),
+              ),
+              child: child!,
+            ),
+            home: const BulkHealthRegistroPage(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        final animal = find.textContaining('TAG-REG-1');
+        await tester.scrollUntilVisible(
+          animal,
+          180,
+          scrollable: find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(animal);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+          isTrue,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('registro peso blocks non-positive values', (tester) async {
       await tester.pumpWidget(_testApp(const RegistroPesoPage()));
       await tester.pumpAndSettle();
@@ -350,6 +396,10 @@ class _FakeLotesRepository implements LotesRepository {
 }
 
 class _FakeWeightRecordRepository implements WeightRecordRepository {
+  @override
+  Future<List<WeightRecord>> addWeightRecordsAtomically(List<WeightBatchEntry> entries) async {
+    throw UnsupportedError('El pesaje atómico no está disponible en este adaptador.');
+  }
   @override
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) async =>
       const [];

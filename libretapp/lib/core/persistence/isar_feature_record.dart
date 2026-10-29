@@ -5,7 +5,7 @@
 /// introduced. Payloads are versioned by [kind] and remain exportable.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 
 part 'isar_feature_record.g.dart';
 

@@ -4,6 +4,8 @@ library;
 import 'dart:convert';
 
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
+import 'package:libretapp/core/experience/registration_preferences.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
 import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
 
@@ -15,18 +17,37 @@ class DashboardConfigRepository {
 
   final SharedPrefsService _prefs;
 
-  Future<List<DashboardWidgetConfig>> loadWidgets() async {
+  CareProfile? resolveProfile({required int pets, required int livestock}) {
+    final preferences = RegistrationPreferences.decode(
+      _prefs.getString(RegistrationPreferences.storageKey),
+    );
+    return resolveCareProfileFromCounts(
+      selected: preferences.careProfile,
+      pets: pets,
+      livestock: livestock,
+      preferredSpecies: preferences.preferredSpecies,
+    );
+  }
+
+  Future<List<DashboardWidgetConfig>> loadWidgets({
+    CareProfile? profile,
+  }) async {
     final raw = _prefs.getString(_widgetsKey);
-    if (raw == null || raw.isEmpty) return defaultDashboardWidgets();
+    if (raw == null || raw.isEmpty)
+      return defaultDashboardWidgets(profile: profile);
     try {
       final list = jsonDecode(raw) as List<dynamic>;
-      final configs = list
-          .map((e) => DashboardWidgetConfig.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+      final configs =
+          list
+              .map(
+                (e) =>
+                    DashboardWidgetConfig.fromJson(e as Map<String, dynamic>),
+              )
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order));
       return configs;
     } catch (_) {
-      return defaultDashboardWidgets();
+      return defaultDashboardWidgets(profile: profile);
     }
   }
 
@@ -35,18 +56,24 @@ class DashboardConfigRepository {
     await _prefs.setString(_widgetsKey, encoded);
   }
 
-  Future<List<DashboardQuickAction>> loadQuickActions() async {
+  Future<List<DashboardQuickAction>> loadQuickActions({
+    CareProfile? profile,
+  }) async {
     final raw = _prefs.getString(_actionsKey);
-    if (raw == null || raw.isEmpty) return defaultQuickActions();
+    if (raw == null || raw.isEmpty)
+      return defaultQuickActions(profile: profile);
     try {
       final list = jsonDecode(raw) as List<dynamic>;
-      final actions = list
-          .map((e) => DashboardQuickAction.fromJson(e as Map<String, dynamic>))
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order));
+      final actions =
+          list
+              .map(
+                (e) => DashboardQuickAction.fromJson(e as Map<String, dynamic>),
+              )
+              .toList()
+            ..sort((a, b) => a.order.compareTo(b.order));
       return actions;
     } catch (_) {
-      return defaultQuickActions();
+      return defaultQuickActions(profile: profile);
     }
   }
 
@@ -55,8 +82,8 @@ class DashboardConfigRepository {
     await _prefs.setString(_actionsKey, encoded);
   }
 
-  Future<void> resetToDefaults() async {
-    await saveWidgets(defaultDashboardWidgets());
-    await saveQuickActions(defaultQuickActions());
+  Future<void> resetToDefaults({CareProfile? profile}) async {
+    await saveWidgets(defaultDashboardWidgets(profile: profile));
+    await saveQuickActions(defaultQuickActions(profile: profile));
   }
 }

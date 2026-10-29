@@ -7,6 +7,7 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_card_presentation.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
@@ -32,6 +33,7 @@ class AnimalCard extends StatelessWidget {
     this.onPrepareQuickMenu,
     this.isSelected = false,
     this.selectionEnabled = false,
+    this.isPreview = false,
   });
 
   final AnimalEntity animal;
@@ -49,6 +51,9 @@ class AnimalCard extends StatelessWidget {
   final bool isSelected;
   final bool selectionEnabled;
 
+  /// A read-only instance for onboarding and other examples.
+  final bool isPreview;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -62,12 +67,16 @@ class AnimalCard extends StatelessWidget {
 
     final stageAsset = profile.asset;
     final avatarBorderColor = _avatarBorderColor(animal, context);
-    final healthAccentColor = _isNeutralHealthStatus(animal.healthStatus)
+    final healthAccentColor = isNeutralAnimalHealthStatus(animal.healthStatus)
         ? null
         : colorFromHex(animal.healthStatus.hexColor);
-    final riskAccentColor = _isNeutralRiskLevel(animal.riskLevel)
+    final riskAccentColor = isNeutralAnimalRiskLevel(animal.riskLevel)
         ? null
         : colorFromHex(animal.riskLevel.hexColor);
+    final showRiskStatus = animalRiskStatusHasPriority(
+      animal.healthStatus,
+      animal.riskLevel,
+    );
     final locationLabel = location?.name ?? 'Sin ubicación';
     final hasEarTag = animal.earTagNumber.trim().isNotEmpty;
     final pendingEarTag = hasPendingEarTag(animal);
@@ -83,7 +92,9 @@ class AnimalCard extends StatelessWidget {
     final ageMonths = animal.ageMonths;
     final ageYears = ageMonths ~/ 12;
     final ageRemainderMonths = ageMonths % 12;
-    final ageLabel = ageYears > 0
+    final ageLabel = !animal.hasKnownAge
+        ? 'Sin dato'
+        : ageYears > 0
         ? ageRemainderMonths == 0
               ? '$ageYears año${ageYears == 1 ? '' : 's'}'
               : '$ageYears año${ageYears == 1 ? '' : 's'} $ageRemainderMonths mes${ageRemainderMonths == 1 ? '' : 'es'}'
@@ -122,10 +133,11 @@ class AnimalCard extends StatelessWidget {
       elevation: 1.2,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap:
-            onTap ??
-            () => context.push(AppRoutes.animalDetallePath(animal.uuid)),
-        onLongPress: onLongPress,
+        onTap: isPreview
+            ? null
+            : onTap ??
+                  () => context.push(AppRoutes.animalDetallePath(animal.uuid)),
+        onLongPress: isPreview ? null : onLongPress,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -196,8 +208,10 @@ class AnimalCard extends StatelessWidget {
                                         ),
                                 ),
                                 const SizedBox(width: 6),
-                                if (!selectionEnabled && onMenuAction != null)
-                                  _AnimalCardQuickMenu(
+                                if (!isPreview &&
+                                    !selectionEnabled &&
+                                    onMenuAction != null)
+                                  AnimalQuickMenu(
                                     stageLabel: stageLabel,
                                     stageColor: stageColor,
                                     iconColor: headerSecondaryTextColor,
@@ -249,7 +263,8 @@ class AnimalCard extends StatelessWidget {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                SizedBox(
+                                Expanded(
+                                  flex: 3,
                                   child: Text(
                                     secondaryLabel,
                                     style: textTheme.titleMedium?.copyWith(
@@ -262,8 +277,9 @@ class AnimalCard extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                const Spacer(),
-                                SizedBox(
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  flex: 2,
                                   child: Text(
                                     ageLabel,
                                     style: textTheme.titleSmall?.copyWith(
@@ -321,11 +337,11 @@ class AnimalCard extends StatelessWidget {
                                   TagChip(
                                     fontSize: 11,
                                     label: indicator.label.toUpperCase(),
-                                    accentColor: _indicatorAccentColor(
+                                    accentColor: animalIndicatorAccentColor(
                                       context,
                                       indicator,
                                     ),
-                                    textColor: _indicatorTextColor(
+                                    textColor: animalIndicatorTextColor(
                                       context,
                                       indicator,
                                       animal.productionPurpose,
@@ -352,6 +368,7 @@ class AnimalCard extends StatelessWidget {
               ),
             ),
             Container(
+              key: const ValueKey('animal_card_footer'),
               width: double.infinity,
               decoration: BoxDecoration(
                 color: footerColor,
@@ -359,23 +376,23 @@ class AnimalCard extends StatelessWidget {
                   top: BorderSide(color: AnimalPalette.cardDivider(context)),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Row(
                 children: [
-                  SizedBox(
+                  Expanded(
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: onLocationTap,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 3,
-                          ),
-                          child: _InlineInfo(
-                            icon: Icons.place_outlined,
-                            label: locationLabel,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 48),
+                            child: _InlineInfo(
+                              icon: Icons.place_outlined,
+                              label: locationLabel,
+                            ),
                           ),
                         ),
                       ),
@@ -385,22 +402,16 @@ class AnimalCard extends StatelessWidget {
                   Flexible(
                     child: Align(
                       alignment: Alignment.centerRight,
-                      child: Wrap(
-                        alignment: WrapAlignment.end,
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          _StatusPill(
-                            icon: Icons.add_circle,
-                            label: animal.healthStatus.displayName,
-                            accentColor: healthAccentColor,
-                          ),
-                          _StatusPill(
-                            icon: Icons.shield_outlined,
-                            label: animal.riskLevel.displayName,
-                            accentColor: riskAccentColor,
-                          ),
-                        ],
+                      child: _StatusPill(
+                        icon: showRiskStatus
+                            ? Icons.shield_outlined
+                            : Icons.add_circle,
+                        label: showRiskStatus
+                            ? animal.riskLevel.displayName
+                            : animal.healthStatus.displayName,
+                        accentColor: showRiskStatus
+                            ? riskAccentColor
+                            : healthAccentColor,
                       ),
                     ),
                   ),
@@ -414,14 +425,16 @@ class AnimalCard extends StatelessWidget {
   }
 }
 
-class _AnimalCardQuickMenu extends StatelessWidget {
-  const _AnimalCardQuickMenu({
+class AnimalQuickMenu extends StatelessWidget {
+  const AnimalQuickMenu({
+    super.key,
     required this.stageLabel,
     required this.stageColor,
     required this.iconColor,
     required this.onSelected,
     this.onMenuOpenChanged,
     this.onPrepareQuickMenu,
+    this.showStageLabel = true,
   });
 
   final String stageLabel;
@@ -430,6 +443,7 @@ class _AnimalCardQuickMenu extends StatelessWidget {
   final ValueChanged<AnimalCardMenuAction> onSelected;
   final ValueChanged<bool>? onMenuOpenChanged;
   final Future<void> Function(BuildContext menuContext)? onPrepareQuickMenu;
+  final bool showStageLabel;
 
   Future<void> _openMenu(BuildContext context) async {
     onMenuOpenChanged?.call(true);
@@ -471,20 +485,31 @@ class _AnimalCardQuickMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Acciones',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _openMenu(context),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TagChip(
-              fontSize: 10,
-              label: stageLabel.toUpperCase(),
-              accentColor: stageColor,
-              outlined: false,
+      child: Semantics(
+        button: true,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openMenu(context),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: 48,
+              minHeight: showStageLabel ? 0 : 48,
             ),
-            Icon(Icons.more_vert, size: 24, color: iconColor),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (showStageLabel)
+                  TagChip(
+                    fontSize: 10,
+                    label: stageLabel.toUpperCase(),
+                    accentColor: stageColor,
+                    outlined: false,
+                  ),
+                Icon(Icons.more_vert, size: 24, color: iconColor),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -645,7 +670,7 @@ class _InlineInfo extends StatelessWidget {
           ).colorScheme.onSurface.withValues(alpha: 0.82),
         ),
         const SizedBox(width: 2),
-        SizedBox(
+        Flexible(
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -664,31 +689,6 @@ class _InlineInfo extends StatelessWidget {
   }
 }
 
-bool _isNeutralHealthStatus(HealthStatus status) {
-  switch (status) {
-    case HealthStatus.good:
-    case HealthStatus.excellent:
-    case HealthStatus.unknown:
-      return true;
-    case HealthStatus.fair:
-    case HealthStatus.poor:
-    case HealthStatus.critical:
-      return false;
-  }
-}
-
-bool _isNeutralRiskLevel(RiskLevel level) {
-  switch (level) {
-    case RiskLevel.none:
-    case RiskLevel.low:
-      return true;
-    case RiskLevel.medium:
-    case RiskLevel.high:
-    case RiskLevel.critical:
-      return false;
-  }
-}
-
 class _StatusPill extends StatelessWidget {
   const _StatusPill({
     required this.icon,
@@ -704,7 +704,10 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final colors = _statusPillColors(isDark: isDark, accentColor: accentColor);
+    final colors = animalStatusPillColors(
+      isDark: isDark,
+      accentColor: accentColor,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -718,47 +721,21 @@ class _StatusPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: colors.foreground),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-              letterSpacing: 0,
-              color: colors.foreground,
+          Flexible(
+            child: Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                letterSpacing: 0,
+                color: colors.foreground,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-({Color background, Color foreground, Color border}) _statusPillColors({
-  required bool isDark,
-  required Color? accentColor,
-}) {
-  if (accentColor == null) {
-    final foreground = isDark
-        ? const Color(0xFFB8C0CA)
-        : const Color(0xFF5A6575);
-    return (
-      background: isDark ? const Color(0xFF3A424D) : const Color(0xFFE8ECF0),
-      foreground: foreground,
-      border: foreground.withValues(alpha: isDark ? 0.28 : 0.24),
-    );
-  }
-
-  final toned = _mutedColor(accentColor, strength: isDark ? 0.18 : 0.28);
-  final foreground = Color.lerp(
-    toned,
-    isDark ? Colors.white : const Color(0xFF1E2836),
-    isDark ? 0.28 : 0.42,
-  )!;
-  return (
-    background: toned.withValues(alpha: isDark ? 0.24 : 0.16),
-    foreground: foreground,
-    border: toned.withValues(alpha: isDark ? 0.42 : 0.38),
-  );
 }
 
 class TagChip extends StatelessWidget {
@@ -811,7 +788,10 @@ class TagChip extends StatelessWidget {
       );
     }
 
-    final labelColor = textColor ?? accentColor;
+    final theme = Theme.of(context);
+    final labelColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurface
+        : textColor ?? accentColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
@@ -852,7 +832,9 @@ class AnimalProfileVisual {
 AnimalProfileVisual profileVisualFor(AnimalEntity animal, Color stageColor) {
   return AnimalProfileVisual(
     color: stageColor,
-    asset: AnimalTaxonomy.assetForStage(animal.lifeStage),
+    asset:
+        petIllustrationAsset(animal.species) ??
+        AnimalTaxonomy.assetForStage(animal.lifeStage),
     colorFilter: null,
     fallbackIcon: animal.species == Species.poultry
         ? Icons.egg_alt_outlined
@@ -863,10 +845,7 @@ AnimalProfileVisual profileVisualFor(AnimalEntity animal, Color stageColor) {
 }
 
 Color colorFromHex(String hex) {
-  final buffer = StringBuffer();
-  if (hex.length == 6 || hex.length == 7) buffer.write('ff');
-  buffer.write(hex.replaceFirst('#', ''));
-  return Color(int.parse(buffer.toString(), radix: 16));
+  return animalColorFromHex(hex);
 }
 
 Color _mutedColor(Color color, {double strength = 0.4}) {
@@ -975,32 +954,6 @@ class FormattedEarTag extends StatelessWidget {
 /// Severity drives the chip colour so a withdrawal period or an overdue
 /// calving reads differently from a plain statistic, reusing the same warning
 /// palette the pending-ear-tag chip and the avatar border already use.
-Color _indicatorAccentColor(BuildContext context, PurposeIndicator indicator) {
-  switch (indicator.severity) {
-    case IndicatorSeverity.critical:
-      return const Color(0xFFD93A2F);
-    case IndicatorSeverity.attention:
-      return const Color(0xFFC58B2A);
-    case IndicatorSeverity.neutral:
-      return AnimalPalette.summaryChipAccent(context);
-  }
-}
-
-Color _indicatorTextColor(
-  BuildContext context,
-  PurposeIndicator indicator,
-  ProductionPurpose purpose,
-) {
-  switch (indicator.severity) {
-    case IndicatorSeverity.critical:
-      return const Color(0xFF7A1B14);
-    case IndicatorSeverity.attention:
-      return const Color(0xFF704A00);
-    case IndicatorSeverity.neutral:
-      return AnimalPalette.purposeSummaryTextColor(purpose);
-  }
-}
-
 String _purposeShortLabel(ProductionPurpose purpose) {
   switch (purpose) {
     case ProductionPurpose.meat:

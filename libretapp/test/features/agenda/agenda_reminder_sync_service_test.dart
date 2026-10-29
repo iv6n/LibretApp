@@ -5,10 +5,11 @@
 library;
 
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
@@ -88,6 +89,20 @@ class _FakeAnimalRepository implements AnimalRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _BlockedAnimalRepository implements AnimalRepository {
+  final started = Completer<void>();
+  final release = Completer<List<AnimalEntity>>();
+
+  @override
+  Future<List<AnimalEntity>> getAll() {
+    if (!started.isCompleted) started.complete();
+    return release.future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _EmptyHealthRepository implements HealthRecordRepository {
   @override
   Future<List<HealthRecord>> getHealthRecords(String animalUuid) async => [];
@@ -106,7 +121,8 @@ class _EmptyReproductionRepository implements ReproductionRecordRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-class _InMemoryAgendaRepository implements AgendaRepository {
+class _InMemoryAgendaRepository
+    implements AgendaRepository, AtomicAgendaRepository {
   List<AgendaEntry> _entries = [];
 
   @override
@@ -115,6 +131,26 @@ class _InMemoryAgendaRepository implements AgendaRepository {
   @override
   Future<void> replaceAll(List<AgendaEntry> entries) async {
     _entries = List.of(entries);
+  }
+
+  @override
+  Future<void> saveEntry(AgendaEntry entry) async {
+    final index = _entries.indexWhere((current) => current.id == entry.id);
+    if (index < 0) {
+      _entries.add(entry);
+    } else {
+      _entries[index] = entry;
+    }
+  }
+
+  @override
+  Future<void> updateEntry(AgendaEntry entry) => saveEntry(entry);
+
+  @override
+  Future<void> reconcileEntries(
+    List<AgendaEntry> Function(List<AgendaEntry> current) update,
+  ) async {
+    _entries = update(List<AgendaEntry>.of(_entries));
   }
 
   @override
@@ -192,11 +228,12 @@ void main() {
     AgendaReminderSyncService buildService({
       required List<AnimalEntity> animals,
       required AgendaRepository agendaRepository,
+      AnimalRepository? animalRepository,
       LocationRepository? locationRepository,
       CultivationRepository? cultivationRepository,
     }) {
       return AgendaReminderSyncService(
-        animalRepository: _FakeAnimalRepository(animals),
+        animalRepository: animalRepository ?? _FakeAnimalRepository(animals),
         agendaRepository: agendaRepository,
         healthRepo: _EmptyHealthRepository(),
         reproductionRepo: _EmptyReproductionRepository(),
@@ -290,6 +327,111 @@ void main() {
       await service.sync();
       expect(await agenda.fetchEntries(), isEmpty);
     });
+
+    test(
+      'sync preserves manual lite and unknown entries, dropping only legacy auto',
+      () async {
+        AgendaEntry entry(String id, {String? sourceType}) => AgendaEntry(
+          id: id,
+          titulo: id,
+          descripcion: '',
+          fecha: DateTime(2026, 10, 1),
+          tipo: 'Cuidado',
+          animalIds: const [],
+          loteIds: const [],
+          ubicacion: '',
+          estado: AgendaEstado.pendiente,
+          completedAnimalIds: const [],
+          notas: '',
+          sourceType: sourceType,
+        );
+
+        final agenda = _InMemoryAgendaRepository();
+        await agenda.replaceAll([
+          entry('auto:care:manual', sourceType: 'manual'),
+          entry('auto:care:lite', sourceType: 'lite'),
+          entry('third-party-event', sourceType: 'externalIntegration'),
+          entry('auto:care:legacy'),
+        ]);
+
+        await buildService(animals: const [], agendaRepository: agenda).sync();
+
+        final ids = (await agenda.fetchEntries())
+            .map((value) => value.id)
+            .toSet();
+        expect(
+          ids,
+          containsAll([
+            'auto:care:manual',
+            'auto:care:lite',
+            'third-party-event',
+          ]),
+        );
+        expect(ids, isNot(contains('auto:care:legacy')));
+      },
+    );
+
+    test(
+      'sync preserves an appointment created and completed while reminders build',
+      () async {
+        await careRepo.saveRule(
+          const CareRule(
+            id: 'r1',
+            name: 'Vacunación anual',
+            type: CareType.vaccination,
+            intervalDays: 365,
+            species: Species.cattle,
+          ),
+        );
+        final agenda = _InMemoryAgendaRepository();
+        final now = DateTime(2026, 10, 1);
+        await buildService(
+          animals: [_cow()],
+          agendaRepository: agenda,
+        ).sync(now: now);
+        final generated = (await agenda.fetchEntries()).single;
+
+        final blockedAnimals = _BlockedAnimalRepository();
+        final sync = buildService(
+          animals: const [],
+          animalRepository: blockedAnimals,
+          agendaRepository: agenda,
+        ).sync(now: now);
+        await blockedAnimals.started.future;
+
+        final created = AgendaEntry(
+          id: 'manual-created-during-sync',
+          titulo: 'Consulta nueva',
+          descripcion: '',
+          fecha: now,
+          tipo: 'Cita',
+          animalIds: const ['vaca-1'],
+          loteIds: const [],
+          ubicacion: '',
+          estado: AgendaEstado.pendiente,
+          completedAnimalIds: const [],
+          notas: '',
+          sourceType: 'manual',
+        );
+        await agenda.saveEntry(created);
+        await agenda.saveEntry(
+          generated.copyWith(
+            estado: AgendaEstado.completado,
+            notas: 'Aplicada durante la regeneración',
+          ),
+        );
+        blockedAnimals.release.complete([_cow()]);
+        await sync;
+
+        final latest = await agenda.fetchEntries();
+        final preservedAuto = latest.singleWhere(
+          (entry) => entry.id == generated.id,
+        );
+        expect(latest.map((entry) => entry.id), contains(created.id));
+        expect(preservedAuto.estado, AgendaEstado.completado);
+        expect(preservedAuto.notas, 'Aplicada durante la regeneración');
+      },
+    );
 
     test('an independent crop without location creates Agenda work', () async {
       final agenda = _InMemoryAgendaRepository();

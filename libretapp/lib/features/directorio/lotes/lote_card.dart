@@ -170,12 +170,14 @@ class LoteCard extends StatelessWidget {
                         color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        lote.active
-                            ? 'Creado ${_formatDate(lote.createdAt)}'
-                            : 'Cerrado ${_formatDate(lote.closedAt ?? lote.lastUpdateDate)}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      Flexible(
+                        child: Text(
+                          lote.active
+                              ? 'Creado ${_formatDate(lote.createdAt)}'
+                              : 'Cerrado ${_formatDate(lote.closedAt ?? lote.lastUpdateDate)}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -197,9 +199,10 @@ class LoteCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
+    final localDate = date.toLocal();
+    final day = localDate.day.toString().padLeft(2, '0');
+    final month = localDate.month.toString().padLeft(2, '0');
+    final year = localDate.year.toString();
     return '$day/$month/$year';
   }
 }

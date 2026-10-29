@@ -1,17 +1,29 @@
-/// core › di › injection — GetIt service locator setup.
+/// core â€º di â€º injection â€” GetIt service locator setup.
 ///
 /// Call [setupLocator] once at startup to register all dependencies.
 ///
 /// Registration is split into one helper per domain purely for
-/// readability — GetIt's `registerLazySingleton` only stores a factory, it
+/// readability â€” GetIt's `registerLazySingleton` only stores a factory, it
 /// doesn't invoke it, so the *order* these helpers run in doesn't matter as
 /// long as they all complete (which they do, synchronously) before anything
 /// is actually resolved via `locator<T>()`.
 library;
 
+import 'package:libretapp/core/database/write_transaction.dart';
+import 'package:libretapp/core/database/isar_write_transaction.dart';
+
+import 'package:libretapp/features/rfid/infrastructure/unavailable_scale_adapter.dart';
+
 import 'package:get_it/get_it.dart';
+import 'package:libretapp/core/workspace/workspace_registry.dart';
+import 'package:libretapp/core/workspace/workspace_files.dart';
+import 'package:libretapp/core/platform/release_features.dart';
+import 'package:libretapp/features/directorio/animales/domain/repositories/weaning_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/weaning_record_repository_isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/core/backup/backup_store.dart';
+import 'package:libretapp/core/maintenance/data_maintenance.dart';
+import 'package:libretapp/core/maintenance/isar_data_maintenance.dart';
 import 'package:libretapp/core/backup/cloud_backup_repository.dart';
 import 'package:libretapp/core/backup/cloud_backup_service.dart';
 import 'package:libretapp/core/backup/isar_backup_store.dart';
@@ -19,6 +31,8 @@ import 'package:libretapp/core/backup/supabase_cloud_backup_repository.dart';
 import 'package:libretapp/core/backup/supabase_config.dart';
 import 'package:libretapp/core/backup/unavailable_cloud_backup_repository.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
+import 'package:libretapp/core/demo/lite_demo_scenario_service.dart';
+import 'package:libretapp/core/onboarding/profile_onboarding_service.dart';
 import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/native/ffi/libret_native_bridge.dart';
 import 'package:libretapp/core/security/ports/ports.dart';
@@ -32,6 +46,8 @@ import 'package:libretapp/core/security/services/supabase_auth_service.dart';
 import 'package:libretapp/core/security/services/token_store_service.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
+import 'package:libretapp/core/services/herd_import_service.dart';
+import 'package:libretapp/features/registro/lotes/batch_record_service.dart';
 import 'package:libretapp/core/services/export_service.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
@@ -54,6 +70,7 @@ import 'package:libretapp/features/directorio/cultivos/cultivos.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
+import 'package:libretapp/features/lite/reminder_aware_agenda_repository.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar_agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
@@ -65,10 +82,12 @@ import 'package:libretapp/features/agenda/infrastructure/isar_workforce_reposito
 import 'package:libretapp/features/ubicaciones/infrastructure/location_enum_migration_service.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/inicio/data/weather_service.dart';
+import 'package:libretapp/features/inicio/data/weather_preferences_service.dart';
+import 'package:libretapp/features/inicio/data/weather_alerts_service.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
 import 'package:libretapp/features/biblioteca/data/library_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
-import 'package:libretapp/features/perfil/data/perfil_shared_prefs_repository.dart';
+import 'package:libretapp/features/perfil/data/perfil_isar_repository.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
 import 'package:libretapp/features/reportes/domain/report_summary_service.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
@@ -116,8 +135,50 @@ import 'package:libretapp/features/inicio/asistente/asistente.dart';
 import 'package:libretapp/features/reportes/mexico/mexico.dart';
 import 'package:libretapp/features/perfil/suscripcion/suscripcion.dart';
 import 'package:libretapp/core/sync/sync.dart';
+import 'package:libretapp/core/backup/backup_identity.dart';
+import 'package:libretapp/core/security/services/supabase_session.dart';
 
 final locator = GetIt.instance;
+
+Future<void> disposeLocator() async {
+  ReleaseFeatures.demoMode = false;
+  final database = locator.isRegistered<IsarDatabase>()
+      ? locator<IsarDatabase>()
+      : null;
+  if (locator.isRegistered<AgendaRefreshSignal>())
+    locator<AgendaRefreshSignal>().dispose();
+  await locator.reset();
+  await database?.close();
+}
+
+Future<bool> workspaceHasUserData() async {
+  final snapshot = await locator<BackupStore>().capture();
+  if (snapshot.profile.entries.any(
+    (entry) =>
+        entry.value is String &&
+        (entry.value as String).trim().isNotEmpty &&
+        !(const {'region_state', 'production_setting'}.contains(entry.key) &&
+            entry.value == 'general'),
+  ))
+    return true;
+  for (final entry in snapshot.collections.entries) {
+    if (entry.key == 'careRules') continue;
+    if (entry.key == 'featureRecords') {
+      if (entry.value.any(
+        (row) => !const {
+          'core.farm',
+          'core.farm_membership',
+          'core.farm_context',
+          'core.migration',
+        }.contains(row['kind']),
+      ))
+        return true;
+    } else if (entry.value.isNotEmpty) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const _allowInsecureCryptoInRelease = bool.fromEnvironment(
   'LIBRET_ALLOW_INSECURE_CRYPTO_IN_RELEASE',
@@ -133,8 +194,33 @@ bool _isProductionReadyCoreVersion(String version) {
   return !version.startsWith('libret-core/0.');
 }
 
-Future<void> setupLocator() async {
-  final isarDatabase = IsarDatabase();
+Future<void> setupLocator({
+  LocalWorkspace workspace = const LocalWorkspace(
+    id: 'legacy',
+    kind: WorkspaceKind.guest,
+    legacy: true,
+  ),
+}) async {
+  ReleaseFeatures.demoMode = workspace.isDemo;
+  if (SupabaseConfig.isConfigured &&
+      (ReleaseFeatures.phoneAuthEnabled ||
+          ReleaseFeatures.cloudBackupEnabled)) {
+    try {
+      await SupabaseSession.client();
+    } catch (_) {
+      LoggerService.w(
+        'El servicio de cuentas no está disponible; los datos locales siguen accesibles.',
+        tag: 'Auth',
+      );
+    }
+  }
+  final directory = await workspaceDirectory(workspace);
+  final isarDatabase = workspace.legacy
+      ? IsarDatabase()
+      : IsarDatabase.workspace(
+          directory.path,
+          name: 'libretapp_${workspace.id}',
+        );
   await isarDatabase.initialize();
 
   if (_resetLocalDbOnStartup) {
@@ -154,6 +240,7 @@ Future<void> setupLocator() async {
 
   final sharedPreferences = await SharedPreferences.getInstance();
 
+  locator.registerSingleton<LocalWorkspace>(workspace);
   _registerInfrastructure(isarDatabase, sharedPreferences);
   _registerSecurity();
   _registerDirectorioAnimales();
@@ -167,6 +254,7 @@ Future<void> setupLocator() async {
   _registerDemo();
   _registerFieldHardware();
   _registerPlanSlices();
+  await (locator<PerfilRepository>() as PerfilIsarRepository).migrate();
   await locator<FarmMigrationService>().ensureDefaultFarm();
 }
 
@@ -174,12 +262,20 @@ void _registerInfrastructure(
   IsarDatabase isarDatabase,
   SharedPreferences sharedPreferences,
 ) {
+  final workspace = locator<LocalWorkspace>();
   locator
     ..registerSingleton<IsarDatabase>(isarDatabase)
     ..registerSingleton<SharedPrefsService>(
-      SharedPrefsService(sharedPreferences),
+      SharedPrefsService(
+        sharedPreferences,
+        prefix: locator<LocalWorkspace>().preferencePrefix,
+      ),
     )
-    ..registerLazySingleton<MediaStore>(MediaStore.new)
+    ..registerLazySingleton<MediaStore>(
+      () => workspace.legacy
+          ? MediaStore()
+          : MediaStore(documentsDirectory: () => workspaceDirectory(workspace)),
+    )
     ..registerLazySingleton<ThemeRepository>(
       () => ThemeRepository(locator<SharedPrefsService>()),
     )
@@ -191,7 +287,8 @@ void _registerInfrastructure(
     )
     ..registerLazySingleton<FarmMigrationService>(
       () => FarmMigrationService(
-        locator<FarmContextRepository>(), locator<FeatureRecordStore>(),
+        locator<FarmContextRepository>(),
+        locator<FeatureRecordStore>(),
       ),
     );
 }
@@ -200,80 +297,182 @@ void _registerPlanSlices() {
   locator
     ..registerLazySingleton<JsonFeatureRepository<InventoryTransaction>>(
       () => JsonFeatureRepository<InventoryTransaction>(
-        store: locator<FeatureRecordStore>(), kind: 'inventory.transaction',
-        decode: InventoryTransaction.fromJson, encode: (value) => value.toJson(),
+        store: locator<FeatureRecordStore>(),
+        kind: 'inventory.transaction',
+        decode: InventoryTransaction.fromJson,
+        encode: (value) => value.toJson(),
       ),
     )
     ..registerLazySingleton<InventoryService>(
-      () => InventoryService(locator<JsonFeatureRepository<InventoryTransaction>>()),
+      () => InventoryService(
+        locator<JsonFeatureRepository<InventoryTransaction>>(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<FeedPlan>>(
-      () => JsonFeatureRepository<FeedPlan>(store: locator<FeatureRecordStore>(), kind: 'feed.plan', decode: FeedPlan.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<FeedPlan>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'feed.plan',
+        decode: FeedPlan.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<FeedExecution>>(
-      () => JsonFeatureRepository<FeedExecution>(store: locator<FeatureRecordStore>(), kind: 'feed.execution', decode: FeedExecution.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<FeedExecution>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'feed.execution',
+        decode: FeedExecution.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<FeedService>(() => FeedService(plans: locator<JsonFeatureRepository<FeedPlan>>(), executions: locator<JsonFeatureRepository<FeedExecution>>(), inventory: locator<InventoryService>()))
+    ..registerLazySingleton<FeedService>(
+      () => FeedService(
+        plans: locator<JsonFeatureRepository<FeedPlan>>(),
+        executions: locator<JsonFeatureRepository<FeedExecution>>(),
+        inventory: locator<InventoryService>(),
+      ),
+    )
     ..registerLazySingleton<JsonFeatureRepository<FatteningCycle>>(
-      () => JsonFeatureRepository<FatteningCycle>(store: locator<FeatureRecordStore>(), kind: 'fattening.cycle', decode: FatteningCycle.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<FatteningCycle>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'fattening.cycle',
+        decode: FatteningCycle.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<FatteningCalculator>(FatteningCalculator.new)
     ..registerLazySingleton<JsonFeatureRepository<ReproductionProtocol>>(
-      () => JsonFeatureRepository<ReproductionProtocol>(store: locator<FeatureRecordStore>(), kind: 'reproduction.protocol', decode: ReproductionProtocol.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<ReproductionProtocol>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'reproduction.protocol',
+        decode: ReproductionProtocol.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<ProtocolAssignment>>(
-      () => JsonFeatureRepository<ProtocolAssignment>(store: locator<FeatureRecordStore>(), kind: 'reproduction.assignment', decode: ProtocolAssignment.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<ProtocolAssignment>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'reproduction.assignment',
+        decode: ProtocolAssignment.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<ProtocolExecution>>(
-      () => JsonFeatureRepository<ProtocolExecution>(store: locator<FeatureRecordStore>(), kind: 'reproduction.execution', decode: ProtocolExecution.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<ProtocolExecution>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'reproduction.execution',
+        decode: ProtocolExecution.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<ReproductionProtocolService>(() => ReproductionProtocolService(protocols: locator<JsonFeatureRepository<ReproductionProtocol>>(), assignments: locator<JsonFeatureRepository<ProtocolAssignment>>(), executions: locator<JsonFeatureRepository<ProtocolExecution>>()));
+    ..registerLazySingleton<ReproductionProtocolService>(
+      () => ReproductionProtocolService(
+        protocols: locator<JsonFeatureRepository<ReproductionProtocol>>(),
+        assignments: locator<JsonFeatureRepository<ProtocolAssignment>>(),
+        executions: locator<JsonFeatureRepository<ProtocolExecution>>(),
+      ),
+    );
   locator
     ..registerLazySingleton<JsonFeatureRepository<LedgerAccount>>(
-      () => JsonFeatureRepository<LedgerAccount>(store: locator<FeatureRecordStore>(), kind: 'ledger.account', decode: LedgerAccount.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<LedgerAccount>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'ledger.account',
+        decode: LedgerAccount.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<JournalEntry>>(
-      () => JsonFeatureRepository<JournalEntry>(store: locator<FeatureRecordStore>(), kind: 'ledger.entry', decode: JournalEntry.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<JournalEntry>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'ledger.entry',
+        decode: JournalEntry.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<LedgerService>(() => LedgerService(accounts: locator<JsonFeatureRepository<LedgerAccount>>(), entries: locator<JsonFeatureRepository<JournalEntry>>()));
+    ..registerLazySingleton<LedgerService>(
+      () => LedgerService(
+        accounts: locator<JsonFeatureRepository<LedgerAccount>>(),
+        entries: locator<JsonFeatureRepository<JournalEntry>>(),
+      ),
+    );
   locator
     ..registerLazySingleton<FiscalProvider>(FacturapiSandboxProvider.new)
     ..registerLazySingleton<PaymentProvider>(StripeSandboxProvider.new)
     ..registerLazySingleton<JsonFeatureRepository<AttendanceRecord>>(
-      () => JsonFeatureRepository<AttendanceRecord>(store: locator<FeatureRecordStore>(), kind: 'payroll.attendance', decode: AttendanceRecord.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<AttendanceRecord>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'payroll.attendance',
+        decode: AttendanceRecord.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<PayrollIncident>>(
-      () => JsonFeatureRepository<PayrollIncident>(store: locator<FeatureRecordStore>(), kind: 'payroll.incident', decode: PayrollIncident.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<PayrollIncident>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'payroll.incident',
+        decode: PayrollIncident.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
     ..registerLazySingleton<JsonFeatureRepository<PayrollReceipt>>(
-      () => JsonFeatureRepository<PayrollReceipt>(store: locator<FeatureRecordStore>(), kind: 'payroll.receipt', decode: PayrollReceipt.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<PayrollReceipt>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'payroll.receipt',
+        decode: PayrollReceipt.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<PayrollService>(() => PayrollService(attendance: locator<JsonFeatureRepository<AttendanceRecord>>(), incidents: locator<JsonFeatureRepository<PayrollIncident>>(), receipts: locator<JsonFeatureRepository<PayrollReceipt>>()));
+    ..registerLazySingleton<PayrollService>(
+      () => PayrollService(
+        attendance: locator<JsonFeatureRepository<AttendanceRecord>>(),
+        incidents: locator<JsonFeatureRepository<PayrollIncident>>(),
+        receipts: locator<JsonFeatureRepository<PayrollReceipt>>(),
+      ),
+    );
   locator
     ..registerLazySingleton<JsonFeatureRepository<CarcassRecord>>(
-      () => JsonFeatureRepository<CarcassRecord>(store: locator<FeatureRecordStore>(), kind: 'commercial.carcass', decode: CarcassRecord.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<CarcassRecord>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'commercial.carcass',
+        decode: CarcassRecord.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<CanalService>(() => CanalService(locator<JsonFeatureRepository<CarcassRecord>>()));
+    ..registerLazySingleton<CanalService>(
+      () => CanalService(locator<JsonFeatureRepository<CarcassRecord>>()),
+    );
   locator
     ..registerLazySingleton<JsonFeatureRepository<MaquilaContract>>(
-      () => JsonFeatureRepository<MaquilaContract>(store: locator<FeatureRecordStore>(), kind: 'maquila.contract', decode: MaquilaContract.fromJson, encode: (value) => value.toJson()),
+      () => JsonFeatureRepository<MaquilaContract>(
+        store: locator<FeatureRecordStore>(),
+        kind: 'maquila.contract',
+        decode: MaquilaContract.fromJson,
+        encode: (value) => value.toJson(),
+      ),
     )
-    ..registerLazySingleton<MaquilaService>(() => MaquilaService(locator<JsonFeatureRepository<MaquilaContract>>()));
+    ..registerLazySingleton<MaquilaService>(
+      () => MaquilaService(locator<JsonFeatureRepository<MaquilaContract>>()),
+    );
   locator
     ..registerLazySingleton<AssistantGateway>(ReadOnlyAssistantGateway.new)
-    ..registerLazySingleton<AnimalIdentificationService>(AnimalIdentificationService.new)
+    ..registerLazySingleton<AnimalIdentificationService>(
+      AnimalIdentificationService.new,
+    )
     ..registerLazySingleton<ProjectionService>(ProjectionService.new)
     ..registerLazySingleton<MexicoReportService>(MexicoReportService.new)
     ..registerLazySingleton<SubscriptionService>(SubscriptionService.new);
   locator
     ..registerLazySingleton<SyncGateway>(
-      () => SupabaseConfig.isConfigured
+      () =>
+          ReleaseFeatures.syncEnabled &&
+              !locator<LocalWorkspace>().isDemo &&
+              SupabaseConfig.isConfigured
           ? SupabaseSyncGateway(Supabase.instance.client)
           : const UnavailableSyncGateway(),
     )
     ..registerLazySingleton<SyncEngine>(
       () => SyncEngine(
-        store: locator<FeatureRecordStore>(), gateway: locator<SyncGateway>(),
+        store: locator<FeatureRecordStore>(),
+        gateway: locator<SyncGateway>(),
       ),
     );
 }
@@ -319,7 +518,11 @@ void _registerSecurity() {
       ),
     )
     ..registerLazySingleton<AuthPort>(
-      () => SupabaseConfig.isConfigured
+      () =>
+          !ReleaseFeatures.publicRelease &&
+              ReleaseFeatures.syncEnabled &&
+              !locator<LocalWorkspace>().isDemo &&
+              SupabaseConfig.isConfigured
           ? SupabaseAuthService(
               client: Supabase.instance.client,
               tokenPort: locator<TokenPort>(),
@@ -348,6 +551,29 @@ void _registerDirectorioAnimales() {
       () => AnimalExcelImportService(
         animalRepository: locator<AnimalRepository>(),
       ),
+    )
+    ..registerLazySingleton<HerdImportService>(
+      () => HerdImportService(
+        animals: locator<AnimalRepository>(),
+        transactions: locator<WriteTransactionRunner>(),
+        context: locator<FarmContextRepository>(),
+      ),
+    )
+    ..registerLazySingleton<BatchRecordService>(
+      () => BatchRecordService(
+        store: locator<FeatureRecordStore>(),
+        transactions: locator<WriteTransactionRunner>(),
+        context: locator<FarmContextRepository>(),
+        animals: locator<AnimalRepository>(),
+        lots: locator<LotesRepository>(),
+        health: locator<HealthRecordRepository>(),
+        weights: locator<WeightRecordRepository>(),
+        movements: locator<MovementRecordRepository>(),
+        locations: locator<LocationRepository>(),
+      ),
+    )
+    ..registerLazySingleton<WeaningRecordRepository>(
+      () => WeaningRecordRepositoryIsar(locator<IsarDatabase>()),
     )
     ..registerLazySingleton<WeightRecordRepository>(
       () => WeightRecordRepositoryIsar(locator<IsarDatabase>()),
@@ -381,6 +607,7 @@ void _registerDirectorioAnimales() {
     )
     ..registerLazySingleton<AnimalEditService>(
       () => AnimalEditService(
+        transactionRunner: locator<WriteTransactionRunner>(),
         animalRepository: locator<AnimalRepository>(),
         lotesRepository: locator<LotesRepository>(),
         movementRepository: locator<MovementRecordRepository>(),
@@ -406,6 +633,7 @@ void _registerUbicaciones(SharedPreferences sharedPreferences) {
       () => LocationEnumMigrationService(
         isar: locator<IsarDatabase>().isar,
         prefs: sharedPreferences,
+        preferencePrefix: locator<LocalWorkspace>().preferencePrefix,
       ),
     );
 }
@@ -419,6 +647,7 @@ void _registerCultivos(SharedPreferences sharedPreferences) {
       () => CultivationMigrationService(
         isar: locator<IsarDatabase>().isar,
         prefs: sharedPreferences,
+        preferencePrefix: locator<LocalWorkspace>().preferencePrefix,
       ),
     );
 }
@@ -427,9 +656,11 @@ void _registerAgenda() {
   locator
     ..registerLazySingleton<AgendaRefreshSignal>(AgendaRefreshSignal.new)
     ..registerLazySingleton<AgendaRepository>(
-      () => IsarAgendaRepository(
-        locator<IsarDatabase>(),
-        locator<SharedPrefsService>(),
+      () => ReminderAwareAgendaRepository(
+        IsarAgendaRepository(
+          locator<IsarDatabase>(),
+          locator<SharedPrefsService>(),
+        ),
       ),
     )
     ..registerLazySingleton<AgendaRegistrationRepository>(
@@ -481,6 +712,15 @@ void _registerAgenda() {
 }
 
 void _registerDemo() {
+  locator.registerLazySingleton<LiteDemoScenarioService>(
+    () => LiteDemoScenarioService(
+      workspace: locator<LocalWorkspace>(),
+      animals: locator<AnimalRepository>(),
+      cultivations: locator<CultivationRepository>(),
+      agenda: locator<AgendaRepository>(),
+      preferences: locator<SharedPrefsService>(),
+    ),
+  );
   locator.registerLazySingleton<DemoScenarioService>(
     () => DemoScenarioService(
       animalRepository: locator<AnimalRepository>(),
@@ -524,12 +764,13 @@ void _registerFieldHardware() {
     ..registerLazySingleton<SimulatedRfidReaderAdapter>(
       SimulatedRfidReaderAdapter.new,
     )
-    ..registerLazySingleton<SimulatedScaleAdapter>(SimulatedScaleAdapter.new)
     ..registerLazySingleton<RfidReaderAdapter>(
       () => locator<SimulatedRfidReaderAdapter>(),
     )
     ..registerLazySingleton<ScaleAdapter>(
-      () => locator<SimulatedScaleAdapter>(),
+      () => ReleaseFeatures.hardwareIntegrationsEnabled
+          ? SimulatedScaleAdapter()
+          : const UnavailableScaleAdapter(),
     )
     ..registerLazySingleton<HardwarePermissionService>(
       HardwarePermissionService.new,
@@ -540,6 +781,7 @@ void _registerFieldHardware() {
 }
 
 void _registerBackupExport() {
+  final workspace = locator<LocalWorkspace>();
   locator
     ..registerLazySingleton<BackupStore>(
       () => IsarBackupStore(
@@ -547,26 +789,56 @@ void _registerBackupExport() {
         perfilRepository: locator<PerfilRepository>(),
       ),
     )
-    ..registerLazySingleton<BackupService>(
-      () => BackupService(
-        animalRepository: locator<AnimalRepository>(),
+    ..registerLazySingleton<BackupService>(() {
+      final animals = locator<AnimalRepository>();
+      return BackupService(
+        animalRepository: animals,
         lotesRepository: locator<LotesRepository>(),
         agendaRepository: locator<AgendaRepository>(),
         workforceRepository: locator<WorkforceRepository>(),
         milkingRepository: locator<MilkingRepository>(),
         backupStore: locator<BackupStore>(),
         statusPrefs: locator<SharedPrefsService>(),
-        fetchAllAnimalsIncludingArchived: () {
-          final repo = locator<AnimalRepository>();
-          return repo is AnimalRepositoryIsar
-              ? repo.getAllIncludingArchived()
-              : repo.getAll();
-        },
+        storageDirectory: () => workspaceDirectory(workspace),
+        allowFileOperations: !workspace.isDemo,
+        fetchAllAnimalsIncludingArchived: animals is AnimalRepositoryIsar
+            ? animals.getAllIncludingArchived
+            : animals.getAll,
+      );
+    })
+    ..registerLazySingleton<WriteTransactionRunner>(
+      () => IsarWriteTransactionRunner(locator<IsarDatabase>()),
+    )
+    ..registerLazySingleton<DataMaintenance>(
+      () => IsarDataMaintenance(
+        database: locator<IsarDatabase>(),
+        store: locator<BackupStore>() as IsarBackupStore,
+        backup: locator<BackupService>(),
+        directory: () => workspaceDirectory(workspace),
       ),
     )
     ..registerLazySingleton<CloudBackupRepository>(
-      () => SupabaseConfig.isConfigured
-          ? SupabaseCloudBackupRepository(Supabase.instance.client)
+      () =>
+          ReleaseFeatures.cloudBackupEnabled &&
+              workspace.kind == WorkspaceKind.account &&
+              SupabaseConfig.isConfigured &&
+              SupabaseSession.initializedClient != null
+          ? SupabaseCloudBackupRepository(
+              Supabase.instance.client,
+              identity: BackupIdentity(
+                workspace: workspace,
+                activeWorkspace: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.reload();
+                  final registry = WorkspaceRegistry(SharedPrefsService(prefs));
+                  await registry.load(startup: false);
+                  if (prefs.getString('account.deletion.${workspace.id}') !=
+                      null)
+                    return null;
+                  return registry.active;
+                },
+              ),
+            )
           : const UnavailableCloudBackupRepository(),
     )
     ..registerLazySingleton<CloudBackupService>(
@@ -585,6 +857,7 @@ void _registerBackupExport() {
         ),
         ...buildAnimalRecordExportSheets(
           animalRepository: locator<AnimalRepository>(),
+          weanings: locator<WeaningRecordRepository>(),
           weights:
               locator<WeightRecordRepository>()
                   as AnimalRecordBulkReader<WeightRecord>,
@@ -621,7 +894,23 @@ void _registerBackupExport() {
 
 void _registerInicioPerfilReportes() {
   locator
-    ..registerLazySingleton<WeatherService>(OpenMeteoWeatherService.new)
+    ..registerLazySingleton<WeatherService>(
+      () => locator<LocalWorkspace>().isDemo
+          ? LocalOnlyWeatherService()
+          : OpenMeteoWeatherService(),
+    )
+    ..registerLazySingleton<WeatherPreferencesService>(
+      () => WeatherPreferencesService(
+        preferences: locator<SharedPrefsService>(),
+        weatherService: locator<WeatherService>(),
+      ),
+    )
+    ..registerLazySingleton<WeatherAlertsService>(
+      () => WeatherAlertsService(
+        preferences: locator<SharedPrefsService>(),
+        locationService: locator<WeatherPreferencesService>(),
+      ),
+    )
     ..registerLazySingleton<InicioDashboardService>(
       () => InicioDashboardService(
         animalRepository: locator<AnimalRepository>(),
@@ -630,11 +919,20 @@ void _registerInicioPerfilReportes() {
         locationRepository: locator<LocationRepository>(),
         perfilRepository: locator<PerfilRepository>(),
         reproductionRepository: locator<ReproductionRecordRepository>(),
-        weatherService: locator<WeatherService>(),
       ),
     )
     ..registerLazySingleton<PerfilRepository>(
-      () => PerfilSharedPrefsRepository(locator<SharedPrefsService>()),
+      () => PerfilIsarRepository(
+        locator<IsarDatabase>(),
+        locator<SharedPrefsService>(),
+      ),
+    )
+    ..registerLazySingleton<ProfileOnboardingService>(
+      () => ProfileOnboardingService(
+        workspace: locator<LocalWorkspace>(),
+        preferences: locator<SharedPrefsService>(),
+        repository: locator<PerfilRepository>(),
+      ),
     )
     ..registerLazySingleton<DashboardConfigRepository>(
       () => DashboardConfigRepository(locator<SharedPrefsService>()),
@@ -672,5 +970,3 @@ final class _NoOpAnimalRemoteDataSource implements AnimalRemoteDataSource {
     );
   }
 }
-
-

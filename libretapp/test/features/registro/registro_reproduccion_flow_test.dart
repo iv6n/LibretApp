@@ -101,7 +101,7 @@ void main() {
 
     expect(find.text('Registrar diagnóstico de preñez'), findsOneWidget);
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'));
     await tester.pumpAndSettle();
 
     expect(find.text('Guardar diagnóstico'), findsOneWidget);
@@ -167,8 +167,9 @@ void main() {
     );
     await open(tester);
 
-    await tester.tap(find.byType(SwitchListTile));
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'));
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Guardar diagnóstico'));
     await tester.tap(find.text('Guardar diagnóstico'));
     await tester.pumpAndSettle();
 

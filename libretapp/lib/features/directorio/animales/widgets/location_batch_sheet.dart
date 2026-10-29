@@ -1,7 +1,8 @@
-﻿/// features \u203a directorio \u203a animales \u203a widgets \u203a location_batch_sheet \u2014 bottom sheet for batch-assigning animals to a location.
+/// features \u203a directorio \u203a animales \u203a widgets \u203a location_batch_sheet \u2014 bottom sheet for batch-assigning animals to a location.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/features/directorio/animales/application/bloc/animal_event.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
@@ -25,6 +26,7 @@ Future<void> showLocationBatchSheet(
   String? selectedLocation =
       (animal.currentLocationId ?? animal.initialLocationId)?.trim();
   String? selectedBatchUuid = animal.batchUuid;
+  bool saving = false;
 
   // Load available batches
   List<LoteEntity> availableLotes = [];
@@ -62,10 +64,13 @@ Future<void> showLocationBatchSheet(
 
   if (!context.mounted) return;
 
-  await showModalBottomSheet<bool>(
+  await showAppBottomSheet<bool>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
+    useSafeArea: true,
+    isDismissible: false,
+    enableDrag: false,
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setModalState) {
@@ -84,11 +89,13 @@ Future<void> showLocationBatchSheet(
                     children: [
                       Icon(Icons.route_outlined, color: AppColors.secondary),
                       SizedBox(width: 8),
-                      Text(
-                        'Cambiar ubicación y lote',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Text(
+                          'Cambiar ubicación y lote',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -96,6 +103,7 @@ Future<void> showLocationBatchSheet(
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String?>(
                     initialValue: selectedLocation,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Ubicación',
                       border: OutlineInputBorder(),
@@ -108,16 +116,22 @@ Future<void> showLocationBatchSheet(
                       ...uniqueLocations.map(
                         (LocationEntity loc) => DropdownMenuItem(
                           value: loc.uuid.trim(),
-                          child: Text(loc.name),
+                          child: Text(
+                            loc.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
-                    onChanged: (value) =>
-                        setModalState(() => selectedLocation = value),
+                    onChanged: saving
+                        ? null
+                        : (value) =>
+                              setModalState(() => selectedLocation = value),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String?>(
                     initialValue: selectedBatchUuid,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       labelText: 'Lote',
                       border: OutlineInputBorder(),
@@ -130,50 +144,86 @@ Future<void> showLocationBatchSheet(
                       ...availableLotes.map(
                         (lote) => DropdownMenuItem(
                           value: lote.uuid,
-                          child: Text(lote.name),
+                          child: Text(
+                            lote.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],
-                    onChanged: (value) {
-                      setModalState(() => selectedBatchUuid = value);
-                    },
+                    onChanged: saving
+                        ? null
+                        : (value) {
+                            setModalState(() => selectedBatchUuid = value);
+                          },
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save_as_outlined),
-                      label: const Text('Guardar'),
-                      onPressed: () async {
-                        // A single ApplyAnimalEdit dispatch replaces what
-                        // used to be three separate events (UpdateAnimal,
-                        // AddMovementRecord, AssignAnimalToBatch):
-                        // AnimalEditService diffs location/lote against what
-                        // is actually persisted, so a MovementRecord is only
-                        // created when the location really changed, and
-                        // lastMovementDate is never stamped for a
-                        // lote-only change.
-                        final draft = animal.copyWith(
-                          currentLocationId: selectedLocation,
-                          batchUuid: selectedBatchUuid,
-                        );
+                      label: Text(saving ? 'Guardando…' : 'Guardar'),
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              setModalState(() => saving = true);
+                              try {
+                                // A single ApplyAnimalEdit dispatch replaces what
+                                // used to be three separate events (UpdateAnimal,
+                                // AddMovementRecord, AssignAnimalToBatch):
+                                // AnimalEditService diffs location/lote against what
+                                // is actually persisted, so a MovementRecord is only
+                                // created when the location really changed, and
+                                // lastMovementDate is never stamped for a
+                                // lote-only change.
+                                final draft = animal.copyWith(
+                                  currentLocationId: selectedLocation,
+                                  batchUuid: selectedBatchUuid,
+                                );
 
-                        final ok = await dispatchAndAwait(
-                          ApplyAnimalEdit(original: animal, draft: draft),
-                        );
-                        if (!context.mounted) return;
-                        if (!ok) return;
+                                final ok = await dispatchAndAwait(
+                                  ApplyAnimalEdit(
+                                    original: animal,
+                                    draft: draft,
+                                  ),
+                                );
+                                if (!context.mounted) return;
+                                if (!ok) {
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'No se pudo guardar. Conservamos tu selección para que puedas reintentar.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                        if (context.mounted) {
-                          Navigator.of(context).pop(true);
-                          onReload();
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Ubicación y lote actualizados'),
-                            ),
-                          );
-                        }
-                      },
+                                if (context.mounted) {
+                                  Navigator.of(context).pop(true);
+                                  onReload();
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Ubicación y lote actualizados',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (_) {
+                                if (context.mounted)
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'No se pudo guardar. Intenta de nuevo.',
+                                      ),
+                                    ),
+                                  );
+                              } finally {
+                                if (context.mounted)
+                                  setModalState(() => saving = false);
+                              }
+                            },
                     ),
                   ),
                 ],

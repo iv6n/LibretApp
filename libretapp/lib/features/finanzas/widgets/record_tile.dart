@@ -17,6 +17,7 @@ class RecordTile extends StatelessWidget {
     this.subtitle,
     this.currency,
     this.onDelete,
+    this.onEdit,
   });
 
   final String title;
@@ -28,63 +29,51 @@ class RecordTile extends StatelessWidget {
   final IconData fallbackIcon;
   final String? currency;
   final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
+
+  Future<void> _delete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+      title: const Text('Eliminar movimiento'),
+      content: Text('¿Eliminar «$title» por $amount${currency == null ? '' : ' $currency'}? Esta acción modifica tus registros.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Eliminar')),
+      ],
+    ));
+    if (confirmed == true && context.mounted) onDelete?.call();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateFmt = DateFormat('dd MMM yyyy', 'es');
-    return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: amountColor.withValues(alpha: 0.15),
-          child: assetPath == null
-              ? Icon(fallbackIcon, color: amountColor, size: 20)
-              : Image.asset(
-                  assetPath!,
-                  fit: BoxFit.contain,
-                  width: 30,
-                  height: 30,
-                  errorBuilder: (_, _, _) =>
-                      Icon(fallbackIcon, color: amountColor, size: 20),
-                ),
-        ),
-        title: Text(title, style: theme.textTheme.bodyMedium),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              dateFmt.format(date),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (subtitle != null)
-              Text(subtitle!, style: theme.textTheme.bodySmall),
+    final color = theme.brightness == Brightness.dark ? theme.colorScheme.onSurface : amountColor;
+    return Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(backgroundColor: color.withValues(alpha: 0.12), child: assetPath == null
+          ? Icon(fallbackIcon, color: color) : Image.asset(assetPath!, width: 30, height: 30,
+            errorBuilder: (_, _, _) => Icon(fallbackIcon, color: color))),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: theme.textTheme.titleSmall),
+          Text(DateFormat('dd MMM yyyy', 'es').format(date), style: theme.textTheme.bodySmall),
+          if (subtitle != null && subtitle!.isNotEmpty) Text(subtitle!),
+          const SizedBox(height: 4),
+          Text('$amount${currency == null ? '' : ' $currency'}',
+            style: theme.textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.bold)),
+        ])),
+        if (onEdit != null || onDelete != null) PopupMenuButton<String>(
+          tooltip: 'Acciones del movimiento',
+          onSelected: (action) async {
+            if (action == 'edit') onEdit?.call();
+            if (action == 'delete') await _delete(context);
+          },
+          itemBuilder: (_) => [
+            if (onEdit != null) const PopupMenuItem(value: 'edit', child: Text('Corregir')),
+            if (onDelete != null) const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$amount${currency != null ? ' $currency' : ''}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: amountColor,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (onDelete != null) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18),
-                onPressed: onDelete,
-                color: theme.colorScheme.error,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+      ],
+    )));
   }
 }

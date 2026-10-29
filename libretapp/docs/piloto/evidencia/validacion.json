@@ -1,0 +1,252 @@
+{
+  "bundle": "build\\app\\outputs\\bundle\\offlineRelease\\app-offline-release.aab",
+  "versionName": "0.1.1",
+  "versionCode": "4",
+  "checks": {
+    "applicationId": true,
+    "buildNumberIncreased": true,
+    "targetApi36": true,
+    "noNetworkGpsBluetooth": true,
+    "systemCloudBackupDisabled": true,
+    "signaturePresent": true,
+    "native64BitAlignment16kb": true
+  },
+  "permissions": [
+    "android.permission.ACCESS_NETWORK_STATE",
+    "app.libret.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ],
+  "libraries": [
+    {
+      "library": "base/lib/arm64-v8a/libapp.so",
+      "alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/arm64-v8a/libdatastore_shared_counter.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/arm64-v8a/libflutter.so",
+      "alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/arm64-v8a/libisar.so",
+      "alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/arm64-v8a/liblibret_core.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/arm64-v8a/libsqlite3.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/libapp.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/libdatastore_shared_counter.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/libflutter.so",
+      "alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/libisar.so",
+      "alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/liblibret_core.so",
+      "alignments": [
+        4096,
+        4096,
+        4096
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/armeabi-v7a/libsqlite3.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/libapp.so",
+      "alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/libdatastore_shared_counter.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/libflutter.so",
+      "alignments": [
+        65536,
+        65536,
+        65536
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/libisar.so",
+      "alignments": [
+        16384,
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/liblibret_core.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    },
+    {
+      "library": "base/lib/x86_64/libsqlite3.so",
+      "alignments": [
+        16384,
+        16384,
+        16384
+      ],
+      "compatible16kb": true
+    }
+  ],
+  "limits": "Also verify the signature with jarsigner, APK ZIP alignment with zipalign -P 16, and run on a 16 KB device.",
+  "bundleSha256": "0db68e40f586adbd533ab8d6f088d001368e1e7dba86fd4a264c3f970893cfeb",
+  "apkSha256": "fca6c852a3fe0a0a70005d7b6b651284540c5c289896706078a470fb6ed36bee",
+  "signatureVerification": "jarsigner: jar verified",
+  "apkAlignmentVerification": "zipalign -c -P 16 -v 4: Verification successful",
+  "testSuite": {
+    "standardPassed": 1015,
+    "offlinePassed": 17,
+    "profileLayoutCases": 48,
+    "recordFormsLayoutCases": 16,
+    "analyzerErrors": 0,
+    "analyzerWarnings": 0,
+    "analyzerInfos": 138
+  },
+  "android": {
+    "emulators": [
+      {
+        "android": "36.1",
+        "pageSize": 4096
+      },
+      {
+        "android": "36",
+        "pageSize": 16384
+      }
+    ],
+    "applicationId": "app.libret",
+    "version": "0.1.1+4",
+    "offlineStartup": true,
+    "backupExportAndCleanInstallRestore": true,
+    "reinstallWithDataAndDarkTheme": true,
+    "limits": [
+      "No physical phone or TalkBack pass",
+      "Historical APK signing identity not available"
+    ]
+  },
+  "backup": {
+    "schemaVersion": 9,
+    "collections": {
+      "animals": 40,
+      "weightRecords": 18,
+      "reproductionRecords": 5,
+      "productionRecords": 4,
+      "healthRecords": 44,
+      "costRecords": 5,
+      "commercialRecords": 3,
+      "movementRecords": 2,
+      "lotes": 6,
+      "cultivations": 4,
+      "locations": 16,
+      "incomeRecords": 7,
+      "generalExpenseRecords": 14,
+      "milkingSessions": 32,
+      "milkingEntries": 115,
+      "agendaEntries": 156,
+      "agendaRegistrations": 0,
+      "workerProfiles": 4,
+      "workTeams": 1,
+      "careRules": 7,
+      "careRecords": 8,
+      "scheduledCares": 116,
+      "rfidBindings": 0,
+      "rfidScanSessions": 0,
+      "featureRecords": 4
+    },
+    "mediaFiles": 1,
+    "archiveSha256": "c05fdd913d2bdc6745bcf91c4c22bc4edb40e42c907933872d09e05a1849cdb3"
+  }
+}

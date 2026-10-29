@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
@@ -39,7 +41,9 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   bool _loading = false;
+  String? _loadError;
   CostRecord? _editing;
+  AnimalEntity? _animal;
 
   @override
   void initState() {
@@ -47,39 +51,61 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
     _amountController = TextEditingController();
     _currencyController = TextEditingController(text: 'USD');
     _notesController = TextEditingController();
+    _loadAnimal();
     if (widget.isEditing) _load();
+  }
+
+  Future<void> _loadAnimal() async {
+    if (!locator.isRegistered<AnimalRepository>()) return;
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid,
+      );
+      if (mounted) setState(() => _animal = animal);
+    } catch (_) {
+      // The form can still show a safe missing-animal label.
+    }
   }
 
   /// Hydrates the form from the record being corrected.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final records = await locator<CostRecordRepository>().getCostRecords(
-      widget.animalUuid,
-    );
-    if (!mounted) return;
-
-    final record = records
-        .where((candidate) => candidate.id == widget.recordId)
-        .firstOrNull;
-    if (record == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).recordEditNotFound),
-        ),
-      );
-      context.pop(false);
-      return;
-    }
-
     setState(() {
-      _editing = record;
-      _amountController.text = record.amount.toString();
-      _currencyController.text = record.currency ?? '';
-      _notesController.text = record.notes ?? '';
-      _type = record.type;
-      _date = record.date;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final records = await locator<CostRecordRepository>().getCostRecords(
+        widget.animalUuid,
+      );
+      if (!mounted) return;
+
+      final record = records
+          .where((candidate) => candidate.id == widget.recordId)
+          .firstOrNull;
+      if (record == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).recordEditNotFound),
+          ),
+        );
+        context.pop(false);
+        return;
+      }
+
+      setState(() {
+        _editing = record;
+        _amountController.text = record.amount.toString();
+        _currencyController.text = record.currency ?? '';
+        _notesController.text = record.notes ?? '';
+        _type = record.type;
+        _date = record.date;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'load');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -94,7 +120,7 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
     if (_saving || _loading || (widget.isEditing && _editing == null)) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final amount = double.tryParse(_amountController.text.trim());
+    final amount = parseFormDouble(_amountController.text);
     if (amount == null) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormCostAmountRequired)),
@@ -159,10 +185,15 @@ class _AnimalCostFormPageState extends State<AnimalCostFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadError != null) return RecordLoadFailure(onRetry: _load);
     final l10n = AppLocalizations.of(context);
 
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.cost,
+      onCancel: () => Navigator.of(context).pop(),
       title: widget.isEditing ? l10n.recordEditTitle : l10n.detailFormCostTitle,
+      contextLabel: animalRecordContextLabel(_animal),
+      contextIcon: Icons.pets_outlined,
       saving: _saving,
       loading: _loading,
       onSave: _save,

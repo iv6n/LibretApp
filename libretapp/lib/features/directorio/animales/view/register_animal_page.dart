@@ -1,11 +1,18 @@
 /// features \u203a directorio \u203a animales \u203a view \u203a register_animal_page \u2014 page for registering a new animal.
 library;
 
+import 'package:libretapp/core/database/write_transaction.dart';
+
+import 'package:libretapp/core/utils/number_parsing.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
+import 'package:libretapp/core/backup/first_backup_suggestion.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
@@ -29,10 +36,18 @@ import 'package:libretapp/features/ubicaciones/domain/repositories/location_repo
 import 'package:libretapp/theme/theme.dart';
 
 class RegisterAnimalPage extends StatefulWidget {
-  const RegisterAnimalPage({this.animalUuid, this.initialSeed, super.key});
+  const RegisterAnimalPage({
+    this.animalUuid,
+    this.initialSeed,
+    this.initialSpecies,
+    this.preferredSpecies = const [],
+    super.key,
+  });
 
   final String? animalUuid;
   final AnimalRegistrationSeed? initialSeed;
+  final Species? initialSpecies;
+  final List<Species> preferredSpecies;
 
   bool get isEdit => animalUuid != null;
 
@@ -93,11 +108,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   Species _species = Species.cattle;
   Category _category = Category.heifer;
-  Sex _sex = Sex.female;
+  Sex _sex = Sex.unknown;
   AnimalStatus _status = AnimalStatus.active;
   DateTime? _birthDate;
   _BirthInputMode _birthInputMode = _BirthInputMode.approximate;
-  ApproximateAge _approximateAge = const ApproximateAge(years: 1, months: 0);
+  ApproximateAge _approximateAge = const ApproximateAge.unknown();
   DateTime _registrationDate = DateTime.now();
 
   OriginType _originType = OriginType.own;
@@ -119,7 +134,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   _InitialHealthMode _healthMode = _InitialHealthMode.healthy;
   ReproductiveStatus _reproductiveStatus = ReproductiveStatus.unknown;
-  int _bodyConditionScore = 3;
+  int? _bodyConditionScore;
 
   List<LocationEntity> _locations = const [];
   List<LoteEntity> _lotes = const [];
@@ -198,17 +213,21 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           _editingAnimal = editingAnimal;
           if (editingAnimal != null) {
             _applyAnimalToForm(editingAnimal);
+            if (widget.initialSeed != null) _applySeed(widget.initialSeed!);
           }
         } else {
           final seed = widget.initialSeed;
           if (seed != null) {
             _applySeed(seed);
+          } else {
+            _species = widget.initialSpecies ?? _species;
           }
           _selectedProvenanceUuid = _firstRanch?.uuid;
           _selectedRanchUuid = _firstRanch?.uuid;
           _selectedPaddockUuid = _paddocksForSelectedRanch.isNotEmpty
               ? _paddocksForSelectedRanch.first.uuid
               : null;
+          _synchronizeTaxonomy();
         }
 
         _loading = false;
@@ -260,9 +279,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _category = animal.category;
     _sex = animal.sex;
     _status = animal.status;
-    _birthDate = animal.birthDate;
-    _birthInputMode = _BirthInputMode.exact;
-    _approximateAge = ApproximateAge.fromTotalMonths(animal.ageMonths);
+    _birthDate = animal.knownBirthDate;
+    _birthInputMode =
+        !animal.hasKnownAge ||
+            animal.birthDatePrecision == BirthDatePrecision.estimated
+        ? _BirthInputMode.approximate
+        : _BirthInputMode.exact;
+    _approximateAge = ApproximateAge.fromTotalMonths(
+      animal.hasKnownAge ? animal.ageMonths : -1,
+    );
     _registrationDate = animal.lastMovementDate ?? animal.lastUpdateDate;
     _reproductiveStatus = animal.reproductiveStatus;
     _productionSystem = animal.productionSystem;
@@ -277,6 +302,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       _healthMode = _InitialHealthMode.healthy;
     }
 
+    _bodyConditionScore = animal.bodyConditionScore;
     _selectedDamUuid = animal.damUuid;
     _selectedSireUuid = animal.sireUuid;
     _selectedBatchUuid = animal.batchUuid;
@@ -333,14 +359,24 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _species = seed.species;
     _sex = seed.sex;
     _approximateAge = ApproximateAge.fromTotalMonths(seed.ageMonths);
-    _ageMonthsCtrl.text = seed.ageMonths.toString();
-    _birthInputMode = _BirthInputMode.approximate;
-    _birthDate = null;
+    _ageMonthsCtrl.text = seed.ageMonths < 0 ? '' : seed.ageMonths.toString();
+    _birthInputMode = seed.birthDate == null
+        ? _BirthInputMode.approximate
+        : _BirthInputMode.exact;
+    _birthDate = seed.birthDate;
+    _selectedDamUuid = seed.damUuid;
+    _selectedSireUuid = seed.sireUuid;
     _earTagCtrl.text = seed.identification ?? '';
     _nameCtrl.text = seed.name ?? '';
     _breedCtrl.text = seed.breed ?? '';
     _weightCtrl.text = seed.weight?.toString() ?? '';
     _profilePhoto = seed.profilePhoto;
+    if (seed.notes != null) _notesCtrl.text = seed.notes!;
+    if (seed.birthDatePrecision != null && seed.birthDate != null) {
+      _birthInputMode = seed.birthDatePrecision == BirthDatePrecision.exact
+          ? _BirthInputMode.exact
+          : _BirthInputMode.approximate;
+    }
     _productionPurpose = seed.productionPurpose ?? ProductionPurpose.undefined;
     _category = AnimalTaxonomy.defaultCategory(
       species: _species,
@@ -359,7 +395,6 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return ShellChromeScope(
       visible: false,
       child: PopScope(
@@ -374,15 +409,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               icon: const Icon(Icons.arrow_back),
               onPressed: _onAttemptExit,
             ),
-            title: Text(
-              widget.isEdit ? 'Editar animal' : 'Registrar nuevo animal',
-            ),
+            title: Text(widget.isEdit ? 'Editar animal' : 'Nuevo animal'),
             titleSpacing: 0,
             actions: [
-              TextButton.icon(
+              IconButton(
                 onPressed: _showRegistrationHelp,
                 icon: const Icon(Icons.help_outline),
-                label: Text(widget.isEdit ? 'Editar' : 'Ayuda'),
+                tooltip: 'Ayuda',
               ),
             ],
           ),
@@ -390,19 +423,30 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
                   top: false,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(0, 6, 0, 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [_buildStepper(), _buildCurrentStep()],
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding: const EdgeInsets.fromLTRB(0, 6, 0, 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildStepper(),
+                                  _buildCurrentStep(),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
+                          _buildBottomBar(),
+                        ],
                       ),
-                      if (!keyboardVisible) _buildBottomBar(),
-                    ],
+                    ),
                   ),
                 ),
         ),
@@ -549,13 +593,6 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               subtitle: 'Ingresa los datos generales del animal.',
             ),
             const SizedBox(height: 16),
-            AnimalPhotoField(
-              photoPath: _profilePhoto,
-              species: _species,
-              enabled: !_saving,
-              onChanged: (path) => setState(() => _profilePhoto = path),
-            ),
-            const SizedBox(height: 16),
             AppFormSection(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -583,6 +620,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                       AnimalSpeciesSelector(
                         value: _species,
                         onChanged: _onSpeciesChanged,
+                        preferredSpecies: widget.preferredSpecies,
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
@@ -595,6 +633,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                           helperText: policy.tracksPendingEarTag
                               ? 'Recomendado. Puedes dejarlo pendiente.'
                               : 'Opcional',
+                          helperMaxLines: 2,
                           suffixIcon: const Icon(
                             Icons.qr_code_scanner_outlined,
                           ),
@@ -609,6 +648,15 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                           labelText: 'Nombre o alias — opcional',
                           hintText: 'Ej. Manchas, Estrella, etc.',
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      AnimalPhotoField(
+                        photoPath: _profilePhoto,
+                        species: _species,
+                        enabled: !_saving,
+                        compact: true,
+                        onChanged: (path) =>
+                            setState(() => _profilePhoto = path),
                       ),
                       const SizedBox(height: 16),
                       Text('Sexo', style: theme.textTheme.labelLarge),
@@ -953,7 +1001,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Ubicacion y manejo', Icons.location_on_outlined),
+          _buildSectionTitle('Ubicación y manejo', Icons.location_on_outlined),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _selectedRanchUuid,
@@ -1411,7 +1459,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           ),
           const SizedBox(height: 10),
           _buildReviewCard(
-            title: 'Ubicacion y manejo',
+            title: 'Ubicación y manejo',
             onEdit: () => setState(() => _currentStep = 3),
             rows: [
               _ReviewRow('Rancho', _locationNameByUuid(_selectedRanchUuid)),
@@ -1443,7 +1491,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                 healthTuple.healthStatus.displayName,
               ),
               if (_policy.supportsBodyConditionScore)
-                _ReviewRow('Condición corporal', '$_bodyConditionScore'),
+                _ReviewRow(
+                  'Condición corporal (1–5)',
+                  _bodyConditionScore?.toString() ?? 'Sin datos',
+                ),
               _ReviewRow('Riesgo', healthTuple.riskLevel.displayName),
               _ReviewRow('Tipo de alimentacion', _safeText(_feedTypeCtrl.text)),
               _ReviewRow('Tratamientos', '${_treatments.length}'),
@@ -2645,7 +2696,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       Species.cattle => 12,
       Species.equine => 36,
       Species.sheep || Species.goat || Species.pig => 12,
-      Species.canine => 18,
+      Species.canine || Species.feline => 18,
       Species.poultry || Species.other => 9999,
     };
     return _currentAgeMonths() >= minimumAge ||
@@ -2664,7 +2715,12 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       if (!mounted || !continueWithoutEarTag) return;
     }
 
-    final birthDate = _birthInputMode == _BirthInputMode.exact
+    final keepUnknownAge = _approximateAge.isUnknown && _birthDate == null;
+    final preserveExistingUnknownAge =
+        widget.isEdit && keepUnknownAge && !_editingAnimal!.hasKnownAge;
+    final birthDate = preserveExistingUnknownAge
+        ? _editingAnimal!.birthDate
+        : _birthInputMode == _BirthInputMode.exact
         ? (_birthDate ?? _approximateAge.estimatedBirthDate())
         : _approximateAge.estimatedBirthDate();
 
@@ -2675,7 +2731,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     }
 
     final manualAgeMonths = _birthInputMode == _BirthInputMode.approximate
-        ? _approximateAge.totalMonths
+        ? (_approximateAge.isUnknown ? null : _approximateAge.totalMonths)
         : null;
 
     final bloodPercentage = _parseOptionalInt(_bloodPercentageCtrl.text);
@@ -2690,14 +2746,18 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       species: _species,
       sex: _sex,
     );
-    final resolvedAgeMonths = manualAgeMonths ?? lifecycle.ageMonths;
-    final resolvedLifeStage = AnimalTaxonomy.resolveLifeStage(
-      species: _species,
-      sex: _sex,
-      ageMonths: resolvedAgeMonths,
-      category: _category,
-      fallback: lifecycle.lifeStage,
-    );
+    final resolvedAgeMonths = keepUnknownAge
+        ? -1
+        : manualAgeMonths ?? lifecycle.ageMonths;
+    final resolvedLifeStage = keepUnknownAge
+        ? LifeStage.unknown
+        : AnimalTaxonomy.resolveLifeStage(
+            species: _species,
+            sex: _sex,
+            ageMonths: resolvedAgeMonths,
+            category: _category,
+            fallback: lifecycle.lifeStage,
+          );
 
     // Derive reproductive entity fields from reproduction drafts
     final derivedFirstService = _reproductions.isNotEmpty
@@ -2753,6 +2813,21 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               breed: _breedCtrl.text,
               crossBreed: _nullableText(_crossBreedCtrl.text),
               birthDate: birthDate,
+              birthDatePrecision: keepUnknownAge
+                  ? BirthDatePrecision.unknown
+                  : widget.isEdit &&
+                        birthDate == _editingAnimal!.birthDate &&
+                        widget.initialSeed?.birthDatePrecision != null
+                  ? widget.initialSeed!.birthDatePrecision!
+                  : widget.isEdit &&
+                        _editingAnimal!.birthDatePrecision ==
+                            BirthDatePrecision.unknown &&
+                        _birthInputMode == _BirthInputMode.exact &&
+                        birthDate == _editingAnimal!.birthDate
+                  ? BirthDatePrecision.unknown
+                  : _birthInputMode == _BirthInputMode.exact
+                  ? BirthDatePrecision.exact
+                  : BirthDatePrecision.estimated,
               ageMonths: resolvedAgeMonths,
               weight: weight,
               sireUuid: _selectedSireUuid,
@@ -2830,6 +2905,16 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               breed: _breedCtrl.text,
               crossBreed: _nullableText(_crossBreedCtrl.text),
               birthDate: birthDate,
+              birthDatePrecision:
+                  widget.isEdit &&
+                      _editingAnimal!.birthDatePrecision ==
+                          BirthDatePrecision.unknown &&
+                      _birthInputMode == _BirthInputMode.exact &&
+                      birthDate == _editingAnimal!.birthDate
+                  ? BirthDatePrecision.unknown
+                  : _birthInputMode == _BirthInputMode.exact
+                  ? BirthDatePrecision.exact
+                  : BirthDatePrecision.estimated,
               ageMonths: resolvedAgeMonths,
               weight: weight,
               sireUuid: _selectedSireUuid,
@@ -2918,64 +3003,90 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
           draft: animal,
         );
       } else {
-        await _animalRepository.save(animal);
+        Future<void> createAnimal() async {
+          await _animalRepository.save(animal);
 
-        // Registrar movimiento inicial si se asignó una ubicación
-        final initialLocation = _selectedPaddockUuid ?? _selectedRanchUuid;
-        if (initialLocation != null) {
-          await _movementRepo.addMovementRecord(
-            uuid,
-            MovementRecord(
-              toLocation: _locationNameByUuid(initialLocation),
-              date: _registrationDate,
-              reason: MovementReason.relocation,
-              notes: 'Ubicación inicial al momento del registro',
-            ),
-          );
+          // Registrar movimiento inicial si se asignó una ubicación
+          final initialLocation = _selectedPaddockUuid ?? _selectedRanchUuid;
+          if (initialLocation != null) {
+            await _movementRepo.addMovementRecord(
+              uuid,
+              MovementRecord(
+                toLocation: initialLocation,
+                date: _registrationDate,
+                reason: MovementReason.relocation,
+                notes: 'Ubicación inicial al momento del registro',
+              ),
+            );
+          }
+
+          // Sincronizar lote: agregar el animal al lote seleccionado
+          final batchUuid = _selectedBatchUuid;
+          if (batchUuid != null) {
+            await _lotesRepository.addAnimalToLote(
+              loteUuid: batchUuid,
+              animalUuid: uuid,
+            );
+          }
+
+          for (final record in [..._treatments, ..._vaccinations, ..._exams]) {
+            await _healthRepo.addHealthRecord(
+              uuid,
+              HealthRecord(
+                type: record.type,
+                product: record.product,
+                dose: record.dose,
+                date: record.date,
+                notes: record.notes,
+              ),
+            );
+          }
+          for (final record in _reproductions) {
+            await _reproductionRepo.addReproductionRecord(
+              uuid,
+              ReproductionRecord(
+                serviceDate: record.serviceDate,
+                serviceType: record.serviceType,
+                maleSireIdentifier: record.maleSireIdentifier,
+                pregnancyResult: record.pregnancyResult,
+                expectedCalvingDate: record.expectedCalvingDate,
+                notes: record.notes,
+              ),
+            );
+          }
         }
 
-        // Sincronizar lote: agregar el animal al lote seleccionado
-        final batchUuid = _selectedBatchUuid;
-        if (batchUuid != null) {
-          await _lotesRepository.addAnimalToLote(
-            loteUuid: batchUuid,
-            animalUuid: uuid,
-          );
-        }
-
-        for (final record in [..._treatments, ..._vaccinations, ..._exams]) {
-          await _healthRepo.addHealthRecord(
-            uuid,
-            HealthRecord(
-              type: record.type,
-              product: record.product,
-              dose: record.dose,
-              date: record.date,
-              notes: record.notes,
-            ),
-          );
-        }
-        for (final record in _reproductions) {
-          await _reproductionRepo.addReproductionRecord(
-            uuid,
-            ReproductionRecord(
-              serviceDate: record.serviceDate,
-              serviceType: record.serviceType,
-              maleSireIdentifier: record.maleSireIdentifier,
-              pregnancyResult: record.pregnancyResult,
-              expectedCalvingDate: record.expectedCalvingDate,
-              notes: record.notes,
-            ),
-          );
+        if (locator.isRegistered<WriteTransactionRunner>()) {
+          await locator<WriteTransactionRunner>().run(createAnimal);
+        } else {
+          await createAnimal();
         }
       }
 
       if (!mounted) return;
       await _clearDraft();
       if (!mounted) return;
+      final showBackupSuggestion =
+          !widget.isEdit && await consumeFirstBackupSuggestion();
+      if (!mounted) return;
+      final messenger = showBackupSuggestion
+          ? ScaffoldMessenger.of(context)
+          : null;
+      final router = showBackupSuggestion ? GoRouter.of(context) : null;
       // Returns the uuid, not just a success flag: the calving flow needs it to
       // link the newborn back to its dam's reproduction record.
       Navigator.of(context).pop(uuid);
+      if (showBackupSuggestion) {
+        messenger!.showSnackBar(
+          SnackBar(
+            content: const Text('Tu primer registro ya está guardado.'),
+            action: SnackBarAction(
+              label: 'Ver respaldos',
+              onPressed: () => router!.go('${AppRoutes.perfil}?backups=1'),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       final message = e is AnimalEditValidationException
@@ -3115,7 +3226,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   Future<void> _showRegistrationHelp() {
-    return showModalBottomSheet<void>(
+    return showAppBottomSheet<void>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
@@ -3276,7 +3387,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     final normalized = input.trim();
     if (normalized.isEmpty) return null;
     final sanitized = normalized.replaceAll(',', '.');
-    return double.tryParse(sanitized);
+    return parseFormDouble(sanitized);
   }
 
   int? _parseOptionalInt(String input) {

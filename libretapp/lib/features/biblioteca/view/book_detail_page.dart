@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/app/widgets/shell_insets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/biblioteca/cubit/book_detail_cubit.dart';
@@ -93,7 +94,12 @@ class _BookDetailBody extends StatelessWidget {
         content.operational.decisionGuides.isNotEmpty;
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md + ShellInsets.bottomSafePadding(context),
+      ),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,

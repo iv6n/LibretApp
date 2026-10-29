@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/platform/release_features.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
@@ -42,46 +43,70 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   bool _loading = false;
+  String? _loadError;
   WeightRecord? _editing;
+  AnimalEntity? _animal;
 
   @override
   void initState() {
     super.initState();
     _weightController = TextEditingController();
     _notesController = TextEditingController();
+    _loadAnimal();
     if (widget.isEditing) _load();
+  }
+
+  Future<void> _loadAnimal() async {
+    if (!locator.isRegistered<AnimalRepository>()) return;
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid,
+      );
+      if (mounted) setState(() => _animal = animal);
+    } catch (_) {
+      // The form can still show a safe missing-animal label.
+    }
   }
 
   /// Hydrates the form from the record being corrected.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final records = await locator<WeightRecordRepository>().getWeightRecords(
-      widget.animalUuid,
-    );
-    if (!mounted) return;
-
-    final record = records
-        .where((candidate) => candidate.id == widget.recordId)
-        .firstOrNull;
-    if (record == null) {
-      // Deleted from another screen while this one was opening.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).recordEditNotFound),
-        ),
-      );
-      context.pop(false);
-      return;
-    }
-
     setState(() {
-      _editing = record;
-      _weightController.text = record.weight.toString();
-      _notesController.text = record.notes ?? '';
-      _method = record.method;
-      _date = record.date;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final records = await locator<WeightRecordRepository>().getWeightRecords(
+        widget.animalUuid,
+      );
+      if (!mounted) return;
+
+      final record = records
+          .where((candidate) => candidate.id == widget.recordId)
+          .firstOrNull;
+      if (record == null) {
+        // Deleted from another screen while this one was opening.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).recordEditNotFound),
+          ),
+        );
+        context.pop(false);
+        return;
+      }
+
+      setState(() {
+        _editing = record;
+        _weightController.text = record.weight.toString();
+        _notesController.text = record.notes ?? '';
+        _method = record.method;
+        _date = record.date;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'load');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -96,7 +121,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final parsed = double.tryParse(_weightController.text.trim());
+    final parsed = parseFormDouble(_weightController.text);
     if (parsed == null) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormWeightErrorInvalid)),
@@ -185,12 +210,17 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadError != null) return RecordLoadFailure(onRetry: _load);
     final l10n = AppLocalizations.of(context);
 
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.weight,
+      onCancel: () => Navigator.of(context).pop(),
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormWeightTitle,
+      contextLabel: animalRecordContextLabel(_animal),
+      contextIcon: Icons.pets_outlined,
       saving: _saving,
       loading: _loading,
       formKey: _formKey,
@@ -215,7 +245,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
           labelText: l10n.detailFormWeightValue,
           requiredField: true,
           validator: (value) {
-            final parsed = double.tryParse(value?.trim() ?? '');
+            final parsed = parseFormDouble(value ?? '');
             return parsed == null || parsed <= 0
                 ? l10n.detailFormWeightErrorInvalid
                 : null;

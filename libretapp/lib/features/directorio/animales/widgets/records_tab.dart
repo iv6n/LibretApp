@@ -1,6 +1,8 @@
 /// features \u203a directorio \u203a animales \u203a widgets \u203a records_tab \u2014 records tab on the animal detail page.
 library;
 
+import '../domain/repositories/weaning_record_repository.dart';
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -22,6 +24,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/repro
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.dart';
+import 'package:libretapp/features/directorio/animales/widgets/movement_location_names.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -30,6 +33,22 @@ class RecordsTab extends StatelessWidget {
 
   final DetailData data;
   final VoidCallback onChanged;
+
+  String _movementSubtitle(MovementRecord record, AppLocalizations l10n) {
+    String locationLabel(String reference) =>
+        movementLocationName(reference, data.movementLocationNames) ??
+        l10n.valueNoData;
+    final origin = record.fromLocation;
+    final destination = record.clearsLocation
+        ? l10n.animalFormNoLocation
+        : locationLabel(record.toLocation);
+    return [
+      if (origin != null && origin.trim().isNotEmpty)
+        '${l10n.detailRecordsFrom} ${locationLabel(origin)}',
+      '${l10n.detailRecordsTo} $destination',
+      if (record.notes != null) record.notes!,
+    ].where((text) => text.isNotEmpty).join(' · ');
+  }
 
   Future<void> _edit(
     BuildContext context, {
@@ -422,7 +441,7 @@ class RecordsTab extends StatelessWidget {
                         : AppAssetPaths.healthReproduction,
                     fallbackIcon: Icons.favorite_outline,
                     title:
-                        '${fmtDate(r.serviceDate)} · ${r.serviceType.displayName}',
+                        '${fmtDate(r.eventDate)} · ${r.serviceType?.displayName ?? 'Parto sin servicio conocido'}',
                     subtitle: [
                       if (r.maleSireIdentifier != null)
                         'Padre: ${r.maleSireIdentifier}',
@@ -463,6 +482,18 @@ class RecordsTab extends StatelessWidget {
                 .toList(),
           ),
           RecordSection(
+            icon: Icons.child_friendly_outlined,
+            title: 'Destetes',
+            children: data.weanings.map((r) => RecordTile(
+              title: fmtDate(r.date),
+              subtitle: [if (r.weightKg != null) '${r.weightKg} kg · ${r.weightMethod == WeightMethod.scale ? 'Báscula' : 'Estimado'}', if (r.performedBy != null) r.performedBy!, if (r.notes != null) r.notes!].join(' · '),
+              onEdit: _editAction(context, r.id, AppRoutes.nameAnimalRegistroDestete),
+              onDelete: _deleteAction(context, r.id,
+                delete: () => locator<WeaningRecordRepository>().deleteWeaningRecord(r.id!),
+                restore: () async { await locator<WeaningRecordRepository>().save(r); }),
+            )).toList(),
+          ),
+          RecordSection(
             icon: Icons.store,
             title: l10n.detailRecordsCommercial,
             children: data.commercial
@@ -501,12 +532,7 @@ class RecordsTab extends StatelessWidget {
                 .map(
                   (r) => RecordTile(
                     title: '${fmtDate(r.date)} · ${r.reason.displayName}',
-                    subtitle: [
-                      if (r.fromLocation != null)
-                        '${l10n.detailRecordsFrom} ${r.fromLocation}',
-                      '${l10n.detailRecordsTo} ${r.toLocation}',
-                      if (r.notes != null) r.notes!,
-                    ].where((e) => e.isNotEmpty).join(' · '),
+                    subtitle: _movementSubtitle(r, l10n),
                     onEdit: _editAction(
                       context,
                       r.id,

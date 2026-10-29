@@ -4,12 +4,16 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/backup_store.dart';
 import 'package:libretapp/core/backup/cloud_backup_policy.dart';
 import 'package:libretapp/core/backup/cloud_backup_repository.dart';
 import 'package:libretapp/core/backup/cloud_backup_service.dart';
 import 'package:libretapp/core/services/backup_service.dart';
+import 'package:libretapp/core/services/prefs_keys.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/workforce_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -104,13 +108,18 @@ class _NoopMilkingRepository implements MilkingRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-BackupService _backupService(BackupStore store) => BackupService(
+BackupService _backupService(
+  BackupStore store, {
+  SharedPrefsService? statusPrefs,
+}) => BackupService(
+  storageDirectory: () async => Directory.systemTemp,
   animalRepository: _NoopAnimalRepository(),
   lotesRepository: _NoopLotesRepository(),
   agendaRepository: _NoopAgendaRepository(),
   workforceRepository: _NoopWorkforceRepository(),
   milkingRepository: _NoopMilkingRepository(),
   backupStore: store,
+  statusPrefs: statusPrefs,
 );
 
 CloudBackupMetadata _metadata({String digest = 'digest'}) =>
@@ -131,7 +140,7 @@ class _FakeCloudRepository implements CloudBackupRepository {
   final bool available;
   Uint8List? uploaded;
   String? uploadedDigest;
-  Uint8List downloaded = Uint8List(0);
+  Uint8List? downloaded;
 
   @override
   bool get isAvailable => available;
@@ -153,10 +162,29 @@ class _FakeCloudRepository implements CloudBackupRepository {
 
   @override
   Future<Uint8List> downloadSnapshot(CloudBackupMetadata metadata) async =>
-      downloaded;
+      downloaded ?? uploaded ?? Uint8List(0);
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final lockDirectory = Directory.systemTemp.createTempSync(
+    'libret-cloud-lock-',
+  );
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (_) async => lockDirectory.path,
+        );
+  });
+  tearDownAll(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
+    await lockDirectory.delete(recursive: true);
+  });
   test(
     'archive stamps the current schema version and all collections',
     () async {
@@ -284,6 +312,28 @@ void main() {
     expect(cloud.uploaded, isNotNull);
     expect(cloud.uploadedDigest, metadata.sha256);
     expect(metadata.verified, isTrue);
+  });
+
+  test('solo confirma copia externa tras releer la misma huella', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = SharedPrefsService(await SharedPreferences.getInstance());
+    final cloud = _FakeCloudRepository();
+    final service = CloudBackupService(
+      backupService: _backupService(
+        _FakeBackupStore(_envelope()),
+        statusPrefs: prefs,
+      ),
+      repository: cloud,
+    );
+    await service.backupNow();
+    final verifiedAt = prefs.getDateTime(PrefsKeys.lastVerifiedCloudBackup);
+    expect(verifiedAt, isNotNull);
+
+    cloud.downloaded = Uint8List.fromList([1]);
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+    await service.backupNow();
+    expect(prefs.getDateTime(PrefsKeys.lastCloudBackup), isNotNull);
+    expect(prefs.getDateTime(PrefsKeys.lastVerifiedCloudBackup), verifiedAt);
   });
 
   test('cloud backup reports unavailable configuration', () async {

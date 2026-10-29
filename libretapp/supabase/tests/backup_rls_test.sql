@@ -6,6 +6,8 @@ select policies_are(
   'public',
   'backup_snapshots',
   array[
+    'active_account_required',
+    'backup_snapshots_owner_update',
     'backup_snapshots_owner_delete',
     'backup_snapshots_owner_insert',
     'backup_snapshots_owner_select'
@@ -16,6 +18,8 @@ select policies_are(
   'storage',
   'objects',
   array[
+    'active_backup_account_required',
+    'reserved_backup_object_required',
     'libret_backups_owner_delete',
     'libret_backups_owner_insert',
     'libret_backups_owner_select'
@@ -45,7 +49,7 @@ insert into public.backup_snapshots (
 ) values (
   '10000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001/one.libretbackup',
+  '00000000-0000-0000-0000-000000000001/10000000-0000-0000-0000-000000000001.libretbackup',
   repeat('a', 64),
   100,
   4,

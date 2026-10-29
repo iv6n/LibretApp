@@ -1,8 +1,9 @@
 /// Isar-backed RFID association repository.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/utils/numeric_validation.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/rfid/domain/rfid_models.dart';
@@ -146,6 +147,7 @@ class RfidRepositoryIsar implements RfidRepository {
 
   @override
   Future<void> saveScanSession(RfidScanSession session) async {
+    requireFiniteNumbers(session);
     final isar = await _isar;
     await isar.writeTxn(() async {
       await isar.isarRfidScanSessions.put(session.toIsar());

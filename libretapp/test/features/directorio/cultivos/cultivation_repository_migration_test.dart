@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_migration_service.dart';
 import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_repository_isar.dart';

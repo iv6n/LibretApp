@@ -9,8 +9,14 @@ import 'package:libretapp/features/directorio/lotes/engorda/engorda.dart';
 import 'package:libretapp/features/finanzas/contabilidad/contabilidad.dart';
 import 'package:libretapp/features/ubicaciones/almacen/almacen.dart';
 
-class _MemoryStore implements FeatureRecordStore {
+class _MemoryStore implements FeatureRecordStore, TransactionalFeatureRecordStore {
   final rows = <String, FeatureRecord>{};
+  @override
+  Future<T> runTransaction<T>(Future<T> Function(FeatureRecordStore) action) async {
+    final before = Map<String, FeatureRecord>.from(rows);
+    try { return await action(this); }
+    catch (_) { rows..clear()..addAll(before); rethrow; }
+  }
   @override
   Future<FeatureRecord?> get(String farmId, String uuid) async {
     final row = rows[uuid];

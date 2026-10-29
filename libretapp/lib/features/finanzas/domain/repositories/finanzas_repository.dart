@@ -11,11 +11,13 @@ abstract class FinanzasRepository {
   Future<List<IncomeRecord>> getIncomes(DateRange range);
   Future<List<IncomeRecord>> getAllIncomes();
   Future<IncomeRecord> addIncome(IncomeRecord record);
+  Future<IncomeRecord> updateIncome(IncomeRecord record);
   Future<void> deleteIncome(String id);
 
   // Gastos generales
   Future<List<GeneralExpenseRecord>> getExpenses(DateRange range);
   Future<List<GeneralExpenseRecord>> getAllExpenses();
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record);
+  Future<GeneralExpenseRecord> updateExpense(GeneralExpenseRecord record);
   Future<void> deleteExpense(String id);
 }

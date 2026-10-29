@@ -1,0 +1,28 @@
+id,prioridad,alcance,tipo,estado,hallazgo,evidencia,criterio_cierre
+D01,P0,Android offline,Defecto reproducido,Abierto,Restauracion JSON antigua destructiva y parcial,backup-probe.log,Validacion previa y reemplazo atomico con rollback
+D02,P1,Android offline,Defecto reproducido,Abierto,Pesaje lote duplica al reintentar o editar durante guardado,ui-probe.log,Guardado atomico o idempotente; bloquear captura y mostrar error
+D03,P1,Android offline,Defecto reproducido,Abierto,Bascula simulada publica carga 450 kg,scale-offline-probe.log,Gate UI y accion; sin simulador en inyeccion publica
+D04,P1,Android offline,Defecto reproducido,Abierto,Importes NaN e Infinity persistidos y exportados null,backend_probe.log;ui-probe.log,Validacion isFinite y monetaria en capas de entrada y persistencia
+D05,P1,Android offline,Defecto reproducido,Abierto,Borrar ultimo movimiento conserva destino y fecha,backend_probe.log,Reconstruir ubicacion y fecha sin alterar asignaciones manuales validas
+D06,P1,Android offline,Defecto reproducido,Abierto,Borrar enfermedad deja alertas generadas,backend_probe.log,Separar alertas manuales y derivadas; recalcular
+D07,P2,Android offline,Defecto reproducido,Abierto,Restore omite region y sistema productivo,backup-probe.log,Ida y vuelta de todos los campos del perfil
+D08,P1,Android offline,Defecto en codigo,Abierto,Cinco formularios de edicion no recuperan error de lectura,ui-registros.md,Error visible y reintento; finalizar loading en todas las rutas
+U01,P1,Android offline,Visual y calculo,Abierto,Contraste bajo en seleccion del perfil oscuro,visual/profile-cattle-dark.png;2.341477:1,Paleta oscura legible y verificacion de contraste
+U02,P2,Android offline,Visual y codigo,Abierto,Crear o vincular cuenta ofrecido sin disponibilidad,visual/onboarding/opciones.png,Acciones y textos segun disponibilidad y variante
+U03,P1,Android offline,Defecto UX en codigo,Abierto,Finanzas elimina sin confirmar ni deshacer; falta edicion UI,ui-registros.md,Borrado reversible o confirmado y correccion accesible
+U04,P2,Android offline,Flujo incompleto,Abierto,Copia de emergencia privada sin recuperacion UI,backend.md,Listar exportar y restaurar copias previas
+PUB-01,P1,Todo release publico,Condicion de publicacion,Abierto,Responsable soporte y privacidad definitivos pendientes,publicacion-seguridad.md,Politica HTTPS real y parametros ficha declaraciones coherentes
+P02,P1,Calidad candidato,Verificacion fallida,Abierto,Suite 1142 aprobadas y 2 fallidas por montaje,test-summary.json,Corregir montajes y recuperar suite verde
+P03,P1,Paquete final,Verificacion no completada,Abierto,Build nuevo falla en conexion interna JVM Gradle,gradle-diagnostic.log;gradle-jbr.log,Build final verificable con hash firma manifiesto y ejecucion
+P04,P1,Aceptacion Android,Pendiente de validacion,Abierto,Recorrido fisico exhaustivo y recuperacion candidato no acreditados,INFORME.md,QA Android final con evidencias de escenarios requeridos
+P05,P2,Entrega continua,Deuda tecnica,Abierto,CI no construye ni inspecciona release; docs antiguas,publicacion-seguridad.md,Job release reproducible y fuente documental vigente
+PUB-02,P1,Standard con cuentas,Funcion obligatoria condicionada,Abierto,Falta eliminar cuenta en app y recurso web,publicacion-seguridad.md,Flujo autenticado de eliminacion y recurso web funcional
+PUB-03,P1,Standard con cuentas,Integracion sin validar,Abierto,SMS real proveedor y controles de abuso sin acreditacion,publicacion-seguridad.md,Pruebas reales de OTP y configuracion servidor verificadas
+PUB-04,P2,Standard publica,Configuracion,Abierto,Permisos GPS Bluetooth exceden funciones habilitadas,publicacion-seguridad.md,Variante minima o capacidades certificadas y declaradas
+S01,P1,Nube habilitada,Defecto por SQL; sin servidor,Abierto,Cliente autorizado en USING de FOR ALL puede borrar registros,backend.md,Politicas separadas y matriz RLS de roles operaciones fincas
+S02,P1,Nube habilitada,Integracion incompleta y riesgo algoritmo,Abierto,CRUD no cierra sync; revision no atomica y cursor fecha puede omitir filas,backend.md,Integracion extremo a extremo y concurrencia cursor estable
+S03,P1,Multifinca mismo store,Defecto reproducido,Abierto,UUID global con reemplazo sustituye fila de otra finca,backend_probe.log,Identidad compuesta o rechazo de cambio de propietario
+S04,P1,Kardex servicio interno,Defecto reproducido,Abierto,Traslado descuenta total sin acreditar destino,backend_probe.log,Debito credito atomicos conservando cantidad total
+S05,P1,Web; fuera primer Android,Implementacion parcial,Abierto,Lotes web y conversion respaldos Android web incompletos,backend.md,Paridad real o rechazo de operaciones incompatibles
+F01,P2,Producto futuro,Funcion pendiente,Abierto,Reportes sanitario y reproductivo detallados proximamente,ui-registros.md,Implementar reportes o ajustar promesa y ficha
+F02,P2,Producto futuro,Funcion no localizada,Abierto,Avisos del sistema con app cerrada no implementados,INFORME.md,Implementar si se anuncian notificaciones fuera de app

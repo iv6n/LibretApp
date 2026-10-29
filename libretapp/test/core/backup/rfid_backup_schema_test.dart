@@ -4,7 +4,7 @@ import 'package:libretapp/core/backup/isar_backup_store.dart';
 
 void main() {
   test('current schema includes RFID collections and remains versioned', () {
-    expect(BackupEnvelope.currentSchemaVersion, 9);
+    expect(BackupEnvelope.currentSchemaVersion, 11);
     expect(IsarBackupStore.collectionNames, contains('rfidBindings'));
     expect(IsarBackupStore.collectionNames, contains('rfidScanSessions'));
     expect(IsarBackupStore.collectionNames, contains('cultivations'));

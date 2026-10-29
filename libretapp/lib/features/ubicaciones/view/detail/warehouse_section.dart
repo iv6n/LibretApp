@@ -8,7 +8,7 @@ class WarehouseSection extends StatelessWidget {
   final LocationEntity location;
 
   Future<void> _showAddSheet(BuildContext context) async {
-    final item = await showModalBottomSheet<InventoryItem>(
+    final item = await showAppBottomSheet<InventoryItem>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
@@ -20,7 +20,7 @@ class WarehouseSection extends StatelessWidget {
   }
 
   Future<void> _showEditSheet(BuildContext context, InventoryItem item) async {
-    final updated = await showModalBottomSheet<InventoryItem>(
+    final updated = await showAppBottomSheet<InventoryItem>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,

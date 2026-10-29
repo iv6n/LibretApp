@@ -11,6 +11,7 @@ class AppEmptyState extends StatelessWidget {
     this.message,
     this.action,
     this.compact = false,
+    this.illustrationAsset,
     super.key,
   });
 
@@ -23,9 +24,71 @@ class AppEmptyState extends StatelessWidget {
   /// icon and tighter, vertical-only padding.
   final bool compact;
 
+  /// Enables the illustrated directory card without changing existing uses.
+  final String? illustrationAsset;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (illustrationAsset != null) {
+      final scheme = theme.colorScheme;
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExcludeSemantics(
+                    child: Image.asset(
+                      illustrationAsset!,
+                      width: 136,
+                      height: 136,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (message != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      message!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (action != null) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    action!,
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Semantics(
       container: true,

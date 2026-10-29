@@ -1,7 +1,7 @@
 /// Isar schemas for local workers and work teams.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
 
 part 'isar_workforce.g.dart';

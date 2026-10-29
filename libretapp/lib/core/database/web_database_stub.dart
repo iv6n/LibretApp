@@ -10,8 +10,8 @@ class IsarDatabase {
   Future<Object?> initialize() async => null;
 
   Object get isar => throw UnsupportedError(
-        'La base Isar solo está disponible en móvil; usa el repositorio web.',
-      );
+    'La base Isar solo está disponible en móvil; usa el repositorio web.',
+  );
 
   Future<void> close() async {}
 

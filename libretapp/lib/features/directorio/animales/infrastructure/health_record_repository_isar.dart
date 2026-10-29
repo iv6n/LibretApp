@@ -1,7 +1,10 @@
 /// features › directorio › animales › infrastructure › health_record_repository_isar
 library;
+import 'package:libretapp/core/database/isar_write_transaction.dart';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
+import '../domain/services/animal_record_validation.dart';
+import 'isar/isar_animal.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -90,8 +93,8 @@ class HealthRecordRepositoryIsar
   ) => addRecordFor(
     animalUuid,
     record,
-    onSaved: (isar, _) =>
-        AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+    beforeWrite: (isar) => _validate(isar, animalUuid, record),
+    onSaved: (isar, _) => AnimalProjectionRecalculator.recalculate(isar, animalUuid),
   );
 
   @override
@@ -107,7 +110,8 @@ class HealthRecordRepositoryIsar
               record.toIsar(animalUuid)..recordUuid = const Uuid().v4(),
         )
         .toList(growable: false);
-    await db.writeTxn(() async {
+    await withIsarWriteTransaction(db, () async {
+      for (final animalUuid in animalUuids.toSet()) { await _validate(db, animalUuid, record); }
       await db.isarHealthRecords.putAll(models);
       for (final animalUuid in animalUuids) {
         await AnimalActivityTracker.touch(db, animalUuid, DateTime.now());
@@ -118,6 +122,13 @@ class HealthRecordRepositoryIsar
       'Registro sanitario masivo guardado para ${animalUuids.length} animales',
       tag: logTag,
     );
+  }
+
+  Future<void> _validate(Isar db, String animalUuid, HealthRecord record) async {
+    AnimalRecordValidation.health(record);
+    final animal = await db.isarAnimals.where().uuidEqualTo(animalUuid).findFirst();
+    if (animal == null) throw StateError('Animal no encontrado.');
+    AnimalRecordValidation.operation(animal.toEntity(), record.date, editing: record.id != null);
   }
 
   @override
@@ -158,7 +169,7 @@ class HealthRecordRepositoryIsar
       updateRecordFor(
         animalUuid,
         record,
-        onSaved: (isar, _) =>
-            AnimalProjectionRecalculator.recalculate(isar, animalUuid),
+        beforeWrite: (isar) => _validate(isar, animalUuid, record),
+        onSaved: (isar, _) => AnimalProjectionRecalculator.recalculate(isar, animalUuid),
       );
 }

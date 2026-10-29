@@ -3,6 +3,10 @@
 /// prevent native database classes from leaking into the browser bundle.
 library;
 
+export 'web/web_lotes_repository.dart';
+export 'web/web_location_repository.dart';
+export 'web/web_animal_record_repositories.dart';
+
 import 'dart:async';
 
 import 'package:libretapp/features/agenda/data/agenda_registration_repository.dart';
@@ -15,30 +19,22 @@ import 'package:libretapp/features/directorio/animales/domain/entities/care_reco
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_dto.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/core/persistence/feature_record_store.dart';
 import 'package:libretapp/core/tenancy/tenancy.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
-import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
-import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
@@ -47,12 +43,9 @@ import 'package:libretapp/features/milking/domain/milking_models.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/rfid/domain/rfid_models.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
-import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
-import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
-class WebAnimalRepository implements AnimalRepository {
+class WebAnimalRepository
+    implements AnimalRepository, RegisteredAnimalSpeciesReader {
   WebAnimalRepository(this._store, this._context);
 
   static const _kind = 'animal';
@@ -60,12 +53,19 @@ class WebAnimalRepository implements AnimalRepository {
   final FarmContextRepository _context;
   final _changes = StreamController<void>.broadcast();
 
-  Future<String> get _farmId async => (await _context.current())?.farm.uuid ?? 'default-farm';
+  Future<String> get _farmId async =>
+      (await _context.current())?.farm.uuid ?? 'default-farm';
 
   Future<List<AnimalEntity>> _read({bool includeDeleted = false}) async {
     final farmId = await _farmId;
-    final rows = await _store.list(farmId, _kind, includeDeleted: includeDeleted);
-    return rows.map((row) => AnimalDto.fromJson(row.payload).toEntity()).toList(growable: false);
+    final rows = await _store.list(
+      farmId,
+      _kind,
+      includeDeleted: includeDeleted,
+    );
+    return rows
+        .map((row) => AnimalDto.fromJson(row.payload).toEntity())
+        .toList(growable: false);
   }
 
   Future<AnimalEntity?> _readOne(String uuid) async {
@@ -74,70 +74,131 @@ class WebAnimalRepository implements AnimalRepository {
     return AnimalDto.fromJson(row.payload).toEntity();
   }
 
-  Future<AnimalEntity> _write(AnimalEntity animal, {bool markUnsynced = true}) async {
+  Future<AnimalEntity> _write(
+    AnimalEntity animal, {
+    bool markUnsynced = true,
+  }) async {
     final farmId = await _farmId;
     final current = await _store.get(farmId, animal.uuid);
     final now = DateTime.now().toUtc();
-    final saved = animal.copyWith(lastUpdateDate: now, synced: markUnsynced ? false : animal.synced);
-    await _store.put(FeatureRecord(
-      uuid: saved.uuid,
-      farmId: farmId,
-      kind: _kind,
-      payload: AnimalDto.fromEntity(saved).toJson(),
-      createdAt: current?.createdAt ?? saved.creationDate,
-      updatedAt: now,
-      revision: (current?.revision ?? 0) + 1,
-      synced: false,
-    ));
+    final saved = animal.copyWith(
+      lastUpdateDate: now,
+      synced: markUnsynced ? false : animal.synced,
+    );
+    await _store.put(
+      FeatureRecord(
+        uuid: saved.uuid,
+        farmId: farmId,
+        kind: _kind,
+        payload: AnimalDto.fromEntity(saved).toJson(),
+        createdAt: current?.createdAt ?? saved.creationDate,
+        updatedAt: now,
+        revision: (current?.revision ?? 0) + 1,
+        synced: false,
+      ),
+    );
     _changes.add(null);
     return saved;
   }
 
   @override
   Stream<List<AnimalEntity>> watchAll() async* {
+    final observable = _store;
+    if (observable is WatchableFeatureRecordStore) {
+      yield* (observable as WatchableFeatureRecordStore)
+          .watch(await _farmId, _kind)
+          .map(
+            (rows) => rows
+                .map((r) => AnimalDto.fromJson(r.payload).toEntity())
+                .where((a) => a.status.isInActiveHerd)
+                .toList(growable: false),
+          );
+      return;
+    }
     yield await getAll();
     await for (final _ in _changes.stream) yield await getAll();
   }
+
   @override
-  Stream<void> watchChanges() => _changes.stream;
+  Stream<void> watchChanges() async* {
+    final observable = _store;
+    if (observable is WatchableFeatureRecordStore) {
+      yield* (observable as WatchableFeatureRecordStore)
+          .watch(await _farmId, _kind)
+          .map((_) {});
+    } else {
+      yield* _changes.stream;
+    }
+  }
+
   @override
   Future<bool> refreshFromRemote({bool force = false}) async => false;
   @override
-  Future<List<AnimalEntity>> getAll() async => (await _read()).where((a) => a.status.isInActiveHerd).toList(growable: false);
+  Future<List<AnimalEntity>> getAll() async => (await _read())
+      .where((a) => a.status.isInActiveHerd)
+      .toList(growable: false);
+  @override
+  Future<Set<Species>> getRegisteredSpecies() async =>
+      (await _read()).map((animal) => animal.species).toSet();
   @override
   Future<List<AnimalEntity>> getAllIncludingInactive() async => _read();
   @override
-  Future<List<AnimalEntity>> getPage({required int offset, required int limit}) async => (await getAll()).skip(offset).take(limit).toList(growable: false);
+  Future<List<AnimalEntity>> getPage({
+    required int offset,
+    required int limit,
+  }) async => (await getAll()).skip(offset).take(limit).toList(growable: false);
   @override
   Future<AnimalEntity?> getByUuid(String uuid) => _readOne(uuid);
   @override
-  Future<List<AnimalEntity>> getBySpecies(String speciesName) async => (await getAll()).where((a) => a.species.name == speciesName).toList(growable: false);
+  Future<List<AnimalEntity>> getBySpecies(String speciesName) async =>
+      (await getAll())
+          .where((a) => a.species.name == speciesName)
+          .toList(growable: false);
   @override
-  Future<List<AnimalEntity>> getByPaddock(String paddockId) async => (await getAll()).where((a) => a.currentLocationId == paddockId).toList(growable: false);
+  Future<List<AnimalEntity>> getByPaddock(String paddockId) async =>
+      (await getAll())
+          .where((a) => a.currentLocationId == paddockId)
+          .toList(growable: false);
   @override
-  Future<List<AnimalEntity>> getByBatchUuid(String batchUuid) async => (await getAll()).where((a) => a.batchUuid == batchUuid).toList(growable: false);
+  Future<List<AnimalEntity>> getByBatchUuid(String batchUuid) async =>
+      (await getAll())
+          .where((a) => a.batchUuid == batchUuid)
+          .toList(growable: false);
   @override
-  Future<List<AnimalEntity>> getByParentUuid(String parentUuid) async => (await _read()).where((a) => a.sireUuid == parentUuid || a.damUuid == parentUuid).toList(growable: false);
+  Future<List<AnimalEntity>> getByParentUuid(String parentUuid) async =>
+      (await _read())
+          .where((a) => a.sireUuid == parentUuid || a.damUuid == parentUuid)
+          .toList(growable: false);
   @override
-  Future<List<AnimalEntity>> getAnimalsRequiringAttention() async => (await getAll()).where((a) => a.needsImmediateAttention).toList(growable: false);
+  Future<List<AnimalEntity>> getAnimalsRequiringAttention() async =>
+      (await getAll())
+          .where((a) => a.needsImmediateAttention)
+          .toList(growable: false);
   @override
-  Future<List<AnimalEntity>> getUnsynchronized() async => (await getAll()).where((a) => !a.synced).toList(growable: false);
+  Future<List<AnimalEntity>> getUnsynchronized() async =>
+      (await getAll()).where((a) => !a.synced).toList(growable: false);
   @override
   Future<Map<LifeStage, int>> getActiveStageCounts() async {
     final counts = <LifeStage, int>{};
-    for (final animal in await getAll()) counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    for (final animal in await getAll())
+      counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
     return counts;
   }
+
   @override
   Future<Map<Species, Map<LifeStage, int>>> getActiveTaxonomyCounts() async {
     final counts = <Species, Map<LifeStage, int>>{};
     for (final animal in await getAll()) {
-      counts.putIfAbsent(animal.species, () => <LifeStage, int>{}).update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+      counts
+          .putIfAbsent(animal.species, () => <LifeStage, int>{})
+          .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
     }
     return counts;
   }
+
   @override
-  Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) => _write(animal);
+  Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) =>
+      _write(animal);
   @override
   Future<AnimalEntity> save(AnimalEntity animal) => _write(animal);
   @override
@@ -145,28 +206,43 @@ class WebAnimalRepository implements AnimalRepository {
   @override
   Future<void> markAsSynced(String uuid, String remoteId) async {
     final animal = await _readOne(uuid);
-    if (animal != null) await _write(animal.copyWith(synced: true, remoteId: remoteId, syncDate: DateTime.now().toUtc()), markUnsynced: false);
+    if (animal != null)
+      await _write(
+        animal.copyWith(
+          synced: true,
+          remoteId: remoteId,
+          syncDate: DateTime.now().toUtc(),
+        ),
+        markUnsynced: false,
+      );
   }
+
   @override
   Future<void> markAsUnsynchronized(String uuid) async {
     final animal = await _readOne(uuid);
-    if (animal != null) await _write(animal.copyWith(synced: false, syncDate: null));
+    if (animal != null)
+      await _write(animal.copyWith(synced: false, syncDate: null));
   }
+
   @override
   Future<void> delete(String uuid) async {
     final animal = await _readOne(uuid);
-    if (animal != null) await _write(animal.copyWith(status: AnimalStatus.archived));
+    if (animal != null)
+      await _write(animal.copyWith(status: AnimalStatus.archived));
   }
+
   @override
   Future<void> purge(String uuid) async {
     await _store.softDelete(farmId: await _farmId, uuid: uuid, kind: _kind);
     _changes.add(null);
   }
+
   @override
   Future<void> clearAll() async {
     for (final animal in await _read()) await purge(animal.uuid);
     _changes.add(null);
   }
+
   @override
   Future<int> count() async => (await getAll()).length;
   @override
@@ -180,103 +256,19 @@ class WebAnimalRepository implements AnimalRepository {
   }
 }
 
-class WebLotesRepository implements LotesRepository {
-  @override
-  Stream<List<LoteEntity>> watchAll() => Stream.value(const <LoteEntity>[]);
-  @override
-  Future<List<LoteEntity>> getAll() async => const [];
-  @override
-  Future<void> upsert(LoteEntity lote) async {}
-  @override
-  Future<void> clearAll() async {}
-  @override
-  Future<LoteEntity?> getByUuid(String uuid) async => null;
-  @override
-  Future<LoteEntity> createLote({required String nombre, String? descripcion, String? notas, double? feedPricePerKg, double? dailyFeedKgPerHead, double? liveWeightPricePerKg}) => throw UnsupportedError('Lotes web pendientes de migración a Drift.');
-  @override
-  Future<void> updateLote(LoteEntity lote) async {}
-  @override
-  Future<void> deleteLote(String uuid) async {}
-  @override
-  Future<void> purge(String uuid) async {}
-  @override
-  Future<void> addAnimalToLote({required String loteUuid, required String animalUuid}) async {}
-  @override
-  Future<void> addAnimalsToLote({required String loteUuid, required List<String> animalUuids}) async {}
-  @override
-  Future<void> removeAnimalFromLote({required String loteUuid, required String animalUuid}) async {}
-  @override
-  Future<void> removeAnimalsFromLote({required String loteUuid, required List<String> animalUuids}) async {}
-  @override
-  Future<String?> getLoteThatContainsAnimal(String animalUuid) async => null;
-  @override
-  Future<List<LoteEntity>> getActiveLotes() async => const [];
-  @override
-  Future<List<LoteEntity>> getInactiveLotes() async => const [];
-}
-
-class WebLocationRepository implements LocationRepository {
-  @override
-  Stream<List<LocationEntity>> watchAll() => Stream.value(const <LocationEntity>[]);
-  @override
-  Future<List<LocationEntity>> getAll() async => const [];
-  @override
-  Future<LocationEntity?> getByUuid(String uuid) async => null;
-  @override
-  Future<void> upsert(LocationEntity location) async {}
-  @override
-  Future<void> deleteByUuid(String uuid) async {}
-  @override
-  Future<void> addVisit(String uuid, VisitRecord record) async {}
-  @override
-  Future<void> addWater(String uuid, WaterRecord record) async {}
-  @override
-  Future<void> addSalt(String uuid, SaltRecord record) async {}
-  @override
-  Future<void> addShade(String uuid, ShadeRecord record) async {}
-  @override
-  Future<void> addPasture(String uuid, PastureRecord record) async {}
-  @override
-  Future<void> addSeeding(String uuid, SeedingRecord record) async {}
-  @override
-  Future<void> addIrrigation(String uuid, IrrigationRecord record) async {}
-  @override
-  Future<void> addRain(String uuid, RainRecord record) async {}
-  @override
-  Future<void> addCost(String uuid, LocationCostRecord record) async {}
-  @override
-  Future<void> addMaintenance(String uuid, MaintenanceRecord record) async {}
-  @override
-  Future<void> addCrop(String locationUuid, CropRecord crop) async {}
-  @override
-  Future<void> updateCrop(String locationUuid, CropRecord crop) async {}
-  @override
-  Future<void> deleteCrop(String locationUuid, String cropUuid) async {}
-  @override
-  Future<void> addHarvest(String locationUuid, String cropUuid, HarvestRecord record) async {}
-  @override
-  Future<void> addCropWatering(String locationUuid, String cropUuid, CropWateringRecord record) async {}
-  @override
-  Future<void> addCropHealth(String locationUuid, String cropUuid, CropHealthRecord record) async {}
-  @override
-  Future<void> addCropTask(String locationUuid, String cropUuid, CropTask task) async {}
-  @override
-  Future<void> completeCropTask(String locationUuid, String cropUuid, String taskUuid) async {}
-  @override
-  Future<void> addInventoryItem(String locationUuid, InventoryItem item) async {}
-  @override
-  Future<void> updateInventoryItem(String locationUuid, InventoryItem item) async {}
-  @override
-  Future<void> removeInventoryItem(String locationUuid, String itemUuid) async {}
-}
-
 class WebCultivationRepository implements CultivationRepository {
   @override
-  Stream<List<CultivationEntity>> watchAll({bool includeArchived = false}) => Stream.value(const <CultivationEntity>[]);
+  Stream<List<CultivationEntity>> watchAll({bool includeArchived = false}) =>
+      Stream.value(const <CultivationEntity>[]);
   @override
-  Stream<List<CultivationEntity>> watchByLocation(String locationUuid, {bool includeArchived = false}) => Stream.value(const <CultivationEntity>[]);
+  Stream<List<CultivationEntity>> watchByLocation(
+    String locationUuid, {
+    bool includeArchived = false,
+  }) => Stream.value(const <CultivationEntity>[]);
   @override
-  Future<List<CultivationEntity>> getAll({bool includeArchived = false}) async => const [];
+  Future<List<CultivationEntity>> getAll({
+    bool includeArchived = false,
+  }) async => const [];
   @override
   Future<CultivationEntity?> getByUuid(String uuid) async => null;
   @override
@@ -301,11 +293,16 @@ class WebAgendaRegistrationRepository implements AgendaRegistrationRepository {
   @override
   Future<List<AgendaRegistration>> fetchAll() async => const [];
   @override
-  Future<List<AgendaRegistration>> fetchForEntries(Set<String> entryIds) async => const [];
+  Future<List<AgendaRegistration>> fetchForEntries(
+    Set<String> entryIds,
+  ) async => const [];
   @override
   Future<AgendaRegistration?> getById(String id) async => null;
   @override
-  Future<AgendaRegistration?> getForRow(String entryId, String? animalId) async => null;
+  Future<AgendaRegistration?> getForRow(
+    String entryId,
+    String? animalId,
+  ) async => null;
   @override
   Future<void> save(AgendaRegistration registration) async {}
   @override
@@ -316,9 +313,12 @@ class WebAgendaRegistrationRepository implements AgendaRegistrationRepository {
 
 class WebWorkforceRepository implements WorkforceRepository {
   @override
-  Future<List<WorkerProfile>> fetchWorkers({bool includeInactive = false}) async => const [];
+  Future<List<WorkerProfile>> fetchWorkers({
+    bool includeInactive = false,
+  }) async => const [];
   @override
-  Future<List<WorkTeam>> fetchTeams({bool includeInactive = false}) async => const [];
+  Future<List<WorkTeam>> fetchTeams({bool includeInactive = false}) async =>
+      const [];
   @override
   Future<void> saveWorker(WorkerProfile worker) async {}
   @override
@@ -328,82 +328,71 @@ class WebWorkforceRepository implements WorkforceRepository {
   @override
   Future<void> archiveTeam(String id) async {}
   @override
-  Future<void> replaceAll({required List<WorkerProfile> workers, required List<WorkTeam> teams}) async {}
-}
-
-class WebWeightRecordRepository implements WeightRecordRepository {
-  @override
-  Future<List<WeightRecord>> getWeightRecords(String animalUuid) async => const [];
-  @override
-  Future<Map<String, List<WeightRecord>>> getWeightRecordsForAnimals(Set<String> animalUuids) async => const {};
-  @override
-  Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid) async => const [];
-  @override
-  Future<WeightRecord> addWeightRecord(String animalUuid, WeightRecord record) async => record;
-  @override
-  Future<void> deleteWeightRecord(String recordId) async {}
-}
-
-class WebHealthRecordRepository implements HealthRecordRepository {
-  @override
-  Future<List<HealthRecord>> getHealthRecords(String animalUuid) async => const [];
-  @override
-  Future<Map<String, DateTime>> getActiveWithdrawals(Set<String> animalUuids, {DateTime? asOf}) async => const {};
-  @override
-  Future<HealthRecord> addHealthRecord(String animalUuid, HealthRecord record) async => record;
-  @override
-  Future<void> addHealthRecordToMultiple(List<String> animalUuids, HealthRecord record) async {}
-  @override
-  Future<void> deleteHealthRecord(String recordId) async {}
+  Future<void> replaceAll({
+    required List<WorkerProfile> workers,
+    required List<WorkTeam> teams,
+  }) async {}
 }
 
 class WebProductionRecordRepository implements ProductionRecordRepository {
   @override
-  Future<List<ProductionRecord>> getProductionRecords(String animalUuid) async => const [];
+  Future<List<ProductionRecord>> getProductionRecords(
+    String animalUuid,
+  ) async => const [];
   @override
-  Future<ProductionRecord> addProductionRecord(String animalUuid, ProductionRecord record) async => record;
+  Future<ProductionRecord> addProductionRecord(
+    String animalUuid,
+    ProductionRecord record,
+  ) async => record;
   @override
   Future<void> deleteProductionRecord(String recordId) async {}
 }
 
 class WebReproductionRecordRepository implements ReproductionRecordRepository {
   @override
-  Future<List<ReproductionRecord>> getReproductionRecords(String animalUuid) async => const [];
+  Future<List<ReproductionRecord>> getReproductionRecords(
+    String animalUuid,
+  ) async => const [];
   @override
-  Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid) async => const [];
+  Future<List<ReproductionRecord>> getRecordsBySire(String sireUuid) async =>
+      const [];
   @override
-  Future<Map<String, List<ReproductionRecord>>> getReproductionRecordsForAnimals(Set<String> animalUuids) async => const {};
+  Future<Map<String, List<ReproductionRecord>>>
+  getReproductionRecordsForAnimals(Set<String> animalUuids) async => const {};
   @override
-  Future<ReproductionRecord> addReproductionRecord(String animalUuid, ReproductionRecord record) async => record;
+  Future<ReproductionRecord> addReproductionRecord(
+    String animalUuid,
+    ReproductionRecord record,
+  ) async => record;
   @override
   Future<void> deleteReproductionRecord(String recordId) async {}
   @override
-  Future<List<({String animalUuid, DateTime expectedCalvingDate})>> getUpcomingCalvings(DateTime from, DateTime to) async => const [];
+  Future<List<({String animalUuid, DateTime expectedCalvingDate})>>
+  getUpcomingCalvings(DateTime from, DateTime to) async => const [];
 }
 
 class WebCommercialRecordRepository implements CommercialRecordRepository {
   @override
-  Future<List<CommercialRecord>> getCommercialRecords(String animalUuid) async => const [];
+  Future<List<CommercialRecord>> getCommercialRecords(
+    String animalUuid,
+  ) async => const [];
   @override
-  Future<CommercialRecord> addCommercialRecord(String animalUuid, CommercialRecord record) async => record;
+  Future<CommercialRecord> addCommercialRecord(
+    String animalUuid,
+    CommercialRecord record,
+  ) async => record;
   @override
   Future<void> deleteCommercialRecord(String recordId) async {}
-}
-
-class WebMovementRecordRepository implements MovementRecordRepository {
-  @override
-  Future<List<MovementRecord>> getMovementRecords(String animalUuid) async => const [];
-  @override
-  Future<MovementRecord> addMovementRecord(String animalUuid, MovementRecord record) async => record;
-  @override
-  Future<void> deleteMovementRecord(String recordId) async {}
 }
 
 class WebCostRecordRepository implements CostRecordRepository {
   @override
   Future<List<CostRecord>> getCostRecords(String animalUuid) async => const [];
   @override
-  Future<CostRecord> addCostRecord(String animalUuid, CostRecord record) async => record;
+  Future<CostRecord> addCostRecord(
+    String animalUuid,
+    CostRecord record,
+  ) async => record;
   @override
   Future<void> deleteCostRecord(String recordId) async {}
 }
@@ -418,9 +407,12 @@ class WebCareRepository implements CareRepository {
   @override
   Future<void> retireRule(String ruleId) async {}
   @override
-  Future<List<CareRecord>> getRecordsForAnimal(String animalUuid) async => const [];
+  Future<List<CareRecord>> getRecordsForAnimal(String animalUuid) async =>
+      const [];
   @override
-  Future<Map<String, CareRecord>> getLatestRecordsByRule(String animalUuid) async => const {};
+  Future<Map<String, CareRecord>> getLatestRecordsByRule(
+    String animalUuid,
+  ) async => const {};
   @override
   Future<void> saveRecord(CareRecord record) async {}
   @override
@@ -428,7 +420,8 @@ class WebCareRepository implements CareRepository {
   @override
   Future<List<ScheduledCare>> getPending({DateTime? until}) async => const [];
   @override
-  Future<List<ScheduledCare>> getPendingForAnimal(String animalUuid) async => const [];
+  Future<List<ScheduledCare>> getPendingForAnimal(String animalUuid) async =>
+      const [];
   @override
   Future<void> saveSchedules(List<ScheduledCare> schedules) async {}
   @override
@@ -451,9 +444,13 @@ class WebMilkingRepository implements MilkingRepository {
   @override
   Future<List<MilkingEntry>> getEntries(String sessionUuid) async => const [];
   @override
-  Future<List<MilkingRecord>> getRecordsByAnimal(String animalUuid) async => const [];
+  Future<List<MilkingRecord>> getRecordsByAnimal(String animalUuid) async =>
+      const [];
   @override
-  Future<Map<String, List<MilkingRecord>>> getRecordsForAnimals(Set<String> animalUuids, {DateTime? since}) async => const {};
+  Future<Map<String, List<MilkingRecord>>> getRecordsForAnimals(
+    Set<String> animalUuids, {
+    DateTime? since,
+  }) async => const {};
   @override
   Future<void> upsertSession(MilkingSession session) async {}
   @override
@@ -463,10 +460,20 @@ class WebMilkingRepository implements MilkingRepository {
   @override
   Future<void> finalizeSession(String sessionUuid) async {}
   @override
-  Future<void> replaceAll({required List<MilkingSession> sessions, required List<MilkingEntry> entries}) async {}
+  Future<void> replaceAll({
+    required List<MilkingSession> sessions,
+    required List<MilkingEntry> entries,
+  }) async {}
 }
 
 class WebFinanzasRepository implements FinanzasRepository {
+  @override
+  Future<IncomeRecord> updateIncome(IncomeRecord record) async =>
+      throw UnsupportedError('Edición no disponible en este adaptador.');
+  @override
+  Future<GeneralExpenseRecord> updateExpense(
+    GeneralExpenseRecord record,
+  ) async => throw UnsupportedError('Edición no disponible en este adaptador.');
   @override
   Future<List<IncomeRecord>> getIncomes(DateRange range) async => const [];
   @override
@@ -476,22 +483,32 @@ class WebFinanzasRepository implements FinanzasRepository {
   @override
   Future<void> deleteIncome(String id) async {}
   @override
-  Future<List<GeneralExpenseRecord>> getExpenses(DateRange range) async => const [];
+  Future<List<GeneralExpenseRecord>> getExpenses(DateRange range) async =>
+      const [];
   @override
   Future<List<GeneralExpenseRecord>> getAllExpenses() async => const [];
   @override
-  Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async => record;
+  Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async =>
+      record;
   @override
   Future<void> deleteExpense(String id) async {}
 }
 
 class WebRfidRepository implements RfidRepository {
   @override
-  Future<List<RfidBindingRecord>> listBindings({String? animalUuid}) async => const [];
+  Future<List<RfidBindingRecord>> listBindings({String? animalUuid}) async =>
+      const [];
   @override
   Future<RfidBindingRecord?> activeBindingForTag(String tagEpc) async => null;
   @override
-  Future<RfidBindingRecord> assignTag({required String tagEpc, String? tagTid, required String animalUuid, RfidBindingSource? source}) => throw UnsupportedError('RFID web requiere un adaptador de hardware configurado.');
+  Future<RfidBindingRecord> assignTag({
+    required String tagEpc,
+    String? tagTid,
+    required String animalUuid,
+    RfidBindingSource? source,
+  }) => throw UnsupportedError(
+    'RFID web requiere un adaptador de hardware configurado.',
+  );
   @override
   Future<void> retireBinding(String bindingUuid) async {}
   @override

@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/production_record_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_record_assets.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/editable_record_repository.dart';
@@ -42,7 +44,9 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
   DateTime _date = DateTime.now();
   bool _saving = false;
   bool _loading = false;
+  String? _loadError;
   ProductionRecord? _editing;
+  AnimalEntity? _animal;
 
   @override
   void initState() {
@@ -51,39 +55,61 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
     _unitController = TextEditingController();
     _scoreController = TextEditingController();
     _notesController = TextEditingController();
+    _loadAnimal();
     if (widget.isEditing) _load();
+  }
+
+  Future<void> _loadAnimal() async {
+    if (!locator.isRegistered<AnimalRepository>()) return;
+    try {
+      final animal = await locator<AnimalRepository>().getByUuid(
+        widget.animalUuid,
+      );
+      if (mounted) setState(() => _animal = animal);
+    } catch (_) {
+      // The form can still show a safe missing-animal label.
+    }
   }
 
   /// Hydrates the form from the record being corrected.
   Future<void> _load() async {
-    setState(() => _loading = true);
-    final records = await locator<ProductionRecordRepository>()
-        .getProductionRecords(widget.animalUuid);
-    if (!mounted) return;
-
-    final record = records
-        .where((candidate) => candidate.id == widget.recordId)
-        .firstOrNull;
-    if (record == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).recordEditNotFound),
-        ),
-      );
-      context.pop(false);
-      return;
-    }
-
     setState(() {
-      _editing = record;
-      _valueController.text = record.value?.toString() ?? '';
-      _unitController.text = record.unit ?? '';
-      _scoreController.text = record.score?.toString() ?? '';
-      _notesController.text = record.notes ?? '';
-      _type = record.type;
-      _date = record.date;
-      _loading = false;
+      _loading = true;
+      _loadError = null;
     });
+    try {
+      final records = await locator<ProductionRecordRepository>()
+          .getProductionRecords(widget.animalUuid);
+      if (!mounted) return;
+
+      final record = records
+          .where((candidate) => candidate.id == widget.recordId)
+          .firstOrNull;
+      if (record == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context).recordEditNotFound),
+          ),
+        );
+        context.pop(false);
+        return;
+      }
+
+      setState(() {
+        _editing = record;
+        _valueController.text = record.value?.toString() ?? '';
+        _unitController.text = record.unit ?? '';
+        _scoreController.text = record.score?.toString() ?? '';
+        _notesController.text = record.notes ?? '';
+        _type = record.type;
+        _date = record.date;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadError = 'load');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -103,7 +129,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
     final valueText = _valueController.text.trim();
     final scoreText = _scoreController.text.trim();
 
-    final value = valueText.isEmpty ? null : double.tryParse(valueText);
+    final value = valueText.isEmpty ? null : parseFormDouble(valueText);
     final score = scoreText.isEmpty ? null : int.tryParse(scoreText);
 
     if (valueText.isNotEmpty && value == null) {
@@ -193,12 +219,17 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadError != null) return RecordLoadFailure(onRetry: _load);
     final l10n = AppLocalizations.of(context);
 
     return AppFormScaffold(
+      recordStyle: RecordFormStyle.production,
+      onCancel: () => Navigator.of(context).pop(),
       title: widget.isEditing
           ? l10n.recordEditTitle
           : l10n.detailFormProductionTitle,
+      contextLabel: animalRecordContextLabel(_animal),
+      contextIcon: Icons.pets_outlined,
       saving: _saving,
       loading: _loading,
       onSave: _save,

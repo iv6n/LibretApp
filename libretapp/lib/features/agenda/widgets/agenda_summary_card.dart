@@ -86,7 +86,9 @@ class AgendaSummaryCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              timeFormatter.format(entry.fecha),
+                              entry.hasExplicitTime
+                                  ? timeFormatter.format(entry.fecha)
+                                  : 'Sin hora',
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.outline,
                               ),

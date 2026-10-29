@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/experience/care_profile_selector.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart'
     hide ClearSearch;
@@ -331,8 +333,19 @@ class _DirectorioViewState extends State<DirectorioView>
   }
 
   Widget _buildDirectoryMenu(BuildContext context) {
+    final state = context.read<DirectorioBloc>().state;
     return MenuAnchor(
       menuChildren: [
+        if (_activeSection == DirectorioSection.animales &&
+            state is DirectorioLoaded) ...[
+          AnimalDirectoryViewMenuContent(
+            viewMode: state.animalViewMode,
+            onChanged: (mode) => context.read<DirectorioBloc>().add(
+              SetAnimalDirectoryViewMode(mode),
+            ),
+          ),
+          const Divider(height: 1),
+        ],
         DirectorioTabsMenuContent(
           orderedSections: _orderedSections,
           visibleSections: _visibleSections,
@@ -340,6 +353,12 @@ class _DirectorioViewState extends State<DirectorioView>
           iconForSection: _iconForSection,
           onVisibilityChanged: _toggleSectionVisibility,
           onMoveSection: _moveSection,
+        ),
+        const Divider(height: 1),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.tune_outlined),
+          onPressed: () => _openRegistrationPreferences(context),
+          child: const Text('Qué vas a registrar'),
         ),
       ],
       builder: (context, controller, child) {
@@ -355,6 +374,115 @@ class _DirectorioViewState extends State<DirectorioView>
           },
         );
       },
+    );
+  }
+
+  void _openRegistrationPreferences(BuildContext context) {
+    final controller = AppExperienceScope.maybeOf(context);
+    if (controller == null) return;
+    var selection = controller.value;
+    showAppBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(sheetContext).height * .8,
+        ),
+        child: SingleChildScrollView(
+          child: StatefulBuilder(
+            builder: (context, setSheetState) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const ListTile(
+                  title: Text('Qué vas a registrar'),
+                  subtitle: Text(
+                    'Estas opciones priorizan el alta y no ocultan fichas guardadas.',
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CareProfileSelector(
+                    value: selection.careProfile,
+                    onChanged: (profile) => setSheetState(
+                      () => selection = selection.copyWith(
+                        careProfile: profile,
+                        configured: true,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 2,
+                    children: [
+                      for (final species in Species.values)
+                        FilterChip(
+                          label: Text(species.displayName),
+                          selected: selection.preferredSpecies.contains(
+                            species,
+                          ),
+                          onSelected: (selected) {
+                            final speciesSet = Set<Species>.of(
+                              selection.preferredSpecies,
+                            );
+                            selected
+                                ? speciesSet.add(species)
+                                : speciesSet.remove(species);
+                            setSheetState(
+                              () => selection = selection.copyWith(
+                                preferredSpecies: speciesSet,
+                                configured:
+                                    speciesSet.isNotEmpty ||
+                                    selection.includePlants,
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.eco_outlined),
+                  title: const Text('Plantas y cultivos'),
+                  value: selection.includePlants,
+                  onChanged: (value) => setSheetState(
+                    () => selection = selection.copyWith(
+                      includePlants: value,
+                      configured:
+                          value || selection.preferredSpecies.isNotEmpty,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: FilledButton(
+                    onPressed: () async {
+                      try {
+                        await controller.setPreferences(selection);
+                        if (sheetContext.mounted) {
+                          Navigator.of(sheetContext).pop();
+                        }
+                      } catch (error) {
+                        if (sheetContext.mounted) {
+                          ScaffoldMessenger.of(sheetContext).showSnackBar(
+                            SnackBar(
+                              content: Text('No se pudo guardar: $error'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Guardar'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -441,6 +569,9 @@ class _DirectorioViewState extends State<DirectorioView>
                               !keyboardVisible &&
                               _activeSections.length > 1)
                           ? AppSegmentedTabBar(
+                              textScale: MediaQuery.textScalerOf(
+                                context,
+                              ).scale(1),
                               keyPrefix: 'directorio_segmented_tab',
                               controller: _tabController,
                               variant: AppSegmentedTabBarVariant.colorAccented,
@@ -448,6 +579,12 @@ class _DirectorioViewState extends State<DirectorioView>
                                   .map(
                                     (section) => AppSegmentedTabItem(
                                       label: _labelForSection(section),
+                                      compactLabel: switch (section) {
+                                        DirectorioSection.cultivos => 'Plantas',
+                                        DirectorioSection.ubicaciones =>
+                                          'Lugares',
+                                        _ => _labelForSection(section),
+                                      },
                                       icon: _iconForSection(section),
                                       accentColor: _accentColorForSection(
                                         context,
@@ -507,7 +644,13 @@ class _DirectorioViewState extends State<DirectorioView>
           key: _animalesTabKey,
           child: BlocProvider<AnimalesTabBloc>.value(
             value: context.read<AnimalesTabBloc>(),
-            child: AnimalesListView(shellInteractionsEnabled: isActive),
+            child: AnimalesListView(
+              shellInteractionsEnabled: isActive,
+              viewMode: switch (context.read<DirectorioBloc>().state) {
+                DirectorioLoaded(:final animalViewMode) => animalViewMode,
+                _ => AnimalDirectoryViewMode.cards,
+              },
+            ),
           ),
         );
       case DirectorioSection.lotes:
@@ -546,7 +689,7 @@ class _DirectorioViewState extends State<DirectorioView>
       case DirectorioSection.lotes:
         return 'Lotes';
       case DirectorioSection.cultivos:
-        return 'Cultivos';
+        return 'Plantas y cultivos';
       case DirectorioSection.ubicaciones:
         return 'Ubicaciones';
     }
@@ -650,6 +793,59 @@ class _DeferredCultivosTabState extends State<_DeferredCultivosTab> {
       );
     }
     return CultivosListView(shellInteractionsEnabled: widget.active);
+  }
+}
+
+class AnimalDirectoryViewMenuContent extends StatelessWidget {
+  const AnimalDirectoryViewMenuContent({
+    super.key,
+    required this.viewMode,
+    required this.onChanged,
+  });
+
+  final AnimalDirectoryViewMode viewMode;
+  final ValueChanged<AnimalDirectoryViewMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 344,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: Text(
+              'Vista de animales',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+          ),
+          for (final mode in AnimalDirectoryViewMode.values)
+            Semantics(
+              selected: viewMode == mode,
+              child: MenuItemButton(
+                key: ValueKey('animal_view_mode_${mode.name}'),
+                leadingIcon: Icon(
+                  mode == AnimalDirectoryViewMode.cards
+                      ? Icons.view_agenda_outlined
+                      : Icons.view_list_outlined,
+                  size: 20,
+                ),
+                trailingIcon: viewMode == mode
+                    ? const Icon(Icons.check, size: 20)
+                    : const SizedBox(width: 20),
+                onPressed: () => onChanged(mode),
+                child: Text(
+                  mode == AnimalDirectoryViewMode.cards
+                      ? 'Tarjetas'
+                      : 'Lista compacta',
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -771,7 +967,7 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
       itemBuilder: (context, index) {
         final result = results[index];
         return ListTile(
-          leading: buildDirectorioTypeIcon(result.type),
+          leading: buildDirectorioTypeIcon(context, result.type),
           title: Text(result.name),
           subtitle: Text(result.type.label),
           onTap: () => openDirectorioSearchResult(context, result),
@@ -781,26 +977,28 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
   }
 }
 
-Widget buildDirectorioTypeIcon(CombinedSearchType type) {
+Widget buildDirectorioTypeIcon(BuildContext context, CombinedSearchType type) {
   IconData icon;
   Color color;
+  final scheme = Theme.of(context).colorScheme;
+  final status = Theme.of(context).extension<AppStatusTheme>();
 
   switch (type) {
     case CombinedSearchType.animal:
       icon = Icons.pets;
-      color = AppColors.secondary;
+      color = scheme.secondary;
       break;
     case CombinedSearchType.lote:
       icon = Icons.agriculture;
-      color = AppColors.success;
+      color = status?.success ?? AppColors.success;
       break;
     case CombinedSearchType.cultivo:
       icon = Icons.eco_outlined;
-      color = AppColors.primary;
+      color = scheme.primary;
       break;
     case CombinedSearchType.ubicacion:
       icon = Icons.location_on;
-      color = AppColors.warning;
+      color = status?.warning ?? AppColors.warning;
       break;
   }
 

@@ -4,6 +4,7 @@ library;
 import '../enums/production_purpose.dart';
 import '../enums/sex.dart';
 import '../enums/species.dart';
+import '../entities/animal_entity.dart';
 
 class AnimalRegistrationSeed {
   const AnimalRegistrationSeed({
@@ -19,6 +20,8 @@ class AnimalRegistrationSeed {
     this.damUuid,
     this.birthDate,
     this.profilePhoto,
+    this.notes,
+    this.birthDatePrecision,
   });
 
   final Species species;
@@ -39,4 +42,6 @@ class AnimalRegistrationSeed {
   /// from [ageMonths].
   final DateTime? birthDate;
   final String? profilePhoto;
+  final String? notes;
+  final BirthDatePrecision? birthDatePrecision;
 }

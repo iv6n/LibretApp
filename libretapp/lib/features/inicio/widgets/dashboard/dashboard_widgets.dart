@@ -98,16 +98,16 @@ class _AnimalSummaryWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
             children: [
               _Kpi(value: '${data.totalAnimals}', label: 'Total'),
-              const SizedBox(width: 16),
               _Kpi(
                 value: '${data.attentionAnimals}',
                 label: 'Atención',
                 color: AppColors.warning,
               ),
-              const SizedBox(width: 16),
               _Kpi(value: '${data.activeLotes}', label: 'Lotes'),
             ],
           ),
@@ -136,7 +136,7 @@ class _Kpi extends StatelessWidget {
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: color ?? AppColors.primary,
+            color: color ?? Theme.of(context).colorScheme.primary,
           ),
         ),
         Text(label, style: Theme.of(context).textTheme.labelSmall),
@@ -205,6 +205,7 @@ class _HealthAlertsWidget extends StatelessWidget {
         .where((a) => a.severity != InicioAlertSeverity.info)
         .toList();
     final display = alerts.isEmpty ? data.alerts.take(2) : alerts;
+    final status = Theme.of(context).extension<AppStatusTheme>();
 
     return DashboardWidgetCard(
       title: 'Alertas sanitarias',
@@ -215,9 +216,10 @@ class _HealthAlertsWidget extends StatelessWidget {
       child: Column(
         children: display.map((a) {
           final color = switch (a.severity) {
-            InicioAlertSeverity.critical => AppColors.error,
-            InicioAlertSeverity.warning => AppColors.warning,
-            InicioAlertSeverity.info => AppColors.primary,
+            InicioAlertSeverity.critical =>
+              status?.error ?? Theme.of(context).colorScheme.error,
+            InicioAlertSeverity.warning => status?.warning ?? AppColors.warning,
+            InicioAlertSeverity.info => Theme.of(context).colorScheme.primary,
           };
           return ListTile(
             dense: true,
@@ -316,7 +318,11 @@ class _FinanceWidget extends StatelessWidget {
                     color: balance >= 0 ? AppColors.success : AppColors.error,
                   ),
                 ),
-                const Text('Balance'),
+                Text(
+                  s.invalidRecordCount > 0
+                      ? 'Balance parcial · revisar importes'
+                      : 'Balance',
+                ),
               ],
             ),
           ),
@@ -505,7 +511,7 @@ class _WeatherWidget extends StatelessWidget {
             '${w.temperature}°',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(width: 12),
@@ -571,7 +577,11 @@ class _LibraryPicksWidget extends StatelessWidget {
           return ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            leading: Icon(item.icon, size: 20, color: AppColors.primary),
+            leading: Icon(
+              item.icon,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: Text(
               item.title,
               maxLines: 1,
@@ -599,7 +609,7 @@ Widget? _sectionAction(
   return TextButton(
     onPressed: () => context.push(route),
     style: TextButton.styleFrom(
-      foregroundColor: AppColors.primary,
+      foregroundColor: Theme.of(context).colorScheme.primary,
       minimumSize: Size.zero,
       padding: EdgeInsets.zero,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

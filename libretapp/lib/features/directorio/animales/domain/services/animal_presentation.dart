@@ -28,6 +28,14 @@ String primaryAnimalLabel(AnimalEntity animal) {
   return animal.species.displayName;
 }
 
+/// Identifies an animal in record forms without exposing its storage UUID.
+String animalRecordContextLabel(AnimalEntity? animal) {
+  if (animal == null) return 'Animal no disponible';
+  final name = primaryAnimalLabel(animal);
+  final tag = animal.earTagNumber.trim();
+  return tag.isEmpty || tag == name ? 'Animal: $name' : 'Animal: $name · $tag';
+}
+
 String earTagDisplay(AnimalEntity animal) {
   return identificationDisplay(animal);
 }

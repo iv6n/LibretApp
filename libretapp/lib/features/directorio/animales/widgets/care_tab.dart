@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/app_card.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
@@ -12,6 +13,7 @@ import 'package:libretapp/features/directorio/animales/widgets/detail_helpers.da
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/app/widgets/shell_insets.dart';
 
 /// What's due for this animal and what's already been done, driven by the
 /// same [CareRule]s the Agenda reads to build its automatic reminders — this
@@ -48,7 +50,12 @@ class _CareTabState extends State<CareTab> {
         .toList(growable: false);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        ShellInsets.bottomSafePadding(context) + 96,
+      ),
       children: [
         const _SectionTitle(
           icon: Icons.work_outline,
@@ -77,7 +84,7 @@ class _CareTabState extends State<CareTab> {
             (task) => _PendingTile(
               task: task,
               rule: data.careRules[task.ruleId],
-              busy: _busy,
+              busy: _busy || !data.animal.status.isInActiveHerd,
               onRegister: () => _registerCare(task),
             ),
           ),
@@ -103,24 +110,35 @@ class _CareTabState extends State<CareTab> {
   Future<void> _registerCare(ScheduledCare task) async {
     final title =
         widget.data.careRules[task.ruleId]?.name ?? task.type.displayName;
-    final result = await showDialog<_CareEntryResult>(
+    if (_busy || !widget.data.animal.status.isInActiveHerd) return;
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (_) => _RegisterCareDialog(title: title),
+      barrierDismissible: false,
+      builder: (_) => _RegisterCareDialog(
+        title: title,
+        onSave: (result) async {
+          setState(() => _busy = true);
+          try {
+            await widget.careRepo.saveRecord(
+              CareRecord(
+                id: '${widget.data.animal.uuid}_${task.ruleId}_${result.date.millisecondsSinceEpoch}',
+                animalId: widget.data.animal.uuid,
+                ruleId: task.ruleId,
+                type: task.type,
+                performedAt: result.date,
+                notes: result.notes,
+              ),
+            );
+          } finally {
+            if (mounted) setState(() => _busy = false);
+          }
+        },
+      ),
     );
-    if (result == null || !mounted) return;
-
-    setState(() => _busy = true);
+    if (!mounted || saved != true) return;
+    // Rebuild projections after the record is committed. Failure here must
+    // not ask the user to submit a record that was already saved.
     try {
-      await widget.careRepo.saveRecord(
-        CareRecord(
-          id: '${widget.data.animal.uuid}_${task.ruleId}_${result.date.millisecondsSinceEpoch}',
-          animalId: widget.data.animal.uuid,
-          ruleId: task.ruleId,
-          type: task.type,
-          performedAt: result.date,
-          notes: result.notes,
-        ),
-      );
       await CareCalendarService(
         widget.careRepo,
       ).regenerateFor(widget.data.animal, now: DateTime.now());
@@ -131,9 +149,17 @@ class _CareTabState extends State<CareTab> {
       if (locator.isRegistered<AgendaReminderSyncService>()) {
         await locator<AgendaReminderSyncService>().sync();
       }
-      widget.onChanged();
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'El cuidado está guardado; no se pudo actualizar la agenda.',
+            ),
+          ),
+        );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) widget.onChanged();
     }
   }
 }
@@ -172,7 +198,8 @@ class _CareEntryResult {
 }
 
 class _RegisterCareDialog extends StatefulWidget {
-  const _RegisterCareDialog({required this.title});
+  const _RegisterCareDialog({required this.title, required this.onSave});
+  final Future<void> Function(_CareEntryResult) onSave;
   final String title;
 
   @override
@@ -181,6 +208,8 @@ class _RegisterCareDialog extends StatefulWidget {
 
 class _RegisterCareDialogState extends State<_RegisterCareDialog> {
   DateTime _date = DateTime.now();
+  bool _saving = false;
+  String? _error;
   final _notesController = TextEditingController();
 
   @override
@@ -191,54 +220,88 @@ class _RegisterCareDialogState extends State<_RegisterCareDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Registrar: ${widget.title}'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          OutlinedButton.icon(
-            icon: const Icon(Icons.today),
-            label: Text(DateFormat('dd/MM/yyyy').format(_date)),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _date,
-                firstDate: DateTime(_date.year - 5),
-                lastDate: DateTime(_date.year + 1),
-              );
-              if (picked == null) return;
-              setState(() => _date = picked);
-            },
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(
-              labelText: 'Notas',
-              border: OutlineInputBorder(),
+    return PopScope(
+      canPop: !_saving,
+      child: AlertDialog(
+        scrollable: true,
+        title: Text('Registrar: ${widget.title}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.today),
+              label: Text(DateFormat('dd/MM/yyyy').format(_date)),
+              onPressed: _saving
+                  ? null
+                  : () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _date,
+                        firstDate: DateTime(_date.year - 5),
+                        lastDate: DateTime(_date.year + 1),
+                      );
+                      if (picked == null) return;
+                      setState(() => _date = picked);
+                    },
             ),
-            maxLines: 2,
+            const SizedBox(height: 12),
+            TextField(
+              enabled: !_saving,
+              controller: _notesController,
+              decoration: const InputDecoration(
+                labelText: 'Notas',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: _saving
+                ? null
+                : () async {
+                    setState(() {
+                      _saving = true;
+                      _error = null;
+                    });
+                    try {
+                      await widget.onSave(
+                        _CareEntryResult(
+                          date: _date,
+                          notes: _notesController.text.trim().isEmpty
+                              ? null
+                              : _notesController.text.trim(),
+                        ),
+                      );
+                      if (context.mounted) Navigator.of(context).pop(true);
+                    } catch (_) {
+                      if (mounted)
+                        setState(
+                          () => _error =
+                              'No se pudo guardar. Tus notas se conservan; intenta de nuevo.',
+                        );
+                    } finally {
+                      if (mounted) setState(() => _saving = false);
+                    }
+                  },
+            child: Text(_saving ? 'Guardando…' : 'Guardar'),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(
-            _CareEntryResult(
-              date: _date,
-              notes: _notesController.text.trim().isEmpty
-                  ? null
-                  : _notesController.text.trim(),
-            ),
-          ),
-          child: const Text('Guardar'),
-        ),
-      ],
     );
   }
 }
@@ -263,22 +326,26 @@ class _PendingTile extends StatelessWidget {
     final overdue = task.dueAt.isBefore(DateTime(now.year, now.month, now.day));
     final label = rule?.name ?? task.type.displayName;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
         leading: Icon(
           overdue ? Icons.warning_amber_rounded : Icons.schedule,
           color: overdue ? theme.colorScheme.error : theme.colorScheme.primary,
         ),
-        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(
-          overdue
-              ? 'Vencido — ${formatDate(task.dueAt)}'
-              : 'Programado — ${formatDate(task.dueAt)}',
-        ),
-        trailing: FilledButton.tonal(
-          onPressed: busy ? null : onRegister,
-          child: const Text('Registrar'),
+        title: label,
+        subtitle: overdue
+            ? 'Vencido — ${formatDate(task.dueAt)}'
+            : 'Programado — ${formatDate(task.dueAt)}',
+        body: Align(
+          alignment: Alignment.centerRight,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: FilledButton.tonal(
+              onPressed: busy ? null : onRegister,
+              child: const Text('Registrar'),
+            ),
+          ),
         ),
       ),
     );
@@ -322,11 +389,13 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );

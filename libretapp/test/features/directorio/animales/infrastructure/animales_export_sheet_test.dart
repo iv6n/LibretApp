@@ -91,8 +91,10 @@ void main() {
     expect(_text(_row(excel, 1)[1]), '001');
     expect(_text(_row(excel, 1)[2]), 'Gorda');
     expect(_text(_row(excel, 1)[3]), 'cattle');
-    expect(_text(_row(excel, 1)[9]), '320.5');
-    expect(_text(_row(excel, 1)[12]), 'Juan');
+    expect(_text(_row(excel, 0)[8]), 'Precisión nacimiento');
+    expect(_text(_row(excel, 1)[8]), 'unknown');
+    expect(_text(_row(excel, 1)[10]), '320.5');
+    expect(_text(_row(excel, 1)[13]), 'Juan');
 
     expect(_text(_row(excel, 2)[1]), '002');
     expect(
@@ -101,7 +103,7 @@ void main() {
       reason: 'no custom name should render as an empty cell, not "null"',
     );
     expect(
-      _text(_row(excel, 2)[9]),
+      _text(_row(excel, 2)[10]),
       '',
       reason: 'no weight should render as an empty cell, not "null"',
     );
@@ -118,4 +120,26 @@ void main() {
       expect(excel['Animales'].rows, hasLength(1));
     },
   );
+
+  test('leaves unknown pet sex and age blank in the export', () async {
+    final pet = _animal(uuid: 'cat-1', earTagNumber: '').copyWith(
+      customName: 'Michi',
+      species: Species.feline,
+      category: Category.other,
+      lifeStage: LifeStage.cat,
+      sex: Sex.unknown,
+      birthDate: DateTime(1970),
+      birthDatePrecision: BirthDatePrecision.unknown,
+      ageMonths: -1,
+    );
+    final excel = Excel.createExcel();
+
+    await AnimalesExportSheet(_FakeAnimalRepository([pet])).writeTo(excel);
+
+    final row = _row(excel, 1);
+    expect(_text(row[3]), 'feline');
+    expect(_text(row[5]), '');
+    expect(_text(row[7]), '');
+    expect(_text(row[9]), '');
+  });
 }

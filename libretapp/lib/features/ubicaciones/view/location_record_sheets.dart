@@ -1,7 +1,11 @@
 /// features › ubicaciones › view › location_record_sheets — form sheets for recording location events.
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/record_save_scope.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/water_type.dart';
 
@@ -156,7 +160,7 @@ class _VisitRecordSheetState extends State<VisitRecordSheet> {
           ? null
           : _userController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -216,7 +220,7 @@ class _WaterRecordSheetState extends State<WaterRecordSheet> {
                   prefixIcon: Icon(Icons.water_drop_outlined),
                 ),
                 validator: (value) {
-                  final parsed = double.tryParse(value ?? '');
+                  final parsed = parseFormDouble(value ?? '');
                   if (parsed == null || parsed < 0) return 'Ingresa un nivel';
                   return null;
                 },
@@ -275,7 +279,7 @@ class _WaterRecordSheetState extends State<WaterRecordSheet> {
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -334,7 +338,7 @@ class _SaltRecordSheetState extends State<SaltRecordSheet> {
                   prefixIcon: Icon(Icons.scatter_plot_outlined),
                 ),
                 validator: (value) {
-                  final parsed = double.tryParse(value ?? '');
+                  final parsed = parseFormDouble(value ?? '');
                   if (parsed == null || parsed < 0) {
                     return 'Ingresa una cantidad';
                   }
@@ -376,7 +380,7 @@ class _SaltRecordSheetState extends State<SaltRecordSheet> {
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -438,7 +442,7 @@ class _ShadeRecordSheetState extends State<ShadeRecordSheet> {
                   prefixIcon: Icon(Icons.park_outlined),
                 ),
                 validator: (value) {
-                  final parsed = double.tryParse(value ?? '');
+                  final parsed = parseFormDouble(value ?? '');
                   if (parsed == null || parsed < 0) {
                     return 'Ingresa un porcentaje';
                   }
@@ -492,7 +496,7 @@ class _ShadeRecordSheetState extends State<ShadeRecordSheet> {
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -576,7 +580,7 @@ class _PastureRecordSheetState extends State<PastureRecordSheet> {
                   prefixIcon: Icon(Icons.timeline_outlined),
                 ),
                 validator: (value) {
-                  final parsed = double.tryParse(value ?? '');
+                  final parsed = parseFormDouble(value ?? '');
                   if (parsed == null || parsed < 0) {
                     return 'Ingresa una capacidad';
                   }
@@ -607,7 +611,7 @@ class _PastureRecordSheetState extends State<PastureRecordSheet> {
       condition: _conditionController.text.trim(),
       carryingCapacity: double.parse(_capacityController.text),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -719,7 +723,7 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
       decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
       validator: (value) {
         if (!required && (value == null || value.isEmpty)) return null;
-        final parsed = double.tryParse(value ?? '');
+        final parsed = parseFormDouble(value ?? '');
         if (parsed == null || parsed < 0) return 'Ingresa un monto';
         return null;
       },
@@ -730,7 +734,7 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
     if (!_formKey.currentState!.validate()) return;
 
     double parseOrZero(TextEditingController ctrl) =>
-        double.tryParse(ctrl.text.isEmpty ? '0' : ctrl.text) ?? 0;
+        parseFormDouble(ctrl.text.isEmpty ? '0' : ctrl.text) ?? 0;
 
     final maintenance = parseOrZero(_maintenanceController);
     final fences = parseOrZero(_fencesController);
@@ -738,7 +742,7 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
     final labor = parseOrZero(_laborController);
     final total = _totalController.text.trim().isEmpty
         ? (maintenance + fences + repairs + labor)
-        : (double.tryParse(_totalController.text) ??
+        : (parseFormDouble(_totalController.text) ??
               maintenance + fences + repairs + labor);
 
     final record = LocationCostRecord(
@@ -750,7 +754,7 @@ class _CostRecordSheetState extends State<CostRecordSheet> {
       total: total,
     );
 
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -820,7 +824,8 @@ class _SeedingRecordSheetState extends State<SeedingRecordSheet> {
       ],
       onSubmit: () {
         if (!_formKey.currentState!.validate()) return;
-        Navigator.of(context).pop(
+        submitRecordForm(
+          context,
           SeedingRecord(
             date: DateTime.now(),
             crop: _cropController.text.trim(),
@@ -904,11 +909,14 @@ class _IrrigationRecordSheetState extends State<IrrigationRecordSheet> {
       ],
       onSubmit: () {
         if (!_formKey.currentState!.validate()) return;
-        Navigator.of(context).pop(
+        submitRecordForm(
+          context,
           IrrigationRecord(
             date: DateTime.now(),
             type: _type,
-            duration: Duration(minutes: _readDouble(_durationController).round()),
+            duration: Duration(
+              minutes: _readDouble(_durationController).round(),
+            ),
             cost: _readDouble(_costController),
           ),
         );
@@ -973,7 +981,8 @@ class _RainRecordSheetState extends State<RainRecordSheet> {
       ],
       onSubmit: () {
         if (!_formKey.currentState!.validate()) return;
-        Navigator.of(context).pop(
+        submitRecordForm(
+          context,
           RainRecord(
             date: DateTime.now(),
             millimeters: _readDouble(_millimetersController),
@@ -993,8 +1002,7 @@ class MaintenanceRecordSheet extends StatefulWidget {
   final String locationName;
 
   @override
-  State<MaintenanceRecordSheet> createState() =>
-      _MaintenanceRecordSheetState();
+  State<MaintenanceRecordSheet> createState() => _MaintenanceRecordSheetState();
 }
 
 class _MaintenanceRecordSheetState extends State<MaintenanceRecordSheet> {
@@ -1112,7 +1120,8 @@ class _MaintenanceRecordSheetState extends State<MaintenanceRecordSheet> {
       ],
       onSubmit: () {
         if (!_formKey.currentState!.validate()) return;
-        Navigator.of(context).pop(
+        submitRecordForm(
+          context,
           MaintenanceRecord(
             date: DateTime.now(),
             assetName: _assetController.text.trim(),
@@ -1121,9 +1130,7 @@ class _MaintenanceRecordSheetState extends State<MaintenanceRecordSheet> {
             meterReading: _meterController.text.trim().isEmpty
                 ? null
                 : _readDouble(_meterController),
-            meterUnit: _meterController.text.trim().isEmpty
-                ? null
-                : _meterUnit,
+            meterUnit: _meterController.text.trim().isEmpty ? null : _meterUnit,
             cost: _readDouble(_costController),
             notes: _notesController.text.trim().isEmpty
                 ? null
@@ -1203,7 +1210,7 @@ Widget _numberField({
     validator: (value) {
       final raw = value?.trim() ?? '';
       if (!required && raw.isEmpty) return null;
-      final parsed = double.tryParse(raw.replaceAll(',', '.'));
+      final parsed = parseFormDouble(raw.replaceAll(',', '.'));
       if (parsed == null || parsed < 0) return 'Ingresa un número válido';
       return null;
     },
@@ -1211,7 +1218,7 @@ Widget _numberField({
 }
 
 double _readDouble(TextEditingController controller) =>
-    double.tryParse(controller.text.trim().replaceAll(',', '.')) ?? 0;
+    parseFormDouble(controller.text.trim().replaceAll(',', '.')) ?? 0;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

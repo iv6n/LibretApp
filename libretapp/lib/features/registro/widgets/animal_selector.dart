@@ -1,4 +1,4 @@
-﻿/// features \u203a registro \u203a widgets \u203a animal_selector \u2014 widget for selecting an animal from the directory.
+/// features \u203a registro \u203a widgets \u203a animal_selector \u2014 widget for selecting an animal from the directory.
 library;
 
 import 'package:flutter/material.dart';
@@ -36,6 +36,7 @@ class _AnimalSelectorState extends State<AnimalSelector> {
   List<AnimalEntity> _filtered = [];
   bool _loading = true;
   bool _expanded = false;
+  String? _error;
 
   @override
   void initState() {
@@ -44,16 +45,28 @@ class _AnimalSelectorState extends State<AnimalSelector> {
   }
 
   Future<void> _loadAnimals() async {
-    final repo = locator<AnimalRepository>();
-    final all = await repo.getAll();
-    final eligible = widget.eligible;
-    final animals = eligible == null ? all : all.where(eligible).toList();
-    if (!mounted) return;
     setState(() {
-      _animals = animals;
-      _filtered = animals;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final repo = locator<AnimalRepository>();
+      final all = await repo.getAll();
+      final eligible = widget.eligible;
+      final animals = eligible == null ? all : all.where(eligible).toList();
+      if (!mounted) return;
+      setState(() {
+        _animals = animals;
+        _filtered = animals;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'No se pudo cargar la lista de animales.';
+      });
+    }
   }
 
   void _filter(String query) {
@@ -178,6 +191,22 @@ class _AnimalSelectorState extends State<AnimalSelector> {
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : _error != null
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          onPressed: _loadAnimals,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
+                        ),
+                      ],
                     ),
                   )
                 : _filtered.isEmpty

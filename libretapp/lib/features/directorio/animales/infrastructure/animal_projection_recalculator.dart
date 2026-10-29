@@ -19,7 +19,8 @@
 /// an add is the one just added), which is what makes it safe to adopt.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
+import '../domain/services/reproductive_kpi_service.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/production_record.dart';
@@ -39,6 +40,17 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 class AnimalProjectionRecalculator {
   const AnimalProjectionRecalculator._();
 
+  static Future<void> refreshMonitoring(Isar db, String uuid) async {
+    final animal = await db.isarAnimals.where().uuidEqualTo(uuid).findFirst();
+    if (animal == null) return;
+    await _applyHealthFlags(db, animal, uuid);
+    if (!animal.toEntity().status.isInActiveHerd) {
+      animal.underObservation = false;
+      animal.requiresAttention = false;
+    }
+    await db.isarAnimals.put(animal);
+  }
+
   /// Recomputes every record-derived field on [animalUuid] and saves it.
   ///
   /// Must run inside a write transaction — every caller is already in one.
@@ -47,6 +59,7 @@ class AnimalProjectionRecalculator {
     String animalUuid, {
     bool updateActivityTimestamp = true,
   }) async {
+    await prepareLocationProjection(isar, animalUuid);
     final animal = await isar.isarAnimals
         .where()
         .uuidEqualTo(animalUuid)
@@ -64,6 +77,46 @@ class AnimalProjectionRecalculator {
     if (updateActivityTimestamp) {
       animal.lastUpdateDate = DateTime.now();
     }
+    await isar.isarAnimals.put(animal);
+  }
+
+  /// Capture the baseline before adding the first movement. Old data is
+  /// inferred only from a known registration/origin, otherwise kept for review.
+  static Future<void> prepareLocationProjection(Isar db, String uuid) async {
+    final animal = await db.isarAnimals.where().uuidEqualTo(uuid).findFirst();
+    if (animal == null || animal.locationProjectionInitialized == true) return;
+    final history = await db.isarMovementRecords.where().animalUuidEqualTo(uuid).sortByDate().findAll();
+    if (history.isEmpty) {
+      animal.registrationLocationId = animal.currentLocationId;
+      animal.registrationMovementDate = animal.lastMovementDate;
+    } else {
+      animal.registrationLocationId = animal.initialLocationId;
+      if (animal.registrationLocationId == null && history.first.fromLocation != null) {
+        final origin = await db.isarLocations.where().uuidEqualTo(history.first.fromLocation!).findFirst();
+        animal.registrationLocationId = origin?.uuid;
+      }
+      animal.locationProjectionUncertain = animal.registrationLocationId == null;
+    }
+    animal.locationProjectionInitialized = true;
+    await db.isarAnimals.put(animal);
+  }
+
+  /// Capture the registration value before the first weighing, in its transaction.
+  static Future<void> prepareWeightProjection(
+    Isar isar,
+    String animalUuid,
+  ) async {
+    final animal = await isar.isarAnimals
+        .where()
+        .uuidEqualTo(animalUuid)
+        .findFirst();
+    if (animal == null || animal.weightProjectionInitialized == true) return;
+    final existing = await isar.isarWeightRecords
+        .where()
+        .animalUuidEqualTo(animalUuid)
+        .count();
+    animal.registrationWeight = existing == 0 ? animal.weight : null;
+    animal.weightProjectionInitialized = true;
     await isar.isarAnimals.put(animal);
   }
 
@@ -88,7 +141,13 @@ class AnimalProjectionRecalculator {
       if (created != 0) return created;
       return b.id.compareTo(a.id);
     });
-    if (records.isNotEmpty) animal.weight = records.first.weight;
+    if (records.isNotEmpty) {
+      // Existing record sets cannot reveal the original registration weight.
+      animal.weightProjectionInitialized ??= true;
+      animal.weight = records.first.weight;
+    } else if (animal.weightProjectionInitialized == true) {
+      animal.weight = animal.registrationWeight;
+    }
   }
 
   /// Body condition is the most recent scoring. Kept when none remain, for the
@@ -125,8 +184,18 @@ class AnimalProjectionRecalculator {
         .animalUuidEqualTo(animalUuid)
         .sortByDateDesc()
         .findFirst();
-    if (latest == null) return;
-
+    if (latest == null) {
+      if (animal.locationProjectionUncertain != true) {
+        animal.currentLocationId = animal.registrationLocationId;
+        animal.lastMovementDate = animal.registrationMovementDate;
+      }
+      return;
+    }
+    if (latest.clearsLocation) {
+      animal.currentLocationId = null;
+      animal.lastMovementDate = latest.date;
+      return;
+    }
     final destination =
         await isar.isarLocations
             .where()
@@ -146,6 +215,31 @@ class AnimalProjectionRecalculator {
   /// whether a record of that kind still exists. They used to latch on and
   /// never clear, which meant correcting a vaccine record to a treatment left
   /// the animal marked vaccinated for good.
+  static void _prepareHealthProvenance(IsarAnimal animal) {
+    var uncertain = animal.monitoringNeedsReview == true;
+    if (animal.manualVaccinated == null) {
+      uncertain = uncertain || animal.vaccinated;
+      animal.manualVaccinated = animal.vaccinated;
+    }
+    if (animal.manualDewormed == null) {
+      uncertain = uncertain || animal.dewormed;
+      animal.manualDewormed = animal.dewormed;
+    }
+    if (animal.manualHasVitamins == null) {
+      uncertain = uncertain || animal.hasVitamins;
+      animal.manualHasVitamins = animal.hasVitamins;
+    }
+    if (animal.manualUnderObservation == null) {
+      uncertain = uncertain || animal.underObservation;
+      animal.manualUnderObservation = animal.underObservation;
+    }
+    if (animal.manualRequiresAttention == null) {
+      uncertain = uncertain || animal.requiresAttention;
+      animal.manualRequiresAttention = animal.requiresAttention;
+    }
+    animal.monitoringNeedsReview = uncertain;
+  }
+
   static Future<void> _applyHealthFlags(
     Isar isar,
     IsarAnimal animal,
@@ -157,17 +251,15 @@ class AnimalProjectionRecalculator {
         .findAll();
 
     final types = records.map((record) => record.type).toSet();
+    _prepareHealthProvenance(animal);
     animal
-      ..vaccinated = types.contains(HealthRecordType.vaccine.name)
-      ..dewormed = types.contains(HealthRecordType.deworming.name)
-      ..hasVitamins = types.contains(HealthRecordType.vitamins.name);
+      ..vaccinated = animal.manualVaccinated! || types.contains(HealthRecordType.vaccine.name)
+      ..dewormed = animal.manualDewormed! || types.contains(HealthRecordType.deworming.name)
+      ..hasVitamins = animal.manualHasVitamins! || types.contains(HealthRecordType.vitamins.name);
 
     final hasDisease = types.contains(HealthRecordType.disease.name);
-    if (hasDisease) {
-      animal
-        ..underObservation = true
-        ..requiresAttention = true;
-    }
+    animal.underObservation = animal.manualUnderObservation! || hasDisease;
+    animal.requiresAttention = animal.manualRequiresAttention! || hasDisease;
   }
 
   /// Service dates and reproductive state, from the records that remain.
@@ -192,8 +284,8 @@ class AnimalProjectionRecalculator {
         .findAll();
 
     final serviceDates = [
-      ...asDam.map((record) => record.serviceDate),
-      ...asSire.map((record) => record.serviceDate),
+      ...asDam.map((record) => record.serviceDate).whereType<DateTime>(),
+      ...asSire.map((record) => record.serviceDate).whereType<DateTime>(),
     ];
     if (serviceDates.isNotEmpty) {
       serviceDates.sort();
@@ -216,15 +308,30 @@ class AnimalProjectionRecalculator {
     // Only the newest record still on file decides where she is in the cycle.
     // Applying every record in turn, as the old projection effectively did,
     // let a superseded service overwrite the result of a later one.
-    final latest = asDam.firstOrNull;
+    final latestEntity = ReproductiveKpiService.latestCycleOf(
+      asDam.map((r) => r.toEntity()).toList(),
+    );
+    final latest = latestEntity == null
+        ? null
+        : asDam.firstWhere((r) => r.id.toString() == latestEntity.id);
     if (latest == null) {
-      animal.expectedCalvingDate = null;
+      if (animal.reproductionProjected == true) {
+        animal.expectedCalvingDate = null;
+        animal.reproductiveStatus = ReproductiveStatus.unknown.name;
+      }
+      animal.reproductionProjected = false;
       return;
     }
 
+    animal.reproductionProjected = true;
+
     if (latest.actualCalvingDate != null) {
       animal
-        ..reproductiveStatus = ReproductiveStatus.lactating.name
+        ..reproductiveStatus =
+            latest.calvingOutcome == 'abortion' ||
+                latest.calvingOutcome == 'stillbirth'
+            ? ReproductiveStatus.active.name
+            : ReproductiveStatus.lactating.name
         ..expectedCalvingDate = null;
       return;
     }
@@ -252,7 +359,7 @@ class AnimalProjectionRecalculator {
   static DateTime _expectedCalving(IsarReproductionRecord record) =>
       record.expectedCalvingDate ??
       const ReproductionScheduler()
-          .estimate(serviceDate: record.serviceDate)
+          .estimate(serviceDate: record.serviceDate!)
           .dueDate;
 
   /// Whether the animal is still in the herd.
@@ -293,9 +400,13 @@ class AnimalProjectionRecalculator {
     }
 
     if (health == null && leaving == null) {
-      animal.status = AnimalStatus.active.name;
+      if (animal.herdStatusProjected == true)
+        animal.status = AnimalStatus.active.name;
+      animal.herdStatusProjected = false;
       return;
     }
+
+    animal.herdStatusProjected = true;
 
     // An animal that has left the herd is nobody's pending job any more.
     animal

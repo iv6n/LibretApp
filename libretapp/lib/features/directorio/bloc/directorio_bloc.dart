@@ -33,6 +33,10 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     on<ChangeDirectorioSection>(_onChangeSection);
     on<SetDirectorioVisibleSections>(_onSetVisibleSections);
     on<SetDirectorioSectionConfig>(_onSetSectionConfig);
+    on<SetAnimalDirectoryViewMode>(
+      _onSetAnimalViewMode,
+      transformer: (events, mapper) => events.asyncExpand(mapper),
+    );
     on<StartSearch>(_onStartSearch);
     on<PerformCombinedSearch>(_onPerformCombinedSearch);
     on<ClearSearch>(_onClearSearch);
@@ -57,6 +61,9 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
 
       final config =
           await _configRepository?.load() ?? defaultDirectorioSectionConfig;
+      final animalViewMode =
+          await _configRepository?.loadAnimalViewMode() ??
+          AnimalDirectoryViewMode.cards;
       final activeSection = _firstVisibleSection(config);
 
       emit(
@@ -64,6 +71,7 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
           activeSection: activeSection,
           orderedSections: config.orderedSections,
           visibleSections: config.visibleSections,
+          animalViewMode: animalViewMode,
           isSearching: false,
           searchResults: const [],
           searchQuery: '',
@@ -82,6 +90,22 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
     if (activeSections.isEmpty) return;
     final sectionIndex = event.tabIndex.clamp(0, activeSections.length - 1);
     _emitSectionChange(activeSections[sectionIndex], emit);
+  }
+
+  Future<void> _onSetAnimalViewMode(
+    SetAnimalDirectoryViewMode event,
+    Emitter<DirectorioState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! DirectorioLoaded ||
+        currentState.animalViewMode == event.mode) {
+      return;
+    }
+
+    await _configRepository?.saveAnimalViewMode(event.mode);
+    final latestState = state;
+    if (latestState is! DirectorioLoaded) return;
+    emit(latestState.copyWith(animalViewMode: event.mode));
   }
 
   void _onChangeSection(

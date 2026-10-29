@@ -10,12 +10,14 @@ class ShellFabSecondaryAction {
     required this.icon,
     required this.onPressed,
     this.heroTag,
+    this.tooltip,
   });
 
   final String id;
   final IconData icon;
   final VoidCallback onPressed;
   final String? heroTag;
+  final String? tooltip;
 
   @override
   bool operator ==(Object other) {
@@ -23,11 +25,12 @@ class ShellFabSecondaryAction {
     return other is ShellFabSecondaryAction &&
         other.id == id &&
         other.icon == icon &&
-        other.heroTag == heroTag;
+        other.heroTag == heroTag &&
+        other.tooltip == tooltip;
   }
 
   @override
-  int get hashCode => Object.hash(id, icon, heroTag);
+  int get hashCode => Object.hash(id, icon, heroTag, tooltip);
 }
 
 /// Configuration for the shared FAB rendered by the app shell.

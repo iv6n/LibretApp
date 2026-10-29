@@ -2,7 +2,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/agenda/domain/agenda_registration.dart';
 
 part 'isar_agenda_registration.g.dart';

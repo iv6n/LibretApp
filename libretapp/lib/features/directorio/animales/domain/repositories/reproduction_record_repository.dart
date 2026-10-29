@@ -36,3 +36,8 @@ abstract interface class ReproductionRecordUuidLookup {
     Set<String> recordUuids,
   );
 }
+
+/// Links the existing calf and the calving in the same transaction.
+abstract interface class ReproductionOffspringLinker {
+  Future<void> linkOffspring(String damUuid, String recordId, String calfUuid);
+}

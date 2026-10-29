@@ -24,6 +24,7 @@ class ResumenTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (s.invalidRecordCount > 0) Text("Totales parciales: ${s.invalidRecordCount} registros tienen importes inválidos. Revísalos en Ajustes, en Revisar integridad y duplicados.", style: TextStyle(color: Theme.of(context).colorScheme.error)),
         KpiCard(
           label: 'Ganancia neta',
           value: '${isProfit ? '+' : ''}${fmt.format(s.netProfit)}',

@@ -1,7 +1,7 @@
 /// Isar implementation of the local workforce repository.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
 import 'package:libretapp/features/agenda/data/workforce_repository.dart';

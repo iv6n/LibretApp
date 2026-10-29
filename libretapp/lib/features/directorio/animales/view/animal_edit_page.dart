@@ -1,6 +1,8 @@
 /// features › directorio › animales › view › animal_edit_page — Direct animal edit form.
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -117,8 +119,10 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
     _status = animal.status;
     _healthStatus = animal.healthStatus;
     _riskLevel = animal.riskLevel;
-    _underObservation = animal.underObservation;
-    _requiresAttention = animal.requiresAttention;
+    _underObservation =
+        animal.manualUnderObservation ?? animal.underObservation;
+    _requiresAttention =
+        animal.manualRequiresAttention ?? animal.requiresAttention;
     _profilePhoto = animal.profilePhoto;
   }
 
@@ -175,6 +179,8 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
           status: _status,
           healthStatus: _healthStatus,
           riskLevel: _riskLevel,
+          manualUnderObservation: _underObservation,
+          manualRequiresAttention: _requiresAttention,
           underObservation: _underObservation,
           requiresAttention: _requiresAttention,
           profilePhoto: _profilePhoto,
@@ -333,7 +339,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
                   ),
                   const SizedBox(height: 20),
                   const _SectionHeader(
-                    title: 'Genetica y observaciones',
+                    title: 'Genética y observaciones',
                     icon: Icons.hub_outlined,
                   ),
                   TextFormField(
@@ -449,7 +455,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   double? _parseOptionalDouble(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return null;
-    return double.tryParse(trimmed.replaceAll(',', '.'));
+    return parseFormDouble(trimmed.replaceAll(',', '.'));
   }
 
   int? _parseOptionalInt(String value) {

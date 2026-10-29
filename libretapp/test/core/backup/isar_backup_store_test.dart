@@ -1,8 +1,11 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/features/perfil/data/perfil_isar_repository.dart';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/isar_backup_store.dart';
 import 'package:libretapp/core/database/isar_database.dart';
@@ -13,32 +16,20 @@ import 'package:libretapp/features/finanzas/domain/entities/financial_period_sum
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar_finanzas_repository.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
-import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
-
-class _MemoryPerfilRepository implements PerfilRepository {
-  Perfil perfil = const Perfil(
-    id: 'profile-1',
-    nombre: 'Ana',
-    apellido: 'Piloto',
-    email: '',
-    telefono: '',
-    finca: 'Finca piloto',
-    direccion: '',
-  );
-
-  @override
-  Future<Perfil> fetchPerfil() async => perfil;
-
-  @override
-  Future<void> savePerfil(Perfil perfil) async => this.perfil = perfil;
-
-  @override
-  Future<void> updatePerfil(Perfil perfil) => savePerfil(perfil);
-}
+import 'package:libretapp/features/lite/lite_pet_service.dart';
+import 'package:libretapp/features/agenda/data/agenda_model.dart';
+import 'package:libretapp/features/agenda/infrastructure/isar_agenda_repository.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/health_record.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
+import 'package:libretapp/features/directorio/cultivos/infrastructure/cultivation_repository_isar.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -47,7 +38,7 @@ void main() {
   late Directory tempDirectory;
   late IsarDatabase database;
   late IsarFinanzasRepository finances;
-  late _MemoryPerfilRepository profiles;
+  late PerfilIsarRepository profiles;
   late IsarBackupStore store;
 
   setUpAll(() async {
@@ -62,11 +53,26 @@ void main() {
   });
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     database = IsarDatabase();
     await database.initialize();
     await database.clearAllCollections();
     finances = IsarFinanzasRepository(database);
-    profiles = _MemoryPerfilRepository();
+    profiles = PerfilIsarRepository(
+      database,
+      SharedPrefsService(await SharedPreferences.getInstance()),
+    );
+    await profiles.savePerfil(
+      const Perfil(
+        id: 'profile-1',
+        nombre: 'Ana',
+        apellido: 'Piloto',
+        email: '',
+        telefono: '',
+        finca: 'Finca piloto',
+        direccion: '',
+      ),
+    );
     store = IsarBackupStore(database: database, perfilRepository: profiles);
   });
 
@@ -100,7 +106,9 @@ void main() {
       expect(stableId, isNotEmpty);
 
       await database.clearAllCollections();
-      profiles.perfil = profiles.perfil.copyWith(finca: 'Otra finca');
+      await profiles.savePerfil(
+        (await profiles.fetchPerfil()).copyWith(finca: 'Otra finca'),
+      );
       await store.restore(envelope, mode: BackupImportMode.replaceAll);
 
       final restored = await finances.getIncomes(
@@ -108,7 +116,7 @@ void main() {
       );
       expect(restored, hasLength(1));
       expect(restored.single.amount, 1500);
-      expect(profiles.perfil.finca, 'Finca piloto');
+      expect((await profiles.fetchPerfil()).finca, 'Finca piloto');
 
       final secondCapture = await store.capture();
       expect(
@@ -117,6 +125,105 @@ void main() {
       );
     },
   );
+
+  test('respaldo restaura todos los registros sin ocultarlos', () async {
+    final raw = await SharedPreferences.getInstance();
+    final prefs = SharedPrefsService(raw);
+    final animals = AnimalRepositoryIsar(database, prefs, _BackupRemote());
+    final health = HealthRecordRepositoryIsar(database);
+    final crops = CultivationRepositoryIsar(database);
+    final agenda = IsarAgendaRepository(database, prefs);
+    final cat = await LitePetService(
+      animals,
+    ).create(const LitePetInput(name: 'Mora', species: Species.feline));
+    final cow = await animals.save(
+      cat.copyWith(
+        id: Isar.autoIncrement,
+        uuid: 'cow-backup',
+        customName: 'Luna',
+        species: Species.cattle,
+        lifeStage: LifeStage.cow,
+        earTagNumber: 'C-1',
+      ),
+    );
+    await health.addHealthRecord(
+      cat.uuid,
+      HealthRecord(
+        date: DateTime(2026, 10, 1),
+        type: HealthRecordType.checkup,
+        product: 'Consulta',
+      ),
+    );
+    final plant = CultivationEntity(
+      name: 'Albahaca',
+      plantingDate: DateTime(2026, 10, 1),
+    );
+    final field = CultivationEntity(
+      name: 'Parcela',
+      plantingDate: DateTime(2026, 10, 1),
+      scale: CultivationScale.area,
+    );
+    await crops.upsert(plant);
+    await crops.upsert(field);
+    await agenda.saveEntries([
+      AgendaEntry(
+        id: 'pet-date',
+        titulo: 'Cita',
+        descripcion: '',
+        fecha: DateTime(2026, 11, 1),
+        tipo: 'Cita',
+        animalIds: [cat.uuid],
+        loteIds: const [],
+        ubicacion: '',
+        estado: AgendaEstado.pendiente,
+        completedAnimalIds: const [],
+        notas: '',
+        sourceType: 'lite',
+      ),
+      AgendaEntry(
+        id: 'dose-date',
+        titulo: 'Toma 1',
+        descripcion: '',
+        fecha: DateTime(2026, 11, 2),
+        tipo: 'Medicamento',
+        animalIds: [cat.uuid],
+        loteIds: const [],
+        ubicacion: '',
+        estado: AgendaEstado.pendiente,
+        completedAnimalIds: const [],
+        notas: '',
+        sourceType: 'lite',
+        planId: 'plan-mora',
+      ),
+    ]);
+    final captured = await store.capture();
+    await database.clearAllCollections();
+    await store.restore(captured, mode: BackupImportMode.replaceAll);
+    final restored = await animals.getAllIncludingInactive();
+    expect(
+      restored.map((a) => a.uuid).toSet(),
+      containsAll([cat.uuid, cow.uuid]),
+    );
+    expect(restored.firstWhere((a) => a.uuid == cat.uuid).hasKnownAge, isFalse);
+    expect(await health.getHealthRecords(cat.uuid), hasLength(1));
+    final restoredAgenda = await agenda.fetchEntries();
+    expect(restoredAgenda, hasLength(2));
+    expect(
+      restoredAgenda.every((entry) => entry.sourceType == 'lite'),
+      isTrue,
+      reason: 'Los recordatorios antiguos conservan su origen compatible.',
+    );
+    final restoredCrops = await crops.getAll();
+    expect(restoredCrops, hasLength(2));
+    expect(
+      restoredCrops.map((crop) => crop.uuid),
+      containsAll([plant.uuid, field.uuid]),
+    );
+    expect(
+      (await animals.getAllIncludingInactive()).map((a) => a.uuid).toSet(),
+      contains(cow.uuid),
+    );
+  });
 
   test(
     'merge updates by recordUuid instead of duplicating local IDs',
@@ -189,32 +296,35 @@ void main() {
     expect((await isar.isarLocations.where().findFirst())!.crops, isEmpty);
   });
 
-  test('schema 9 capture and restore keeps independent cultivations', () async {
-    final isar = await database.initialize();
-    await isar.writeTxn(
-      () => isar.isarCultivations.put(
-        IsarCultivation.fromEntity(
-          CultivationEntity(
-            uuid: 'cultivation-9',
-            name: 'Rosa',
-            plantingDate: DateTime.utc(2026, 9, 1),
+  test(
+    'schema 10 capture and restore keeps independent cultivations',
+    () async {
+      final isar = await database.initialize();
+      await isar.writeTxn(
+        () => isar.isarCultivations.put(
+          IsarCultivation.fromEntity(
+            CultivationEntity(
+              uuid: 'cultivation-9',
+              name: 'Rosa',
+              plantingDate: DateTime.utc(2026, 9, 1),
+            ),
           ),
         ),
-      ),
-    );
-    final captured = await store.capture();
-    expect(captured.schemaVersion, 9);
-    expect(captured.collections['cultivations'], hasLength(1));
+      );
+      final captured = await store.capture();
+      expect(captured.schemaVersion, 11);
+      expect(captured.collections['cultivations'], hasLength(1));
 
-    await database.clearAllCollections();
-    await store.restore(captured, mode: BackupImportMode.replaceAll);
+      await database.clearAllCollections();
+      await store.restore(captured, mode: BackupImportMode.replaceAll);
 
-    final restored = await isar.isarCultivations
-        .where()
-        .uuidEqualTo('cultivation-9')
-        .findFirst();
-    expect(restored?.name, 'Rosa');
-  });
+      final restored = await isar.isarCultivations
+          .where()
+          .uuidEqualTo('cultivation-9')
+          .findFirst();
+      expect(restored?.name, 'Rosa');
+    },
+  );
 
   group('merge respects modification timestamps', () {
     Future<void> putLote({
@@ -314,4 +424,13 @@ void main() {
     expect(preserved, hasLength(1));
     expect(preserved.single.amount, 1500);
   });
+}
+
+class _BackupRemote implements AnimalRemoteDataSource {
+  @override
+  Future<RemoteAnimalPayload> fetchAnimals() async => RemoteAnimalPayload(
+    animals: const [],
+    hash: '',
+    lastUpdated: DateTime(2026),
+  );
 }

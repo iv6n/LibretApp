@@ -15,8 +15,13 @@ class PrefsKeys {
   static const appTheme = 'app.theme';
   static const animalWizardDraft = 'animal.wizard.draft';
   static const onboardingCompletedV1 = 'onboarding.completed.v1';
+  static const profileOnboardingResolvedV1 = 'onboarding.profile.resolved.v1';
+  static const experienceSetupPendingV1 =
+      'onboarding.experience.setup.pending.v1';
   static const lastLocalBackup = 'backup.lastLocal';
   static const lastCloudBackup = 'backup.lastCloud';
+  static const lastVerifiedCloudBackup = 'backup.lastCloudVerified';
+  static const firstBackupSuggestionShown = 'backup.firstSuggestionShown';
 
   /// Versioned so a rule-set change (`DefaultCareRules.version`) reaches
   /// herds that already ran an earlier preload, without resurrecting rules

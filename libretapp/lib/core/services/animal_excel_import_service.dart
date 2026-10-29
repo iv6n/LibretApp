@@ -9,6 +9,9 @@
 /// defaults as [QuickRegisterAnimalPage].
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'package:excel/excel.dart' as xlsx;
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -118,7 +121,7 @@ class AnimalExcelImportService {
       final breed = _text(row, 5) ?? '';
       final birthDate = _parseDate(_text(row, 6), rowNumber, warnings);
       final ageMonths = int.tryParse(_text(row, 7) ?? '') ?? 0;
-      final weight = double.tryParse(_text(row, 8) ?? '');
+      final weight = parseFormDouble(_text(row, 8) ?? '');
       final status = _parseEnum(
         AnimalStatus.values,
         _text(row, 9),

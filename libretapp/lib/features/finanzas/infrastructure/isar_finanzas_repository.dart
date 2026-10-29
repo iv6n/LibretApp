@@ -1,7 +1,7 @@
 /// features \u203a finanzas \u203a infrastructure \u203a isar_finanzas_repository \u2014 Isar implementation of FinanzasRepository.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/finanzas/domain/entities/general_expense_record.dart';
@@ -40,11 +40,15 @@ class IsarFinanzasRepository implements FinanzasRepository {
 
   @override
   Future<IncomeRecord> addIncome(IncomeRecord record) async {
-    final model = record.toIsar();
+    if (!record.amount.isFinite || record.amount <= 0) {
+      throw ArgumentError('El importe debe ser finito y mayor que cero.');
+    }
+    final model = record.toIsar()..updatedAt = DateTime.now();
     await _isar.writeTxn(() async {
       final existing = model.id == Isar.autoIncrement
           ? null
           : await _isar.isarIncomeRecords.get(model.id);
+      if (record.id != null && existing == null) throw StateError('El registro ya no existe.');
       model.recordUuid = existing?.recordUuid.isNotEmpty == true
           ? existing!.recordUuid
           : record.recordUuid?.isNotEmpty == true
@@ -53,6 +57,12 @@ class IsarFinanzasRepository implements FinanzasRepository {
       await _isar.isarIncomeRecords.put(model);
     });
     return model.toEntity();
+  }
+
+  @override
+  Future<IncomeRecord> updateIncome(IncomeRecord record) {
+    if (record.id == null) throw ArgumentError('Falta el registro que se desea corregir.');
+    return addIncome(record);
   }
 
   @override
@@ -88,11 +98,15 @@ class IsarFinanzasRepository implements FinanzasRepository {
 
   @override
   Future<GeneralExpenseRecord> addExpense(GeneralExpenseRecord record) async {
-    final model = record.toIsar();
+    if (!record.amount.isFinite || record.amount <= 0) {
+      throw ArgumentError('El importe debe ser finito y mayor que cero.');
+    }
+    final model = record.toIsar()..updatedAt = DateTime.now();
     await _isar.writeTxn(() async {
       final existing = model.id == Isar.autoIncrement
           ? null
           : await _isar.isarGeneralExpenseRecords.get(model.id);
+      if (record.id != null && existing == null) throw StateError('El registro ya no existe.');
       model.recordUuid = existing?.recordUuid.isNotEmpty == true
           ? existing!.recordUuid
           : record.recordUuid?.isNotEmpty == true
@@ -101,6 +115,12 @@ class IsarFinanzasRepository implements FinanzasRepository {
       await _isar.isarGeneralExpenseRecords.put(model);
     });
     return model.toEntity();
+  }
+
+  @override
+  Future<GeneralExpenseRecord> updateExpense(GeneralExpenseRecord record) {
+    if (record.id == null) throw ArgumentError('Falta el registro que se desea corregir.');
+    return addExpense(record);
   }
 
   @override

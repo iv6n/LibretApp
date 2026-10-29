@@ -25,6 +25,7 @@ class AnimalTaxonomy {
     required int ageMonths,
     bool neutered = false,
   }) {
+    if (ageMonths < 0 || sex == Sex.unknown) return Category.other;
     final options = categoriesFor(
       species: species,
       sex: sex,
@@ -58,9 +59,11 @@ class AnimalTaxonomy {
     required int? ageMonths,
     bool neutered = false,
   }) {
-    final age = ageMonths ?? 24;
+    if (ageMonths == null || ageMonths < 0) return const [Category.other];
+    final age = ageMonths;
     switch (species) {
       case Species.cattle:
+        if (sex == Sex.unknown && age >= 12) return const [Category.other];
         if (age < 12) {
           return const [Category.calf, Category.weaned, Category.other];
         }
@@ -77,10 +80,7 @@ class AnimalTaxonomy {
         if (sex == Sex.female) {
           return const [Category.cow, Category.other];
         }
-        return [
-          if (neutered) Category.oxen else Category.bull,
-          Category.other,
-        ];
+        return [if (neutered) Category.oxen else Category.bull, Category.other];
       case Species.equine:
         if (age < 36) return const [Category.juvenile, Category.grower];
         return const [
@@ -109,6 +109,8 @@ class AnimalTaxonomy {
       case Species.canine:
         if (age < 18) return const [Category.juvenile, Category.grower];
         return const [Category.work, Category.guard];
+      case Species.feline:
+        return const [Category.other];
       case Species.other:
         return const [Category.other];
     }
@@ -121,6 +123,7 @@ class AnimalTaxonomy {
     Category? category,
     LifeStage? fallback,
   }) {
+    if (ageMonths < 0 || sex == Sex.unknown) return LifeStage.unknown;
     switch (species) {
       case Species.cattle:
         if (ageMonths < 12) {
@@ -162,6 +165,8 @@ class AnimalTaxonomy {
         return category == Category.guard
             ? LifeStage.guardDog
             : LifeStage.workingDog;
+      case Species.feline:
+        return LifeStage.cat;
       case Species.other:
         return fallback ?? LifeStage.cow;
     }
@@ -216,6 +221,9 @@ class AnimalTaxonomy {
         return Category.reproduction;
       case LifeStage.guardDog:
         return Category.guard;
+      case LifeStage.cat:
+      case LifeStage.unknown:
+        return Category.other;
     }
   }
 
@@ -269,6 +277,10 @@ class AnimalTaxonomy {
       case LifeStage.workingDog:
       case LifeStage.guardDog:
         return 'assets/images/canino.webp';
+      case LifeStage.cat:
+        return 'assets/images/felino.png';
+      case LifeStage.unknown:
+        return 'assets/images/record_animal.webp';
     }
   }
 
@@ -290,6 +302,8 @@ class AnimalTaxonomy {
       [LifeStage.chick, LifeStage.pullet, LifeStage.hen, LifeStage.rooster],
       [LifeStage.puppy, LifeStage.youngDog, LifeStage.workingDog],
       [LifeStage.guardDog],
+      [LifeStage.cat],
+      [LifeStage.unknown],
     ];
   }
 }

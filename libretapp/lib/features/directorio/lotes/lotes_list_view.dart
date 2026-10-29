@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';
+import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
@@ -92,56 +94,74 @@ class _LotesListViewState extends State<LotesListView> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = ShellInsets.bottomSafePadding(context);
-    // Keep the final lote fully visible above the shell FAB and navigation
-    // while avoiding an unnecessarily long empty tail after the last card.
-    final listBottomPadding = bottomInset + 120;
+    // Keep the last item above the dock and its floating action at scroll end.
+    final listBottomPadding = bottomInset + ShellInsets.fabContentClearance;
 
-    final scaffold = Scaffold(
-      body: StreamBuilder<List<LocationEntity>>(
-        stream: _locationsStream,
-        initialData: const [],
-        builder: (context, locationSnapshot) =>
-            BlocBuilder<LotesBloc, LotesState>(
-              builder: (context, state) {
-                if (state is LotesInitial || state is LotesLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+    // Activating a directory tab adds its shell scope. Keep the subscription
+    // above that changing subtree so a single-subscription stream stays alive.
+    return StreamBuilder<List<LocationEntity>>(
+      stream: _locationsStream,
+      initialData: const [],
+      builder: (context, locationSnapshot) {
+        final scaffold = Scaffold(
+          body: BlocBuilder<LotesBloc, LotesState>(
+            builder: (context, state) {
+              if (state is LotesInitial || state is LotesLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                if (state is LotesError) {
-                  return Center(child: Text(state.message));
-                }
-
-                if (state is! LotesLoaded) {
-                  return const SizedBox.shrink();
-                }
-
-                final locationNames = {
-                  for (final location
-                      in locationSnapshot.data ?? const <LocationEntity>[])
-                    location.uuid: location.name,
-                };
-                return _buildLotesContent(
-                  context: context,
-                  lotes: state.lotes,
-                  locationNames: locationNames,
-                  listBottomPadding: listBottomPadding,
+              if (state is LotesError) {
+                return AppEmptyState(
+                  icon: Icons.error_outline,
+                  title: 'No se pudieron cargar los lotes',
+                  message: state.message,
+                  action: FilledButton.icon(
+                    onPressed: () =>
+                        context.read<LotesBloc>().add(const LoadLotes()),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reintentar'),
+                  ),
                 );
-              },
-            ),
-      ),
-    );
+              }
 
-    if (!widget.shellInteractionsEnabled) return scaffold;
+              if (state is! LotesLoaded) {
+                return const SizedBox.shrink();
+              }
 
-    return ShellFabConfigScope(
-      config: ShellFabConfig(
-        id: 'lotes',
-        label: 'Agregar Lote',
-        icon: Icons.add,
-        heroTag: 'fab_lotes',
-        onPressed: _openCreateLotePage,
-      ),
-      child: scaffold,
+              final locationNames = {
+                for (final location
+                    in locationSnapshot.data ?? const <LocationEntity>[])
+                  location.uuid: location.name,
+              };
+              return _buildLotesContent(
+                context: context,
+                lotes: state.lotes,
+                locationNames: locationNames,
+                listBottomPadding: listBottomPadding,
+              );
+            },
+          ),
+        );
+
+        if (!widget.shellInteractionsEnabled) return scaffold;
+
+        final isInitiallyEmpty = switch (context.watch<LotesBloc>().state) {
+          LotesLoaded(:final lotes) => lotes.isEmpty,
+          _ => false,
+        };
+        return ShellFabConfigScope(
+          config: isInitiallyEmpty
+              ? null
+              : ShellFabConfig(
+                  id: 'lotes',
+                  label: 'Agregar Lote',
+                  icon: Icons.add,
+                  heroTag: 'fab_lotes',
+                  onPressed: _openCreateLotePage,
+                ),
+          child: scaffold,
+        );
+      },
     );
   }
 
@@ -198,7 +218,8 @@ class _LotesListViewState extends State<LotesListView> {
             title: 'Activos',
             lotes: _filter == _LoteListFilter.all ? active : visible,
             locationNames: locationNames,
-            listBottomPadding: _filter == _LoteListFilter.active
+            listBottomPadding:
+                _filter == _LoteListFilter.active || closed.isEmpty
                 ? listBottomPadding
                 : 0,
           ),
@@ -235,44 +256,42 @@ class _LotesListViewState extends State<LotesListView> {
       (_LoteListFilter.closed, 'Cerrados', closed),
     ];
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final visibleCount = switch (_filter) {
+      _LoteListFilter.all => total,
+      _LoteListFilter.active => active,
+      _LoteListFilter.closed => closed,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-          child: Row(
-            children: [
-              for (final entry in options.asMap().entries) ...[
-                if (entry.key > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _LoteFilterControl(
-                    label: entry.value.$2,
-                    count: entry.value.$3,
-                    icon: switch (entry.value.$1) {
-                      _LoteListFilter.all => Icons.layers_outlined,
-                      _LoteListFilter.active => Icons.check_circle_outline,
-                      _LoteListFilter.closed => Icons.history_outlined,
-                    },
-                    selected: _filter == entry.value.$1,
-                    selectedColor: scheme.primary,
-                    foregroundColor: scheme.onSurface,
-                    onTap: () => setState(() => _filter = entry.value.$1),
-                  ),
-                ),
-              ],
-            ],
+        SizedBox(
+          height: 60,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            itemCount: options.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final option = options[index];
+              return AppDirectoryFilterChip(
+                label: option.$2,
+                count: option.$3,
+                icon: switch (option.$1) {
+                  _LoteListFilter.all => Icons.layers_outlined,
+                  _LoteListFilter.active => Icons.check_circle_outline,
+                  _LoteListFilter.closed => Icons.history_outlined,
+                },
+                selected: _filter == option.$1,
+                onTap: () => setState(() => _filter = option.$1),
+              );
+            },
           ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
           child: Text(
-            '${switch (_filter) {
-              _LoteListFilter.all => total,
-              _LoteListFilter.active => active,
-              _LoteListFilter.closed => closed,
-            }} lotes',
+            '$visibleCount ${visibleCount == 1 ? 'lote' : 'lotes'}',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -371,108 +390,27 @@ class _LotesListViewState extends State<LotesListView> {
 
   Widget _buildFilteredEmptyState(BuildContext context) {
     final label = _filter == _LoteListFilter.closed ? 'cerrados' : 'activos';
-    return Center(
-      child: Text(
-        'No hay lotes $label',
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+    return AppEmptyState(
+      icon: Icons.search_off_outlined,
+      title: 'No hay lotes $label',
+      message: 'Prueba con otro filtro para ver tus lotes.',
+      action: OutlinedButton.icon(
+        onPressed: () => setState(() => _filter = _LoteListFilter.all),
+        icon: const Icon(Icons.filter_alt_off_outlined),
+        label: const Text('Limpiar filtros'),
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    final theme = Theme.of(context);
-    return _CenteredSection(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.layers, size: 48, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'Sin lotes',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Crea tu primer lote para comenzar a organizar tus animales',
-            style: theme.textTheme.bodyMedium,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoteFilterControl extends StatelessWidget {
-  const _LoteFilterControl({
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.selected,
-    required this.selectedColor,
-    required this.foregroundColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final int count;
-  final IconData icon;
-  final bool selected;
-  final Color selectedColor;
-  final Color foregroundColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final borderColor = selected
-        ? selectedColor.withValues(alpha: 0.35)
-        : scheme.outline.withValues(alpha: 0.72);
-    final backgroundColor = selected
-        ? selectedColor.withValues(alpha: 0.10)
-        : scheme.surface;
-    final itemColor = selected ? selectedColor : foregroundColor;
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '$label $count',
-      child: Material(
-        color: backgroundColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: borderColor, width: selected ? 1.4 : 1.0),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: SizedBox(
-            height: 56,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 21, color: itemColor),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    '$label $count',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: itemColor,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+    return AppEmptyState(
+      illustrationAsset: 'assets/images/location_pasture.webp',
+      title: 'Organiza tus animales en lotes',
+      message: 'Crea tu primer lote para llevar su seguimiento en grupo.',
+      action: FilledButton.icon(
+        onPressed: _openCreateLotePage,
+        icon: const Icon(Icons.add),
+        label: const Text('Crear lote'),
       ),
     );
   }

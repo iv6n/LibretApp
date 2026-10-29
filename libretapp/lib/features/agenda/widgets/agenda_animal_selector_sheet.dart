@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -20,7 +21,7 @@ Future<AgendaSelectionResult?> showAgendaAnimalSelector(
   List<String> initialAnimalIds = const [],
   List<String> initialLoteIds = const [],
 }) async {
-  return showModalBottomSheet<AgendaSelectionResult>(
+  return showAppBottomSheet<AgendaSelectionResult>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,

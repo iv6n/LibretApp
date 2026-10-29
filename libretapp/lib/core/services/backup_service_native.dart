@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'package:libretapp/core/utils/numeric_validation.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -11,6 +12,8 @@ import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:libretapp/core/backup/backup_models.dart';
 import 'package:libretapp/core/backup/backup_store.dart';
+import 'package:libretapp/core/backup/backup_validator.dart';
+import 'package:libretapp/core/backup/legacy_backup_snapshot.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
@@ -25,6 +28,7 @@ import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 export 'package:libretapp/core/backup/backup_models.dart' show BackupImportMode;
 
@@ -83,6 +87,8 @@ class BackupService {
     required MilkingRepository milkingRepository,
     BackupStore? backupStore,
     SharedPrefsService? statusPrefs,
+    Future<Directory> Function()? storageDirectory,
+    bool allowFileOperations = true,
     Future<List<AnimalEntity>> Function()? fetchAllAnimalsIncludingArchived,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
@@ -91,6 +97,8 @@ class BackupService {
        _milkingRepository = milkingRepository,
        _backupStore = backupStore,
        _statusPrefs = statusPrefs,
+       _storageDirectory = storageDirectory ?? getApplicationSupportDirectory,
+       _allowFileOperations = allowFileOperations,
        _fetchAllAnimalsIncludingArchived = fetchAllAnimalsIncludingArchived;
 
   static const _schemaVersion = BackupEnvelope.currentSchemaVersion;
@@ -103,6 +111,8 @@ class BackupService {
   final MilkingRepository _milkingRepository;
   final BackupStore? _backupStore;
   final SharedPrefsService? _statusPrefs;
+  final Future<Directory> Function() _storageDirectory;
+  final bool _allowFileOperations;
 
   /// Backup exports must include archived animals even though the default
   /// [AnimalRepository.getAll] filters them out. Which concrete repository
@@ -160,6 +170,8 @@ class BackupService {
   }
 
   Future<String?> exportToFile() async {
+    if (!_allowFileOperations)
+      throw StateError('Sal de la demo para exportar tus registros reales.');
     final archiveBytes = await createArchiveBytes();
     final timestamp = DateTime.now().toUtc().toIso8601String().replaceAll(
       ':',
@@ -196,9 +208,18 @@ class BackupService {
     await _statusPrefs?.setDateTime(PrefsKeys.lastCloudBackup, DateTime.now());
   }
 
+  Future<void> markVerifiedCloudBackup() async {
+    await _statusPrefs?.setDateTime(
+      PrefsKeys.lastVerifiedCloudBackup,
+      DateTime.now(),
+    );
+  }
+
   Future<BackupImportSummary?> importFromFile({
     required BackupImportMode mode,
   }) async {
+    if (!_allowFileOperations)
+      throw StateError('Sal de la demo para importar un respaldo.');
     final picked = await FilePicker.platform.pickFiles(
       dialogTitle: 'Seleccionar respaldo',
       // Android's DocumentsUI does not know the custom `.libretbackup` MIME
@@ -255,10 +276,27 @@ class BackupService {
       return _summaryFromRestore(mode, result);
     }
     final decoded = _decodeAndValidate(raw);
-    if (mode == BackupImportMode.replaceAll && _backupStore != null) {
-      await _writeEmergencySnapshot();
+    final store = _backupStore;
+    if (store is! TransactionalLegacyBackupStore) {
+      throw StateError(
+        'Este almacenamiento no permite restaurar archivos antiguos de forma segura.',
+      );
     }
-    return _applyImport(decoded, mode);
+    if (mode == BackupImportMode.replaceAll) await _writeEmergencySnapshot();
+    final result = await (store as TransactionalLegacyBackupStore)
+        .restoreLegacy(
+          LegacyBackupSnapshot(
+            animals: decoded.animalDtos.map((a) => a.toEntity()).toList(),
+            lotes: decoded.loteDtos.map((a) => a.toEntity()).toList(),
+            agenda: decoded.agendaEntries,
+            workers: decoded.workers,
+            teams: decoded.teams,
+            milkingSessions: decoded.milkingSessions,
+            milkingEntries: decoded.milkingEntries,
+          ),
+          mode: mode,
+        );
+    return _summaryFromRestore(mode, result);
   }
 
   Future<Uint8List> createArchiveBytes() async {
@@ -281,6 +319,20 @@ class BackupService {
     required BackupImportMode mode,
   }) async {
     final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+    final names = <String>{};
+    for (final file in archive.files) {
+      if (!file.isFile ||
+          file.isSymbolicLink ||
+          !names.add(file.name) ||
+          !(file.name == 'manifest.json' ||
+              RegExp(
+                r'^media/[a-f0-9]{64}(\.[a-z0-9]{1,10})?$',
+              ).hasMatch(file.name))) {
+        throw const FormatException(
+          'El archivo contiene rutas o adjuntos no válidos.',
+        );
+      }
+    }
     final manifest = archive.findFile('manifest.json');
     if (manifest == null || !manifest.isFile) {
       throw const FormatException('El respaldo no contiene manifest.json.');
@@ -291,16 +343,36 @@ class BackupService {
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException('El manifiesto del respaldo no es válido.');
     }
-    final restoredJson = await _decodeMediaValue(decoded, archive);
-    final envelope = BackupEnvelope.fromJson(
-      Map<String, dynamic>.from(restoredJson as Map),
-    );
-    _validateEnvelope(envelope);
-    if (mode == BackupImportMode.replaceAll) {
-      await _writeEmergencySnapshot();
+    final version = decoded['schemaVersion'];
+    if (version is! int ||
+        version < 5 ||
+        version > BackupEnvelope.currentSchemaVersion) {
+      throw const FormatException('Versión de respaldo no compatible.');
     }
-    final result = await _requireBackupStore().restore(envelope, mode: mode);
-    return _summaryFromRestore(mode, result);
+    // A unique, immutable media namespace never overwrites an earlier restore.
+    // It is only referenced by the database after the transaction commits.
+    final support = await _storageDirectory();
+    final mediaDirectory = Directory(
+      '${support.path}${Platform.pathSeparator}backup_media${Platform.pathSeparator}${const Uuid().v4()}',
+    );
+    try {
+      final restoredJson = await _decodeMediaValue(
+        decoded,
+        archive,
+        mediaDirectory,
+      );
+      final envelope = BackupEnvelope.fromJson(
+        Map<String, dynamic>.from(restoredJson as Map),
+      );
+      _validateEnvelope(envelope);
+      if (mode == BackupImportMode.replaceAll) await _writeEmergencySnapshot();
+      final result = await _requireBackupStore().restore(envelope, mode: mode);
+      return _summaryFromRestore(mode, result);
+    } catch (_) {
+      if (await mediaDirectory.exists())
+        await mediaDirectory.delete(recursive: true);
+      rethrow;
+    }
   }
 
   String digestArchive(Uint8List bytes) => sha256.convert(bytes).toString();
@@ -332,186 +404,8 @@ class BackupService {
     );
   }
 
-  void _validateEnvelope(BackupEnvelope envelope) {
-    if (envelope.schemaVersion < 5 ||
-        envelope.schemaVersion > BackupEnvelope.currentSchemaVersion) {
-      throw FormatException(
-        'Versión de respaldo no compatible: ${envelope.schemaVersion}.',
-      );
-    }
-    final requiredCollections = <String>{
-      'animals',
-      'weightRecords',
-      'reproductionRecords',
-      'productionRecords',
-      'healthRecords',
-      'costRecords',
-      'commercialRecords',
-      'movementRecords',
-      'lotes',
-      'locations',
-      'incomeRecords',
-      'generalExpenseRecords',
-      'milkingSessions',
-      'milkingEntries',
-      'agendaEntries',
-      // Optional for backwards compatibility: backups from before traceable
-      // Agenda registrations simply restore with an empty collection.
-      'workerProfiles',
-      'workTeams',
-      'careRules',
-      'careRecords',
-      'scheduledCares',
-    };
-    final missing = requiredCollections.difference(
-      envelope.collections.keys.toSet(),
-    );
-    if (envelope.schemaVersion >= 9 &&
-        !envelope.collections.containsKey('cultivations')) {
-      throw const FormatException(
-        'Falta la colección cultivations en el respaldo.',
-      );
-    }
-    if (missing.isNotEmpty) {
-      throw FormatException(
-        'Faltan colecciones en el respaldo: ${missing.join(', ')}.',
-      );
-    }
-    const stableFields = <String, String>{
-      'animals': 'uuid',
-      'weightRecords': 'recordUuid',
-      'reproductionRecords': 'recordUuid',
-      'productionRecords': 'recordUuid',
-      'healthRecords': 'recordUuid',
-      'costRecords': 'recordUuid',
-      'commercialRecords': 'recordUuid',
-      'movementRecords': 'recordUuid',
-      'lotes': 'uuid',
-      'locations': 'uuid',
-      'incomeRecords': 'recordUuid',
-      'generalExpenseRecords': 'recordUuid',
-      'milkingSessions': 'uuid',
-      'milkingEntries': 'uuid',
-      'agendaEntries': 'uuid',
-      'workerProfiles': 'uuid',
-      'workTeams': 'uuid',
-      'careRules': 'recordUuid',
-      'careRecords': 'recordUuid',
-      'scheduledCares': 'recordUuid',
-    };
-    for (final entry in stableFields.entries) {
-      _validateUniqueRows(
-        envelope.collections[entry.key]!,
-        collection: entry.key,
-        field: entry.value,
-      );
-    }
-    final cultivations = envelope.collections['cultivations'];
-    if (cultivations != null) {
-      _validateUniqueRows(
-        cultivations,
-        collection: 'cultivations',
-        field: 'uuid',
-      );
-    }
-
-    final animalIds = _stringValues(envelope.collections['animals']!, 'uuid');
-    for (final name in const [
-      'weightRecords',
-      'reproductionRecords',
-      'productionRecords',
-      'healthRecords',
-      'costRecords',
-      'commercialRecords',
-      'movementRecords',
-      'careRecords',
-      'scheduledCares',
-    ]) {
-      for (final row in envelope.collections[name]!) {
-        final animalUuid = row['animalUuid'];
-        if (animalUuid is! String || !animalIds.contains(animalUuid)) {
-          throw FormatException(
-            '$name contiene un registro sin animal válido.',
-          );
-        }
-      }
-    }
-    final careRuleIds = _stringValues(
-      envelope.collections['careRules']!,
-      'recordUuid',
-    );
-    for (final name in const ['careRecords', 'scheduledCares']) {
-      for (final row in envelope.collections[name]!) {
-        final ruleId = row['ruleId'];
-        if (ruleId is! String || !careRuleIds.contains(ruleId)) {
-          throw FormatException('$name contiene un registro sin regla válida.');
-        }
-      }
-    }
-    final sessionIds = _stringValues(
-      envelope.collections['milkingSessions']!,
-      'uuid',
-    );
-    for (final row in envelope.collections['milkingEntries']!) {
-      if (!sessionIds.contains(row['sessionUuid'])) {
-        throw const FormatException(
-          'Una entrada de ordeña no tiene una sesión válida.',
-        );
-      }
-      if (!animalIds.contains(row['animalUuid'])) {
-        throw const FormatException(
-          'Una entrada de ordeña no tiene un animal válido.',
-        );
-      }
-    }
-    _validateLocationHierarchy(envelope.collections['locations']!);
-  }
-
-  void _validateUniqueRows(
-    List<Map<String, dynamic>> rows, {
-    required String collection,
-    required String field,
-  }) {
-    final seen = <String>{};
-    for (final row in rows) {
-      final value = row[field];
-      if (value is! String || value.trim().isEmpty) {
-        throw FormatException('$collection contiene $field vacío.');
-      }
-      if (!seen.add(value)) {
-        throw FormatException('$collection contiene $field duplicado: $value.');
-      }
-    }
-  }
-
-  Set<String> _stringValues(List<Map<String, dynamic>> rows, String field) =>
-      rows.map((row) => row[field]).whereType<String>().toSet();
-
-  void _validateLocationHierarchy(List<Map<String, dynamic>> rows) {
-    final parents = <String, String?>{
-      for (final row in rows)
-        if (row['uuid'] is String)
-          row['uuid'] as String: row['parentUuid'] as String?,
-    };
-    for (final entry in parents.entries) {
-      final parent = entry.value;
-      if (parent != null && !parents.containsKey(parent)) {
-        throw FormatException(
-          'La ubicación ${entry.key} tiene un padre inexistente.',
-        );
-      }
-      final visited = <String>{entry.key};
-      var cursor = parent;
-      while (cursor != null) {
-        if (!visited.add(cursor)) {
-          throw FormatException(
-            'El respaldo contiene un ciclo de ubicaciones en ${entry.key}.',
-          );
-        }
-        cursor = parents[cursor];
-      }
-    }
-  }
+  void _validateEnvelope(BackupEnvelope envelope) =>
+      BackupValidator.validate(envelope);
 
   Future<Object?> _encodeMediaValue(Object? value, Archive archive) async {
     if (value is Map) {
@@ -548,13 +442,18 @@ class BackupService {
     return 'media://$archivePath';
   }
 
-  Future<Object?> _decodeMediaValue(Object? value, Archive archive) async {
+  Future<Object?> _decodeMediaValue(
+    Object? value,
+    Archive archive,
+    Directory mediaDirectory,
+  ) async {
     if (value is Map) {
       final result = <String, dynamic>{};
       for (final entry in value.entries) {
         result[entry.key.toString()] = await _decodeMediaValue(
           entry.value,
           archive,
+          mediaDirectory,
         );
       }
       return result;
@@ -562,35 +461,39 @@ class BackupService {
     if (value is List) {
       final result = <Object?>[];
       for (final item in value) {
-        result.add(await _decodeMediaValue(item, archive));
+        result.add(await _decodeMediaValue(item, archive, mediaDirectory));
       }
       return result;
     }
     if (value is! String || !value.startsWith('media://')) return value;
     final archivePath = value.substring('media://'.length);
+    final match = RegExp(
+      r'^media/([a-f0-9]{64})(\.[a-z0-9]{1,10})?$',
+    ).firstMatch(archivePath);
+    if (match == null)
+      throw const FormatException('La ruta del adjunto no es válida.');
     final attachment = archive.findFile(archivePath);
     if (attachment == null || !attachment.isFile) {
       throw FormatException('Falta el archivo adjunto $archivePath.');
     }
-    final support = await getApplicationSupportDirectory();
-    final mediaDirectory = Directory(
-      '${support.path}${Platform.pathSeparator}backup_media',
-    );
+    final bytes = List<int>.from(attachment.content as List);
+    if (sha256.convert(bytes).toString() != match.group(1)) {
+      throw const FormatException(
+        'El archivo adjunto no coincide con su hash.',
+      );
+    }
     await mediaDirectory.create(recursive: true);
     final localName = archivePath.split('/').last;
     final target = File(
       '${mediaDirectory.path}${Platform.pathSeparator}$localName',
     );
-    await target.writeAsBytes(
-      List<int>.from(attachment.content as List),
-      flush: true,
-    );
+    await target.writeAsBytes(bytes, flush: true);
     return target.path;
   }
 
   Future<String> _writeEmergencySnapshot() async {
     final bytes = await createArchiveBytes();
-    final support = await getApplicationSupportDirectory();
+    final support = await _storageDirectory();
     final directory = Directory(
       '${support.path}${Platform.pathSeparator}emergency_backups',
     );
@@ -619,6 +522,11 @@ class BackupService {
     }
 
     final schemaVersion = decoded['schemaVersion'];
+    try {
+      requireFiniteNumbers(decoded);
+    } on ArgumentError {
+      throw const FormatException('El respaldo contiene un número no finito.');
+    }
     if (schemaVersion is! int || schemaVersion <= 0) {
       throw const FormatException('schemaVersion ausente o invalido.');
     }
@@ -692,6 +600,15 @@ class BackupService {
       label: 'milkingEntries',
     );
 
+    final tags = <String>{};
+    for (final animal in animalDtos) {
+      final tag = animal.earTagNumber.trim().toLowerCase();
+      if (tag.isNotEmpty && !tags.add(tag)) {
+        throw const FormatException(
+          'La identificación ya pertenece a otro animal.',
+        );
+      }
+    }
     final sessionUuids = milkingSessions.map((session) => session.uuid).toSet();
     for (final entry in milkingEntries) {
       if (!sessionUuids.contains(entry.sessionUuid)) {
@@ -709,74 +626,6 @@ class BackupService {
       teams: teams,
       milkingSessions: milkingSessions,
       milkingEntries: milkingEntries,
-    );
-  }
-
-  /// Writes an already-decoded backup to the repositories and reports what
-  /// was imported.
-  Future<BackupImportSummary> _applyImport(
-    _DecodedBackup decoded,
-    BackupImportMode mode,
-  ) async {
-    if (mode == BackupImportMode.replaceAll) {
-      await _animalRepository.clearAll();
-      await _lotesRepository.clearAll();
-      await _agendaRepository.replaceAll(decoded.agendaEntries);
-      await _workforceRepository.replaceAll(
-        workers: decoded.workers,
-        teams: decoded.teams,
-      );
-      await _milkingRepository.replaceAll(
-        sessions: decoded.milkingSessions,
-        entries: decoded.milkingEntries,
-      );
-    }
-
-    for (final dto in decoded.animalDtos) {
-      final entity = dto.toEntity().copyWith(id: null);
-      final existing = mode == BackupImportMode.merge
-          ? await _animalRepository.getByUuid(entity.uuid)
-          : null;
-
-      if (existing == null) {
-        await _animalRepository.save(entity);
-      } else {
-        await _animalRepository.update(entity.copyWith(id: existing.id));
-      }
-    }
-
-    for (final dto in decoded.loteDtos) {
-      final entity = dto.toEntity().copyWith(id: null);
-      await _lotesRepository.upsert(entity);
-    }
-
-    if (mode == BackupImportMode.merge) {
-      for (final entry in decoded.agendaEntries) {
-        await _agendaRepository.saveEntry(entry);
-      }
-      for (final worker in decoded.workers) {
-        await _workforceRepository.saveWorker(worker);
-      }
-      for (final team in decoded.teams) {
-        await _workforceRepository.saveTeam(team);
-      }
-      for (final session in decoded.milkingSessions) {
-        await _milkingRepository.upsertSession(session);
-      }
-      for (final entry in decoded.milkingEntries) {
-        await _milkingRepository.upsertEntry(entry);
-      }
-    }
-
-    return BackupImportSummary(
-      mode: mode,
-      animalsImported: decoded.animalDtos.length,
-      lotesImported: decoded.loteDtos.length,
-      agendaEntriesImported: decoded.agendaEntries.length,
-      workersImported: decoded.workers.length,
-      teamsImported: decoded.teams.length,
-      milkingSessionsImported: decoded.milkingSessions.length,
-      milkingEntriesImported: decoded.milkingEntries.length,
     );
   }
 

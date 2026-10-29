@@ -5,6 +5,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/workspace/workspace_manager.dart';
+import 'package:libretapp/app/widgets/workspace_demo_frame.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +29,7 @@ class MyApp extends StatelessWidget {
       builder: (context, state) {
         final languageCode = _languageCodeOf(state);
         return BlocBuilder<ThemeBloc, ThemeState>(
-          builder: (context, _) {
+          builder: (context, themeState) {
             return MaterialApp.router(
               debugShowCheckedModeBanner: false,
               onGenerateTitle: (context) =>
@@ -37,23 +39,10 @@ class MyApp extends StatelessWidget {
               locale: Locale(languageCode),
               theme: AppTheme.lightTheme,
               darkTheme: AppTheme.darkTheme,
-              // El tema oscuro queda desactivado temporalmente hasta que
-              // todos los componentes tengan una paleta accesible.
-              themeMode: ThemeMode.light,
+              themeMode: themeState.themeMode,
               routerConfig: router,
               builder: (context, child) {
-                final navPadding = MediaQuery.of(context).padding.bottom;
-                final scrimHeight = (navPadding > 0 ? navPadding : 16.0) + 20.0;
                 final brightness = Theme.of(context).brightness;
-                final base = brightness == Brightness.dark
-                    ? Colors.black
-                    : LightColors.background;
-                // Stronger fade: intensify stops and use the light background tone.
-                final topOpacity = brightness == Brightness.dark ? 0.28 : 0.24;
-                final midOpacity = brightness == Brightness.dark ? 0.48 : 0.40;
-                final bottomOpacity = brightness == Brightness.dark
-                    ? 0.68
-                    : 0.56;
                 final overlayStyle = SystemUiOverlayStyle(
                   statusBarColor: Colors.transparent,
                   systemNavigationBarColor: Colors.transparent,
@@ -67,38 +56,18 @@ class MyApp extends StatelessWidget {
                       : Brightness.dark,
                   systemNavigationBarContrastEnforced: false,
                 );
-                return Stack(
-                  children: [
-                    AnnotatedRegion<SystemUiOverlayStyle>(
-                      value: overlayStyle,
-                      child: ResponsiveScaler(
-                        child: child ?? const SizedBox.shrink(),
-                      ),
-                    ),
-                    // Soft fade from transparent to dark behind the system navigation bar.
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: IgnorePointer(
-                        child: Container(
-                          height: scrimHeight,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                base.withValues(alpha: 0.0),
-                                base.withValues(alpha: topOpacity),
-                                base.withValues(alpha: midOpacity),
-                                base.withValues(alpha: bottomOpacity),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                return AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: overlayStyle,
+                  child: ResponsiveScaler(
+                    child:
+                        locator.isRegistered<WorkspaceManager>() &&
+                            locator<WorkspaceManager>().isDemo
+                        ? WorkspaceDemoFrame(
+                            manager: locator<WorkspaceManager>(),
+                            child: child ?? const SizedBox.shrink(),
+                          )
+                        : child ?? const SizedBox.shrink(),
+                  ),
                 );
               },
             );

@@ -1,7 +1,8 @@
 /// Sexo del animal.
 enum Sex {
   female,
-  male;
+  male,
+  unknown;
 
   String get displayName {
     switch (this) {
@@ -9,6 +10,8 @@ enum Sex {
         return 'Hembra';
       case Sex.male:
         return 'Macho';
+      case Sex.unknown:
+        return 'Sin dato';
     }
   }
 
@@ -18,6 +21,8 @@ enum Sex {
         return 'H';
       case Sex.male:
         return 'M';
+      case Sex.unknown:
+        return '—';
     }
   }
 }

@@ -135,6 +135,7 @@ class _RegistroCostoViewState extends State<_RegistroCostoView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.cost,
             title: l10n.detailFormCostTitle,
             assetPath: AppAssetPaths.recordCost,
             fallbackIcon: Icons.payments_outlined,

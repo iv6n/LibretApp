@@ -10,3 +10,12 @@
 /libretapp/.codex-ui.xml
 /.codex-remote-attachments/
 /work/
+/.codex-tmp/
+/.tmp-appdata/
+/artifacts/
+/libretapp/.codex-dart-local/
+/libretapp/.codex-tmp/
+/libretapp/.tmp/
+/libretapp/.dart_cache/
+/libretapp/android/artifacts/
+/libretapp/sites/libretapp-public/

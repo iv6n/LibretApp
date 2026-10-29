@@ -2,6 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/utils/color_contrast.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
@@ -17,36 +20,73 @@ import 'package:libretapp/features/inicio/view/dashboard_customize_sheet.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_header.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_widgets.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.dart';
-import 'package:libretapp/features/inicio/widgets/dashboard/ranch_summary_card.dart';
+import 'package:libretapp/features/inicio/widgets/weather_home_card.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
-class InicioView extends StatelessWidget {
+class InicioView extends StatefulWidget {
   const InicioView({super.key});
 
   static const double _tabletBreakpoint = 600;
   static const double _dashboardMaxWidth = 1200;
 
   @override
+  State<InicioView> createState() => _InicioViewState();
+}
+
+class _InicioViewState extends State<InicioView> {
+  String? _preferenceSignature;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final signature = AppExperienceScope.maybeOf(context)?.value.encode();
+    final previous = _preferenceSignature;
+    _preferenceSignature = signature;
+    if (previous != null && previous != signature) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<InicioBloc>().add(const RefreshInicio());
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<InicioBloc, InicioState>(
       builder: (context, state) {
         final data = state.data;
+        final preferences = AppExperienceScope.maybeOf(context)?.value;
 
         if (data == null && state.status == InicioStatus.loading) {
-          return const AppLoadingIndicator();
+          return const SafeArea(
+            child: Column(
+              children: [
+                WeatherHomeCard(),
+                Expanded(child: AppLoadingIndicator()),
+              ],
+            ),
+          );
         }
 
         if (data == null && state.status == InicioStatus.error) {
-          return AppEmptyState(
-            icon: Icons.error_outline,
-            title: 'No se pudo cargar Inicio',
-            message: state.errorMessage,
-            action: FilledButton.icon(
-              onPressed: () {
-                context.read<InicioBloc>().add(const LoadInicio());
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+          return SafeArea(
+            child: Column(
+              children: [
+                const WeatherHomeCard(),
+                Expanded(
+                  child: AppEmptyState(
+                    icon: Icons.error_outline,
+                    title: 'No se pudo cargar Inicio',
+                    message: state.errorMessage,
+                    action: FilledButton.icon(
+                      onPressed: () {
+                        context.read<InicioBloc>().add(const LoadInicio());
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Reintentar'),
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -55,86 +95,301 @@ class InicioView extends StatelessWidget {
 
         final theme = Theme.of(context);
         final bottomInset = ShellInsets.bottomSafePadding(context);
+        final firstRun =
+            data.totalAnimals == 0 &&
+            data.activeLotes == 0 &&
+            data.totalLocations == 0;
+        final careProfile = resolveCareProfileFromCounts(
+          selected: preferences?.careProfile,
+          pets: data.petCount,
+          livestock: data.livestockCount,
+          preferredSpecies: preferences?.preferredSpecies ?? const [],
+        );
         final widgets = List.of(state.widgetConfigs)
           ..sort((a, b) => a.order.compareTo(b.order));
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            context.read<InicioBloc>().add(const RefreshInicio());
-            await context.read<InicioBloc>().stream.firstWhere(
-              (next) => !next.isLoading,
-            );
-          },
-          child: ColoredBox(
-            color: theme.scaffoldBackgroundColor,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isTablet = constraints.maxWidth >= _tabletBreakpoint;
-                final contentWidth = constraints.maxWidth
-                    .clamp(0.0, _dashboardMaxWidth)
-                    .toDouble();
-                final horizontalPadding = isTablet
-                    ? AppSpacing.lg
-                    : AppSpacing.md;
+        return SafeArea(
+          top: true,
+          bottom: false,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              context.read<InicioBloc>().add(const RefreshInicio());
+              await context.read<InicioBloc>().stream.firstWhere(
+                (next) => !next.isLoading,
+              );
+            },
+            child: ColoredBox(
+              color: theme.scaffoldBackgroundColor,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isTablet =
+                      constraints.maxWidth >= InicioView._tabletBreakpoint;
+                  final contentWidth = constraints.maxWidth
+                      .clamp(0.0, InicioView._dashboardMaxWidth)
+                      .toDouble();
+                  final horizontalPadding = isTablet
+                      ? AppSpacing.lg
+                      : AppSpacing.md;
 
-                return ListView(
-                  padding: EdgeInsets.only(bottom: bottomInset + AppSpacing.md),
-                  children: [
-                    Center(
-                      child: SizedBox(
-                        width: contentWidth,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              DashboardHeader(data: data),
-                              const SizedBox(height: AppSpacing.sm),
-                              _TodayPriorityPanel(data: data),
-                              const SizedBox(height: AppSpacing.sm),
-                              RanchSummaryCard(data: data),
-                              const SizedBox(height: AppSpacing.sm),
-                              QuickActionGrid(
-                                actions: state.quickActions,
-                                onCustomizeTap: () =>
-                                    showDashboardCustomizeSheet(
-                                      context: context,
-                                      widgets: state.widgetConfigs,
-                                      actions: state.quickActions,
-                                      onSaved: (w, a) {
-                                        context.read<InicioBloc>().add(
-                                          UpdateDashboardConfig(
-                                            widgets: w,
-                                            actions: a,
-                                          ),
-                                        );
-                                      },
+                  return ListView(
+                    padding: EdgeInsets.only(
+                      bottom: bottomInset + AppSpacing.md,
+                    ),
+                    children: [
+                      Center(
+                        child: SizedBox(
+                          width: contentWidth,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: horizontalPadding,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                DashboardHeader(data: data),
+                                const SizedBox(height: AppSpacing.sm),
+                                const WeatherHomeCard(),
+                                const SizedBox(height: AppSpacing.sm),
+                                if (firstRun)
+                                  _GettingStartedCard(profile: careProfile)
+                                else ...[
+                                  if (careProfile == CareProfile.pets ||
+                                      careProfile == CareProfile.mixed) ...[
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => context.pushNamed(
+                                          AppRoutes.nameAnimalNuevoRapido,
+                                          queryParameters: const {
+                                            'kind': 'pet',
+                                          },
+                                        ),
+                                        icon: const Icon(Icons.pets_outlined),
+                                        label: const Text('Añadir mascota'),
+                                      ),
                                     ),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              _DashboardWidgetsLayout(
-                                isTablet: isTablet,
-                                widgets: widgets,
-                                data: data,
-                                financeDetail: state.financeDetail,
-                                libraryItems: state.libraryPicks,
-                              ),
-                            ],
+                                    const SizedBox(height: AppSpacing.xs),
+                                  ],
+                                  _TodayPriorityPanel(data: data),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  _CareProfileSummaryCard(
+                                    profile: careProfile,
+                                    data: data,
+                                  ),
+                                ],
+                                const SizedBox(height: AppSpacing.sm),
+                                QuickActionGrid(
+                                  actions: state.quickActions,
+                                  onCustomizeTap: () =>
+                                      showDashboardCustomizeSheet(
+                                        context: context,
+                                        widgets: state.widgetConfigs,
+                                        actions: state.quickActions,
+                                        profile: careProfile,
+                                        onSaved: (w, a) {
+                                          context.read<InicioBloc>().add(
+                                            UpdateDashboardConfig(
+                                              widgets: w,
+                                              actions: a,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                _DashboardWidgetsLayout(
+                                  isTablet: isTablet,
+                                  widgets: widgets,
+                                  data: data,
+                                  financeDetail: state.financeDetail,
+                                  libraryItems: state.libraryPicks,
+                                  showOnlyPopulated: firstRun,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         );
       },
     );
   }
+}
+
+class _GettingStartedCard extends StatelessWidget {
+  const _GettingStartedCard({required this.profile});
+
+  final CareProfile? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      key: const ValueKey('complete-getting-started'),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              profile == CareProfile.pets
+                  ? 'Empieza con tus mascotas'
+                  : profile == CareProfile.mixed
+                  ? 'Empieza con animales y cuidados'
+                  : profile == CareProfile.livestock
+                  ? 'Empieza con tu ganado'
+                  : 'Empieza a organizar tus cuidados',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              profile == CareProfile.pets
+                  ? 'Añade una mascota para organizar sus cuidados y citas.'
+                  : profile == CareProfile.mixed
+                  ? 'Añade mascotas o ganado y consulta sus actividades en una agenda común.'
+                  : 'Registra tu primer animal para ver aquí su seguimiento.',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => context.pushNamed(
+                    AppRoutes.nameAnimalNuevoRapido,
+                    queryParameters: profile == CareProfile.pets
+                        ? const <String, dynamic>{'kind': 'pet'}
+                        : const <String, dynamic>{},
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: Text(
+                    profile == CareProfile.pets
+                        ? 'Añadir mascota'
+                        : 'Alta rápida',
+                  ),
+                ),
+                if (profile == CareProfile.mixed ||
+                    profile == CareProfile.livestock)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        context.pushNamed(AppRoutes.nameUbicacionNueva),
+                    icon: const Icon(Icons.add_location_alt_outlined),
+                    label: const Text('Añadir ubicación'),
+                  ),
+                if (profile == CareProfile.mixed ||
+                    profile == CareProfile.livestock)
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: Text(
+                      profile == CareProfile.mixed
+                          ? 'Añadir ganado'
+                          : 'Añadir animal',
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CareProfileSummaryCard extends StatelessWidget {
+  const _CareProfileSummaryCard({required this.profile, required this.data});
+
+  final CareProfile? profile;
+  final InicioDashboardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final pets = profile == CareProfile.pets || profile == CareProfile.mixed;
+    final livestock =
+        profile == CareProfile.livestock || profile == CareProfile.mixed;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              profile == CareProfile.pets
+                  ? 'Resumen de mascotas'
+                  : profile == CareProfile.mixed
+                  ? 'Resumen conjunto'
+                  : profile == CareProfile.livestock
+                  ? 'Resumen ganadero'
+                  : 'Resumen',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                if (pets)
+                  _CountPill(
+                    icon: Icons.pets_outlined,
+                    label: 'Mascotas',
+                    count: data.petCount,
+                  ),
+                if (livestock)
+                  _CountPill(
+                    icon: Icons.agriculture_outlined,
+                    label: profile == CareProfile.mixed ? 'Ganado' : 'Animales',
+                    count: data.livestockCount,
+                  ),
+                if (profile == null)
+                  _CountPill(
+                    icon: Icons.pets_outlined,
+                    label: 'Animales',
+                    count: data.totalAnimals,
+                  ),
+                _CountPill(
+                  icon: Icons.event_outlined,
+                  label: 'Pendientes',
+                  count: data.upcomingEventsCount,
+                ),
+                if (livestock && profile != CareProfile.mixed)
+                  _CountPill(
+                    icon: Icons.layers_outlined,
+                    label: 'Lotes',
+                    count: data.activeLotes,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CountPill extends StatelessWidget {
+  const _CountPill({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
+  final IconData icon;
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) =>
+      Chip(avatar: Icon(icon, size: 18), label: Text('$label: $count'));
 }
 
 class _DashboardWidgetsLayout extends StatelessWidget {
@@ -144,6 +399,7 @@ class _DashboardWidgetsLayout extends StatelessWidget {
     required this.data,
     required this.financeDetail,
     required this.libraryItems,
+    required this.showOnlyPopulated,
   });
 
   final bool isTablet;
@@ -151,10 +407,35 @@ class _DashboardWidgetsLayout extends StatelessWidget {
   final InicioDashboardData data;
   final FinanceSummaryDetail? financeDetail;
   final List<LibraryManifestBook> libraryItems;
+  final bool showOnlyPopulated;
 
   @override
   Widget build(BuildContext context) {
-    final enabledWidgets = widgets.where((widget) => widget.enabled).toList();
+    final enabledWidgets = widgets.where((widget) {
+      if (!widget.enabled) return false;
+      if (widget.type == DashboardWidgetType.healthAlerts &&
+          !data.alerts.any((a) => a.severity != InicioAlertSeverity.info)) {
+        return false;
+      }
+      if (!showOnlyPopulated) return true;
+      return switch (widget.type) {
+        DashboardWidgetType.animalSummary ||
+        DashboardWidgetType.activeLocations ||
+        DashboardWidgetType.inventory => false,
+        DashboardWidgetType.upcomingEvents => data.upcomingEvents.isNotEmpty,
+        DashboardWidgetType.healthAlerts => true,
+        DashboardWidgetType.upcomingCalvings =>
+          data.upcomingCalvings.isNotEmpty,
+        DashboardWidgetType.financeMonth =>
+          financeDetail != null &&
+              (financeDetail!.summary.totalRevenue != 0 ||
+                  financeDetail!.summary.totalExpenses != 0),
+        DashboardWidgetType.recentActivity => data.recentActivity.isNotEmpty,
+        DashboardWidgetType.pendingTasks => data.tasks.isNotEmpty,
+        DashboardWidgetType.weather => data.weather != null,
+        DashboardWidgetType.libraryPicks => libraryItems.isNotEmpty,
+      };
+    }).toList();
 
     if (!isTablet) {
       return Column(
@@ -234,13 +515,13 @@ class _TodayPriorityPanel extends StatelessWidget {
     final title =
         primaryAlert?.title ??
         primaryTask?.title ??
-        (calving != null ? 'Proximo parto' : 'Rancho en orden');
+        (calving != null ? 'Próximo parto' : 'Rancho en orden');
     final message =
         primaryAlert?.message ??
         primaryTask?.message ??
         (calving != null
-            ? '${calving.animalTag} en ${calving.daysRemaining} dias'
-            : 'No hay pendientes criticos por ahora.');
+            ? '${calving.animalTag} en ${calving.daysRemaining} días'
+            : 'No hay pendientes críticos por ahora.');
     final route = primaryAlert?.targetRoute ?? primaryTask?.targetRoute;
     final severity = primaryAlert?.severity;
     final color = switch (severity) {
@@ -250,6 +531,15 @@ class _TodayPriorityPanel extends StatelessWidget {
       null => primaryTask != null ? AppColors.accent : AppColors.success,
     };
 
+    final background = Color.alphaBlend(
+      color.withValues(alpha: theme.brightness == Brightness.dark ? .18 : .08),
+      theme.colorScheme.surface,
+    );
+    final foreground = readableTextColor(color, background);
+    final bodyForeground = readableTextColor(
+      theme.colorScheme.onSurfaceVariant,
+      background,
+    );
     return Material(
       color: theme.colorScheme.surface,
       borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -261,10 +551,7 @@ class _TodayPriorityPanel extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.lg),
             border: Border.all(color: color.withValues(alpha: 0.22)),
-            color: Color.alphaBlend(
-              color.withValues(alpha: 0.07),
-              theme.colorScheme.surface,
-            ),
+            color: background,
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.shadow.withValues(alpha: 0.08),
@@ -287,7 +574,7 @@ class _TodayPriorityPanel extends StatelessWidget {
                   severity == null
                       ? Icons.today_outlined
                       : Icons.warning_amber_rounded,
-                  color: color,
+                  color: foreground,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -298,26 +585,27 @@ class _TodayPriorityPanel extends StatelessWidget {
                     Text(
                       'Prioridad de hoy',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: color,
+                        color: foreground,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
                       title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
                       style: theme.textTheme.titleSmall?.copyWith(
+                        color: foreground,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
                       message,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: bodyForeground,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -326,7 +614,7 @@ class _TodayPriorityPanel extends StatelessWidget {
               ),
               if (route != null) ...[
                 const SizedBox(width: AppSpacing.xs),
-                Icon(Icons.chevron_right, color: color),
+                Icon(Icons.chevron_right, color: foreground),
               ],
             ],
           ),

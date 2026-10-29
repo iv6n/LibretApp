@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -19,25 +19,101 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="LibretApp - Control Ganadero">
+  <meta name="theme-color" content="#18362D">
+  <meta name="color-scheme" content="light dark">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="LibretApp">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/svg+xml" sizes="any" href="favicon.svg">
 
   <title>LibretApp</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      color-scheme: light dark;
+      background: #F6F1E8;
+      color: #18362D;
+      font-family: system-ui, sans-serif;
+    }
+    body { margin: 0; }
+    #app-startup {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      box-sizing: border-box;
+      padding: 24px;
+      background: #F6F1E8;
+      text-align: center;
+    }
+    #app-startup img { display: block; width: 96px; height: 96px; }
+    #startup-error { max-width: 30rem; }
+    #startup-error h1 { font-size: 1.25rem; }
+    #startup-error p { line-height: 1.5; }
+    #startup-retry {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 24px;
+      background: #2F5D50;
+      color: #F6F1E8;
+      font: inherit;
+      cursor: pointer;
+    }
+    #startup-retry:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
+    @media (prefers-color-scheme: dark) {
+      :root, #app-startup { background: #18362D; color: #F6F1E8; }
+    }
+  </style>
 </head>
-  <body>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('service_worker.js'));
-      }
-    </script>
-  <script src="flutter_bootstrap.js" async></script>
+<body>
+  <div id="app-startup" role="status" aria-label="Iniciando LibretApp">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="branding/symbol-dark.svg">
+      <img src="branding/symbol-light.svg" width="96" height="96" alt="">
+    </picture>
+    <div id="startup-error" hidden>
+      <h1>No se pudo iniciar LibretApp</h1>
+      <p>Comprueba tu conexión y vuelve a intentarlo.</p>
+      <button id="startup-retry" type="button">Volver a cargar</button>
+    </div>
+  </div>
+  <script>
+    // Register before bootstrap so even a fast first frame removes the cover.
+    const startup = document.getElementById('app-startup');
+    const startupError = document.getElementById('startup-error');
+    function showStartupError() {
+      if (!startup.isConnected) return;
+      startup.setAttribute('role', 'alert');
+      startup.removeAttribute('aria-label');
+      startupError.hidden = false;
+    }
+    const onStartupError = () => showStartupError();
+    window.addEventListener('error', onStartupError);
+    window.addEventListener('unhandledrejection', onStartupError);
+    window.addEventListener('flutter-first-frame', () => {
+      startup.remove();
+      window.removeEventListener('error', onStartupError);
+      window.removeEventListener('unhandledrejection', onStartupError);
+    }, { once: true });
+    document.getElementById('startup-retry').addEventListener('click', () => window.location.reload());
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service_worker.js')
+          .catch((error) => console.warn('LibretApp: no se pudo registrar el modo sin conexión.', error));
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async onerror="showStartupError()"></script>
 </body>
 </html>

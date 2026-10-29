@@ -1,9 +1,13 @@
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
@@ -60,7 +64,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
   int? _parseMilliliters(String raw) {
     final normalized = raw.trim().replaceAll(',', '.');
     if (normalized.isEmpty) return null;
-    final liters = double.tryParse(normalized);
+    final liters = parseFormDouble(normalized);
     if (liters == null || !liters.isFinite || liters <= 0) return null;
     return (liters * 1000).round();
   }
@@ -229,7 +233,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
   Future<AnimalEntity?> _showAnimalPicker(MilkingState state) async {
     var query = '';
     final l10n = AppLocalizations.of(context);
-    return showModalBottomSheet<AnimalEntity>(
+    return showAppBottomSheet<AnimalEntity>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
@@ -417,51 +421,55 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
   Widget _buildBody(MilkingState state) {
     final session = state.session!;
     final l10n = AppLocalizations.of(context);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      children: [
-        _buildScheduleCard(session),
-        const SizedBox(height: 16),
-        SegmentedButton<MilkingCaptureMode>(
-          segments: [
-            ButtonSegment(
-              value: MilkingCaptureMode.individual,
-              icon: const Icon(Icons.pets),
-              label: Text(l10n.detailFormMilkingIndividualMode),
-            ),
-            ButtonSegment(
-              value: MilkingCaptureMode.group,
-              icon: const Icon(Icons.groups),
-              label: Text(l10n.detailFormMilkingGroupMode),
-            ),
-          ],
-          selected: {state.captureMode},
-          onSelectionChanged: (selection) =>
-              context.read<MilkingCubit>().setCaptureMode(selection.first),
-        ),
-        const SizedBox(height: 16),
-        if (state.captureMode == MilkingCaptureMode.individual)
-          _buildIndividualCapture(state)
-        else
-          _buildGroupCapture(state),
-        const SizedBox(height: 18),
-        _buildSummary(state),
-        if (state.withdrawnAnimals.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          _buildWithdrawnNotice(state),
-        ],
-        if (state.entries.isNotEmpty) ...[
-          const SizedBox(height: 18),
-          Text(
-            l10n.detailFormMilkingRegisteredCows,
-            style: Theme.of(context).textTheme.titleMedium,
+    return AppFormBody(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AppRecordHeader(style: RecordFormStyle.milking),
+          const SizedBox(height: 16),
+          _buildScheduleCard(session),
+          const SizedBox(height: 16),
+          SegmentedButton<MilkingCaptureMode>(
+            segments: [
+              ButtonSegment(
+                value: MilkingCaptureMode.individual,
+                icon: const Icon(Icons.pets),
+                label: Text(l10n.detailFormMilkingIndividualMode),
+              ),
+              ButtonSegment(
+                value: MilkingCaptureMode.group,
+                icon: const Icon(Icons.groups),
+                label: Text(l10n.detailFormMilkingGroupMode),
+              ),
+            ],
+            selected: {state.captureMode},
+            onSelectionChanged: (selection) =>
+                context.read<MilkingCubit>().setCaptureMode(selection.first),
           ),
-          const SizedBox(height: 8),
-          ...state.entries.map((entry) => _buildSavedEntry(state, entry)),
+          const SizedBox(height: 16),
+          if (state.captureMode == MilkingCaptureMode.individual)
+            _buildIndividualCapture(state)
+          else
+            _buildGroupCapture(state),
+          const SizedBox(height: 18),
+          _buildSummary(state),
+          if (state.withdrawnAnimals.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _buildWithdrawnNotice(state),
+          ],
+          if (state.entries.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text(
+              l10n.detailFormMilkingRegisteredCows,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ...state.entries.map((entry) => _buildSavedEntry(state, entry)),
+          ],
+          const SizedBox(height: 20),
+          _buildSaveButton(state),
         ],
-        const SizedBox(height: 20),
-        _buildSaveButton(state),
-      ],
+      ),
     );
   }
 
@@ -838,23 +846,12 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
   Widget _buildSaveButton(MilkingState state) {
     final saving = state.status == MilkingLoadStatus.saving;
     final l10n = AppLocalizations.of(context);
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        onPressed: saving ? null : () => _finalize(state),
-        icon: saving
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.check),
-        label: Text(
-          saving
-              ? l10n.detailFormMilkingSaving
-              : l10n.detailFormMilkingFinalize,
-        ),
-      ),
+    return AppFormActions(
+      onSave: () => _finalize(state),
+      saving: saving,
+      saveIcon: Icons.check,
+      saveLabel: l10n.detailFormMilkingFinalize,
+      onCancel: () => Navigator.of(context).pop(),
     );
   }
 }
@@ -868,7 +865,11 @@ class _MilkingAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: Text(AppLocalizations.of(context).detailFormMilkingTitle),
+      title: GeneratedAssetTitle(
+        title: AppLocalizations.of(context).detailFormMilkingTitle,
+        assetPath: RecordFormStyle.milking.assetPath,
+        fallbackIcon: RecordFormStyle.milking.icon,
+      ),
     );
   }
 }

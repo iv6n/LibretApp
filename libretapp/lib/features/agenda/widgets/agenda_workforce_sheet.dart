@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/agenda/data/workforce_model.dart';
@@ -32,7 +33,7 @@ Future<WorkforceSelection?> showWorkforceSelector({
   ]);
   if (!context.mounted) return null;
 
-  return showModalBottomSheet<WorkforceSelection>(
+  return showAppBottomSheet<WorkforceSelection>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,
@@ -47,7 +48,7 @@ Future<WorkforceSelection?> showWorkforceSelector({
 }
 
 Future<void> showWorkforceManager(BuildContext context) {
-  return showModalBottomSheet<void>(
+  return showAppBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,

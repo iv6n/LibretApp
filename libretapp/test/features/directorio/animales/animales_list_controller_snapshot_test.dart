@@ -16,7 +16,7 @@ import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
-final _now = DateTime(2026, 6, 10);
+final _now = DateTime(2026, 6, 10, 23, 59);
 
 AnimalEntity _animal(String uuid) => AnimalEntity(
   uuid: uuid,
@@ -369,4 +369,40 @@ void main() {
     expect(snapshot!.withdrawalEndsOn, isNull);
     expect(snapshot.milkLitersPerDay, isNull);
   });
+
+  test('returning from a saved record refreshes cached indicators', () async {
+    final records = <String, List<WeightRecord>>{
+      'a1': [_weight(DateTime(2026, 6, 9), 400)],
+    };
+    final controller = _controller(weights: records);
+    await controller.loadIndicatorSnapshots([_animal('a1')], now: _now);
+    expect(controller.snapshotFor('a1')!.lastWeightKg, 400);
+    records['a1'] = [_weight(DateTime(2026, 6, 10), 420)];
+    controller.invalidateIndicatorSnapshots();
+    await controller.loadIndicatorSnapshots([_animal('a1')], now: _now);
+    expect(controller.snapshotFor('a1')!.lastWeightKg, 420);
+  });
+
+  test(
+    'an invalidated in-flight query cannot restore stale indicators',
+    () async {
+      final gate = _IndicatorGate();
+      final controller = _controller(
+        reproductionRepository: _FakeReproductionRepository(gate),
+        healthRepository: _FakeHealthRepository(const {}, gate: gate),
+        weightRepository: _FakeWeightRepository(const {}, gate: gate),
+        milkingRepository: _FakeMilkingRepository(const {}, gate: gate),
+      );
+      final query = controller.loadIndicatorSnapshots([
+        _animal('a1'),
+      ], now: _now);
+      await gate.allStarted.future;
+      controller.invalidateIndicatorSnapshots();
+      gate.release.complete();
+      await query;
+      expect(controller.snapshotFor('a1'), isNull);
+      await controller.loadIndicatorSnapshots([_animal('a1')], now: _now);
+      expect(controller.snapshotFor('a1'), isNotNull);
+    },
+  );
 }

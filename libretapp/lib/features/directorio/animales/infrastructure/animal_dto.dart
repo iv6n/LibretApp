@@ -40,6 +40,7 @@ class AnimalDto {
     required this.breed,
     this.crossBreed,
     required this.birthDate,
+    this.birthDatePrecision = BirthDatePrecision.unknown,
     required this.ageMonths,
     this.weight,
     this.sireUuid,
@@ -101,12 +102,12 @@ class AnimalDto {
   }) : gallery = List.unmodifiable(gallery);
 
   factory AnimalDto.fromEntity(AnimalEntity entity) {
-    final lifecycle = AnimalLifecycleCalculator.calculate(
+    final lifecycle = entity.hasKnownAge ? AnimalLifecycleCalculator.calculate(
       birthDate: entity.birthDate,
       species: entity.species,
       sex: entity.sex,
       currentLifeStage: entity.lifeStage,
-    );
+    ) : null;
 
     return AnimalDto(
       id: entity.id,
@@ -120,12 +121,13 @@ class AnimalDto {
       batchUuid: entity.batchUuid,
       species: entity.species.name,
       category: entity.category.name,
-      lifeStage: lifecycle.lifeStage.name,
+      lifeStage: (lifecycle?.lifeStage ?? entity.lifeStage).name,
       sex: entity.sex.name,
       breed: entity.breed,
       crossBreed: entity.crossBreed,
-      birthDate: entity.birthDate.toIso8601String(),
-      ageMonths: lifecycle.ageMonths,
+      birthDate: entity.hasKnownAge ? entity.birthDate.toIso8601String() : '',
+      birthDatePrecision: entity.birthDatePrecision,
+      ageMonths: lifecycle?.ageMonths ?? -1,
       weight: entity.weight,
       sireUuid: entity.sireUuid,
       damUuid: entity.damUuid,
@@ -203,8 +205,9 @@ class AnimalDto {
       sex: json['sex'] as String,
       breed: json['breed'] as String,
       crossBreed: json['crossBreed'] as String?,
-      birthDate: json['birthDate'] as String,
-      ageMonths: json['ageMonths'] as int,
+      birthDate: json['birthDate'] as String? ?? '',
+      birthDatePrecision: BirthDatePrecision.values.where((v) => v.name == json['birthDatePrecision']).firstOrNull ?? BirthDatePrecision.unknown,
+      ageMonths: json['ageMonths'] as int? ?? -1,
       weight: (json['weight'] as num?)?.toDouble(),
       sireUuid: json['sireUuid'] as String?,
       damUuid: json['damUuid'] as String?,
@@ -292,6 +295,7 @@ class AnimalDto {
 
   // ─── VITAL ─────────────────────────────────────────────────────────
   final String birthDate;
+  final BirthDatePrecision birthDatePrecision;
   final int ageMonths;
   final double? weight;
 
@@ -367,16 +371,16 @@ class AnimalDto {
   final String lastUpdateDate;
 
   AnimalEntity toEntity() {
-    final parsedBirthDate = DateTime.parse(birthDate);
+    final parsedBirthDate = DateTime.tryParse(birthDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
     final speciesEnum = _enumByName(Species.values, species);
     final sexEnum = _enumByName(Sex.values, sex);
     final fallbackLifeStage = _enumByName(LifeStage.values, lifeStage);
-    final lifecycle = AnimalLifecycleCalculator.calculate(
+    final lifecycle = ageMonths >= 0 ? AnimalLifecycleCalculator.calculate(
       birthDate: parsedBirthDate,
       species: speciesEnum,
       sex: sexEnum,
       currentLifeStage: fallbackLifeStage,
-    );
+    ) : null;
 
     return AnimalEntity(
       id: id,
@@ -389,12 +393,13 @@ class AnimalDto {
       batchUuid: batchUuid,
       species: speciesEnum,
       category: _enumByName(Category.values, category),
-      lifeStage: lifecycle.lifeStage,
+      lifeStage: lifecycle?.lifeStage ?? fallbackLifeStage,
       sex: sexEnum,
       breed: breed,
       crossBreed: crossBreed,
       birthDate: parsedBirthDate,
-      ageMonths: lifecycle.ageMonths,
+      birthDatePrecision: birthDatePrecision,
+      ageMonths: lifecycle?.ageMonths ?? -1,
       weight: weight,
       sireUuid: sireUuid,
       damUuid: damUuid,
@@ -479,8 +484,9 @@ class AnimalDto {
       'sex': sex,
       'breed': breed,
       'crossBreed': crossBreed,
-      'birthDate': birthDate,
-      'ageMonths': ageMonths,
+      'birthDate': birthDate.isEmpty ? null : birthDate,
+      'birthDatePrecision': birthDatePrecision.name,
+      'ageMonths': ageMonths < 0 ? null : ageMonths,
       'weight': weight,
       'sireUuid': sireUuid,
       'damUuid': damUuid,

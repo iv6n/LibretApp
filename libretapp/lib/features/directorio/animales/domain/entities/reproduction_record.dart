@@ -3,8 +3,12 @@ library;
 
 import 'package:equatable/equatable.dart';
 
+const Object _unset = Object();
+
 /// Tipos de servicio reproductor.
 enum ServiceType { naturalService, artificialInsemination, ivf }
+
+enum ReproductionRecordKind { service, calving }
 
 /// Resultado de chequeo de preñez.
 enum PregnancyCheckResult { positive, negative, uncertain, notChecked }
@@ -42,8 +46,10 @@ enum CalvingOutcome {
 /// entre la madre y su descendencia en el árbol genealógico.
 class ReproductionRecord extends Equatable {
   const ReproductionRecord({
-    required this.serviceDate,
-    required this.serviceType,
+    this.serviceDate,
+    this.serviceType,
+    this.kind = ReproductionRecordKind.service,
+    this.animalUuid,
     this.maleSireUuid,
     this.maleSireIdentifier,
     this.pregnancyCheckDate,
@@ -60,8 +66,11 @@ class ReproductionRecord extends Equatable {
     this.updatedAt,
     this.id,
   });
-  final DateTime serviceDate;
-  final ServiceType serviceType;
+  final DateTime? serviceDate;
+  final ServiceType? serviceType;
+  final ReproductionRecordKind kind;
+  final String? animalUuid;
+  DateTime get eventDate => actualCalvingDate ?? serviceDate!;
   final String? maleSireUuid;
   final String? maleSireIdentifier;
   final DateTime? pregnancyCheckDate;
@@ -93,8 +102,8 @@ class ReproductionRecord extends Equatable {
   /// que nunca contradiga a las fechas de las que depende.
   int? get gestationDays {
     final calving = actualCalvingDate;
-    if (calving == null) return null;
-    return calving.difference(serviceDate).inDays;
+    if (calving == null || serviceDate == null) return null;
+    return calving.difference(serviceDate!).inDays;
   }
 
   /// Un parto ya ocurrió para este ciclo.
@@ -105,39 +114,67 @@ class ReproductionRecord extends Equatable {
       calvingOutcome == CalvingOutcome.liveBirth || offspringUuids.isNotEmpty;
 
   ReproductionRecord copyWith({
-    DateTime? serviceDate,
-    ServiceType? serviceType,
-    String? maleSireUuid,
-    String? maleSireIdentifier,
-    DateTime? pregnancyCheckDate,
-    PregnancyCheckResult? pregnancyResult,
-    DateTime? expectedCalvingDate,
-    DateTime? actualCalvingDate,
-    CalvingOutcome? calvingOutcome,
-    int? calvingEase,
+    ReproductionRecordKind? kind,
+    String? animalUuid,
+    Object? serviceDate = _unset,
+    Object? serviceType = _unset,
+    Object? maleSireUuid = _unset,
+    Object? maleSireIdentifier = _unset,
+    Object? pregnancyCheckDate = _unset,
+    Object? pregnancyResult = _unset,
+    Object? expectedCalvingDate = _unset,
+    Object? actualCalvingDate = _unset,
+    Object? calvingOutcome = _unset,
+    Object? calvingEase = _unset,
     List<String>? offspringUuids,
-    String? calvingNotes,
-    String? notes,
-    String? servicedBy,
+    Object? calvingNotes = _unset,
+    Object? notes = _unset,
+    Object? servicedBy = _unset,
     String? recordUuid,
     DateTime? updatedAt,
     String? id,
   }) {
     return ReproductionRecord(
-      serviceDate: serviceDate ?? this.serviceDate,
-      serviceType: serviceType ?? this.serviceType,
-      maleSireUuid: maleSireUuid ?? this.maleSireUuid,
-      maleSireIdentifier: maleSireIdentifier ?? this.maleSireIdentifier,
-      pregnancyCheckDate: pregnancyCheckDate ?? this.pregnancyCheckDate,
-      pregnancyResult: pregnancyResult ?? this.pregnancyResult,
-      expectedCalvingDate: expectedCalvingDate ?? this.expectedCalvingDate,
-      actualCalvingDate: actualCalvingDate ?? this.actualCalvingDate,
-      calvingOutcome: calvingOutcome ?? this.calvingOutcome,
-      calvingEase: calvingEase ?? this.calvingEase,
+      kind: kind ?? this.kind,
+      animalUuid: animalUuid ?? this.animalUuid,
+      serviceDate: serviceDate == _unset
+          ? this.serviceDate
+          : serviceDate as DateTime?,
+      serviceType: serviceType == _unset
+          ? this.serviceType
+          : serviceType as ServiceType?,
+      maleSireUuid: maleSireUuid == _unset
+          ? this.maleSireUuid
+          : maleSireUuid as String?,
+      maleSireIdentifier: maleSireIdentifier == _unset
+          ? this.maleSireIdentifier
+          : maleSireIdentifier as String?,
+      pregnancyCheckDate: pregnancyCheckDate == _unset
+          ? this.pregnancyCheckDate
+          : pregnancyCheckDate as DateTime?,
+      pregnancyResult: pregnancyResult == _unset
+          ? this.pregnancyResult
+          : pregnancyResult as PregnancyCheckResult?,
+      expectedCalvingDate: expectedCalvingDate == _unset
+          ? this.expectedCalvingDate
+          : expectedCalvingDate as DateTime?,
+      actualCalvingDate: actualCalvingDate == _unset
+          ? this.actualCalvingDate
+          : actualCalvingDate as DateTime?,
+      calvingOutcome: calvingOutcome == _unset
+          ? this.calvingOutcome
+          : calvingOutcome as CalvingOutcome?,
+      calvingEase: calvingEase == _unset
+          ? this.calvingEase
+          : calvingEase as int?,
       offspringUuids: offspringUuids ?? this.offspringUuids,
-      calvingNotes: calvingNotes ?? this.calvingNotes,
-      notes: notes ?? this.notes,
-      servicedBy: servicedBy ?? this.servicedBy,
+      calvingNotes: calvingNotes == _unset
+          ? this.calvingNotes
+          : calvingNotes as String?,
+      notes: notes == _unset ? this.notes : notes as String?,
+      servicedBy: servicedBy == _unset
+          ? this.servicedBy
+          : servicedBy as String?,
       recordUuid: recordUuid ?? this.recordUuid,
       updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
@@ -146,6 +183,8 @@ class ReproductionRecord extends Equatable {
 
   @override
   List<Object?> get props => [
+    kind,
+    animalUuid,
     serviceDate,
     serviceType,
     maleSireUuid,

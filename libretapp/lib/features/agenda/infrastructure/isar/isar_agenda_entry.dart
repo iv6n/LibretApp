@@ -3,7 +3,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 
 part 'isar_agenda_entry.g.dart';
@@ -20,6 +20,7 @@ class IsarAgendaEntry {
 
   @Index()
   late DateTime fecha;
+  bool? hasExplicitTime;
 
   @Index()
   late String tipo;
@@ -68,6 +69,7 @@ extension IsarAgendaEntryMapper on IsarAgendaEntry {
     titulo: titulo,
     descripcion: descripcion,
     fecha: fecha,
+    hasExplicitTime: hasExplicitTime ?? true,
     tipo: tipo,
     animalIds: List<String>.from(animalIds),
     loteIds: List<String>.from(loteIds),
@@ -125,6 +127,7 @@ extension AgendaEntryToIsar on AgendaEntry {
     ..titulo = titulo
     ..descripcion = descripcion
     ..fecha = fecha
+    ..hasExplicitTime = hasExplicitTime
     ..tipo = tipo
     ..animalIds = List<String>.from(animalIds)
     ..loteIds = List<String>.from(loteIds)

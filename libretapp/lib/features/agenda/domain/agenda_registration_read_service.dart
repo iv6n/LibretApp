@@ -263,5 +263,5 @@ class AgendaRegistrationReadService {
   DateTime _reproductionDate(ReproductionRecord record) =>
       record.actualCalvingDate ??
       record.pregnancyCheckDate ??
-      record.serviceDate;
+      record.eventDate;
 }

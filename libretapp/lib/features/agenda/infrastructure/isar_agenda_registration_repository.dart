@@ -1,6 +1,6 @@
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/agenda/data/agenda_registration_repository.dart';
 import 'package:libretapp/features/agenda/domain/agenda_registration.dart';

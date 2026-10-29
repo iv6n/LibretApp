@@ -78,8 +78,7 @@ class _LoteWeighingViewState extends State<_LoteWeighingView> {
             context.pop(true);
             return;
           }
-          if (state.errorMessage != null &&
-              state.status != LoteWeighingStatus.failure) {
+          if (state.errorMessage != null) {
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
@@ -118,7 +117,8 @@ class _LoteWeighingViewState extends State<_LoteWeighingView> {
                 );
               }
 
-              return _buildBody(context, state);
+              return PopScope(canPop: !state.isSaving, child: AbsorbPointer(
+                absorbing: state.isSaving, child: _buildBody(context, state)));
             },
           ),
           bottomNavigationBar:
@@ -205,6 +205,7 @@ class _LoteWeighingViewState extends State<_LoteWeighingView> {
 
   Future<void> _pickDate(BuildContext context) async {
     final cubit = context.read<LoteWeighingCubit>();
+    if (cubit.state.isSaving) return;
     final initial = cubit.state.measuredAt ?? DateTime.now();
     final selected = await showDatePicker(
       context: context,

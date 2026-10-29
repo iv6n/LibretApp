@@ -1,7 +1,7 @@
 /// Isar persistence model for independent cultivations.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';

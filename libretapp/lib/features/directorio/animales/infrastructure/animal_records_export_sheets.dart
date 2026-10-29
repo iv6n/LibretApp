@@ -11,6 +11,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 List<ExportableSheet> buildAnimalRecordExportSheets({
   required AnimalRepository animalRepository,
   required AnimalRecordBulkReader<WeightRecord> weights,
+  AnimalRecordBulkReader<WeaningRecord>? weanings,
   required AnimalRecordBulkReader<HealthRecord> health,
   required AnimalRecordBulkReader<ReproductionRecord> reproduction,
   required AnimalRecordBulkReader<MovementRecord> movements,
@@ -18,6 +19,7 @@ List<ExportableSheet> buildAnimalRecordExportSheets({
   required AnimalRecordBulkReader<CommercialRecord> commercial,
   required AnimalRecordBulkReader<ProductionRecord> production,
 }) => [
+  if (weanings != null) _AnimalRecordExportSheet<WeaningRecord>(key: 'weanings', title: 'Destetes', description: 'Fecha, peso y responsable del destete.', sheetName: 'Destetes', animalRepository: animalRepository, reader: weanings, recordId: (r) => r.id, headers: const ['Fecha', 'Peso (kg)', 'Método', 'Responsable', 'Notas'], values: (r) => [_date(r.date), r.weightKg, r.weightMethod.name, r.performedBy, r.notes]),
   _AnimalRecordExportSheet<WeightRecord>(
     key: 'weights',
     title: 'Pesos',
@@ -92,6 +94,7 @@ List<ExportableSheet> buildAnimalRecordExportSheets({
     animalRepository: animalRepository,
     reader: reproduction,
     headers: const [
+      'Clase registro',
       'Fecha servicio',
       'Tipo servicio',
       'UUID semental',
@@ -110,8 +113,9 @@ List<ExportableSheet> buildAnimalRecordExportSheets({
     ],
     recordId: (record) => record.id,
     values: (record) => [
+      record.kind.name,
       _date(record.serviceDate),
-      record.serviceType.name,
+      record.serviceType?.name,
       record.maleSireUuid,
       record.maleSireIdentifier,
       _date(record.pregnancyCheckDate),

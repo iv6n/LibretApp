@@ -89,7 +89,8 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
       return;
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_productCtrl.text.trim().isEmpty) {
+    if (AnimalRecordValidation.requiresProduct(_type) &&
+        _productCtrl.text.trim().isEmpty) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.detailFormHealthProductRequired)),
       );
@@ -102,6 +103,14 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
       return;
     }
 
+    if (context.read<RegistroBloc>().state.status == RegistroStatus.loading)
+      return;
+    try {
+      AnimalRecordValidation.operation(_selectedAnimal!, _date);
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text('$error')));
+      return;
+    }
     final withdrawalDays = int.tryParse(_withdrawalDaysCtrl.text.trim());
     final record = HealthRecord(
       date: _date,
@@ -156,6 +165,7 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.health,
             title: l10n.detailFormHealthTitle,
             assetPath: assetForHealthRecordType(_type),
             fallbackIcon: fallbackIconForHealthRecordType(_type),
@@ -185,8 +195,10 @@ class _RegistroSanitarioViewState extends State<_RegistroSanitarioView> {
               AppTextField(
                 controller: _productCtrl,
                 labelText: l10n.detailFormHealthProduct,
-                requiredField: true,
-                validator: (value) => value == null || value.trim().isEmpty
+                requiredField: AnimalRecordValidation.requiresProduct(_type),
+                validator: (value) =>
+                    AnimalRecordValidation.requiresProduct(_type) &&
+                        (value == null || value.trim().isEmpty)
                     ? l10n.detailFormHealthProductRequired
                     : null,
               ),

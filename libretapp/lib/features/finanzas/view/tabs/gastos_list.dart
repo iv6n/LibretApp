@@ -10,10 +10,11 @@ import 'package:libretapp/features/finanzas/widgets/record_tile.dart';
 
 /// Renders the list of [expenses] for the current period.
 class GastosList extends StatelessWidget {
-  const GastosList({super.key, required this.expenses, required this.onDelete});
+  const GastosList({super.key, required this.expenses, required this.onDelete, this.onEdit});
 
   final List<GeneralExpenseRecord> expenses;
   final void Function(String id) onDelete;
+  final void Function(GeneralExpenseRecord record)? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +36,12 @@ class GastosList extends StatelessWidget {
           title: r.type.label,
           subtitle: r.notes,
           date: r.date,
-          amount: '-${fmt.format(r.amount)}',
+          amount: r.amount.isFinite && r.amount > 0 ? '-${fmt.format(r.amount)}' : 'Importe inválido',
           amountColor: Colors.deepOrange,
           assetPath: AppAssetPaths.inventoryExpense,
           fallbackIcon: Icons.receipt_long,
           currency: r.currency,
+          onEdit: onEdit == null ? null : () => onEdit!(r),
           onDelete: r.id != null ? () => onDelete(r.id!) : null,
         );
       },

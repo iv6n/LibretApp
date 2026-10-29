@@ -411,7 +411,7 @@ class DemoDataIntegrityValidator {
       for (final record in entry.value) {
         final expected = record.expectedCalvingDate;
         if (expected != null) {
-          final gestation = expected.difference(record.serviceDate).inDays;
+          final gestation = expected.difference(record.serviceDate ?? record.actualCalvingDate!).inDays;
           if ((gestation - bovineGestationDaysForValidation).abs() >
               gestationTolerance) {
             warn(

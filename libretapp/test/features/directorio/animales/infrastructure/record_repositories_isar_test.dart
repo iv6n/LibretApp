@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/commercial_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/cost_record.dart';
@@ -76,7 +76,7 @@ void main() {
           ..earTagNumber = 'TAG-$uuid'
           ..species = 'cattle'
           ..category = 'cow'
-          ..lifeStage = 'adult'
+          ..lifeStage = sex == 'male' ? 'bull' : 'cow'
           ..sex = sex
           ..breed = 'Holstein'
           ..birthDate = DateTime(2022, 1, 1)
@@ -107,52 +107,58 @@ void main() {
   }
 
   group('HealthRecordRepositoryIsar', () {
-    test('addHealthRecord persists the record and applies animal side effects', () async {
-      final repo = HealthRecordRepositoryIsar(db);
-      final animalUuid = await seedAnimal('health-animal-1');
+    test(
+      'addHealthRecord persists the record and applies animal side effects',
+      () async {
+        final repo = HealthRecordRepositoryIsar(db);
+        final animalUuid = await seedAnimal('health-animal-1');
 
-      final saved = await repo.addHealthRecord(
-        animalUuid,
-        HealthRecord(
-          date: DateTime(2026, 1, 10),
-          type: HealthRecordType.vaccine,
-          product: 'Aftosa',
-        ),
-      );
+        final saved = await repo.addHealthRecord(
+          animalUuid,
+          HealthRecord(
+            date: DateTime(2026, 1, 10),
+            type: HealthRecordType.vaccine,
+            product: 'Aftosa',
+          ),
+        );
 
-      expect(saved.id, isNotNull);
-      expect(saved.product, 'Aftosa');
+        expect(saved.id, isNotNull);
+        expect(saved.product, 'Aftosa');
 
-      final records = await repo.getHealthRecords(animalUuid);
-      expect(records, hasLength(1));
-      expect(records.single.type, HealthRecordType.vaccine);
+        final records = await repo.getHealthRecords(animalUuid);
+        expect(records, hasLength(1));
+        expect(records.single.type, HealthRecordType.vaccine);
 
-      final animal = await reloadAnimal(animalUuid);
-      expect(animal.vaccinated, isTrue);
-      expect(animal.synced, isFalse);
-    });
+        final animal = await reloadAnimal(animalUuid);
+        expect(animal.vaccinated, isTrue);
+        expect(animal.synced, isFalse);
+      },
+    );
 
-    test('addHealthRecordToMultiple applies the same side effects to every animal', () async {
-      final repo = HealthRecordRepositoryIsar(db);
-      final a = await seedAnimal('health-multi-a');
-      final b = await seedAnimal('health-multi-b');
+    test(
+      'addHealthRecordToMultiple applies the same side effects to every animal',
+      () async {
+        final repo = HealthRecordRepositoryIsar(db);
+        final a = await seedAnimal('health-multi-a');
+        final b = await seedAnimal('health-multi-b');
 
-      await repo.addHealthRecordToMultiple(
-        [a, b],
-        HealthRecord(
-          date: DateTime(2026, 1, 10),
-          type: HealthRecordType.deworming,
-          product: 'Ivermectina',
-        ),
-      );
+        await repo.addHealthRecordToMultiple(
+          [a, b],
+          HealthRecord(
+            date: DateTime(2026, 1, 10),
+            type: HealthRecordType.deworming,
+            product: 'Ivermectina',
+          ),
+        );
 
-      final animalA = await reloadAnimal(a);
-      final animalB = await reloadAnimal(b);
-      expect(animalA.dewormed, isTrue);
-      expect(animalB.dewormed, isTrue);
-      expect(await repo.getHealthRecords(a), hasLength(1));
-      expect(await repo.getHealthRecords(b), hasLength(1));
-    });
+        final animalA = await reloadAnimal(a);
+        final animalB = await reloadAnimal(b);
+        expect(animalA.dewormed, isTrue);
+        expect(animalB.dewormed, isTrue);
+        expect(await repo.getHealthRecords(a), hasLength(1));
+        expect(await repo.getHealthRecords(b), hasLength(1));
+      },
+    );
 
     test('a death record takes the animal out of the herd', () async {
       // AnimalStatus.dead was never written by any code path: recording a
@@ -180,7 +186,11 @@ void main() {
       final animalUuid = await seedAnimal('health-delete');
       final saved = await repo.addHealthRecord(
         animalUuid,
-        HealthRecord(date: DateTime(2026, 1, 1), type: HealthRecordType.checkup, product: 'Chequeo'),
+        HealthRecord(
+          date: DateTime(2026, 1, 1),
+          type: HealthRecordType.checkup,
+          product: 'Chequeo',
+        ),
       );
 
       await repo.deleteHealthRecord(saved.id!);
@@ -190,29 +200,32 @@ void main() {
   });
 
   group('MovementRecordRepositoryIsar', () {
-    test('addMovementRecord persists the record and updates the animal', () async {
-      final repo = MovementRecordRepositoryIsar(db);
-      final animalUuid = await seedAnimal('movement-animal-1');
+    test(
+      'addMovementRecord persists the record and updates the animal',
+      () async {
+        final repo = MovementRecordRepositoryIsar(db);
+        final animalUuid = await seedAnimal('movement-animal-1');
 
-      final saved = await repo.addMovementRecord(
-        animalUuid,
-        MovementRecord(
-          toLocation: 'potrero-inexistente',
-          date: DateTime(2026, 1, 5),
-          reason: MovementReason.paddockRotation,
-        ),
-      );
+        final saved = await repo.addMovementRecord(
+          animalUuid,
+          MovementRecord(
+            toLocation: 'potrero-inexistente',
+            date: DateTime(2026, 1, 5),
+            reason: MovementReason.paddockRotation,
+          ),
+        );
 
-      expect(saved.id, isNotNull);
-      expect(await repo.getMovementRecords(animalUuid), hasLength(1));
+        expect(saved.id, isNotNull);
+        expect(await repo.getMovementRecords(animalUuid), hasLength(1));
 
-      final animal = await reloadAnimal(animalUuid);
-      // No matching location exists in this test, so currentLocationId stays null,
-      // but the rest of the side effect (date bookkeeping) still applies.
-      expect(animal.currentLocationId, isNull);
-      expect(animal.lastMovementDate, DateTime(2026, 1, 5));
-      expect(animal.synced, isFalse);
-    });
+        final animal = await reloadAnimal(animalUuid);
+        // No matching location exists in this test, so currentLocationId stays null,
+        // but the rest of the side effect (date bookkeeping) still applies.
+        expect(animal.currentLocationId, isNull);
+        expect(animal.lastMovementDate, DateTime(2026, 1, 5));
+        expect(animal.synced, isFalse);
+      },
+    );
 
     test('deleteMovementRecord removes the record', () async {
       final repo = MovementRecordRepositoryIsar(db);
@@ -233,33 +246,40 @@ void main() {
   });
 
   group('WeightRecordRepositoryIsar', () {
-    test('addWeightRecord persists the record and updates the animal weight', () async {
-      final repo = WeightRecordRepositoryIsar(db);
-      final animalUuid = await seedAnimal('weight-animal-1');
+    test(
+      'addWeightRecord persists the record and updates the animal weight',
+      () async {
+        final repo = WeightRecordRepositoryIsar(db);
+        final animalUuid = await seedAnimal('weight-animal-1');
 
-      final saved = await repo.addWeightRecord(
-        animalUuid,
-        WeightRecord(
-          date: DateTime(2026, 2, 1),
-          weight: 412.5,
-          method: WeightMethod.scale,
-        ),
-      );
+        final saved = await repo.addWeightRecord(
+          animalUuid,
+          WeightRecord(
+            date: DateTime(2026, 2, 1),
+            weight: 412.5,
+            method: WeightMethod.scale,
+          ),
+        );
 
-      expect(saved.id, isNotNull);
-      expect(await repo.getWeightRecords(animalUuid), hasLength(1));
+        expect(saved.id, isNotNull);
+        expect(await repo.getWeightRecords(animalUuid), hasLength(1));
 
-      final animal = await reloadAnimal(animalUuid);
-      expect(animal.weight, 412.5);
-      expect(animal.synced, isFalse);
-    });
+        final animal = await reloadAnimal(animalUuid);
+        expect(animal.weight, 412.5);
+        expect(animal.synced, isFalse);
+      },
+    );
 
     test('deleteWeightRecord removes the record', () async {
       final repo = WeightRecordRepositoryIsar(db);
       final animalUuid = await seedAnimal('weight-delete');
       final saved = await repo.addWeightRecord(
         animalUuid,
-        WeightRecord(date: DateTime(2026, 1, 1), weight: 100, method: WeightMethod.estimated),
+        WeightRecord(
+          date: DateTime(2026, 1, 1),
+          weight: 100,
+          method: WeightMethod.estimated,
+        ),
       );
 
       await repo.deleteWeightRecord(saved.id!);
@@ -275,7 +295,11 @@ void main() {
 
       final saved = await repo.addCostRecord(
         animalUuid,
-        CostRecord(date: DateTime(2026, 1, 1), type: CostType.feeding, amount: 55.0),
+        CostRecord(
+          date: DateTime(2026, 1, 1),
+          type: CostType.feeding,
+          amount: 55.0,
+        ),
       );
       expect(await repo.getCostRecords(animalUuid), hasLength(1));
 
@@ -289,7 +313,11 @@ void main() {
 
       final saved = await repo.addCommercialRecord(
         animalUuid,
-        CommercialRecord(date: DateTime(2026, 1, 1), type: CommercialRecordType.sale, amount: 900),
+        CommercialRecord(
+          date: DateTime(2026, 1, 1),
+          type: CommercialRecordType.sale,
+          amount: 900,
+        ),
       );
       expect(await repo.getCommercialRecords(animalUuid), hasLength(1));
 
@@ -303,7 +331,11 @@ void main() {
 
       final saved = await repo.addProductionRecord(
         animalUuid,
-        ProductionRecord(date: DateTime(2026, 1, 1), type: ProductionRecordType.weighing, value: 20),
+        ProductionRecord(
+          date: DateTime(2026, 1, 1),
+          type: ProductionRecordType.weighing,
+          value: 20,
+        ),
       );
       expect(await repo.getProductionRecords(animalUuid), hasLength(1));
 
@@ -418,7 +450,7 @@ void main() {
   group('ReproductionRecordRepositoryIsar', () {
     test('add/get/delete and sorts by serviceDate desc', () async {
       final repo = ReproductionRecordRepositoryIsar(db);
-      const animalUuid = 'reproduction-animal-1';
+      final animalUuid = await seedAnimal('reproduction-animal-1');
 
       await repo.addReproductionRecord(
         animalUuid,
@@ -443,42 +475,48 @@ void main() {
       expect(await repo.getReproductionRecords(animalUuid), hasLength(1));
     });
 
-    test('getUpcomingCalvings finds records within range with no actual calving yet', () async {
-      final repo = ReproductionRecordRepositoryIsar(db);
-      const animalUuid = 'reproduction-calving-1';
+    test(
+      'getUpcomingCalvings finds records within range with no actual calving yet',
+      () async {
+        final repo = ReproductionRecordRepositoryIsar(db);
+        final animalUuid = await seedAnimal('reproduction-calving-1');
 
-      await repo.addReproductionRecord(
-        animalUuid,
-        ReproductionRecord(
-          serviceDate: DateTime(2025, 6, 1),
-          serviceType: ServiceType.naturalService,
-          expectedCalvingDate: DateTime(2026, 3, 15),
-        ),
-      );
-      // Already calved — should be excluded even though the expected date is in range.
-      await repo.addReproductionRecord(
-        animalUuid,
-        ReproductionRecord(
-          serviceDate: DateTime(2025, 1, 1),
-          serviceType: ServiceType.naturalService,
-          expectedCalvingDate: DateTime(2026, 3, 20),
-          actualCalvingDate: DateTime(2026, 3, 18),
-        ),
-      );
+        await repo.addReproductionRecord(
+          animalUuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2025, 6, 1),
+            serviceType: ServiceType.naturalService,
+            pregnancyResult: PregnancyCheckResult.positive,
+            expectedCalvingDate: DateTime(2026, 3, 15),
+          ),
+        );
+        // Already calved — should be excluded even though the expected date is in range.
+        await repo.addReproductionRecord(
+          animalUuid,
+          ReproductionRecord(
+            serviceDate: DateTime(2024, 1, 1),
+            serviceType: ServiceType.naturalService,
+            expectedCalvingDate: DateTime(2026, 3, 20),
+            actualCalvingDate: DateTime(2025, 3, 18),
+          ),
+        );
 
-      final upcoming = await repo.getUpcomingCalvings(
-        DateTime(2026, 3, 1),
-        DateTime(2026, 3, 31),
-      );
+        final upcoming = await repo.getUpcomingCalvings(
+          DateTime(2026, 3, 1),
+          DateTime(2026, 3, 31),
+        );
 
-      expect(upcoming, hasLength(1));
-      expect(upcoming.single.animalUuid, animalUuid);
-      expect(upcoming.single.expectedCalvingDate, DateTime(2026, 3, 15));
-    });
+        expect(upcoming, hasLength(1));
+        expect(upcoming.single.animalUuid, animalUuid);
+        expect(upcoming.single.expectedCalvingDate, DateTime(2026, 3, 15));
+      },
+    );
 
     test('calving details survive a round trip through Isar', () async {
       final repo = ReproductionRecordRepositoryIsar(db);
-      const animalUuid = 'reproduction-calving-detail';
+      final animalUuid = await seedAnimal('reproduction-calving-detail');
+      await seedAnimal('cria-a');
+      await seedAnimal('cria-b');
 
       await repo.addReproductionRecord(
         animalUuid,
@@ -510,50 +548,54 @@ void main() {
     // onSaved hook: registering a service stored the row and left the cow
     // untouched, which is what made the whole cycle feel disconnected.
     group('animal side effects', () {
-      test('a service marks the animal served and projects the calving',
-          () async {
-        final repo = ReproductionRecordRepositoryIsar(db);
-        final uuid = await seedAnimal('repro-service');
+      test(
+        'a service marks the animal served and projects the calving',
+        () async {
+          final repo = ReproductionRecordRepositoryIsar(db);
+          final uuid = await seedAnimal('repro-service');
 
-        await repo.addReproductionRecord(
-          uuid,
-          ReproductionRecord(
-            serviceDate: DateTime(2026, 1, 10),
-            serviceType: ServiceType.naturalService,
-          ),
-        );
+          await repo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: DateTime(2026, 1, 10),
+              serviceType: ServiceType.naturalService,
+            ),
+          );
 
-        final animal = await reloadAnimal(uuid);
-        expect(animal.firstServiceDate, DateTime(2026, 1, 10));
-        expect(animal.lastServiceDate, DateTime(2026, 1, 10));
-        expect(animal.reproductiveStatus, 'active');
-        // 283 days of gestation projected from the service.
-        expect(
-          animal.expectedCalvingDate,
-          DateTime(2026, 1, 10).add(const Duration(days: 283)),
-        );
-        expect(animal.synced, isFalse);
-      });
+          final animal = await reloadAnimal(uuid);
+          expect(animal.firstServiceDate, DateTime(2026, 1, 10));
+          expect(animal.lastServiceDate, DateTime(2026, 1, 10));
+          expect(animal.reproductiveStatus, 'active');
+          // 283 days of gestation projected from the service.
+          expect(
+            animal.expectedCalvingDate,
+            DateTime(2026, 1, 10).add(const Duration(days: 283)),
+          );
+          expect(animal.synced, isFalse);
+        },
+      );
 
-      test('the typed expected calving is respected over the projection',
-          () async {
-        final repo = ReproductionRecordRepositoryIsar(db);
-        final uuid = await seedAnimal('repro-typed-date');
+      test(
+        'the typed expected calving is respected over the projection',
+        () async {
+          final repo = ReproductionRecordRepositoryIsar(db);
+          final uuid = await seedAnimal('repro-typed-date');
 
-        await repo.addReproductionRecord(
-          uuid,
-          ReproductionRecord(
-            serviceDate: DateTime(2026, 1, 10),
-            serviceType: ServiceType.naturalService,
-            expectedCalvingDate: DateTime(2026, 11, 1),
-          ),
-        );
+          await repo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: DateTime(2026, 1, 10),
+              serviceType: ServiceType.naturalService,
+              expectedCalvingDate: DateTime(2026, 11, 1),
+            ),
+          );
 
-        expect(
-          (await reloadAnimal(uuid)).expectedCalvingDate,
-          DateTime(2026, 11, 1),
-        );
-      });
+          expect(
+            (await reloadAnimal(uuid)).expectedCalvingDate,
+            DateTime(2026, 11, 1),
+          );
+        },
+      );
 
       test('firstServiceDate is only set once', () async {
         final repo = ReproductionRecordRepositoryIsar(db);
@@ -579,29 +621,34 @@ void main() {
         expect(animal.lastServiceDate, DateTime(2026, 3, 1));
       });
 
-      test('editing an older record does not move lastServiceDate back',
-          () async {
-        final repo = ReproductionRecordRepositoryIsar(db);
-        final uuid = await seedAnimal('repro-no-rewind');
+      test(
+        'editing an older record does not move lastServiceDate back',
+        () async {
+          final repo = ReproductionRecordRepositoryIsar(db);
+          final uuid = await seedAnimal('repro-no-rewind');
 
-        await repo.addReproductionRecord(
-          uuid,
-          ReproductionRecord(
-            serviceDate: DateTime(2026, 3, 1),
-            serviceType: ServiceType.naturalService,
-          ),
-        );
-        // A correction to an older service must not rewrite history.
-        await repo.addReproductionRecord(
-          uuid,
-          ReproductionRecord(
-            serviceDate: DateTime(2025, 8, 1),
-            serviceType: ServiceType.naturalService,
-          ),
-        );
+          await repo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: DateTime(2026, 3, 1),
+              serviceType: ServiceType.naturalService,
+            ),
+          );
+          // A correction to an older service must not rewrite history.
+          await repo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: DateTime(2025, 8, 1),
+              serviceType: ServiceType.naturalService,
+            ),
+          );
 
-        expect((await reloadAnimal(uuid)).lastServiceDate, DateTime(2026, 3, 1));
-      });
+          expect(
+            (await reloadAnimal(uuid)).lastServiceDate,
+            DateTime(2026, 3, 1),
+          );
+        },
+      );
 
       test('a positive diagnosis makes her pregnant', () async {
         final repo = ReproductionRecordRepositoryIsar(db);
@@ -696,8 +743,14 @@ void main() {
           ),
         );
 
-        expect((await reloadAnimal(bull)).lastServiceDate, DateTime(2026, 1, 10));
-        expect((await reloadAnimal(cow)).lastServiceDate, DateTime(2026, 1, 10));
+        expect(
+          (await reloadAnimal(bull)).lastServiceDate,
+          DateTime(2026, 1, 10),
+        );
+        expect(
+          (await reloadAnimal(cow)).lastServiceDate,
+          DateTime(2026, 1, 10),
+        );
 
         final fromSire = await repo.getRecordsBySire(bull);
         expect(fromSire, hasLength(1));
@@ -766,20 +819,23 @@ void main() {
         final repo = ReproductionRecordRepositoryIsar(db);
         final uuid = await seedAnimal('repro-male', sex: 'male');
 
-        await repo.addReproductionRecord(
-          uuid,
-          ReproductionRecord(
-            serviceDate: DateTime(2026, 1, 10),
-            serviceType: ServiceType.naturalService,
-            pregnancyResult: PregnancyCheckResult.positive,
+        await expectLater(
+          repo.addReproductionRecord(
+            uuid,
+            ReproductionRecord(
+              serviceDate: DateTime(2026, 1, 10),
+              serviceType: ServiceType.naturalService,
+              pregnancyResult: PregnancyCheckResult.positive,
+            ),
           ),
+          throwsArgumentError,
         );
 
         final animal = await reloadAnimal(uuid);
         expect(animal.reproductiveStatus, 'active');
         expect(animal.expectedCalvingDate, isNull);
         // Dates are still recorded: the bull did serve on that day.
-        expect(animal.lastServiceDate, DateTime(2026, 1, 10));
+        expect(animal.lastServiceDate, isNull);
       });
     });
 

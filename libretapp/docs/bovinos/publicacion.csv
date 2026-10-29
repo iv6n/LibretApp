@@ -1,0 +1,23 @@
+Elemento,Estado,Evidencia o acción pendiente,Responsable
+Identidad y versión,Implementado,app.libret offline 0.1.2+5,Desarrollo
+Servicio diagnóstico parto vínculo destete pesajes,Automatizado,Isar real y formularios compartidos; completar recorrido en teléfono,Desarrollo y productor
+Parto sin servicio vínculo posterior aborto nacimiento muerto,Automatizado,bovine_lifecycle_test.dart,Desarrollo
+Cambio de toro ciclo antiguo eliminación y deshacer,Automatizado,bovine_lifecycle_test.dart y repositorios Isar,Desarrollo
+Captura retenida ante error y envíos repetidos,Automatizado,weaning_form_flow_test.dart y pruebas existentes de guardado,Desarrollo
+Texto grande teclado y temas,Automatizado,Formularios 320 dp 2x; confirmar en teléfono,Desarrollo y productor
+Respaldo esquema 10 y versiones anteriores,Automatizado,Ciclo hasta restauración y pruebas de medios con Isar real,Desarrollo
+Exportación Excel,Automatizado,Destetes reproducción y precisión nacimiento,Desarrollo
+Actualización Android conservando datos,Verificado en emulador,0.1.1+4 a 0.1.2+5 con adb install -r; 40 animales DEMO y preferencias conservados,Desarrollo
+Inicio Android sin Internet y 16 KB,Verificado en emulador,Android 36; PAGE_SIZE 16384; red predeterminada none; candidato final inicia y guarda,Desarrollo
+APK y AAB firmados,Verificado,APK V2 y AAB jarsigner; zipalign -P 16; ELF y manifiesto; hashes en evidencia.json,Desarrollo
+Restauración Android limpia con medios,Verificado en emulador,40 animales; identidades y genealogía iguales; registros reproductivos destete y pesos iguales; hash de fotografía idéntico,Desarrollo
+TalkBack y teléfono físico,Pendiente,Recorrer las cinco pestañas y captura con lector de pantalla,Productor y QA
+Permisos de cámara y fotos rechazados,Pendiente,Denegar permisos y verificar alternativa sin foto sin perder captura,Productor y QA
+Recorrido Android completo hasta restauración,Parcial; requiere teléfono,Emulador: parto sin servicio y destete desde Registros más exportación y restauración limpia; falta ciclo completo desde ambos accesos en teléfono,Productor y QA
+Titular y cuenta Play Console,Pendiente,Confirmar titular real tipo de cuenta y acceso a producción,Titular
+Correo de soporte,Pendiente,Proporcionar correo real y configurar LIBRET_SUPPORT_EMAIL,Titular
+Política de privacidad HTTPS,Pendiente,Completar borrador con responsable real publicar URL y configurar LIBRET_PRIVACY_URL,Titular
+Icono capturas y ficha de tienda,Pendiente,Aprobar recursos definitivos y textos para este candidato,Titular
+Declaración de seguridad de datos y contenido,Pendiente,Completar formularios reales de Play Console,Titular
+Prueba cerrada Google Play,Pendiente,Si aplica: 12 personas inscritas continuamente 14 días y solicitud de producción,Titular
+Defectos de pérdida de datos o función principal,Sin fallos conocidos; aceptación pendiente,1037 pruebas de suite más 66 posteriores y 1 offline aprobadas; restauración Android verificada; cerrar validación física,Desarrollo y QA

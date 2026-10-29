@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/animal_status.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import '../directorio/animales/advisor/rules/rule_test_fixtures.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
@@ -187,7 +191,54 @@ LocationEntity _location({
   );
 }
 
+class _AnimalsForLocations implements AnimalRepository {
+  final changes = StreamController<List<AnimalEntity>>.broadcast();
+  List<AnimalEntity> animals = [];
+  @override
+  Stream<List<AnimalEntity>> watchAll() => changes.stream;
+  @override
+  Future<List<AnimalEntity>> getAll() async => animals;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
+  test(
+    'occupancy loads and follows animal movements without a location edit',
+    () async {
+      final locations = _BlocFakeLocationRepository([
+        _location(uuid: 'a', name: 'Corral A'),
+        _location(uuid: 'b', name: 'Corral B'),
+      ]);
+      final animals = _AnimalsForLocations()
+        ..animals = [buildAnimal(currentLocationId: 'a')];
+      final bloc = UbicacionesBloc(locations, animalRepository: animals);
+      addTearDown(() async {
+        await bloc.close();
+        await animals.changes.close();
+        await locations.dispose();
+      });
+      final loaded = bloc.stream.firstWhere(
+        (state) => state is UbicacionesLoaded && state.animalCounts['a'] == 1,
+      );
+      bloc.add(const LoadUbicaciones());
+      await loaded.timeout(const Duration(seconds: 2));
+      final moved = bloc.stream.firstWhere(
+        (state) => state is UbicacionesLoaded && state.animalCounts['b'] == 1,
+      );
+      animals.changes.add([
+        buildAnimal(currentLocationId: 'b'),
+        buildAnimal(
+          uuid: 'sold',
+          currentLocationId: 'b',
+        ).copyWith(status: AnimalStatus.sold),
+      ]);
+      await moved.timeout(const Duration(seconds: 2));
+      final counts = (bloc.state as UbicacionesLoaded).animalCounts;
+      expect(counts['a'], isNull);
+      expect(counts['b'], 1);
+    },
+  );
   group('UbicacionesBloc upsert flow', () {
     test(
       'refleja en el stream un guardado hecho directo al repositorio '

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -17,6 +19,13 @@ import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/inicio/view/inicio_view.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/security/ports/phone_auth_port.dart';
+import 'package:libretapp/features/inicio/data/weather_preferences_service.dart';
+import 'package:libretapp/features/inicio/data/weather_service.dart';
+import 'package:libretapp/core/workspace/workspace_manager.dart';
+import 'package:libretapp/core/workspace/workspace_registry.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:libretapp/theme/app_theme.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -30,6 +39,48 @@ void main() {
   });
 
   group('Inicio responsive layout', () {
+    testWidgets('guía inicial sustituye contadores vacíos', (tester) async {
+      await _pumpInicio(tester, width: 360, firstRun: true, topInset: 24);
+      expect(
+        find.byKey(const ValueKey('complete-getting-started')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('complete-getting-started')),
+          matching: find.text('Alta rápida'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Resumen del rancho'), findsNothing);
+      expect(find.text('Prioridad de hoy'), findsNothing);
+      expect(tester.getRect(find.byType(ListView)).top, 24);
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byType(ListView)).top, 24);
+    });
+
+    testWidgets(
+      'dark priority text remains readable at 320dp and 200 percent text',
+      (tester) async {
+        await _pumpInicio(tester, width: 320, textScale: 2, dark: true);
+        final label = find.text('Prioridad de hoy');
+        final foreground = tester.widget<Text>(label).style!.color!;
+        final card = tester.widget<Container>(
+          find.ancestor(of: label, matching: find.byType(Container)).first,
+        );
+        final background = (card.decoration! as BoxDecoration).color!;
+        expect(textContrast(foreground, background), greaterThanOrEqualTo(4.5));
+        expect(
+          tester
+              .renderObject<RenderParagraph>(
+                find.text('Revisar animales').first,
+              )
+              .didExceedMaxLines,
+          isFalse,
+        );
+      },
+    );
     testWidgets('keeps a single column below the tablet breakpoint', (
       tester,
     ) async {
@@ -92,14 +143,14 @@ void main() {
       expect(find.byKey(_widgetKey('pendingTasks')), findsOneWidget);
     });
 
-    testWidgets('keeps eight quick actions compact', (tester) async {
+    testWidgets('keeps eight quick actions readable', (tester) async {
       await _pumpQuickActions(tester, width: 390, count: 8);
 
       final size = tester.getSize(
         find.byKey(const ValueKey<String>('quick-action-grid')),
       );
 
-      expect(size.height, lessThan(260));
+      expect(size.height, lessThan(500));
     });
 
     testWidgets('shrinks the quick action card for four and one action', (
@@ -115,7 +166,7 @@ void main() {
           .getSize(find.byKey(const ValueKey<String>('quick-action-grid')))
           .height;
 
-      expect(fourActionsHeight, lessThan(180));
+      expect(fourActionsHeight, lessThan(300));
       expect(oneActionHeight, lessThan(180));
     });
 
@@ -129,8 +180,61 @@ void main() {
         tester
             .getSize(find.byKey(const ValueKey<String>('quick-action-grid')))
             .height,
-        lessThan(300),
+        lessThan(400),
       );
+    });
+
+    for (final (width, scale, columns) in [
+      (320.0, 1.0, 2),
+      (390.0, 1.0, 2),
+      (320.0, 2.0, 2),
+    ]) {
+      testWidgets(
+        'quick actions use $columns columns at ${width}dp and ${scale}x text',
+        (tester) async {
+          await _pumpQuickActions(
+            tester,
+            width: width,
+            count: 8,
+            textScale: scale,
+          );
+          final lefts = defaultQuickActions()
+              .take(8)
+              .map(
+                (action) => tester
+                    .getRect(
+                      find.byKey(ValueKey<String>('quick-action-${action.id}')),
+                    )
+                    .left,
+              )
+              .toSet();
+          expect(lefts, hasLength(columns));
+          for (final action in defaultQuickActions().take(8)) {
+            final size = tester.getSize(
+              find.byKey(ValueKey<String>('quick-action-${action.id}')),
+            );
+            expect(size.width, greaterThanOrEqualTo(48));
+            expect(size.height, greaterThanOrEqualTo(48));
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    testWidgets('quick actions keep icon and label contrast in dark mode', (
+      tester,
+    ) async {
+      await _pumpQuickActions(tester, width: 390, count: 4, dark: true);
+      final action = defaultQuickActions().first;
+      final finder = find.byKey(ValueKey<String>('quick-action-${action.id}'));
+      final ink = tester.widget<Ink>(
+        find.descendant(of: finder, matching: find.byType(Ink)),
+      );
+      final background = (ink.decoration! as BoxDecoration).color!;
+      final icon = tester.widget<Icon>(
+        find.descendant(of: finder, matching: find.byType(Icon)),
+      );
+      expect(textContrast(icon.color!, background), greaterThanOrEqualTo(4.5));
     });
 
     testWidgets('Inicio keeps quick actions compact in the real dashboard', (
@@ -142,7 +246,7 @@ void main() {
         find.byKey(const ValueKey<String>('quick-action-grid')),
       );
 
-      expect(size.height, lessThan(260));
+      expect(size.height, lessThan(500));
     });
   });
 }
@@ -151,6 +255,9 @@ Future<void> _pumpInicio(
   WidgetTester tester, {
   required double width,
   double textScale = 1,
+  bool dark = false,
+  bool firstRun = false,
+  double topInset = 0,
 }) async {
   tester.view.physicalSize = Size(width, 1200);
   tester.view.devicePixelRatio = 1;
@@ -159,26 +266,50 @@ Future<void> _pumpInicio(
 
   SharedPreferences.setMockInitialValues({});
   final prefs = SharedPrefsService(await SharedPreferences.getInstance());
+  if (locator.isRegistered<WeatherPreferencesService>()) {
+    await locator.unregister<WeatherPreferencesService>();
+  }
+  if (locator.isRegistered<WorkspaceManager>()) {
+    await locator.unregister<WorkspaceManager>();
+  }
+  locator.registerSingleton<WeatherPreferencesService>(
+    WeatherPreferencesService(
+      preferences: prefs,
+      weatherService: LocalOnlyWeatherService(),
+    ),
+  );
+  final experience = AppExperienceController(prefs);
+  addTearDown(experience.dispose);
+  final registry = WorkspaceRegistry(prefs);
+  await registry.load();
+  locator.registerSingleton<WorkspaceManager>(
+    WorkspaceManager(registry: registry, auth: const UnavailablePhoneAuth()),
+  );
   final bloc = InicioBloc(
-    dashboardService: _FakeInicioDashboardService(),
+    dashboardService: _FakeInicioDashboardService(firstRun: firstRun),
     configRepository: DashboardConfigRepository(prefs),
     financeService: _FakeFinanceSummaryService(),
     libraryRepository: _FakeLibraryRepository(),
   )..add(const LoadInicio());
 
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.lightTheme,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: MediaQuery(
-        data: MediaQueryData(
-          size: Size(width, 1200),
-          textScaler: TextScaler.linear(textScale),
-        ),
-        child: BlocProvider<InicioBloc>.value(
-          value: bloc,
-          child: const Scaffold(body: InicioView()),
+    AppExperienceScope(
+      controller: experience,
+      child: MaterialApp(
+        theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MediaQuery(
+          data: MediaQueryData(
+            size: Size(width, 1200),
+            textScaler: TextScaler.linear(textScale),
+            padding: EdgeInsets.only(top: topInset),
+            viewPadding: EdgeInsets.only(top: topInset),
+          ),
+          child: BlocProvider<InicioBloc>.value(
+            value: bloc,
+            child: const Scaffold(body: InicioView()),
+          ),
         ),
       ),
     ),
@@ -191,6 +322,7 @@ Future<void> _pumpQuickActions(
   required double width,
   required int count,
   double textScale = 1,
+  bool dark = false,
 }) async {
   tester.view.physicalSize = Size(width, 1200);
   tester.view.devicePixelRatio = 1;
@@ -199,7 +331,7 @@ Future<void> _pumpQuickActions(
 
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.lightTheme,
+      theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
@@ -231,19 +363,32 @@ Rect _widgetRect(WidgetTester tester, String id) {
 Key _widgetKey(String id) => ValueKey<String>('dashboard-widget-$id');
 
 class _FakeInicioDashboardService implements InicioDashboardService {
+  _FakeInicioDashboardService({this.firstRun = false});
+
+  final bool firstRun;
+
   @override
   Future<InicioDashboardData> loadDashboard() async {
     return InicioDashboardData(
       profileName: 'Usuario de prueba',
       farmName: 'Rancho de prueba',
-      totalAnimals: 12,
-      totalAnimalCapacity: 30,
+      totalAnimals: firstRun ? 0 : 12,
+      totalAnimalCapacity: firstRun ? 0 : 30,
       attentionAnimals: 0,
-      activeLotes: 3,
-      totalLocations: 2,
+      activeLotes: firstRun ? 0 : 3,
+      totalLocations: firstRun ? 0 : 2,
       upcomingEventsCount: 0,
       upcomingEvents: const <AgendaEntry>[],
-      alerts: const <InicioAlertItem>[],
+      alerts: firstRun
+          ? const []
+          : const <InicioAlertItem>[
+              InicioAlertItem(
+                title: 'Revisar animales',
+                message: 'Hay animales que requieren atención.',
+                severity: InicioAlertSeverity.warning,
+                targetRoute: '/directorio',
+              ),
+            ],
       tasks: const <InicioTaskItem>[],
       lastUpdated: DateTime(2026, 1, 1),
       categoryBreakdown: const [],

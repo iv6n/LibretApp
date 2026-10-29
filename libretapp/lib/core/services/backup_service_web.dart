@@ -83,6 +83,13 @@ class BackupService {
       _statusPrefs?.setDateTime(PrefsKeys.lastCloudBackup, DateTime.now()) ??
       Future.value();
 
+  Future<void> markVerifiedCloudBackup() =>
+      _statusPrefs?.setDateTime(
+        PrefsKeys.lastVerifiedCloudBackup,
+        DateTime.now(),
+      ) ??
+      Future.value();
+
   Future<BackupImportSummary?> importFromFile({
     required BackupImportMode mode,
   }) async {

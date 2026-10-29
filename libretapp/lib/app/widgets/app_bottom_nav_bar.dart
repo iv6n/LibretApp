@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 /// Configuration for a single bottom-navigation item.
@@ -48,11 +49,15 @@ class AppBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chrome = Theme.of(context).extension<ShellChromeTheme>();
-    final selected =
-        chrome?.navSelectedItem ?? Theme.of(context).colorScheme.primary;
-    final unselected =
-        chrome?.navUnselectedItem ??
-        Theme.of(context).colorScheme.onSurfaceVariant;
+    final selected = readableTextColor(
+      chrome?.navSelectedItem ?? Theme.of(context).colorScheme.primary,
+      backgroundColor,
+    );
+    final unselected = readableTextColor(
+      chrome?.navUnselectedItem ??
+          Theme.of(context).colorScheme.onSurfaceVariant,
+      backgroundColor,
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: barBottomGap),
@@ -136,6 +141,7 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final itemColor = isSelected ? selectedColor : unselectedColor;
+    final largeText = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.5;
 
     return Semantics(
       button: true,
@@ -145,7 +151,10 @@ class _NavButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+          padding: EdgeInsets.symmetric(
+            vertical: largeText ? 2 : 6,
+            horizontal: 2,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,

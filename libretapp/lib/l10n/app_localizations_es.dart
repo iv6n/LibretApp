@@ -45,6 +45,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get animalsEmptySubtitle => 'Ajusta los filtros o la búsqueda';
 
   @override
+  String get animalsFirstTitle => 'Aún no hay animales';
+
+  @override
+  String get animalsFirstSubtitle =>
+      'Registra el primero para empezar a llevar su seguimiento.';
+
+  @override
+  String get animalsFirstAction => 'Registrar animal';
+
+  @override
   String get animalsSearchHint => 'Buscar por arete, nombre o raza';
 
   @override

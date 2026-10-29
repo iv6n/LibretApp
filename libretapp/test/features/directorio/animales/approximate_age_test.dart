@@ -16,8 +16,11 @@ void main() {
       () {
         expect(
           ApproximateAge.fromTotalMonths(-10),
-          const ApproximateAge(years: 0, months: 0),
+          const ApproximateAge.unknown(),
         );
+        expect(ApproximateAge.fromTotalMonths(-1).totalMonths, -1);
+        expect(ApproximateAge.fromTotalMonths(-1).displayLabel, 'No lo sé');
+        expect(ApproximateAge.fromTotalMonths(0).displayLabel, 'Recién nacido');
         expect(
           ApproximateAge.fromTotalMonths(999),
           const ApproximateAge(years: 30, months: 11),
@@ -33,5 +36,32 @@ void main() {
         DateTime(2025, 2, 28),
       );
     });
+  });
+
+  test('unknown sex and age do not imply a sexed category or life stage', () {
+    expect(
+      AnimalTaxonomy.defaultCategory(
+        species: Species.cattle,
+        sex: Sex.unknown,
+        ageMonths: 36,
+      ),
+      Category.other,
+    );
+    expect(
+      AnimalTaxonomy.resolveLifeStage(
+        species: Species.equine,
+        sex: Sex.unknown,
+        ageMonths: 48,
+      ),
+      LifeStage.unknown,
+    );
+    expect(
+      AnimalTaxonomy.defaultCategory(
+        species: Species.cattle,
+        sex: Sex.female,
+        ageMonths: -1,
+      ),
+      Category.other,
+    );
   });
 }

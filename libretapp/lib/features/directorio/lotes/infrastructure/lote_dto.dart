@@ -20,6 +20,7 @@ class LoteDto {
       closedAt: entity.closedAt?.toIso8601String(),
       active: entity.active,
       notes: entity.notes,
+      currentLocationId: entity.currentLocationId,
       feedPricePerKg: entity.feedPricePerKg,
       dailyFeedKgPerHead: entity.dailyFeedKgPerHead,
       liveWeightPricePerKg: entity.liveWeightPricePerKg,
@@ -43,6 +44,7 @@ class LoteDto {
       closedAt: (json['fechaCierre'] ?? json['closedAt']) as String?,
       active: (json['activo'] ?? json['active']) as bool? ?? true,
       notes: (json['notas'] ?? json['notes']) as String?,
+      currentLocationId: json['currentLocationId'] as String?,
       feedPricePerKg: (json['feedPricePerKg'] as num?)?.toDouble(),
       dailyFeedKgPerHead: (json['dailyFeedKgPerHead'] as num?)?.toDouble(),
       liveWeightPricePerKg: (json['liveWeightPricePerKg'] as num?)?.toDouble(),
@@ -65,6 +67,7 @@ class LoteDto {
     this.closedAt,
     required this.active,
     this.notes,
+    this.currentLocationId,
     this.feedPricePerKg,
     this.dailyFeedKgPerHead,
     this.liveWeightPricePerKg,
@@ -83,6 +86,7 @@ class LoteDto {
   final String? closedAt;
   final bool active;
   final String? notes;
+  final String? currentLocationId;
   final double? feedPricePerKg;
   final double? dailyFeedKgPerHead;
   final double? liveWeightPricePerKg;
@@ -102,6 +106,7 @@ class LoteDto {
       closedAt: _parseDate(closedAt),
       active: active,
       notes: notes,
+      currentLocationId: currentLocationId,
       feedPricePerKg: feedPricePerKg,
       dailyFeedKgPerHead: dailyFeedKgPerHead,
       liveWeightPricePerKg: liveWeightPricePerKg,
@@ -123,6 +128,7 @@ class LoteDto {
       'fechaCierre': closedAt,
       'activo': active,
       'notas': notes,
+      'currentLocationId': currentLocationId,
       'feedPricePerKg': feedPricePerKg,
       'dailyFeedKgPerHead': dailyFeedKgPerHead,
       'liveWeightPricePerKg': liveWeightPricePerKg,

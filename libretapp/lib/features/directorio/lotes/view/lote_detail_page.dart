@@ -2,13 +2,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
-import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
@@ -54,12 +53,10 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
 
   Future<bool> _dispatchAndAwait(LotesEvent event) async {
     final bloc = context.read<LotesBloc>();
-    final future = bloc.stream
-        .skip(1)
-        .firstWhere(
-          (state) => state is! LotesActionInProgress,
-          orElse: () => bloc.state,
-        );
+    final future = bloc.stream.firstWhere(
+      (state) => state is! LotesActionInProgress,
+      orElse: () => bloc.state,
+    );
     bloc.add(event);
     final nextState = await future;
 
@@ -80,9 +77,9 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: const Text('Eliminar lote'),
+        title: const Text('Cerrar lote'),
         content: Text(
-          '¿Deseas borrar "${lote.name}"? Esta acción no se puede deshacer.',
+          '¿Cerrar "${lote.name}"? Se conservarán sus integrantes y registros para consultar el historial.',
         ),
         actions: [
           TextButton(
@@ -91,7 +88,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Eliminar'),
+            child: const Text('Cerrar lote'),
           ),
         ],
       ),
@@ -117,7 +114,6 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
 
   Future<void> _showMoveLoteSheet(LoteEntity lote) async {
     final locationRepository = locator<LocationRepository>();
-    final animalRepository = locator<AnimalRepository>();
     final movementRepository = locator<MovementRecordRepository>();
 
     List<LocationEntity> locations = [];
@@ -140,7 +136,7 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
 
     String? selectedUuid = lote.currentLocationId;
 
-    final confirmed = await showModalBottomSheet<bool>(
+    final confirmed = await showAppBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
@@ -219,53 +215,16 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
     if (confirmed != true || !mounted) return;
     if (selectedUuid == lote.currentLocationId) return;
 
-    final now = DateTime.now();
-
-    // 1. Load all animals that belong to this batch.
-    List<dynamic> animals = [];
+    const animalsLoadFailed = false;
+    const animalWritesFailed = false;
+    var loteUpdated = true;
     try {
-      animals = await animalRepository.getByBatchUuid(lote.uuid);
-    } catch (_) {
-      // Proceed — empty list means only the lote record is updated.
-    }
-
-    // 2. Move each animal and create a MovementRecord.
-    final updateFutures = <Future<void>>[];
-    final moveFutures = <Future<void>>[];
-    for (final rawAnimal in animals) {
-      final animal = rawAnimal;
-      final oldLocId = animal.currentLocationId;
-      final updatedAnimal = animal.copyWith(
-        currentLocationId: selectedUuid,
-        initialLocationId: animal.initialLocationId ?? selectedUuid,
-        lastMovementDate: now,
-        lastUpdateDate: now,
-        synced: false,
-      );
-      updateFutures.add(animalRepository.update(updatedAnimal));
-
-      if (selectedUuid != null) {
-        final record = MovementRecord(
-          fromLocation: oldLocId,
-          toLocation: selectedUuid!,
-          date: now,
-          reason: MovementReason.paddockRotation,
-        );
-        moveFutures.add(
-          movementRepository.addMovementRecord(animal.uuid, record),
-        );
+      if (movementRepository is! AtomicMovementRepository) {
+        throw StateError('Este almacenamiento no permite mover el lote de forma segura.');
       }
-    }
-    await Future.wait(updateFutures);
-    await Future.wait(moveFutures);
-
-    // 3. Update the lote's currentLocationId.
-    try {
-      await widget.repository.updateLote(
-        lote.copyWith(currentLocationId: selectedUuid),
-      );
+      await (movementRepository as AtomicMovementRepository).moveLotAtomically(lote.uuid, selectedUuid);
     } catch (_) {
-      // Best-effort — animals were already moved.
+      loteUpdated = false;
     }
 
     if (!mounted) return;
@@ -274,15 +233,15 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
         .where((l) => l.uuid == selectedUuid)
         .map((l) => l.name)
         .firstOrNull;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          locationName != null
-              ? 'Lote movido a "$locationName"'
-              : 'Lote actualizado',
-        ),
-      ),
-    );
+    final partial = animalsLoadFailed || animalWritesFailed || !loteUpdated;
+    final message = partial
+        ? 'Movimiento parcial: revisa los animales y el lote; puedes reintentar.'
+        : locationName != null
+        ? 'Lote movido a "$locationName"'
+        : 'Lote actualizado';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
     _reload();
   }
 
@@ -334,6 +293,10 @@ class _LoteDetailPageState extends State<LoteDetailPage> {
               onEdit: () => _openEditPage(lote),
               onDelete: () => _confirmDelete(lote),
               onMoveLocation: () => _showMoveLoteSheet(lote),
+              onBatchRecords: () async {
+                await context.pushNamed(AppRoutes.nameBatchRecords, queryParameters: {'lote': lote.uuid});
+                if (mounted) _reload();
+              },
               onRegisterWeight: () async {
                 final saved = await context.pushNamed(
                   AppRoutes.nameLoteRegistroPeso,
@@ -356,6 +319,7 @@ class _LoteDetailContent extends StatelessWidget {
     required this.onDelete,
     required this.onMoveLocation,
     required this.onRegisterWeight,
+    required this.onBatchRecords,
   });
 
   final LoteEntity lote;
@@ -363,6 +327,7 @@ class _LoteDetailContent extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onMoveLocation;
   final VoidCallback onRegisterWeight;
+  final VoidCallback onBatchRecords;
 
   @override
   Widget build(BuildContext context) {
@@ -393,7 +358,9 @@ class _LoteDetailContent extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text('Estado: ${lote.active ? 'Activo' : 'Inactivo'}'),
                 const SizedBox(height: 6),
-                Text('Creado: ${lote.createdAt}'),
+                Text(
+                  'Creado: ${DateFormat("dd/MM/yyyy").format(lote.createdAt)}',
+                ),
               ],
             ),
           ),
@@ -406,6 +373,12 @@ class _LoteDetailContent extends StatelessWidget {
             icon: const Icon(Icons.monitor_weight_outlined),
             label: const Text('Registrar pesaje'),
           ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: lote.active ? onBatchRecords : null,
+          icon: const Icon(Icons.playlist_add_check_outlined),
+          label: const Text('Registro por lotes sin conexión'),
         ),
         const SizedBox(height: 16),
         LotePerformancePanel(lote: lote),
@@ -424,7 +397,7 @@ class _LoteDetailContent extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('Eliminar'),
+                label: const Text('Cerrar lote'),
               ),
             ),
           ],

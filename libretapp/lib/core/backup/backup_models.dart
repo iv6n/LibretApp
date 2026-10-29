@@ -12,13 +12,14 @@ class BackupEnvelope {
     required this.profile,
   });
 
-  /// 9 promotes cultivation records to their own collection while schema 8
-  /// snapshots remain restorable through the legacy-location migration.
-  static const currentSchemaVersion = 9;
+  /// 11 adds projection provenance and financial modification timestamps.
+  /// Earlier snapshots remain importable with legacy defaults.
+  static const currentSchemaVersion = 11;
 
   /// Stamped into every archive and cloud snapshot. Kept here so a version bump
   /// is a single edit — must stay in step with `version:` in pubspec.yaml.
-  static const currentAppVersion = '0.1.0+3';
+  static const currentAppVersion = String.fromEnvironment(
+    'LIBRET_APP_VERSION', defaultValue: '0.1.3+6');
 
   final int schemaVersion;
   final String appVersion;

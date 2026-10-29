@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/core/services/prefs_keys.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
@@ -31,7 +32,45 @@ Future<AgendaRepositoryImpl> _buildRepo() async {
   return AgendaRepositoryImpl(SharedPrefsService(prefs));
 }
 
+class _FailingPrefsService extends SharedPrefsService {
+  _FailingPrefsService(super.prefs);
+
+  bool failWrites = false;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    if (failWrites) throw StateError('simulated preferences write failure');
+    await super.setString(key, value);
+  }
+}
+
 void main() {
+  test(
+    'la hora opcional persiste y los registros antiguos conservan su hora',
+    () async {
+      final repo = await _buildRepo();
+      final dateOnly = _buildEntry(
+        id: 'sin-hora',
+        titulo: 'Revisar cerca',
+      ).copyWith(hasExplicitTime: false);
+      await repo.saveEntry(dateOnly);
+      expect((await repo.getEntry('sin-hora')).hasExplicitTime, isFalse);
+    await repo.saveEntry(dateOnly.copyWith(
+      fecha: DateTime(2026, 10, 29, 15, 30),
+      hasExplicitTime: true,
+    ));
+    expect((await repo.getEntry('sin-hora')).fecha.hour, 15);
+    expect((await repo.getEntry('sin-hora')).hasExplicitTime, isTrue);
+      expect(
+        AgendaEntry.fromJson({
+          ...dateOnly.toJson(),
+          'hasExplicitTime': null,
+        }).hasExplicitTime,
+        isTrue,
+      );
+    },
+  );
+
   group('AgendaRepositoryImpl', () {
     test(
       'saveEntry persiste la entrada y fetchEntries la retorna con todos los campos',
@@ -166,5 +205,36 @@ void main() {
       expect(entries, hasLength(1));
       expect(entries.first.titulo, 'Reemplazado');
     });
+
+    test(
+      'una reconciliación fallida no publica el estado no guardado',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final failingPrefs = _FailingPrefsService(prefs);
+        final repo = AgendaRepositoryImpl(failingPrefs);
+        final existing = _buildEntry(id: 'existing', titulo: 'Cita vigente');
+        await repo.saveEntry(existing);
+
+        failingPrefs.failWrites = true;
+        await expectLater(
+          repo.updateEntries(
+            (current) => [
+              ...current,
+              _buildEntry(id: 'not-saved', titulo: 'Cita no confirmada'),
+            ],
+          ),
+          throwsA(isA<StateError>()),
+        );
+        failingPrefs.failWrites = false;
+
+        expect((await repo.fetchEntries()).map((entry) => entry.id), [
+          'existing',
+        ]);
+        final persisted = prefs.getString(PrefsKeys.eventsStorage) ?? '';
+        expect(persisted, contains('existing'));
+        expect(persisted, isNot(contains('not-saved')));
+      },
+    );
   });
 }

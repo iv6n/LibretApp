@@ -11,23 +11,34 @@ import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
+import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/widgets/app_empty_state.dart';
+import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
-import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_compact_row.dart';
+import 'package:libretapp/features/directorio/animales/widgets/pet_card.dart';
+import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/directorio/animales/view/bulk_health_form_page.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
 class AnimalesListView extends StatefulWidget {
-  const AnimalesListView({super.key, this.shellInteractionsEnabled = true});
+  const AnimalesListView({
+    super.key,
+    this.shellInteractionsEnabled = true,
+    this.viewMode = AnimalDirectoryViewMode.cards,
+  });
 
   final bool shellInteractionsEnabled;
+  final AnimalDirectoryViewMode viewMode;
 
   @override
   State<AnimalesListView> createState() => _AnimalesListViewState();
@@ -35,7 +46,6 @@ class AnimalesListView extends StatefulWidget {
 
 class _AnimalesListViewState extends State<AnimalesListView>
     with TickerProviderStateMixin {
-  static const double _listFabClearance = -39;
   static const double _nearListEndThreshold = 96;
   static const double _estimatedQuickMenuHeight = 288;
   static const double _quickMenuGap = 2;
@@ -80,6 +90,22 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _syncRouteFilters();
   }
 
+  @override
+  void didUpdateWidget(covariant AnimalesListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.viewMode == widget.viewMode) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      final offset = position.pixels.clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      if (offset != position.pixels) _scrollController.jumpTo(offset);
+      _handleScroll();
+    });
+  }
+
   void _syncRouteFilters() {
     try {
       final query = GoRouterState.of(context).uri.queryParameters;
@@ -104,7 +130,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
       _animalController.setLocationUuid(
         locationUuid == null || locationUuid.isEmpty ? null : locationUuid,
       );
-      if (pendingEarTag || attention || (loteUuid?.isNotEmpty ?? false) ||
+      if (pendingEarTag ||
+          attention ||
+          (loteUuid?.isNotEmpty ?? false) ||
           (locationUuid?.isNotEmpty ?? false)) {
         _ensureAllAnimalsForFilter();
       }
@@ -238,8 +266,11 @@ class _AnimalesListViewState extends State<AnimalesListView>
     );
   }
 
-  void _openAnimalDetail(AnimalEntity animal) {
-    context.push(AppRoutes.animalDetallePath(animal.uuid));
+  Future<void> _openAnimalDetail(AnimalEntity animal) async {
+    await context.push(AppRoutes.animalDetallePath(animal.uuid));
+    if (!mounted) return;
+    _animalController.invalidateIndicatorSnapshots();
+    await _animalController.refreshLocations();
   }
 
   @override
@@ -258,7 +289,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
             final listBottomPadding = math.max(
               (isSelectionMode && isKeyboardFullyHidden)
                   ? MediaQuery.of(context).padding.bottom + 112
-                  : bottomInset + _listFabClearance + _quickMenuExtraPadding,
+                  : bottomInset +
+                        ShellInsets.fabContentClearance +
+                        _quickMenuExtraPadding,
               0.0,
             );
 
@@ -271,7 +304,10 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 !_isAtTop &&
                 (_isScrollingUp || _isNearListEnd);
             final fabConfig =
-                isSelectionMode || !showRegisterFab || _quickMenuOpen
+                isSelectionMode ||
+                    !showRegisterFab ||
+                    _quickMenuOpen ||
+                    (state is AnimalesLoaded && state.herdTotal == 0)
                 ? null
                 : ShellFabConfig(
                     id: 'animales',
@@ -647,6 +683,18 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
   /// The widgets above the animal rows: the filter chips and the count
   /// line, or the whole empty state when nothing matches.
+  String _animalEmptyIllustration(BuildContext context) {
+    final preferences = AppExperienceScope.maybeOf(context)?.value;
+    if (preferences?.careProfile == CareProfile.pets) {
+      final species = preferences!.preferredSpecies;
+      return species.contains(Species.feline) &&
+              !species.contains(Species.canine)
+          ? 'assets/images/felino.png'
+          : 'assets/images/canino.webp';
+    }
+    return 'assets/images/vaca.webp';
+  }
+
   List<Widget> _buildListHeader({
     required BuildContext context,
     required AnimalesLoaded state,
@@ -677,6 +725,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
         state.searchFilterStages.isNotEmpty ||
         state.searchFilterSexes.isNotEmpty ||
         _animalController.state.hasFilters;
+    final firstAnimal = state.herdTotal == 0 && !isNarrowed;
     final headerCount = isNarrowed ? filtered.length : state.herdTotal;
 
     const calfStages = {
@@ -691,6 +740,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
         : 0;
     final calfFemaleCount = isOnlyCalfFilter
         ? filtered.where((a) => a.sex == Sex.female).length
+        : 0;
+    final calfUnknownCount = isOnlyCalfFilter
+        ? filtered.where((a) => a.sex == Sex.unknown).length
         : 0;
 
     if (filtered.isEmpty) {
@@ -736,16 +788,40 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 ),
               ],
               const SizedBox(height: 16),
-              Text(
-                l10n.animalsEmptyTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.animalsEmptySubtitle,
-                style: theme.textTheme.bodyMedium,
+              AppEmptyState(
+                illustrationAsset: firstAnimal
+                    ? _animalEmptyIllustration(context)
+                    : null,
+                icon: Icons.search_off_outlined,
+                title: firstAnimal
+                    ? 'Tus animales, en un lugar'
+                    : l10n.animalsEmptyTitle,
+                message: firstAnimal
+                    ? 'Registra el primero para empezar a llevar su seguimiento.'
+                    : l10n.animalsEmptySubtitle,
+                action: firstAnimal
+                    ? FilledButton.icon(
+                        onPressed: () =>
+                            context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Registrar animal'),
+                      )
+                    : OutlinedButton.icon(
+                        onPressed: () {
+                          onSpeciesChanged(null);
+                          onStagesChanged({});
+                          onPendingEarTagChanged(false);
+                          _animalController.setOnlyAttention(false);
+                          _animalController.setLoteUuid(null);
+                          _animalController.setLocationUuid(null);
+                          context.read<AnimalesBloc>().add(const ClearSearch());
+                          context.read<AnimalesBloc>().add(
+                            const SetSearchFilters(),
+                          );
+                        },
+                        icon: const Icon(Icons.filter_alt_off_outlined),
+                        label: const Text('Limpiar filtros'),
+                      ),
               ),
             ],
           ),
@@ -812,7 +888,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                   const Spacer(),
                   if (isOnlyCalfFilter)
                     Text(
-                      '$calfFemaleCount ♀   $calfMaleCount ♂',
+                      '♀ $calfFemaleCount · ♂ $calfMaleCount · — $calfUnknownCount',
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
@@ -842,6 +918,122 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required void Function(AnimalEntity) onOpenDetail,
   }) {
     final location = locationResolver(animal);
+    final snapshot = snapshotResolver(animal);
+    final Widget animalCard;
+    if (widget.viewMode == AnimalDirectoryViewMode.compact) {
+      animalCard = AnimalCompactRow(
+        animal: animal,
+        location: location,
+        indicatorSnapshot: snapshot,
+        onLocationTap: location == null
+            ? null
+            : () => context.push(AppRoutes.ubicacionDetallePath(location.uuid)),
+        isSelected: state.selectedAnimalUuids.contains(animal.uuid),
+        selectionEnabled: state.isSelectionMode,
+        onMenuAction: (action) => _handleAnimalCardMenuAction(
+          context,
+          animal: animal,
+          action: action,
+          onOpenDetail: () => onOpenDetail(animal),
+        ),
+        onQuickMenuOpenChanged: (open) {
+          if (!mounted) return;
+          setState(() {
+            _quickMenuOpen = open;
+            if (!open) _quickMenuExtraPadding = 0;
+          });
+        },
+        onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
+        onTap: () {
+          if (state.isSelectionMode) {
+            context.read<AnimalesBloc>().add(
+              ToggleAnimalSelection(animal.uuid),
+            );
+            return;
+          }
+          onOpenDetail(animal);
+        },
+        onLongPress: () => context.read<AnimalesBloc>().add(
+          ToggleAnimalSelection(animal.uuid),
+        ),
+      );
+    } else if (animal.productionPurpose == ProductionPurpose.companion ||
+        animal.species == Species.canine ||
+        animal.species == Species.feline) {
+      animalCard = PetCard(
+        animal: animal,
+        location: location,
+        indicatorSnapshot: snapshot,
+        onLocationTap: location == null
+            ? null
+            : () => context.push(AppRoutes.ubicacionDetallePath(location.uuid)),
+        isSelected: state.selectedAnimalUuids.contains(animal.uuid),
+        selectionEnabled: state.isSelectionMode,
+        onLongPress: () => context.read<AnimalesBloc>().add(
+          ToggleAnimalSelection(animal.uuid),
+        ),
+        onMenuAction: (action) => _handleAnimalCardMenuAction(
+          context,
+          animal: animal,
+          action: action,
+          onOpenDetail: () => onOpenDetail(animal),
+        ),
+        onQuickMenuOpenChanged: (open) {
+          if (!mounted) return;
+          setState(() {
+            _quickMenuOpen = open;
+            if (!open) _quickMenuExtraPadding = 0;
+          });
+        },
+        onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
+        onTap: () {
+          if (state.isSelectionMode) {
+            context.read<AnimalesBloc>().add(
+              ToggleAnimalSelection(animal.uuid),
+            );
+            return;
+          }
+          onOpenDetail(animal);
+        },
+      );
+    } else {
+      animalCard = AnimalCard(
+        animal: animal,
+        location: location,
+        indicatorSnapshot: snapshot,
+        onLocationTap: location == null
+            ? null
+            : () => context.push(AppRoutes.ubicacionDetallePath(location.uuid)),
+        isSelected: state.selectedAnimalUuids.contains(animal.uuid),
+        selectionEnabled: state.isSelectionMode,
+        onMenuAction: (action) => _handleAnimalCardMenuAction(
+          context,
+          animal: animal,
+          action: action,
+          onOpenDetail: () => onOpenDetail(animal),
+        ),
+        onQuickMenuOpenChanged: (open) {
+          if (!mounted) return;
+          setState(() {
+            _quickMenuOpen = open;
+            if (!open) _quickMenuExtraPadding = 0;
+          });
+        },
+        onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
+        onTap: () {
+          if (state.isSelectionMode) {
+            context.read<AnimalesBloc>().add(
+              ToggleAnimalSelection(animal.uuid),
+            );
+            return;
+          }
+          onOpenDetail(animal);
+        },
+        onLongPress: () => context.read<AnimalesBloc>().add(
+          ToggleAnimalSelection(animal.uuid),
+        ),
+      );
+    }
     return _CenteredSection(
       padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Slidable(
@@ -881,49 +1073,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
             ),
           ],
         ),
-        child: AnimalCard(
-          key: ValueKey('card_${animal.uuid}'),
-          animal: animal,
-          location: location,
-          indicatorSnapshot: snapshotResolver(animal),
-          onLocationTap: location == null
-              ? null
-              : () => context.push(
-                    AppRoutes.ubicacionDetallePath(location.uuid),
-                  ),
-          isSelected: state.selectedAnimalUuids.contains(animal.uuid),
-          selectionEnabled: state.isSelectionMode,
-          onMenuAction: (action) => _handleAnimalCardMenuAction(
-            context,
-            animal: animal,
-            action: action,
-            onOpenDetail: () => onOpenDetail(animal),
-          ),
-          onQuickMenuOpenChanged: (open) {
-            if (!mounted) return;
-            setState(() {
-              _quickMenuOpen = open;
-              if (!open) {
-                _quickMenuExtraPadding = 0;
-              }
-            });
-          },
-          onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
-          onTap: () {
-            if (state.isSelectionMode) {
-              context.read<AnimalesBloc>().add(
-                ToggleAnimalSelection(animal.uuid),
-              );
-              return;
-            }
-            onOpenDetail(animal);
-          },
-          onLongPress: () {
-            context.read<AnimalesBloc>().add(
-              ToggleAnimalSelection(animal.uuid),
-            );
-          },
-        ),
+        child: animalCard,
       ),
     );
   }
@@ -966,10 +1116,10 @@ Widget _stageFilterChips({
   if (totalCount == 0 && configs.isEmpty) return const SizedBox.shrink();
 
   return SizedBox(
-    height: 44,
+    height: 60,
     child: ListView.separated(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
       itemCount: 1 + configs.length,
       separatorBuilder: (context, _) => const SizedBox(width: 7),
       itemBuilder: (context, index) {
@@ -1107,10 +1257,10 @@ Widget _speciesFilterChips({
     ..sort((a, b) => a.index.compareTo(b.index));
 
   return SizedBox(
-    height: 44,
+    height: 60,
     child: ListView.separated(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
       itemCount: species.length + 1,
       separatorBuilder: (context, _) => const SizedBox(width: 7),
       itemBuilder: (context, index) {
@@ -1158,70 +1308,12 @@ class _StageFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = theme.brightness == Brightness.dark;
-    final chipBackground = AnimalPalette.filterChipBackground(
-      isSelected: isSelected,
-      isDark: isDark,
-    );
-    final chipForeground = AnimalPalette.filterChipForeground(
-      isSelected: isSelected,
-      isDark: isDark,
-    );
-    final chipBorder = AnimalPalette.filterChipBorder(
-      isSelected: isSelected,
-      isDark: isDark,
-    );
-
-    return FilterChip(
+    return AppDirectoryFilterChip(
+      label: label.replaceFirst(RegExp(r'\s*\(\d+\)$'), ''),
       selected: isSelected,
-      showCheckmark: false,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-      backgroundColor: chipBackground,
-      selectedColor: chipBackground,
-      side: BorderSide(color: chipBorder),
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: chipForeground,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-          if (count > 0) ...[
-            const SizedBox(width: 3),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.22)
-                    : AnimalPalette.cardFooterLight,
-                borderRadius: BorderRadius.circular(8),
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: chipBorder.withValues(alpha: 0.7),
-                        width: 0.5,
-                      ),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: chipForeground,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-      onSelected: (_) => onSelected(),
+      count: count > 0 ? count : null,
+      accentColor: theme.colorScheme.primary,
+      onTap: onSelected,
     );
   }
 }
@@ -1576,7 +1668,7 @@ void _showSearchFilterPopup(
   required Set<Sex> currentSexes,
   required void Function(Set<LifeStage> stages, Set<Sex> sexes) onApply,
 }) {
-  showModalBottomSheet<void>(
+  showAppBottomSheet<void>(
     context: context,
     useRootNavigator: true,
     isScrollControlled: true,

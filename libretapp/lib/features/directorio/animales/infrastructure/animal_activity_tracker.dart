@@ -1,7 +1,7 @@
 /// Shared persistence helpers for the directory's activity timestamp.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_registration.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_care.dart';
@@ -74,7 +74,7 @@ class AnimalActivityTracker {
             .where()
             .animalUuidEqualTo(animalUuid)
             .findAll()) {
-      add(record.updatedAt ?? record.serviceDate);
+      add(record.updatedAt ?? record.actualCalvingDate ?? record.serviceDate!);
     }
     for (final record
         in await isar.isarMovementRecords

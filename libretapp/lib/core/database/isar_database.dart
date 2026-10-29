@@ -1,7 +1,11 @@
 /// core › database › isar_database — opens and provides the Isar database instance.
 library;
 
-import 'package:isar/isar.dart';
+import 'dart:io';
+import 'package:libretapp/core/maintenance/native_recovery_files.dart';
+
+import 'package:isar_community/isar.dart';
+import 'package:libretapp/features/perfil/data/isar_farm_profile.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:libretapp/core/services/logger_service.dart';
@@ -17,6 +21,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_production_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weight_record.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_weaning_record.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
 import 'package:libretapp/features/directorio/cultivos/infrastructure/isar_cultivation.dart';
 import 'package:libretapp/features/finanzas/infrastructure/isar/isar_general_expense_record.dart';
@@ -31,7 +36,11 @@ class IsarDatabase {
   factory IsarDatabase() => _instance;
 
   IsarDatabase._internal();
+  IsarDatabase.workspace(this.directory, {required this.name});
   static final IsarDatabase _instance = IsarDatabase._internal();
+
+  String? directory;
+  String name = 'libretapp_db';
 
   Isar? _isar;
 
@@ -43,10 +52,13 @@ class IsarDatabase {
     final dir = await getApplicationSupportDirectory();
     LoggerService.i('Abriendo Isar en ${dir.path}', tag: 'IsarDatabase');
 
+    await recoverPendingDatabase(Directory(directory ?? dir.path), name);
     _isar = await Isar.open(
       [
         IsarAnimalSchema,
+        IsarFarmProfileSchema,
         IsarWeightRecordSchema,
+        IsarWeaningRecordSchema,
         IsarReproductionRecordSchema,
         IsarProductionRecordSchema,
         IsarHealthRecordSchema,
@@ -71,9 +83,9 @@ class IsarDatabase {
         IsarRfidScanSessionSchema,
         IsarFeatureRecordSchema,
       ],
-      directory: dir.path,
+      directory: directory ?? dir.path,
       inspector: kDebugMode,
-      name: 'libretapp_db',
+      name: name,
     );
 
     return _isar!;
@@ -98,7 +110,9 @@ class IsarDatabase {
     final db = isar;
     await db.writeTxn(() async {
       await db.isarAnimals.clear();
+      await db.isarFarmProfiles.clear();
       await db.isarWeightRecords.clear();
+      await db.isarWeaningRecords.clear();
       await db.isarReproductionRecords.clear();
       await db.isarProductionRecords.clear();
       await db.isarHealthRecords.clear();

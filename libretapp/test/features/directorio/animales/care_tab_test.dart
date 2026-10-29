@@ -57,6 +57,7 @@ AnimalEntity _cow() {
 /// Plain in-memory stand-in, just enough for [CareCalendarService] and the
 /// widget under test — no Isar, no real I/O.
 class _InMemoryCareRepository implements CareRepository {
+  bool failSaving = false;
   final Map<String, CareRule> _rules = {};
   final Set<String> _retiredIds = {};
   final List<CareRecord> _records = [];
@@ -94,7 +95,10 @@ class _InMemoryCareRepository implements CareRepository {
   }
 
   @override
-  Future<void> saveRecord(CareRecord record) async => _records.add(record);
+  Future<void> saveRecord(CareRecord record) async {
+    if (failSaving) throw StateError('disk');
+    _records.add(record);
+  }
 
   @override
   Future<void> deleteRecord(String recordId) async {
@@ -198,6 +202,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Guardar'), findsOneWidget);
+    careRepo.failSaving = true;
+    await tester.enterText(find.byType(TextField), 'Aplicado por el cuidador');
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Tus notas se conservan'), findsOneWidget);
+    expect(find.text('Aplicado por el cuidador'), findsOneWidget);
+    expect(await careRepo.getRecordsForAnimal('vaca-1'), isEmpty);
+    expect(changed, isFalse);
+    careRepo.failSaving = false;
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
 
@@ -205,6 +218,7 @@ void main() {
     final records = await careRepo.getRecordsForAnimal('vaca-1');
     expect(records, hasLength(1));
     expect(records.single.ruleId, 'r1');
+    expect(records.single.notes, 'Aplicado por el cuidador');
 
     final stillPending = await careRepo.getPendingForAnimal('vaca-1');
     expect(stillPending, hasLength(1));

@@ -86,7 +86,7 @@ void main() {
         now: _now,
       );
 
-      expect(indicators.map((i) => i.label), contains('420 kg'));
+      expect(indicators.map((i) => i.label), contains('420 kg estimado'));
       expect(indicators.map((i) => i.label), contains('+0.9 kg/día'));
     });
 
@@ -290,7 +290,7 @@ void main() {
       now: _now,
     );
 
-    expect(indicators.map((i) => i.label), contains('355.5 kg'));
-    expect(indicators.map((i) => i.label), contains('+0.6 kg/día'));
+    expect(indicators.map((i) => i.label), contains('355.5 kg estimado'));
+    expect(indicators.map((i) => i.label).any((label) => label.contains('kg/día')), isFalse);
   });
 }

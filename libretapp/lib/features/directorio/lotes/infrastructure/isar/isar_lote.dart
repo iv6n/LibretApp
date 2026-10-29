@@ -5,7 +5,7 @@
 /// data migration.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 
 part 'isar_lote.g.dart';

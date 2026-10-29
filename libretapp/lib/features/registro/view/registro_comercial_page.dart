@@ -155,6 +155,7 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.commercial,
             title: l10n.detailFormCommercialTitle,
             assetPath: AppAssetPaths.recordSale,
             fallbackIcon: Icons.sell_outlined,

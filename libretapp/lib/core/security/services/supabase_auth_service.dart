@@ -25,7 +25,7 @@ class SupabaseAuthService implements AuthPort {
         email: credentials.username.trim(),
         password: credentials.secret,
       );
-      return _result(response.session, response.user);
+      return await _result(response.session, response.user);
     } on supabase.AuthException catch (error) {
       _logger.warn('Cloud sign-in failed', tag: 'Auth');
       return AuthResult(isSuccess: false, errorMessage: error.message);
@@ -46,7 +46,7 @@ class SupabaseAuthService implements AuthPort {
               'Cuenta creada. Revisa tu correo antes de iniciar sesión.',
         );
       }
-      return _result(response.session, response.user);
+      return await _result(response.session, response.user);
     } on supabase.AuthException catch (error) {
       _logger.warn('Cloud sign-up failed', tag: 'Auth');
       return AuthResult(isSuccess: false, errorMessage: error.message);

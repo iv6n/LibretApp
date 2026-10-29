@@ -2,7 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/record_save_scope.dart';
 import 'package:libretapp/core/core.dart';
+import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/crop_template.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
@@ -69,132 +71,125 @@ class _CropFormSheetState extends State<CropFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SheetTitle(
-                  title: _isEditing ? 'Editar cultivo' : 'Nuevo cultivo',
-                  subtitle: widget.locationName,
-                ),
-                AppTextField(
-                  controller: _nameController,
-                  labelText: 'Nombre del cultivo',
-                  prefixIcon: const Icon(Icons.eco_outlined),
-                  requiredField: true,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 12),
-                AppTextField(
-                  controller: _varietyController,
-                  labelText: 'Variedad (opcional)',
-                  prefixIcon: const Icon(Icons.category_outlined),
-                ),
-                const SizedBox(height: 12),
-                if (!_isEditing)
-                  DropdownButtonFormField<String?>(
-                    value: _templateKey,
-                    decoration: const InputDecoration(
-                      labelText: 'Plantilla de manejo (opcional)',
-                      prefixIcon: Icon(Icons.auto_awesome_outlined),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text('Sin plantilla'),
-                      ),
-                      ...CropTemplateLibrary.templates.map(
-                        (template) => DropdownMenuItem<String?>(
-                          value: template.key,
-                          child: Text(
-                            '${template.name} · ${template.cycleType}',
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: _applyTemplate,
-                  ),
-                if (!_isEditing) const SizedBox(height: 12),
-                AppTextField(
-                  controller: _surfaceController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  labelText: 'Superficie (ha)',
-                  prefixIcon: const Icon(Icons.straighten_outlined),
-                ),
-                const SizedBox(height: 12),
-                AppDateField(
-                  labelText: 'Fecha de siembra',
-                  value: _plantingDate,
-                  onChanged: (d) {
-                    if (d != null) setState(() => _plantingDate = d);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppDateField(
-                  labelText: 'Cosecha esperada (opcional)',
-                  value: _expectedHarvestDate,
-                  emptyLabel: 'Sin fecha de cosecha',
-                  allowClear: true,
-                  clearTooltip: 'Borrar fecha',
-                  onChanged: (d) => setState(() => _expectedHarvestDate = d),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppSelectField<CropGrowthStage>(
-                  value: _stage,
-                  items: CropGrowthStage.values,
-                  itemLabel: (stage) => stage.displayName,
-                  labelText: 'Etapa de crecimiento',
-                  prefixIcon: const Icon(Icons.trending_up_outlined),
-                  onChanged: (v) => setState(() => _stage = v ?? _stage),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (_isEditing)
-                  AppSelectField<CropStatus>(
-                    value: _status,
-                    items: CropStatus.values,
-                    itemLabel: (status) => status.displayName,
-                    labelText: 'Estado',
-                    prefixIcon: const Icon(Icons.flag_outlined),
-                    onChanged: (v) => setState(() => _status = v ?? _status),
-                  ),
-                if (_isEditing) const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  controller: _frequencyController,
-                  keyboardType: TextInputType.number,
-                  labelText: 'Frecuencia de riego (días)',
-                  prefixIcon: const Icon(Icons.water_drop_outlined),
-                  validator: (v) {
-                    final n = int.tryParse(v ?? '');
-                    if (n == null || n < 1) return 'Mínimo 1 día';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  controller: _notesController,
-                  maxLines: 2,
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: const Icon(Icons.notes_outlined),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppButton(
-                  expanded: true,
-                  icon: Icons.save_outlined,
-                  label: _isEditing ? 'Guardar cambios' : 'Crear cultivo',
-                  onPressed: _submit,
-                ),
-              ],
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetTitle(
+              title: _isEditing ? 'Editar cultivo' : 'Nuevo cultivo',
+              style: RecordFormStyle.crop,
+              subtitle: widget.locationName,
             ),
-          ),
+            AppTextField(
+              controller: _nameController,
+              labelText: 'Nombre del cultivo',
+              prefixIcon: const Icon(Icons.eco_outlined),
+              requiredField: true,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Requerido' : null,
+            ),
+            const SizedBox(height: 12),
+            AppTextField(
+              controller: _varietyController,
+              labelText: 'Variedad (opcional)',
+              prefixIcon: const Icon(Icons.category_outlined),
+            ),
+            const SizedBox(height: 12),
+            if (!_isEditing)
+              DropdownButtonFormField<String?>(
+                isExpanded: true,
+                value: _templateKey,
+                decoration: const InputDecoration(
+                  labelText: 'Plantilla de manejo (opcional)',
+                  prefixIcon: Icon(Icons.auto_awesome_outlined),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('Sin plantilla'),
+                  ),
+                  ...CropTemplateLibrary.templates.map(
+                    (template) => DropdownMenuItem<String?>(
+                      value: template.key,
+                      child: Text('${template.name} · ${template.cycleType}'),
+                    ),
+                  ),
+                ],
+                onChanged: _applyTemplate,
+              ),
+            if (!_isEditing) const SizedBox(height: 12),
+            AppTextField(
+              controller: _surfaceController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              labelText: 'Superficie (ha)',
+              prefixIcon: const Icon(Icons.straighten_outlined),
+            ),
+            const SizedBox(height: 12),
+            AppDateField(
+              labelText: 'Fecha de siembra',
+              value: _plantingDate,
+              onChanged: (d) {
+                if (d != null) setState(() => _plantingDate = d);
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppDateField(
+              labelText: 'Cosecha esperada (opcional)',
+              value: _expectedHarvestDate,
+              emptyLabel: 'Sin fecha de cosecha',
+              allowClear: true,
+              clearTooltip: 'Borrar fecha',
+              onChanged: (d) => setState(() => _expectedHarvestDate = d),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppSelectField<CropGrowthStage>(
+              value: _stage,
+              items: CropGrowthStage.values,
+              itemLabel: (stage) => stage.displayName,
+              labelText: 'Etapa de crecimiento',
+              prefixIcon: const Icon(Icons.trending_up_outlined),
+              onChanged: (v) => setState(() => _stage = v ?? _stage),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (_isEditing)
+              AppSelectField<CropStatus>(
+                value: _status,
+                items: CropStatus.values,
+                itemLabel: (status) => status.displayName,
+                labelText: 'Estado',
+                prefixIcon: const Icon(Icons.flag_outlined),
+                onChanged: (v) => setState(() => _status = v ?? _status),
+              ),
+            if (_isEditing) const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _frequencyController,
+              keyboardType: TextInputType.number,
+              labelText: 'Frecuencia de riego (días)',
+              prefixIcon: const Icon(Icons.water_drop_outlined),
+              validator: (v) {
+                final n = int.tryParse(v ?? '');
+                if (n == null || n < 1) return 'Mínimo 1 día';
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _notesController,
+              maxLines: 2,
+              labelText: 'Notas (opcional)',
+              prefixIcon: const Icon(Icons.notes_outlined),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppFormActions(
+              saveLabel: _isEditing ? 'Guardar cambios' : 'Crear cultivo',
+              onSave: _submit,
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -225,7 +220,7 @@ class _CropFormSheetState extends State<CropFormSheet> {
       wateringFrequencyDays: int.parse(_frequencyController.text),
       lastWateredDate: widget.initial?.lastWateredDate,
       status: _status,
-      surface: double.tryParse(_surfaceController.text) ?? 0,
+      surface: parseFormDouble(_surfaceController.text) ?? 0,
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
@@ -234,7 +229,7 @@ class _CropFormSheetState extends State<CropFormSheet> {
       healthRecords: widget.initial?.healthRecords ?? const [],
       tasks: widget.initial?.tasks ?? const [],
     );
-    Navigator.of(context).pop(crop);
+    submitRecordForm(context, crop);
   }
 }
 
@@ -272,84 +267,79 @@ class _HarvestFormSheetState extends State<HarvestFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SheetTitle(
-                title: 'Registrar cosecha',
-                subtitle: widget.cropName,
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetTitle(
+              title: 'Registrar cosecha',
+              style: RecordFormStyle.harvest,
+              subtitle: widget.cropName,
+            ),
+            TextFormField(
+              controller: _yieldController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              TextFormField(
-                controller: _yieldController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Rendimiento (kg)',
-                  prefixIcon: Icon(Icons.scale_outlined),
-                ),
-                validator: (v) {
-                  final n = double.tryParse(v ?? '');
-                  if (n == null || n <= 0) return 'Ingresa un rendimiento';
-                  return null;
-                },
+              decoration: const InputDecoration(
+                labelText: 'Rendimiento (kg)',
+                prefixIcon: Icon(Icons.scale_outlined),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.star_outline, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('Calidad:'),
-                  const SizedBox(width: 8),
-                  ...List.generate(5, (i) {
-                    final star = i + 1;
-                    return IconButton(
-                      icon: Icon(
-                        star <= _quality ? Icons.star : Icons.star_border,
-                        color: star <= _quality ? Colors.amber : null,
-                      ),
-                      onPressed: () => setState(() => _quality = star),
-                    );
-                  }),
-                ],
+              validator: (v) {
+                final n = parseFormDouble(v ?? '');
+                if (n == null || n <= 0) return 'Ingresa un rendimiento';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Icon(Icons.star_outline, size: 20),
+                const SizedBox(width: 8),
+                const Text('Calidad:'),
+                const SizedBox(width: 8),
+                ...List.generate(5, (i) {
+                  final star = i + 1;
+                  return IconButton(
+                    icon: Icon(
+                      star <= _quality ? Icons.star : Icons.star_border,
+                      color: star <= _quality ? Colors.amber : null,
+                    ),
+                    onPressed: () => setState(() => _quality = star),
+                  );
+                }),
+              ],
+            ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              value: _isFinal,
+              onChanged: (value) => setState(() => _isFinal = value ?? true),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Cosecha final del ciclo'),
+              subtitle: const Text(
+                'Desactívalo para cultivos con varias cosechas.',
               ),
-              const SizedBox(height: 12),
-              CheckboxListTile(
-                value: _isFinal,
-                onChanged: (value) => setState(() => _isFinal = value ?? true),
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Cosecha final del ciclo'),
-                subtitle: const Text(
-                  'Desactívalo para cultivos con varias cosechas.',
-                ),
-                controlAffinity: ListTileControlAffinity.leading,
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            const SizedBox(height: 4),
+            TextFormField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notas (opcional)',
+                prefixIcon: Icon(Icons.notes_outlined),
               ),
-              const SizedBox(height: 4),
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Guardar cosecha'),
-                  onPressed: _submit,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            AppFormActions(
+              onSave: _submit,
+              saveLabel: 'Guardar cosecha',
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -359,14 +349,14 @@ class _HarvestFormSheetState extends State<HarvestFormSheet> {
     if (!_formKey.currentState!.validate()) return;
     final record = HarvestRecord(
       date: DateTime.now(),
-      yieldKg: double.parse(_yieldController.text),
+      yieldKg: parseFormDouble(_yieldController.text)!,
       qualityRating: _quality,
       isFinal: _isFinal,
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -403,63 +393,58 @@ class _CropWateringFormSheetState extends State<CropWateringFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SheetTitle(title: 'Registrar riego', subtitle: widget.cropName),
-              TextFormField(
-                controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Litros (opcional)',
-                  prefixIcon: Icon(Icons.water_drop_outlined),
-                ),
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetTitle(
+              title: 'Registrar riego',
+              style: RecordFormStyle.watering,
+              subtitle: widget.cropName,
+            ),
+            TextFormField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _method,
-                decoration: const InputDecoration(
-                  labelText: 'Método',
-                  prefixIcon: Icon(Icons.tune_outlined),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'manual', child: Text('Manual')),
-                  DropdownMenuItem(value: 'goteo', child: Text('Goteo')),
-                  DropdownMenuItem(
-                    value: 'aspersión',
-                    child: Text('Aspersión'),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _method = v ?? 'manual'),
+              decoration: const InputDecoration(
+                labelText: 'Litros (opcional)',
+                prefixIcon: Icon(Icons.water_drop_outlined),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _method,
+              decoration: const InputDecoration(
+                labelText: 'Método',
+                prefixIcon: Icon(Icons.tune_outlined),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Guardar riego'),
-                  onPressed: _submit,
-                ),
+              items: const [
+                DropdownMenuItem(value: 'manual', child: Text('Manual')),
+                DropdownMenuItem(value: 'goteo', child: Text('Goteo')),
+                DropdownMenuItem(value: 'aspersión', child: Text('Aspersión')),
+              ],
+              onChanged: (v) => setState(() => _method = v ?? 'manual'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notas (opcional)',
+                prefixIcon: Icon(Icons.notes_outlined),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            AppFormActions(
+              onSave: _submit,
+              saveLabel: 'Guardar riego',
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -469,13 +454,13 @@ class _CropWateringFormSheetState extends State<CropWateringFormSheet> {
     if (!_formKey.currentState!.validate()) return;
     final record = CropWateringRecord(
       date: DateTime.now(),
-      amountLiters: double.tryParse(_amountController.text) ?? 0,
+      amountLiters: parseFormDouble(_amountController.text) ?? 0,
       method: _method,
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -515,70 +500,65 @@ class _CropHealthFormSheetState extends State<CropHealthFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SheetTitle(
-                title: 'Registrar problema de salud',
-                subtitle: widget.cropName,
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetTitle(
+              title: 'Registrar problema de salud',
+              style: RecordFormStyle.cropHealth,
+              subtitle: widget.cropName,
+            ),
+            TextFormField(
+              controller: _issueController,
+              decoration: const InputDecoration(
+                labelText: 'Problema (plaga, enfermedad, etc.)',
+                prefixIcon: Icon(Icons.bug_report_outlined),
               ),
-              TextFormField(
-                controller: _issueController,
-                decoration: const InputDecoration(
-                  labelText: 'Problema (plaga, enfermedad, etc.)',
-                  prefixIcon: Icon(Icons.bug_report_outlined),
-                ),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Requerido' : null,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Requerido' : null,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              isExpanded: true,
+              initialValue: _severity,
+              decoration: const InputDecoration(
+                labelText: 'Severidad',
+                prefixIcon: Icon(Icons.warning_amber_outlined),
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _severity,
-                decoration: const InputDecoration(
-                  labelText: 'Severidad',
-                  prefixIcon: Icon(Icons.warning_amber_outlined),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'baja', child: Text('Baja')),
-                  DropdownMenuItem(value: 'media', child: Text('Media')),
-                  DropdownMenuItem(value: 'alta', child: Text('Alta')),
-                ],
-                onChanged: (v) => setState(() => _severity = v ?? 'media'),
+              items: const [
+                DropdownMenuItem(value: 'baja', child: Text('Baja')),
+                DropdownMenuItem(value: 'media', child: Text('Media')),
+                DropdownMenuItem(value: 'alta', child: Text('Alta')),
+              ],
+              onChanged: (v) => setState(() => _severity = v ?? 'media'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _treatmentController,
+              decoration: const InputDecoration(
+                labelText: 'Tratamiento aplicado (opcional)',
+                prefixIcon: Icon(Icons.medical_services_outlined),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _treatmentController,
-                decoration: const InputDecoration(
-                  labelText: 'Tratamiento aplicado (opcional)',
-                  prefixIcon: Icon(Icons.medical_services_outlined),
-                ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notas (opcional)',
+                prefixIcon: Icon(Icons.notes_outlined),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Guardar'),
-                  onPressed: _submit,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            AppFormActions(
+              onSave: _submit,
+              saveLabel: 'Guardar',
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -595,7 +575,7 @@ class _CropHealthFormSheetState extends State<CropHealthFormSheet> {
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(record);
+    submitRecordForm(context, record);
   }
 }
 
@@ -630,58 +610,54 @@ class _CropTaskFormSheetState extends State<CropTaskFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottom),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SheetTitle(title: 'Nueva tarea', subtitle: widget.cropName),
-              DropdownButtonFormField<CropTaskType>(
-                initialValue: _type,
-                decoration: const InputDecoration(
-                  labelText: 'Tipo de tarea',
-                  prefixIcon: Icon(Icons.task_outlined),
-                ),
-                items: CropTaskType.values
-                    .map(
-                      (t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t.displayName),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (v) => setState(() => _type = v ?? _type),
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetTitle(
+              title: 'Nueva tarea',
+              style: RecordFormStyle.task,
+              subtitle: widget.cropName,
+            ),
+            DropdownButtonFormField<CropTaskType>(
+              isExpanded: true,
+              initialValue: _type,
+              decoration: const InputDecoration(
+                labelText: 'Tipo de tarea',
+                prefixIcon: Icon(Icons.task_outlined),
               ),
-              const SizedBox(height: 12),
-              _DatePickerField(
-                label: 'Fecha límite',
-                value: _dueDate,
-                onChanged: (d) => setState(() => _dueDate = d),
+              items: CropTaskType.values
+                  .map(
+                    (t) =>
+                        DropdownMenuItem(value: t, child: Text(t.displayName)),
+                  )
+                  .toList(),
+              onChanged: (v) => setState(() => _type = v ?? _type),
+            ),
+            const SizedBox(height: 12),
+            _DatePickerField(
+              label: 'Fecha límite',
+              value: _dueDate,
+              onChanged: (d) => setState(() => _dueDate = d),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                labelText: 'Notas (opcional)',
+                prefixIcon: Icon(Icons.notes_outlined),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Notas (opcional)',
-                  prefixIcon: Icon(Icons.notes_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Crear tarea'),
-                  onPressed: _submit,
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            AppFormActions(
+              onSave: _submit,
+              saveLabel: 'Crear tarea',
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -696,47 +672,44 @@ class _CropTaskFormSheetState extends State<CropTaskFormSheet> {
           ? null
           : _notesController.text.trim(),
     );
-    Navigator.of(context).pop(task);
+    submitRecordForm(context, task);
   }
 }
 
 // ── Shared widgets ──────────────────────────────────────────────────────
 
 class _SheetTitle extends StatelessWidget {
-  const _SheetTitle({required this.title, required this.subtitle});
+  const _SheetTitle({
+    required this.title,
+    required this.subtitle,
+    required this.style,
+  });
 
   final String title;
   final String subtitle;
+  final RecordFormStyle style;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: AppRecordHeader(style: style, title: title),
             ),
             IconButton(
+              tooltip: 'Cerrar',
               onPressed: () => Navigator.of(context).pop(),
               icon: const Icon(Icons.close),
             ),
           ],
         ),
-        Text(
-          subtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
+        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+        const SizedBox(height: AppSpacing.md),
       ],
     );
   }

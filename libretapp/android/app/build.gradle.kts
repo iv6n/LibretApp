@@ -9,15 +9,16 @@ plugins {
 }
 
 val keystoreProperties = Properties()
+val qaSigning = System.getenv("LIBRETAPP_QA_SIGNING") == "true"
 val keystorePropertiesFile = rootProject.file("key.properties")
-val hasReleaseSigning = keystorePropertiesFile.exists()
+val hasReleaseSigning = !qaSigning && keystorePropertiesFile.exists()
 if (hasReleaseSigning) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 val isReleaseTask = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
 }
-if (isReleaseTask && !hasReleaseSigning) {
+if (isReleaseTask && !hasReleaseSigning && !qaSigning) {
     throw GradleException(
         "A private android/key.properties file is required for release builds."
     )
@@ -53,6 +54,21 @@ android {
         }
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("standard") { dimension = "distribution" }
+        create("connected") {
+            dimension = "distribution"
+            minSdk = 28
+        }
+        create("offline") {
+            dimension = "distribution"
+            // Current Isar/libmdbx rejects the older kernels found on Android
+            // 7/8 devices. The store pilot requires the tested Android 9 floor.
+            minSdk = 28
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -72,17 +88,21 @@ android {
 
     buildTypes {
         release {
-            // Add android/key.properties for real signed store builds. Without
-            // it, fall back to the debug key so local release builds are still
-            // installable on a device — signingConfig = null produces a
-            // genuinely unsigned APK, which Android refuses to install
-            // (INSTALL_PARSE_FAILED_NO_CERTIFICATES). Never publish a build
-            // signed with the debug key to a store.
+            if (qaSigning) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
+            // Release tasks require private upload signing above.
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
     }
+}
+
+dependencies {
+    implementation("androidx.core:core-splashscreen:1.2.0")
+    // Used by the independent six-hour weather alert worker.
+    implementation("androidx.work:work-runtime:2.11.2")
 }
 
 flutter {

@@ -1,7 +1,8 @@
-﻿/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_event \u2014 events for UbicacionesBloc.
+/// features \u203a ubicaciones \u203a bloc \u203a ubicaciones_event \u2014 events for UbicacionesBloc.
 library;
 
 import 'package:equatable/equatable.dart';
+import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/inventory_item.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -17,6 +18,13 @@ abstract class UbicacionesEvent extends Equatable {
 
 class LoadUbicaciones extends UbicacionesEvent {
   const LoadUbicaciones();
+}
+
+class UbicacionesAnimalsUpdated extends UbicacionesEvent {
+  const UbicacionesAnimalsUpdated(this.animals);
+  final List<AnimalEntity> animals;
+  @override
+  List<Object> get props => [animals];
 }
 
 class DeleteUbicacion extends UbicacionesEvent {

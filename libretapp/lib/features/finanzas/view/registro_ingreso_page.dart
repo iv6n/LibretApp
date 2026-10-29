@@ -2,12 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_bloc.dart';
-import 'package:libretapp/features/finanzas/application/finanzas_event.dart';
 import 'package:libretapp/features/finanzas/domain/entities/income_record.dart';
 import 'package:libretapp/features/finanzas/domain/repositories/finanzas_repository.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
@@ -15,7 +12,8 @@ import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/theme.dart';
 
 class RegistroIngresoPage extends StatefulWidget {
-  const RegistroIngresoPage({super.key});
+  const RegistroIngresoPage({this.record, super.key});
+  final IncomeRecord? record;
 
   @override
   State<RegistroIngresoPage> createState() => _RegistroIngresoPageState();
@@ -32,6 +30,19 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    final existing = widget.record;
+    if (existing != null) {
+      _amountCtrl.text = existing.amount.isFinite ? existing.amount.toString() : '';
+      _currencyCtrl.text = existing.currency ?? '';
+      _notesCtrl.text = existing.notes ?? '';
+      _type = existing.type;
+      _date = existing.date;
+    }
+  }
+
+  @override
   void dispose() {
     _amountCtrl.dispose();
     _currencyCtrl.dispose();
@@ -40,6 +51,7 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
@@ -62,27 +74,24 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
     setState(() => _saving = true);
 
     final record = IncomeRecord(
+      id: widget.record?.id,
+      recordUuid: widget.record?.recordUuid,
       date: _date,
       type: _type,
       amount: amount,
       currency: _currencyCtrl.text.trim().isEmpty
           ? null
           : _currencyCtrl.text.trim().toUpperCase(),
-      animalUuid: _selectedAnimal?.uuid,
+      animalUuid: _selectedAnimal?.uuid ?? widget.record?.animalUuid,
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
     );
 
     try {
-      // If a FinanzasBloc is already in the tree, dispatch to it so the list
-      // refreshes automatically. Otherwise, save directly via repository.
-      final finanzasBloc = context.read<FinanzasBloc?>();
-      if (finanzasBloc != null) {
-        finanzasBloc.add(AddIncome(record));
-      } else {
-        await locator<FinanzasRepository>().addIncome(record);
-      }
+      final repository = locator<FinanzasRepository>();
+      if (widget.record == null) { await repository.addIncome(record); }
+      else { await repository.updateIncome(record); }
       if (!mounted) return;
-      navigator.pop();
+      navigator.pop(true);
       messenger.showSnackBar(SnackBar(content: Text(l10n.financeIncomeSaved)));
     } catch (e) {
       if (!mounted) return;
@@ -96,7 +105,8 @@ class _RegistroIngresoPageState extends State<RegistroIngresoPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return AppFormScaffold(
-      title: l10n.financeRegisterIncome,
+      recordStyle: RecordFormStyle.income,
+      title: widget.record == null ? l10n.financeRegisterIncome : 'Corregir ingreso',
       formKey: _formKey,
       saving: _saving,
       onSave: _save,

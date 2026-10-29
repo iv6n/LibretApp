@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
 /// Visual variants for the reusable segmented tab bar.
@@ -12,10 +13,12 @@ class AppSegmentedTabItem {
     required this.label,
     required this.icon,
     this.accentColor,
+    this.compactLabel,
   });
 
   final String label;
   final IconData icon;
+  final String? compactLabel;
 
   /// Optional category color used by [AppSegmentedTabBarVariant.colorAccented].
   ///
@@ -31,6 +34,7 @@ class AppSegmentedTabBar extends StatelessWidget
     required this.items,
     this.keyPrefix = 'segmented_tab',
     this.variant = AppSegmentedTabBarVariant.standard,
+    this.textScale = 1,
     super.key,
   });
 
@@ -42,12 +46,15 @@ class AppSegmentedTabBar extends StatelessWidget
   final List<AppSegmentedTabItem> items;
   final String keyPrefix;
   final AppSegmentedTabBarVariant variant;
+  final double textScale;
+  double get _scalePadding => (textScale - 1).clamp(0, 1) * 16;
 
   @override
   Size get preferredSize => Size.fromHeight(
-    variant == AppSegmentedTabBarVariant.colorAccented
-        ? accentedTotalHeight
-        : totalHeight,
+    (variant == AppSegmentedTabBarVariant.colorAccented
+            ? accentedTotalHeight
+            : totalHeight) +
+        _scalePadding,
   );
 
   @override
@@ -56,8 +63,14 @@ class AppSegmentedTabBar extends StatelessWidget
     final isDark = theme.brightness == Brightness.dark;
     final colors = _SegmentedTabBarColors.resolve(theme, isDark);
     final isColorAccented = variant == AppSegmentedTabBarVariant.colorAccented;
-    final height = isColorAccented ? accentedTotalHeight : totalHeight;
+    final height =
+        (isColorAccented ? accentedTotalHeight : totalHeight) + _scalePadding;
     final radius = isColorAccented ? 24.0 : 18.0;
+    final iconOnly =
+        isColorAccented &&
+        items.length >= 4 &&
+        MediaQuery.sizeOf(context).width <= 320 &&
+        textScale >= 1.7;
 
     if (items.isEmpty) {
       return SizedBox(height: height);
@@ -101,6 +114,11 @@ class AppSegmentedTabBar extends StatelessWidget
                         child: _SegmentedTabButton(
                           index: index,
                           item: items[index],
+                          displayLabel: iconOnly
+                              ? ''
+                              : items.length >= 3
+                              ? items[index].compactLabel ?? items[index].label
+                              : items[index].label,
                           selected: index == selectedIndex,
                           activeColor: colors.activeForeground,
                           inactiveColor: colors.inactiveForeground,
@@ -195,20 +213,22 @@ class _SegmentedTabBarColors {
           theme.colorScheme.surface,
         ),
         activeSurface: AppColors.primary.withValues(alpha: 0.22),
-        activeForeground: AppColors.primary,
+        activeForeground: isDark
+            ? theme.colorScheme.primary
+            : AppColors.primary,
         inactiveForeground: Colors.white.withValues(alpha: 0.68),
         divider: Colors.white.withValues(alpha: 0.10),
         shadow: Colors.black.withValues(alpha: 0.18),
       );
     }
 
-    return const _SegmentedTabBarColors(
+    return _SegmentedTabBarColors(
       track: LightColors.elevated,
       activeSurface: LightColors.background,
-      activeForeground: AppColors.primary,
+      activeForeground: isDark ? theme.colorScheme.primary : AppColors.primary,
       inactiveForeground: LightColors.textMuted,
       divider: LightColors.borderSoft,
-      shadow: Color(0x0F000000),
+      shadow: const Color(0x0F000000),
     );
   }
 }
@@ -217,6 +237,7 @@ class _SegmentedTabButton extends StatelessWidget {
   const _SegmentedTabButton({
     required this.index,
     required this.item,
+    required this.displayLabel,
     required this.selected,
     required this.activeColor,
     required this.inactiveColor,
@@ -228,6 +249,7 @@ class _SegmentedTabButton extends StatelessWidget {
 
   final int index;
   final AppSegmentedTabItem item;
+  final String displayLabel;
   final bool selected;
   final Color activeColor;
   final Color inactiveColor;
@@ -238,8 +260,22 @@ class _SegmentedTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = item.accentColor ?? activeColor;
-    final labelColor = selected ? accent : inactiveColor;
+    final theme = Theme.of(context);
+    final background = selected
+        ? Color.alphaBlend(activeSurface, theme.colorScheme.surface)
+        : Color.alphaBlend(
+            Colors.white.withValues(
+              alpha: theme.brightness == Brightness.dark ? .06 : 0,
+            ),
+            theme.colorScheme.surface,
+          );
+    final accent = readableTextColor(
+      item.accentColor ?? activeColor,
+      background,
+    );
+    final labelColor = selected
+        ? accent
+        : readableTextColor(inactiveColor, background);
     final iconColor = colorAccented && item.accentColor != null
         ? accent
         : labelColor;
@@ -249,6 +285,9 @@ class _SegmentedTabButton extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
+      label: item.label,
+      excludeSemantics: true,
+      onTap: onTap,
       child: Tooltip(
         message: item.label,
         child: Material(
@@ -298,22 +337,24 @@ class _SegmentedTabButton extends StatelessWidget {
                         size: selected ? 22 : 21,
                         color: iconColor,
                       ),
-                    SizedBox(height: colorAccented ? 3 : 2),
-                    Flexible(
-                      child: Text(
-                        item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: labelColor,
-                          fontSize: colorAccented ? 11.5 : 10.5,
-                          height: 1.05,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                    if (displayLabel.isNotEmpty)
+                      SizedBox(height: colorAccented ? 3 : 2),
+                    if (displayLabel.isNotEmpty)
+                      Flexible(
+                        child: Text(
+                          displayLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: labelColor,
+                            fontSize: colorAccented ? 11.5 : 10.5,
+                            height: 1.05,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

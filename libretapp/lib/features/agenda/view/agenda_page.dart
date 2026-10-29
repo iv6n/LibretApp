@@ -1,8 +1,8 @@
 /// features › agenda › view › agenda_page — BLoC provider entry point for the Agenda feature.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:libretapp/features/agenda/view/agenda_view.dart';
+import 'package:flutter/material.dart';
 
 class AgendaPage extends StatelessWidget {
   const AgendaPage({super.key});

@@ -55,6 +55,7 @@ AgendaEntry? buildNextOccurrence(AgendaEntry completed) {
     titulo: completed.titulo,
     descripcion: completed.descripcion,
     fecha: nextRecurrenceDate(completed.fecha, rule),
+    hasExplicitTime: completed.hasExplicitTime,
     tipo: completed.tipo,
     animalIds: completed.animalIds,
     loteIds: completed.loteIds,

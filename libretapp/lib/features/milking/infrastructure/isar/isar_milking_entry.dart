@@ -1,6 +1,6 @@
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/features/milking/domain/milking_models.dart';
 
 part 'isar_milking_entry.g.dart';

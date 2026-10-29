@@ -1,7 +1,7 @@
 /// features \u203a directorio \u203a animales \u203a infrastructure \u203a isar \u203a isar_movement_record \u2014 Isar schema for MovementRecord.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/models/stable_record_model.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/movement_record.dart';
 
@@ -22,6 +22,7 @@ class IsarMovementRecord implements StableAnimalRecordModel {
 
   String? fromLocation;
   late String toLocation;
+  bool clearsLocation = false;
   late DateTime date;
   late String reason;
   String? notes;
@@ -38,6 +39,7 @@ extension IsarMovementRecordMapper on IsarMovementRecord {
       id: id.toString(),
       fromLocation: fromLocation,
       toLocation: toLocation,
+      clearsLocation: clearsLocation,
       date: date,
       reason: MovementReason.values.byName(reason),
       notes: notes,
@@ -57,6 +59,7 @@ extension MovementRecordToIsar on MovementRecord {
       ..animalUuid = animalUuid
       ..fromLocation = fromLocation
       ..toLocation = toLocation
+      ..clearsLocation = clearsLocation
       ..date = date
       ..reason = reason.name
       ..notes = notes

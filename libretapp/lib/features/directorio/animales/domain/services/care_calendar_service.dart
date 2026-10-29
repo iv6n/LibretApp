@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
@@ -22,9 +23,12 @@ class CareCalendarService {
   /// worth scheduling whatever the breeder keeps.
   static List<CareRule> rulesFor(AnimalEntity animal, List<CareRule> rules) {
     return rules.where((rule) {
+      if ((animal.species == Species.canine || animal.species == Species.feline) &&
+          rule.species == null) return false;
       if (rule.species != null && rule.species != animal.species) return false;
       if (rule.sex != null && rule.sex != animal.sex) return false;
       final min = rule.minAgeMonths;
+      if (!animal.hasKnownAge && (min != null || rule.maxAgeMonths != null)) return false;
       if (min != null && animal.ageMonths < min) return false;
       final max = rule.maxAgeMonths;
       if (max != null && animal.ageMonths > max) return false;

@@ -3,8 +3,10 @@
 /// Hosts the five main tabs via [StatefulShellRoute.indexedStack].
 library;
 
-import 'package:flutter/foundation.dart';
+import 'package:libretapp/core/utils/color_contrast.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/shell_route_policy.dart';
@@ -56,10 +58,12 @@ class _AppShellState extends State<AppShell>
     final l10n = AppLocalizations.of(context);
     final selectedIndex = widget.navigationShell.currentIndex;
     final routeUri = GoRouterState.of(context).uri;
-    final chromeVisible =
+    final navigationEnabled =
         !shouldHideShellChrome(routeUri) && _chromeForIndex(selectedIndex);
+    final chromeVisible =
+        MediaQuery.viewInsetsOf(context).bottom == 0 && navigationEnabled;
     final fabConfig = _fabForIndex(selectedIndex);
-    final accent = Theme.of(context).colorScheme.tertiary;
+    final accent = Theme.of(context).colorScheme.primary;
     final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
 
     final navItems = List<AppNavItemConfig>.generate(
@@ -72,61 +76,111 @@ class _AppShellState extends State<AppShell>
     );
 
     final isHomeSelected = selectedIndex == 2;
-    final homeFabColor = AppColors.accent;
+    final homeFabColor = Theme.of(context).colorScheme.primary;
 
     return ShellChromeVisibility(
       visible: chromeVisible,
+      navigationEnabled: navigationEnabled,
       child: Scaffold(
+        // Let scrollable content continue beneath the transparent dock areas.
         extendBody: true,
-        body: Column(
+        // Each page's Scaffold owns keyboard resizing.
+        resizeToAvoidBottomInset: false,
+        body: Stack(
           children: [
-            if (_showOfflineStatusBanner) const OfflineStatusBanner(),
-            Expanded(
-              // The visible banner owns the top system inset when enabled.
-              // Without it, leave the original MediaQuery padding available
-              // so each page AppBar or custom header consumes it exactly once.
-              child: MediaQuery.removePadding(
-                context: context,
-                removeTop: _showOfflineStatusBanner,
-                child: Stack(
-                  children: [
-                    Positioned.fill(child: widget.navigationShell),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: IgnorePointer(
-                        child: SizedBox(height: _bodyBottomInset(context)),
+            Column(
+              children: [
+                if (_showOfflineStatusBanner) const OfflineStatusBanner(),
+                Expanded(
+                  // The visible banner owns the top system inset when enabled.
+                  // Without it, leave the original MediaQuery padding available
+                  // so each page AppBar or custom header consumes it exactly once.
+                  child: Builder(
+                    builder: (bodyContext) {
+                      final media = MediaQuery.of(bodyContext);
+                      final bottomInset = chromeVisible
+                          ? _barHeight +
+                                _barBottomGap +
+                                MediaQuery.viewPaddingOf(context).bottom
+                          : media.padding.bottom;
+                      return MediaQuery(
+                        data: media.copyWith(
+                          padding: media.padding.copyWith(bottom: bottomInset),
+                        ),
+                        child: MediaQuery.removePadding(
+                          context: bodyContext,
+                          removeTop: _showOfflineStatusBanner,
+                          child: widget.navigationShell,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (navigationEnabled)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    key: const ValueKey('shell_dock_scrim'),
+                    height:
+                        56 +
+                        _barHeight +
+                        _barBottomGap +
+                        MediaQuery.paddingOf(context).bottom,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        stops: const [0, 0.38, 0.76, 1],
+                        colors: [
+                          Colors.transparent,
+                          Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor.withValues(alpha: 0.08),
+                          Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor.withValues(alpha: 0.22),
+                          Theme.of(
+                            context,
+                          ).scaffoldBackgroundColor.withValues(alpha: 0.36),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         bottomNavigationBar: chromeVisible
-            ? SafeArea(
-                top: false,
-                child: AppBottomNavBar(
-                  items: navItems,
-                  selectedIndex: selectedIndex,
-                  onItemSelected: (index) => widget.navigationShell.goBranch(
-                    index,
-                    initialLocation: index == selectedIndex,
+            ? ColoredBox(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: SafeArea(
+                  top: false,
+                  child: AppBottomNavBar(
+                    items: navItems,
+                    selectedIndex: selectedIndex,
+                    onItemSelected: (index) => widget.navigationShell.goBranch(
+                      index,
+                      initialLocation: index == selectedIndex,
+                    ),
+                    center: _buildCenterButton(
+                      context,
+                      isHomeSelected: isHomeSelected,
+                      accent: isHomeSelected ? homeFabColor : accent,
+                    ),
+                    barHeight: _barHeight,
+                    barHorizontalPadding: _barHorizontalPadding,
+                    barBottomGap: _barBottomGap,
+                    backgroundColor:
+                        shellTheme?.navBackground ??
+                        Theme.of(context).colorScheme.surface,
+                    shadowColor:
+                        shellTheme?.navShadow ?? const Color(0x33000000),
                   ),
-                  center: _buildCenterButton(
-                    context,
-                    isHomeSelected: isHomeSelected,
-                    accent: isHomeSelected ? homeFabColor : accent,
-                  ),
-                  barHeight: _barHeight,
-                  barHorizontalPadding: _barHorizontalPadding,
-                  barBottomGap: _barBottomGap,
-                  backgroundColor:
-                      shellTheme?.navBackground ??
-                      Theme.of(context).colorScheme.surface,
-                  shadowColor: shellTheme?.navShadow ?? const Color(0x33000000),
                 ),
               )
             : null,
@@ -138,7 +192,12 @@ class _AppShellState extends State<AppShell>
                 switchOutCurve: Curves.easeIn,
                 child: AppShellFab(
                   config: fabConfig,
-                  dockPadding: _fabDockPadding(context, lift: -34),
+                  dockPadding: ShellInsets.fabDockPadding(
+                    context,
+                    barHeight: _barHeight,
+                    barBottomGap: _barBottomGap,
+                    lift: -34,
+                  ),
                   backgroundColor: shellTheme?.fabBackground ?? accent,
                   foregroundColor: shellTheme?.fabForeground ?? Colors.white,
                 ),
@@ -191,7 +250,17 @@ class _AppShellState extends State<AppShell>
     final inactiveBackground = theme.brightness == Brightness.dark
         ? Colors.white.withValues(alpha: 0.10)
         : Colors.grey.shade200;
-    final inactiveForeground = onSurface.withValues(alpha: 0.46);
+    final inactiveForeground = theme.brightness == Brightness.dark
+        ? theme.colorScheme.onSurfaceVariant
+        : onSurface.withValues(alpha: 0.46);
+    final largeText = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.5;
+    final navBackground =
+        theme.extension<ShellChromeTheme>()?.navBackground ??
+        theme.colorScheme.surface;
+    final labelColor = readableTextColor(
+      isHomeSelected ? accent : inactiveForeground,
+      navBackground,
+    );
     final label = isHomeSelected ? l10n.navAdd : l10n.navHome;
     final hint = isHomeSelected
         ? 'Abre el menú para registrar'
@@ -209,12 +278,12 @@ class _AppShellState extends State<AppShell>
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 44,
-              height: 44,
+              width: 48,
+              height: 48,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: isHomeSelected ? accent : inactiveBackground,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
                   border: isHomeSelected
                       ? null
                       : Border.all(color: onSurface.withValues(alpha: 0.10)),
@@ -228,25 +297,36 @@ class _AppShellState extends State<AppShell>
                   ],
                 ),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
                   onTap: () => _onCentralTap(context),
                   child: Icon(
                     isHomeSelected ? Icons.add : Icons.home,
                     size: 24,
-                    color: isHomeSelected ? Colors.white : inactiveForeground,
+                    color: isHomeSelected
+                        ? theme.colorScheme.onPrimary
+                        : inactiveForeground,
                   ),
                 ),
               ),
             ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.05,
-                fontWeight: isHomeSelected ? FontWeight.w800 : FontWeight.w700,
-                color: isHomeSelected ? accent : inactiveForeground,
+            if (!largeText)
+              SizedBox(
+                width: 48,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.05,
+                    fontWeight: isHomeSelected
+                        ? FontWeight.w800
+                        : FontWeight.w700,
+                    color: labelColor,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -364,23 +444,6 @@ class _AppShellState extends State<AppShell>
     } else {
       widget.navigationShell.goBranch(2, initialLocation: true);
     }
-  }
-
-  double _bodyBottomInset(BuildContext context) {
-    return ShellInsets.bottomSafePadding(
-      context,
-      barHeight: _barHeight,
-      barBottomGap: _barBottomGap,
-    );
-  }
-
-  double _fabDockPadding(BuildContext context, {double lift = 0}) {
-    return ShellInsets.fabDockPadding(
-      context,
-      barHeight: _barHeight,
-      barBottomGap: _barBottomGap,
-      lift: lift,
-    );
   }
 
   void _logFab(String message) {

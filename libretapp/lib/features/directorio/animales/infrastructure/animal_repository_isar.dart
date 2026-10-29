@@ -1,7 +1,13 @@
 /// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:libretapp/core/database/isar_write_transaction.dart';
+
+import 'package:libretapp/core/utils/numeric_validation.dart';
+
+import 'animal_projection_recalculator.dart';
+
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
@@ -31,7 +37,8 @@ import 'package:libretapp/features/agenda/infrastructure/isar/isar_agenda_regist
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entry.dart';
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 
-class AnimalRepositoryIsar implements AnimalRepository {
+class AnimalRepositoryIsar
+    implements AnimalRepository, RegisteredAnimalSpeciesReader {
   AnimalRepositoryIsar(this._database, this._prefs, this._remoteDataSource);
 
   static const _logTag = 'AnimalRepositoryIsar';
@@ -72,7 +79,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
         })
         .toList(growable: false);
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarAnimals.putAll(models);
     });
 
@@ -99,6 +106,13 @@ class AnimalRepositoryIsar implements AnimalRepository {
 
   @override
   Future<List<AnimalEntity>> getAll() => _activeNormalized();
+
+  @override
+  Future<Set<Species>> getRegisteredSpecies() async {
+    final isar = await _isar;
+    final records = await isar.isarAnimals.where().findAll();
+    return records.map((record) => record.toEntity().species).toSet();
+  }
 
   Future<List<AnimalEntity>> _activeNormalized({bool sorted = true}) async {
     await _ensureActivityBackfill();
@@ -232,6 +246,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
 
   @override
   Future<AnimalEntity> save(AnimalEntity animal) async {
+    requireFiniteNumbers(animal);
     final isar = await _isar;
     final now = DateTime.now();
     final entity = animal.copyWith(
@@ -241,37 +256,83 @@ class AnimalRepositoryIsar implements AnimalRepository {
     );
 
     final model = entity.toIsar();
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
+      final stored = await isar.isarAnimals
+          .where()
+          .uuidEqualTo(model.uuid)
+          .findFirst();
+      if (stored != null) {
+        model.id = stored.id;
+        _preserveProjection(model, stored);
+      } else {
+        model.manualUnderObservation ??= animal.underObservation;
+        model.manualRequiresAttention ??= animal.requiresAttention;
+        model.manualVaccinated ??= animal.vaccinated;
+        model.manualDewormed ??= animal.dewormed;
+        model.manualHasVitamins ??= animal.hasVitamins;
+        model.monitoringNeedsReview = false;
+      }
+      final identities = await isar.isarAnimals.where().findAll();
+      final tag = model.earTagNumber.trim().toLowerCase();
+      if (tag.isNotEmpty &&
+          identities.any(
+            (a) =>
+                a.uuid != model.uuid &&
+                a.earTagNumber.trim().toLowerCase() == tag,
+          )) {
+        throw ArgumentError('La identificación ya pertenece a otro animal.');
+      }
       await isar.isarAnimals.put(model);
+      await AnimalProjectionRecalculator.refreshMonitoring(isar, model.uuid);
     });
     LoggerService.i('Animal guardado ${entity.uuid}', tag: _logTag);
-    return entity;
+    return (await isar.isarAnimals.get(model.id))!.toEntity();
   }
 
   @override
   Future<AnimalEntity> update(AnimalEntity animal) async {
+    requireFiniteNumbers(animal);
     final isar = await _isar;
     final now = DateTime.now();
     final updated = animal.copyWith(lastUpdateDate: now, synced: false);
-    final existing = await isar.isarAnimals
-        .where()
-        .uuidEqualTo(animal.uuid)
-        .findFirst();
     final model = updated.toIsar();
-    if (existing != null) {
-      model.id = existing.id;
-    }
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
+      final stored = await isar.isarAnimals
+          .where()
+          .uuidEqualTo(model.uuid)
+          .findFirst();
+      if (stored != null) {
+        model.id = stored.id;
+        _preserveProjection(model, stored);
+      } else {
+        model.manualUnderObservation ??= animal.underObservation;
+        model.manualRequiresAttention ??= animal.requiresAttention;
+        model.manualVaccinated ??= animal.vaccinated;
+        model.manualDewormed ??= animal.dewormed;
+        model.manualHasVitamins ??= animal.hasVitamins;
+        model.monitoringNeedsReview = false;
+      }
+      final identities = await isar.isarAnimals.where().findAll();
+      final tag = model.earTagNumber.trim().toLowerCase();
+      if (tag.isNotEmpty &&
+          identities.any(
+            (a) =>
+                a.uuid != model.uuid &&
+                a.earTagNumber.trim().toLowerCase() == tag,
+          )) {
+        throw ArgumentError('La identificación ya pertenece a otro animal.');
+      }
       await isar.isarAnimals.put(model);
+      await AnimalProjectionRecalculator.refreshMonitoring(isar, model.uuid);
     });
     LoggerService.i('Animal actualizado ${updated.uuid}', tag: _logTag);
-    return updated;
+    return (await isar.isarAnimals.get(model.id))!.toEntity();
   }
 
   @override
   Future<void> markAsSynced(String uuid, String remoteId) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final record = await isar.isarAnimals
           .where()
           .uuidEqualTo(uuid)
@@ -289,7 +350,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<void> markAsUnsynchronized(String uuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final record = await isar.isarAnimals
           .where()
           .uuidEqualTo(uuid)
@@ -306,7 +367,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<void> delete(String uuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final record = await isar.isarAnimals
           .where()
           .uuidEqualTo(uuid)
@@ -325,7 +386,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<void> purge(String uuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarAnimals.where().uuidEqualTo(uuid).deleteAll();
     });
     LoggerService.w('Animal eliminado definitivamente $uuid', tag: _logTag);
@@ -334,7 +395,7 @@ class AnimalRepositoryIsar implements AnimalRepository {
   @override
   Future<void> clearAll() async {
     final isar = await _isar;
-    await isar.writeTxn(() => isar.isarAnimals.clear());
+    await withIsarWriteTransaction(isar, () => isar.isarAnimals.clear());
     LoggerService.w('Colección animales limpiada', tag: _logTag);
   }
 
@@ -432,6 +493,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
 
     for (final record in records) {
       final current = record.toEntity();
+      if (!current.hasKnownAge) {
+        normalized.add(current);
+        continue;
+      }
       final lifecycle = AnimalLifecycleCalculator.calculate(
         birthDate: current.birthDate,
         species: current.species,
@@ -443,7 +508,12 @@ class AnimalRepositoryIsar implements AnimalRepository {
           current.reproductiveStatus == ReproductiveStatus.neutered ||
           current.category == Category.steer ||
           current.category == Category.oxen;
-      final category = current.species == Species.cattle
+      final category =
+          current.species == Species.cattle &&
+              current.category == Category.weaned &&
+              lifecycle.ageMonths < 12
+          ? Category.weaned
+          : current.species == Species.cattle
           ? AnimalTaxonomy.defaultCategory(
               species: current.species,
               sex: current.sex,
@@ -467,13 +537,16 @@ class AnimalRepositoryIsar implements AnimalRepository {
       if (next.ageMonths != current.ageMonths ||
           next.category != current.category ||
           next.lifeStage != current.lifeStage) {
-        changed.add(next.toIsar()..id = record.id);
+        changed.add(_preserveProjection(next.toIsar()..id = record.id, record));
       }
     }
 
     if (changed.isNotEmpty) {
       final isar = await _isar;
-      await isar.writeTxn(() => isar.isarAnimals.putAll(changed));
+      await withIsarWriteTransaction(
+        isar,
+        () => isar.isarAnimals.putAll(changed),
+      );
     }
 
     if (sorted) _sortByActivity(normalized);
@@ -489,9 +562,50 @@ class AnimalRepositoryIsar implements AnimalRepository {
         .findFirst();
     if (existing == null) return animal;
 
-    final model = animal.toIsar()..id = existing.id;
-    await isar.writeTxn(() => isar.isarAnimals.put(model));
+    final model = _preserveProjection(
+      animal.toIsar()..id = existing.id,
+      existing,
+    );
+    await withIsarWriteTransaction(isar, () => isar.isarAnimals.put(model));
     return animal;
+  }
+
+  static IsarAnimal _preserveProjection(IsarAnimal model, IsarAnimal stored) {
+    model.locationProjectionInitialized = stored.locationProjectionInitialized;
+    model.registrationLocationId = stored.registrationLocationId;
+    model.registrationMovementDate = stored.registrationMovementDate;
+    model.locationProjectionUncertain = stored.locationProjectionUncertain;
+    model.monitoringNeedsReview = stored.monitoringNeedsReview;
+    if (model.manualUnderObservation == stored.manualUnderObservation &&
+        model.underObservation != stored.underObservation) {
+      model.manualUnderObservation = model.underObservation;
+    }
+    if (model.manualRequiresAttention == stored.manualRequiresAttention &&
+        model.requiresAttention != stored.requiresAttention) {
+      model.manualRequiresAttention = model.requiresAttention;
+    }
+    model.manualUnderObservation ??= stored.manualUnderObservation;
+    model.manualRequiresAttention ??= stored.manualRequiresAttention;
+    if (model.manualVaccinated == stored.manualVaccinated &&
+        model.vaccinated != stored.vaccinated) {
+      model.manualVaccinated = model.vaccinated;
+    }
+    model.manualVaccinated ??= stored.manualVaccinated;
+    if (model.manualDewormed == stored.manualDewormed &&
+        model.dewormed != stored.dewormed) {
+      model.manualDewormed = model.dewormed;
+    }
+    model.manualDewormed ??= stored.manualDewormed;
+    if (model.manualHasVitamins == stored.manualHasVitamins &&
+        model.hasVitamins != stored.hasVitamins) {
+      model.manualHasVitamins = model.hasVitamins;
+    }
+    model.manualHasVitamins ??= stored.manualHasVitamins;
+    model.registrationWeight = stored.registrationWeight;
+    model.weightProjectionInitialized = stored.weightProjectionInitialized;
+    model.herdStatusProjected = stored.herdStatusProjected;
+    model.reproductionProjected = stored.reproductionProjected;
+    return model;
   }
 
   Future<void> _ensureActivityBackfill() async {
@@ -534,7 +648,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
       add(record.animalUuid, record.updatedAt ?? record.date);
     }
     for (final record in await isar.isarReproductionRecords.where().findAll()) {
-      add(record.animalUuid, record.updatedAt ?? record.serviceDate);
+      add(
+        record.animalUuid,
+        record.updatedAt ?? record.actualCalvingDate ?? record.serviceDate!,
+      );
     }
     for (final record in await isar.isarMovementRecords.where().findAll()) {
       add(record.animalUuid, record.updatedAt ?? record.date);
@@ -576,7 +693,10 @@ class AnimalRepositoryIsar implements AnimalRepository {
       changed.add(animal);
     }
     if (changed.isNotEmpty) {
-      await isar.writeTxn(() => isar.isarAnimals.putAll(changed));
+      await withIsarWriteTransaction(
+        isar,
+        () => isar.isarAnimals.putAll(changed),
+      );
     }
     await _prefs.setBool(PrefsKeys.animalsActivityBackfillV1, true);
   }
@@ -609,10 +729,9 @@ class AnimalRepositoryIsar implements AnimalRepository {
 /// orders on, computed once per animal rather than once per comparison.
 class _ActivitySortKey {
   _ActivitySortKey(this.animal, DateTime now)
-    : ageMonths = AnimalLifecycleCalculator.monthsBetween(
-        animal.birthDate,
-        now,
-      ),
+    : ageMonths = !animal.hasKnownAge
+          ? -1
+          : AnimalLifecycleCalculator.monthsBetween(animal.birthDate, now),
       earTag = animal.earTagNumber.trim().toLowerCase();
 
   final AnimalEntity animal;

@@ -109,7 +109,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
   }
 
   Future<void> _readFromScale() async {
-    if (_readingScale) return;
+    if (_readingScale || !ReleaseFeatures.hardwareIntegrationsEnabled) return;
     setState(() => _readingScale = true);
     try {
       final adapter = locator<ScaleAdapter>();
@@ -182,6 +182,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
         builder: (context, state) {
           final isSaving = state.status == RegistroStatus.loading;
           return AppFormScaffold(
+            recordStyle: RecordFormStyle.weight,
             title: l10n.detailFormWeightTitle,
             assetPath: AppAssetPaths.healthWeight,
             fallbackIcon: Icons.monitor_weight_outlined,
@@ -197,7 +198,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
                 onSelected: (a) => setState(() => _selectedAnimal = a),
               ),
               const SizedBox(height: AppSpacing.md),
-              Align(
+              if (ReleaseFeatures.hardwareIntegrationsEnabled) Align(
                 alignment: Alignment.centerLeft,
                 child: OutlinedButton.icon(
                   onPressed: isSaving || _readingScale ? null : _readFromScale,

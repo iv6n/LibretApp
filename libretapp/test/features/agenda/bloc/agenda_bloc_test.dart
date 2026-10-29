@@ -43,6 +43,13 @@ class _FakeAgendaRepository implements AgendaRepository {
   }
 
   @override
+  Future<void> saveEntries(List<AgendaEntry> entries) async {
+    for (final entry in entries) {
+      await saveEntry(entry);
+    }
+  }
+
+  @override
   Future<void> updateEntry(AgendaEntry entry) async {
     if (failUpdate) throw StateError('updateEntry failed');
     final index = _entries.indexWhere((e) => e.id == entry.id);

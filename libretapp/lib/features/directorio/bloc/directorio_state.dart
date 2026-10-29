@@ -7,6 +7,8 @@ enum CombinedSearchType { animal, lote, cultivo, ubicacion }
 
 enum DirectorioSection { animales, lotes, cultivos, ubicaciones }
 
+enum AnimalDirectoryViewMode { cards, compact }
+
 const defaultDirectorioSectionOrder = <DirectorioSection>[
   DirectorioSection.animales,
   DirectorioSection.lotes,
@@ -108,6 +110,7 @@ class DirectorioLoaded extends DirectorioState {
     required this.activeSection,
     this.orderedSections = defaultDirectorioSectionOrder,
     this.visibleSections = defaultDirectorioVisibleSections,
+    this.animalViewMode = AnimalDirectoryViewMode.cards,
     required this.isSearching,
     required this.searchResults,
     required this.searchQuery,
@@ -121,6 +124,9 @@ class DirectorioLoaded extends DirectorioState {
 
   /// Directory sections currently visible in the tab bar and search scope.
   final Set<DirectorioSection> visibleSections;
+
+  /// Presentation used by the animal directory, independent of its filters.
+  final AnimalDirectoryViewMode animalViewMode;
 
   /// Visible sections in the user-configured order.
   List<DirectorioSection> get activeSections =>
@@ -145,6 +151,7 @@ class DirectorioLoaded extends DirectorioState {
     DirectorioSection? activeSection,
     List<DirectorioSection>? orderedSections,
     Set<DirectorioSection>? visibleSections,
+    AnimalDirectoryViewMode? animalViewMode,
     bool? isSearching,
     List<CombinedSearchResult>? searchResults,
     String? searchQuery,
@@ -153,6 +160,7 @@ class DirectorioLoaded extends DirectorioState {
       activeSection: activeSection ?? this.activeSection,
       orderedSections: orderedSections ?? this.orderedSections,
       visibleSections: visibleSections ?? this.visibleSections,
+      animalViewMode: animalViewMode ?? this.animalViewMode,
       isSearching: isSearching ?? this.isSearching,
       searchResults: searchResults ?? this.searchResults,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -164,6 +172,7 @@ class DirectorioLoaded extends DirectorioState {
     activeSection,
     orderedSections,
     visibleSections,
+    animalViewMode,
     isSearching,
     searchResults,
     searchQuery,

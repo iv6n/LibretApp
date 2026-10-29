@@ -3,6 +3,12 @@ library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/weight_record.dart';
 
+class WeightBatchEntry {
+  const WeightBatchEntry({required this.animalUuid, required this.record});
+  final String animalUuid;
+  final WeightRecord record;
+}
+
 abstract class WeightRecordRepository {
   Future<List<WeightRecord>> getWeightRecords(String animalUuid);
 
@@ -17,6 +23,7 @@ abstract class WeightRecordRepository {
   Future<List<WeightRecord>> getWeightRecordsForLot(String lotUuid);
 
   Future<WeightRecord> addWeightRecord(String animalUuid, WeightRecord record);
+  Future<List<WeightRecord>> addWeightRecordsAtomically(List<WeightBatchEntry> entries);
   Future<void> deleteWeightRecord(String recordId);
 }
 

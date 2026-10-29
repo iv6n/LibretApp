@@ -1,0 +1,71 @@
+id,seccion,superficie,ruta_o_acceso,cobertura,evidencia,pendiente,aceptacion
+A01,Animales,Listado,/directorio?tab=animales,Android y pruebas,android/directorio-final.png;animales_bloc_herd_totals_test;android/listado-contraste-final.png;animal_card_layout_test,Desplazamiento nativo con 1000 animales,Total y especies coherentes con datos activos
+A02,Animales,Búsqueda y filtros,Buscar en directorio,Pruebas,directorio_search_navigation_test;directorio_bloc_search_test;animales_list_controller_sort_test,Captura nativa con búsqueda sin resultados,Encontrar y abrir animal correcto y limpiar filtros
+A03,Animales,Selección múltiple,Menú del listado,Pruebas,animal_card_layout_test;bulk_health_form_page y animal_record_forms_layout_test,Recorrido nativo completo con cancelación,Selección estable y una escritura por animal
+A04,Animales,Alta rápida,/directorio/animales/nuevo-rapido,Pruebas,quick_register_animal_page_test,Teclado y cancelación nativos,Guarda campos mínimos y conserva datos ante fallo
+A05,Animales,Alta completa,/directorio/animales/nuevo,Pruebas,animal_form_page_regression_test;animal_registration_policy_test,Recorrido nativo de ocho especies,Alta sin perder datos de pasos previos
+A06,Animales,Borrador y completar,/directorio/animales/:uuid/completar,Pruebas,quick_register_animal_page_test;animal_registration_policy_test,Recorrido nativo de recuperación de borrador,Identificación pendiente permite completar después
+A07,Animales,Editar,/directorio/animales/:uuid/editar,Pruebas,animal_edit_service_test;animal_form_page_regression_test,Cancelación nativa y fallo de foto,Perfil y listado muestran cambio persistido
+A08,Animales,Fotografía y ampliación,Foto de cabecera,Pruebas y capturas,animal_photo_test;before/;after/,Cámara rechazada y archivo eliminado en teléfono,Alternativa legible y zoom con cierre accesible
+A09,Animales,Resumen,/directorio/animales/:uuid,Android y 48 casos,android/animal-nancy.png;animal_profile_visual_test,Captura nativa final en 320dp texto 2x,Hasta tres indicadores reales y próximo cuidado
+A10,Animales,Cuidados,Segunda pestaña,Android y pruebas,android/animal-cuidados.png;care_tab_test;animal_profile_visual_test,TalkBack nativo del diálogo,Sin acciones para inactivos y contenido legible
+A11,Animales,Registrar cuidado,Cuidados > Registrar,Pruebas,care_tab_test;health_care_cycle_service_test,Fallo real de almacenamiento en Android,No cerrar antes de persistir ni duplicar
+A12,Animales,Registros,Tercera pestaña,48 casos,animal_profile_visual_test;record_tile_test,Menús de editar y borrar nativos,Registros ordenados y contenido desplazable
+A13,Animales,Genealogía,Cuarta pestaña,48 casos y pruebas,pedigree_service_test;animal_profile_visual_test,Enlaces padre y cría nativos,Relaciones correctas y título sin desbordamientos
+A14,Animales,Historial,Quinta pestaña,48 casos y pruebas,animal_profile_visual_test;record_repositories_isar_test,Animal vendido y fallecido nativos,Conserva historia y fechas
+A15,Animales,Menú Registrar,FAB,Android y políticas,android/animal-menu-registros.png;animal_record_actions_test,Comparación nativa de las ocho especies,Solo opciones aplicables y controles de 48dp
+A16,Animales,Peso,/directorio/animales/:uuid/registros/peso,Android apertura/cancelación y pruebas,record_form_scaffold_smoke_test;animal_record_forms_layout_test;record_repositories_isar_test;android/registro-peso-android.png,Recorrido nativo guardar cancelar fallar,Validación y nuevo peso visible al regresar
+A17,Animales,Salud,/directorio/animales/:uuid/registros/salud,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;health_care_cycle_service_test;record_repositories_isar_test;android/registro-salud-android.png,Permisos y calendario nativos,Preserva tratamiento y cuidados asociados
+A18,Animales,Producción,/directorio/animales/:uuid/registros/produccion,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;record_repositories_isar_test;android/registro-produccion-android.png,Guardar y editar en Android,Cantidades unidades y fechas correctas
+A19,Animales,Ordeña,/registro/ordena,Pruebas,milking_repository_isar_test;animal_record_actions_test;milking tests,Recorrido nativo sesión completa,Disponible únicamente con lactancia aplicable
+A20,Animales,Reproducción,/directorio/animales/:uuid/registros/reproduccion,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;reproduction_cycle_flow_test;android/registro-reproduccion-android.png,Registro de parto y alta de cría nativos,Genealogía y estado derivados coherentes
+A21,Animales,Movimiento,/directorio/animales/:uuid/registros/movimiento,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;record_repositories_isar_test;android/registro-movimiento-android.png,Guardar y volver en Android,Ubicación actualizada y GPS oculto en offline
+A22,Animales,Comercial,/directorio/animales/:uuid/registros/comercial,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;record_repositories_isar_test;android/registro-comercial-android.png,Venta y cancelación nativas,Venta conserva historial y cambia estado
+A23,Animales,Costos,/directorio/animales/:uuid/registros/costo,Android apertura/cancelación y pruebas,animal_record_forms_layout_test;record_repositories_isar_test;android/registro-costo-android.png,Guardar y editar en Android,Valor válido y relación preservada
+A24,Animales,Asignar lote o ubicación,Resumen > Asignar,Pruebas,info_tab_dispatch_and_await_test;ubicaciones_bloc_test,Cancelación y error nativos,Nombre y listas actualizados tras guardar
+L01,Lotes,Listado,/directorio?tab=lotes,Android y pruebas,android/lotes-demo.png;lotes_list_view_test,Modo oscuro nativo,Total y estado correctos
+L02,Lotes,Alta,/directorio/lotes/nuevo,Android apertura/cancelación y BLoC,lotes_bloc_test;LoteFormPage;android/lote-formulario-android.png,Formulario nativo y fallo inmediato,Guardado sin espera infinita ni envío duplicado
+L03,Lotes,Editar,/directorio/lotes/:uuid/editar,Revisión y persistencia,lotes_repository_isar_test;LoteFormPage,Cancelar y fallar en Android,Conserva campos e identidad del lote
+L04,Lotes,Detalle e integrantes,/directorio/lotes/:uuid,Android y persistencia,android/lote-detalle.png;lotes_repository_isar_test,Captura del cierre final,Fecha legible e integrantes enlazados
+L05,Lotes,Pesaje,/directorio/lotes/:uuid/registros/peso,Pruebas de persistencia,weight_performance_calculator_test;record_repositories_isar_test,Guardar masivo en Android,Un registro por integrante y rendimiento medido
+L06,Lotes,Rendimiento,Detalle > Rendimiento,Pruebas,weight_performance_calculator_test,Captura nativa con datos vacíos,No divide por cero ni inventa medidas
+L07,Lotes,Movimiento y acciones masivas,Detalle > acciones,Revisión y dominio,lotes_bloc_test;LocationAnimalAssignmentService (revisión),Recorrido nativo completo,Integrantes y ubicación se actualizan juntos
+L08,Lotes,Cerrar lote,Detalle > Cerrar lote,Revisión y persistencia,LoteDetailPage;lotes_repository_isar_test,Diálogo nativo final,Explica cierre y conserva historial
+C01,Cultivos,Listado y estado,/directorio?tab=cultivos,Android y persistencia,android/cultivos-demo.png;cultivation_repository_migration_test,Claro oscuro texto 2x nativos,Activos e historial separados
+C02,Cultivos,Alta,/directorio/cultivos/nuevo,Android apertura/cancelación y pruebas,cultivation_form_page_test;android/cultivo-formulario-android.png,Cancelar y fallar en Android,Guarda ubicación y unidad elegidas
+C03,Cultivos,Editar,/directorio/cultivos/:uuid/editar,Pruebas,cultivation_form_page_test,Datos extensos nativos,No sobrescribe unidad ni número de plantas
+C04,Cultivos,Detalle y ubicación,/directorio/cultivos/:uuid,Android y pruebas,android/cultivo-maiz.png;cultivation_detail_page_test,Reintento real en Android,Nombre de ubicación enlazado y error recuperable
+C05,Cultivos,Riego,Detalle > Riego,Pruebas de error y layout,cultivation_detail_page_test,Guardado nativo,Notas conservadas ante error y una escritura
+C06,Cultivos,Cosecha,Detalle > Cosecha,Pruebas de layout y dominio,cultivation_detail_page_test;cultivation_repository_migration_test,Calidad y cierre final nativos,Calidad accesible y rendimiento válido
+C07,Cultivos,Salud,Detalle > Salud,Pruebas de layout,cultivation_detail_page_test,Guardar reintentar nativos,Captura conservada ante fallo
+C08,Cultivos,Tareas,Detalle > Tarea,Pruebas de layout y persistencia,cultivation_detail_page_test;cultivation_repository_migration_test,Completar tarea nativa,Estado de tarea cambia después de persistir
+C09,Cultivos,Archivo,Detalle > Archivar,Pruebas,cultivation_detail_page_test;cultivation_repository_migration_test,Diálogo y consulta nativos,Sin operaciones nuevas con historial conservado
+U01,Ubicaciones,Listado,/directorio?tab=ubicaciones,Android y pruebas,android/ubicaciones-demo.png;ubicaciones_page_test;ubicaciones_bloc_test;android/ubicaciones-arbol-final.png,Captura final de ocupación,Conteo coincide con detalle y sigue movimientos
+U02,Ubicaciones,Árbol y filtros,Expandir sububicaciones,Android y pruebas,android/ubicaciones-arbol.png;ubicaciones_tree_builder_test;location_hierarchy_validation_test,Texto 2x nativo,Sin ciclos y jerarquía estable
+U03,Ubicaciones,Búsqueda,Buscar en directorio,Pruebas,directorio_bloc_search_test;ubicaciones_bloc_test,Sin resultados nativo,Resultados y filtros reversibles
+U04,Ubicaciones,Alta,/directorio/ubicaciones/nueva,Android apertura/cancelación y pruebas,location_form_page_test;location_form_sheet_test;android/ubicacion-formulario-android.png,Permisos de foto rechazados nativos,Validación de jerarquía y campos pertinentes
+U05,Ubicaciones,Editar,/directorio/ubicaciones/:uuid/editar,Pruebas,location_form_page_test;location_form_sheet_test,Cancelación nativa,Identidad y relaciones conservadas
+U06,Ubicaciones,Detalle,/directorio/ubicaciones/:uuid,Android y pruebas,android/ubicacion-detalle.png;location_detail_page_test;location_detail_cubit_test,Texto 2x y reintento nativos,Datos coherentes y fallo recuperable
+U07,Ubicaciones,Sububicaciones,Detalle > sububicaciones,Pruebas,location_detail_page_test;ubicaciones_tree_builder_test,Enlaces y alta nativos,Padre y descendientes correctos
+U08,Ubicaciones,Asignar animales,Detalle > asignar,Pruebas,location_detail_page_test;LocationAnimalAssignmentService (revisión),Guardar y fallar nativos,Ocupación se actualiza y movimientos quedan registrados
+U09,Ubicaciones,Inventario,Detalle > inventario,Revisión de código y pruebas de activos,inventory_asset_for_category_test;LocationDetailPage,Alta edición eliminación nativas,Existencias y condición persistidas
+U10,Ubicaciones,Cultivos enlazados,Detalle > cultivos,Pruebas,location_detail_page_test;cultivation_repository_migration_test,Riego cosecha salud tarea nativos,Registro guardado dentro de formulario
+U11,Ubicaciones,Visita,Detalle > registrar visita,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo y campos extensos,No perder notas ante fallo
+U12,Ubicaciones,Agua,Detalle > registrar agua,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Cantidad válida y reintento conserva captura
+U13,Ubicaciones,Sal mineral,Detalle > registrar sal,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Datos persisten antes de confirmar
+U14,Ubicaciones,Sombra,Detalle > registrar sombra,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Tipo y notas conservados
+U15,Ubicaciones,Pasto,Detalle > registrar pasto,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Condición y fechas consultables
+U16,Ubicaciones,Siembra,Detalle > registrar siembra,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Variedad y superficie persistidas
+U17,Ubicaciones,Riego de área,Detalle > registrar riego,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Método y cantidad válidos
+U18,Ubicaciones,Lluvia,Detalle > registrar lluvia,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Fecha y milímetros correctos
+U19,Ubicaciones,Mantenimiento,Detalle > mantenimiento,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,Registro y costo coherentes
+U20,Ubicaciones,Costos,Detalle > costos,Guardado compartido revisado,RecordSaveScope;location_record_sheets.dart,Recorrido nativo,No confirmar al fallar la escritura
+U21,Ubicaciones,Eliminar,Detalle > eliminar,Revisión y pruebas de BLoC,ubicaciones_bloc_test;confirm_delete_location_dialog.dart,Diálogo y relaciones nativos,Confirmación explícita y detalle deja de mostrar eliminado
+P01,Piloto,Inicio,/,Android y suite,android/inicio-restaurado.png;widget_test,Accesibilidad completa,Arranque sin credenciales con datos restaurados
+P02,Piloto,Agenda,/agenda,Android y pruebas,android/agenda-final.png;agenda tests,Formularios y TalkBack nativos,Tareas y registros enlazados
+P03,Piloto,Reportes,/reportes,Android y pruebas,android/reportes-final.png;reportes tests,Exportación y TalkBack nativos,Totales corresponden a registros
+P04,Piloto,Exportación,/exportar,Pruebas,exportar tests;animales_export_sheet_test;ubicaciones_export_sheet_test,Archivo compartido en Android,Exportación completa legible
+P05,Piloto,Perfil y ajustes,/perfil,Android y pruebas,android/perfil-actualizado-final.png;widget_test y revisión de PerfilBloc,Correo URL públicos reales,Perfil restaurado y tema persistido
+P06,Piloto,Respaldo e importación,Perfil > Ajustes,Android y Isar real,android/restauracion-demo.png;demo_scenario_service_test;android/respaldo-creado-final.png;android/16kb-restauracion.png,Ver reporte Android final,Fotos relaciones y registros recuperados
+P07,Piloto,Offline y restricciones,Flavor offline,Android y prueba con flags,offline_pilot_test;release-verification.json,Validación de Play Console,No cuenta nube cobros hardware ni GPS
+P08,Piloto,AAB firma actualización y 16KB,Build offlineRelease,Firma alineación y ejecución Android 4KB/16KB,evidencia/validacion.json;android/listado-contraste-final.png;android/16kb-restauracion.png,Firma del APK histórico si existió,Instala y actualiza conservando datos y funciona en páginas de 16KB

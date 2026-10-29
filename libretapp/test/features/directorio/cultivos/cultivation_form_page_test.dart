@@ -36,20 +36,23 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Nuevo cultivo'), findsOneWidget);
+        expect(find.text('Nueva planta o cultivo'), findsOneWidget);
         expect(find.text('¿Qué vas a seguir?'), findsOneWidget);
         expect(find.text('Guardar cultivo'), findsOneWidget);
         expect(tester.takeException(), isNull);
         expect(
-          tester.getTopLeft(find.text('Nuevo cultivo')).dy,
+          tester.getTopLeft(find.text('Nueva planta o cultivo')).dy,
           greaterThanOrEqualTo(28),
         );
 
         tester.view.viewInsets = const FakeViewPadding(bottom: 240);
         addTearDown(tester.view.resetViewInsets);
-        await tester.tap(
-          find.widgetWithText(TextFormField, 'Nombre o especie *'),
+        final nameField = find.widgetWithText(
+          TextFormField,
+          'Nombre o especie *',
         );
+        await tester.ensureVisible(nameField);
+        await tester.tap(nameField);
         await tester.pump();
         await tester.drag(
           find.byType(SingleChildScrollView),

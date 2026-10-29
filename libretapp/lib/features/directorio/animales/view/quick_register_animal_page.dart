@@ -2,10 +2,13 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
+import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/backup/first_backup_suggestion.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
@@ -21,7 +24,14 @@ import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart
 import 'package:libretapp/theme/app_theme.dart';
 
 class QuickRegisterAnimalPage extends StatefulWidget {
-  const QuickRegisterAnimalPage({super.key});
+  const QuickRegisterAnimalPage({
+    super.key,
+    this.initialSpecies,
+    this.preferredSpecies = const [],
+  });
+
+  final Species? initialSpecies;
+  final List<Species> preferredSpecies;
 
   @override
   State<QuickRegisterAnimalPage> createState() =>
@@ -36,8 +46,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   final _breedCtrl = TextEditingController();
 
   Species _species = Species.cattle;
-  Sex _sex = Sex.female;
-  ApproximateAge _age = const ApproximateAge(years: 1, months: 0);
+  Sex _sex = Sex.unknown;
+  ApproximateAge _age = const ApproximateAge.unknown();
   ProductionPurpose? _purpose;
   String? _profilePhoto;
   bool _saving = false;
@@ -48,6 +58,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   @override
   void initState() {
     super.initState();
+    _species = widget.initialSpecies ?? _species;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _identificationFocus.requestFocus();
     });
@@ -114,7 +125,9 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     setState(() => _saving = true);
     try {
       final now = DateTime.now();
-      final birthDate = _age.estimatedBirthDate(now);
+      final birthDate = _age.isUnknown
+          ? DateTime.fromMillisecondsSinceEpoch(0)
+          : _age.estimatedBirthDate(now);
       final lifecycle = AnimalLifecycleCalculator.calculate(
         birthDate: birthDate,
         species: _species,
@@ -151,6 +164,9 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           breed: _breedCtrl.text,
           crossBreed: null,
           birthDate: birthDate,
+          birthDatePrecision: _age.isUnknown
+              ? BirthDatePrecision.unknown
+              : BirthDatePrecision.estimated,
           ageMonths: _age.totalMonths,
           weight: weight,
           sireUuid: null,
@@ -222,7 +238,12 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         // The page can also be opened without the directory bloc in tests.
       }
       setState(() => _saving = false);
-      final action = await _showSuccessActions(animal);
+      final showBackupSuggestion = await consumeFirstBackupSuggestion();
+      if (!mounted) return;
+      final action = await _showSuccessActions(
+        animal,
+        showBackupSuggestion: showBackupSuggestion,
+      );
       if (!mounted) return;
       await _handleSuccessAction(action, uuid);
     } catch (_) {
@@ -266,8 +287,11 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         false;
   }
 
-  Future<_QuickSaveAction?> _showSuccessActions(AnimalEntity animal) {
-    return showModalBottomSheet<_QuickSaveAction>(
+  Future<_QuickSaveAction?> _showSuccessActions(
+    AnimalEntity animal, {
+    required bool showBackupSuggestion,
+  }) {
+    return showAppBottomSheet<_QuickSaveAction>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
@@ -329,6 +353,14 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                 ).pop(_QuickSaveAction.backToDirectory),
                 child: const Text('Volver al directorio'),
               ),
+              if (showBackupSuggestion)
+                TextButton.icon(
+                  onPressed: () => Navigator.of(
+                    sheetContext,
+                  ).pop(_QuickSaveAction.openBackups),
+                  icon: const Icon(Icons.backup_outlined),
+                  label: const Text('Proteger mis datos · Ver respaldos'),
+                ),
             ],
           ),
         ),
@@ -347,8 +379,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           _nameCtrl.clear();
           _breedCtrl.clear();
           _weightCtrl.clear();
-          _sex = Sex.female;
-          _age = const ApproximateAge(years: 1, months: 0);
+          _sex = Sex.unknown;
+          _age = const ApproximateAge.unknown();
         });
         _identificationFocus.requestFocus();
       case _QuickSaveAction.completeProfile:
@@ -360,6 +392,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
       case _QuickSaveAction.backToDirectory:
       case null:
         context.pop(true);
+      case _QuickSaveAction.openBackups:
+        context.go('${AppRoutes.perfil}?backups=1');
     }
   }
 
@@ -369,7 +403,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     final policy = _policy;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro rápido'),
+        title: const Text('Alta rápida'),
         actions: [
           TextButton(
             onPressed: _saving ? null : _openFullRegistration,
@@ -377,138 +411,129 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.xxl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Especie', style: theme.textTheme.labelLarge),
+      body: AppFormBody(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Especie', style: theme.textTheme.labelLarge),
+            const SizedBox(height: AppSpacing.xs),
+            AnimalSpeciesSelector(
+              value: _species,
+              onChanged: _onSpeciesSelected,
+              preferredSpecies: widget.preferredSpecies,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              focusNode: _identificationFocus,
+              controller: _identificationCtrl,
+              key: const ValueKey('animal-quick-identification'),
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: policy.identificationLabel,
+                hintText: policy.identificationHint,
+                helperText: policy.tracksPendingEarTag
+                    ? 'Recomendado. Puedes guardarlo como pendiente.'
+                    : 'Opcional',
+                helperMaxLines: 2,
+                prefixIcon: Icon(_identificationIcon(policy)),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _nameCtrl,
+              key: const ValueKey('animal-quick-name'),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Nombre o alias — opcional',
+                prefixIcon: Icon(Icons.drive_file_rename_outline),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AnimalPhotoField(
+              photoPath: _profilePhoto,
+              species: _species,
+              enabled: !_saving,
+              compact: true,
+              onChanged: (path) => setState(() => _profilePhoto = path),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _breedCtrl,
+              key: const ValueKey('animal-quick-breed'),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Raza — opcional',
+                prefixIcon: Icon(Icons.pets_outlined),
+              ),
+            ),
+            if (policy.purposeOptions.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Text('Propósito — opcional', style: theme.textTheme.labelLarge),
               const SizedBox(height: AppSpacing.xs),
-              AnimalSpeciesSelector(
-                value: _species,
-                onChanged: _onSpeciesSelected,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              AnimalPhotoField(
-                photoPath: _profilePhoto,
-                species: _species,
-                enabled: !_saving,
-                onChanged: (path) => setState(() => _profilePhoto = path),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              TextField(
-                focusNode: _identificationFocus,
-                controller: _identificationCtrl,
-                key: const ValueKey('animal-quick-identification'),
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  labelText: policy.identificationLabel,
-                  hintText: policy.identificationHint,
-                  helperText: policy.tracksPendingEarTag
-                      ? 'Recomendado. Puedes guardarlo como pendiente.'
-                      : 'Opcional',
-                  prefixIcon: Icon(_identificationIcon(policy)),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _nameCtrl,
-                key: const ValueKey('animal-quick-name'),
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Nombre o alias — opcional',
-                  prefixIcon: Icon(Icons.drive_file_rename_outline),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _breedCtrl,
-                key: const ValueKey('animal-quick-breed'),
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Raza — opcional',
-                  prefixIcon: Icon(Icons.pets_outlined),
-                ),
-              ),
-              if (policy.purposeOptions.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Text('Propósito — opcional', style: theme.textTheme.labelLarge),
-                const SizedBox(height: AppSpacing.xs),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
-                  children: policy.purposeOptions.map((purpose) {
-                    final selected = _purpose == purpose;
-                    return ChoiceChip(
-                      label: Text(purpose.displayName),
-                      selected: selected,
-                      onSelected: (_) => setState(() {
-                        _purpose = selected ? null : purpose;
-                      }),
-                    );
-                  }).toList(),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              Text('Sexo', style: theme.textTheme.labelLarge),
-              const SizedBox(height: AppSpacing.xs),
-              CompactSexSelector(
-                value: _sex,
-                onChanged: (sex) => setState(() => _sex = sex),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              ApproximateAgeField(
-                value: _age,
-                onChanged: (age) => setState(() => _age = age),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _weightCtrl,
-                key: const ValueKey('animal-quick-weight'),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'Peso (kg) — opcional',
-                  prefixIcon: Icon(Icons.monitor_weight_outlined),
-                  suffixText: 'kg',
-                ),
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: policy.purposeOptions.map((purpose) {
+                  final selected = _purpose == purpose;
+                  return ChoiceChip(
+                    label: Text(purpose.displayName),
+                    selected: selected,
+                    onSelected: (_) => setState(() {
+                      _purpose = selected ? null : purpose;
+                    }),
+                  );
+                }).toList(),
               ),
             ],
-          ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Sexo', style: theme.textTheme.labelLarge),
+            const SizedBox(height: AppSpacing.xs),
+            CompactSexSelector(
+              value: _sex,
+              onChanged: (sex) => setState(() => _sex = sex),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ApproximateAgeField(
+              value: _age,
+              onChanged: (age) => setState(() => _age = age),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _weightCtrl,
+              key: const ValueKey('animal-quick-weight'),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Peso (kg) — opcional',
+                prefixIcon: Icon(Icons.monitor_weight_outlined),
+                suffixText: 'kg',
+              ),
+            ),
+          ],
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.xs,
-          AppSpacing.lg,
-          AppSpacing.sm,
+      bottomNavigationBar: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: SizedBox(
-          height: 56,
-          child: FilledButton.icon(
-            key: const ValueKey('animal-quick-save'),
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check),
-            label: Text(_saving ? 'Guardando…' : 'Guardar animal'),
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xs,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
+          child: AppFormActions(
+            saveKey: const ValueKey('animal-quick-save'),
+            onSave: _save,
+            saving: _saving,
+            saveLabel: 'Guardar animal',
           ),
         ),
       ),
@@ -527,7 +552,12 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   }
 }
 
-enum _QuickSaveAction { registerAnother, completeProfile, backToDirectory }
+enum _QuickSaveAction {
+  registerAnother,
+  completeProfile,
+  backToDirectory,
+  openBackups,
+}
 
 IconData _identificationIcon(AnimalRegistrationPolicy policy) {
   switch (policy.identificationKind) {

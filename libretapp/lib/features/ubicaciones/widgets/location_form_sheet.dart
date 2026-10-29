@@ -1,13 +1,15 @@
 /// features › ubicaciones › widgets › location_form_sheet — bottom sheet form for creating or editing a location.
 library;
 
+import 'package:libretapp/core/utils/number_parsing.dart';
+
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:libretapp/core/core.dart';
-import 'package:libretapp/core/location/gps_capture_service.dart';
 import 'package:libretapp/core/media/image_source_picker.dart';
 import 'package:libretapp/core/media/media_store.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
@@ -127,242 +129,226 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
     final isEditing = widget.initial != null;
     final theme = Theme.of(context);
 
-    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + viewInsets),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    isEditing ? 'Editar ubicacion' : 'Nueva ubicacion',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  AppIconButton(
-                    icon: Icons.close,
-                    tooltip: 'Cerrar',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              AppTextField(
-                controller: _nameController,
-                labelText: 'Nombre',
-                prefixIcon: const Icon(Icons.place_outlined),
-                requiredField: true,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa un nombre';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildImagesSection(theme),
-              const SizedBox(height: 12),
-              Text(
-                'Categoria',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+    return AppFormBody(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: AppRecordHeader(style: RecordFormStyle.location),
                 ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 36,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: LocationCategory.values.length,
-                  separatorBuilder: (_, i) => const SizedBox(width: 6),
-                  itemBuilder: (context, index) {
-                    final category = LocationCategory.values[index];
-                    final selected = _selectedCategory == category;
-                    return ChoiceChip(
-                      label: Text(locationCategoryLabel(context, category)),
-                      selected: selected,
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      onSelected: (_) {
-                        if (selected) return;
-                        final firstType = LocationType.values.firstWhere(
-                          (type) => type.category == category,
-                        );
-                        setState(() {
-                          _selectedCategory = category;
-                          _type = firstType;
-                          for (final field in _adaptiveFieldsForType(_type)) {
-                            _ensureAdaptiveFieldState(field);
-                          }
-                          if (_parentUuid != null) {
-                            final stillValid = _validParents.any(
-                              (location) => location.uuid == _parentUuid,
-                            );
-                            if (!stillValid) _parentUuid = null;
-                          }
-                        });
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                  ),
-                ),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _typesInSelectedCategory
-                      .map((type) {
-                        final selected = _type == type;
-                        return FilterChip(
-                          label: Text(locationTypeLabel(context, type)),
-                          selected: selected,
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          onSelected: (_) {
-                            if (selected) return;
-                            setState(() {
-                              _type = type;
-                              _selectedCategory = type.category;
-                              for (final field in _adaptiveFieldsForType(
-                                _type,
-                              )) {
-                                _ensureAdaptiveFieldState(field);
-                              }
-                              if (_parentUuid != null) {
-                                final stillValid = _validParents.any(
-                                  (location) => location.uuid == _parentUuid,
-                                );
-                                if (!stillValid) _parentUuid = null;
-                              }
-                            });
-                          },
-                        );
-                      })
-                      .toList(growable: false),
-                ),
-              ),
-              const SizedBox(height: 12),
-              AppSelectField<LocationStatus>(
-                value: _status,
-                items: LocationStatus.values,
-                itemLabel: (status) => locationStatusLabel(context, status),
-                labelText: 'Estado',
-                prefixIcon: const Icon(Icons.brightness_medium_outlined),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _status = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppTextField(
-                      controller: _surfaceController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      labelText: 'Superficie (ha)',
-                      prefixIcon: const Icon(Icons.straighten),
-                      validator: (value) {
-                        final raw = value?.trim() ?? '';
-                        if (raw.isEmpty) return null;
-                        final parsed = double.tryParse(
-                          raw.replaceAll(',', '.'),
-                        );
-                        if (parsed == null || parsed < 0) {
-                          return 'Ingresa una superficie valida';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppTextField(
-                      controller: _capacityController,
-                      keyboardType: TextInputType.number,
-                      labelText: 'Capacidad (animales)',
-                      prefixIcon: const Icon(Icons.groups_outlined),
-                      validator: (value) {
-                        final raw = value?.trim() ?? '';
-                        if (raw.isEmpty) return null;
-                        final parsed = int.tryParse(raw);
-                        if (parsed == null || parsed < 0) {
-                          return 'Ingresa una capacidad valida';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _waterController,
-                labelText: 'Fuente de agua',
-                prefixIcon: const Icon(Icons.water_drop_outlined),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _terrainController,
-                labelText: 'Tipo de terreno',
-                prefixIcon: const Icon(Icons.terrain),
-              ),
-              const SizedBox(height: 12),
-              _buildAdaptivePropertiesSection(theme),
-              if (_type.canNestAsSubLocation || !_type.isRootType) ...[
-                const SizedBox(height: 12),
-                AppSelectField<String?>(
-                  value: _parentUuid,
-                  items: [
-                    null,
-                    ..._validParents.map((location) => location.uuid),
-                  ],
-                  itemLabel: (uuid) => uuid == null
-                      ? 'Sin ubicación padre'
-                      : '${locationTypeLabel(context, _validParents.firstWhere((location) => location.uuid == uuid).type)} · ${_validParents.firstWhere((location) => location.uuid == uuid).name}',
-                  labelText: 'Ubicación padre (opcional)',
-                  prefixIcon: const Icon(Icons.account_tree_outlined),
-                  onChanged: (value) => setState(() => _parentUuid = value),
+                AppIconButton(
+                  icon: Icons.close,
+                  tooltip: 'Cerrar',
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
-              const SizedBox(height: 16),
-              AppButton(
-                expanded: true,
-                icon: isEditing ? Icons.save_outlined : Icons.add_location_alt,
-                label: isEditing ? 'Guardar cambios' : 'Crear ubicación',
-                onPressed: _submit,
+            ),
+            const SizedBox(height: 8),
+            AppTextField(
+              controller: _nameController,
+              labelText: 'Nombre',
+              prefixIcon: const Icon(Icons.place_outlined),
+              requiredField: true,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Ingresa un nombre';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildImagesSection(theme),
+            const SizedBox(height: 12),
+            Text(
+              'Categoria',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
-              const SizedBox(height: 8),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 36,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: LocationCategory.values.length,
+                separatorBuilder: (_, i) => const SizedBox(width: 6),
+                itemBuilder: (context, index) {
+                  final category = LocationCategory.values[index];
+                  final selected = _selectedCategory == category;
+                  return ChoiceChip(
+                    label: Text(locationCategoryLabel(context, category)),
+                    selected: selected,
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (_) {
+                      if (selected) return;
+                      final firstType = LocationType.values.firstWhere(
+                        (type) => type.category == category,
+                      );
+                      setState(() {
+                        _selectedCategory = category;
+                        _type = firstType;
+                        for (final field in _adaptiveFieldsForType(_type)) {
+                          _ensureAdaptiveFieldState(field);
+                        }
+                        if (_parentUuid != null) {
+                          final stillValid = _validParents.any(
+                            (location) => location.uuid == _parentUuid,
+                          );
+                          if (!stillValid) _parentUuid = null;
+                        }
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _typesInSelectedCategory
+                    .map((type) {
+                      final selected = _type == type;
+                      return FilterChip(
+                        label: Text(locationTypeLabel(context, type)),
+                        selected: selected,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onSelected: (_) {
+                          if (selected) return;
+                          setState(() {
+                            _type = type;
+                            _selectedCategory = type.category;
+                            for (final field in _adaptiveFieldsForType(_type)) {
+                              _ensureAdaptiveFieldState(field);
+                            }
+                            if (_parentUuid != null) {
+                              final stillValid = _validParents.any(
+                                (location) => location.uuid == _parentUuid,
+                              );
+                              if (!stillValid) _parentUuid = null;
+                            }
+                          });
+                        },
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+            ),
+            const SizedBox(height: 12),
+            AppSelectField<LocationStatus>(
+              value: _status,
+              items: LocationStatus.values,
+              itemLabel: (status) => locationStatusLabel(context, status),
+              labelText: 'Estado',
+              prefixIcon: const Icon(Icons.brightness_medium_outlined),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _status = value;
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: _surfaceController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    labelText: 'Superficie (ha)',
+                    prefixIcon: const Icon(Icons.straighten),
+                    validator: (value) {
+                      final raw = value?.trim() ?? '';
+                      if (raw.isEmpty) return null;
+                      final parsed = parseFormDouble(raw.replaceAll(',', '.'));
+                      if (parsed == null || parsed < 0) {
+                        return 'Ingresa una superficie valida';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppTextField(
+                    controller: _capacityController,
+                    keyboardType: TextInputType.number,
+                    labelText: 'Capacidad (animales)',
+                    prefixIcon: const Icon(Icons.groups_outlined),
+                    validator: (value) {
+                      final raw = value?.trim() ?? '';
+                      if (raw.isEmpty) return null;
+                      final parsed = int.tryParse(raw);
+                      if (parsed == null || parsed < 0) {
+                        return 'Ingresa una capacidad valida';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            AppTextField(
+              controller: _waterController,
+              labelText: 'Fuente de agua',
+              prefixIcon: const Icon(Icons.water_drop_outlined),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _terrainController,
+              labelText: 'Tipo de terreno',
+              prefixIcon: const Icon(Icons.terrain),
+            ),
+            const SizedBox(height: 12),
+            _buildAdaptivePropertiesSection(theme),
+            if (_type.canNestAsSubLocation || !_type.isRootType) ...[
+              const SizedBox(height: 12),
+              AppSelectField<String?>(
+                value: _parentUuid,
+                items: [
+                  null,
+                  ..._validParents.map((location) => location.uuid),
+                ],
+                itemLabel: (uuid) => uuid == null
+                    ? 'Sin ubicación padre'
+                    : '${locationTypeLabel(context, _validParents.firstWhere((location) => location.uuid == uuid).type)} · ${_validParents.firstWhere((location) => location.uuid == uuid).name}',
+                labelText: 'Ubicación padre (opcional)',
+                prefixIcon: const Icon(Icons.account_tree_outlined),
+                onChanged: (value) => setState(() => _parentUuid = value),
+              ),
             ],
-          ),
+            const SizedBox(height: 16),
+            AppFormActions(
+              saveLabel: isEditing ? 'Guardar cambios' : 'Crear ubicación',
+              onSave: _submit,
+              onCancel: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
@@ -651,7 +637,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
               final raw = value?.trim() ?? '';
               if (raw.isEmpty) return null;
               if (field.kind == _AdaptiveFieldKind.number) {
-                final parsed = double.tryParse(raw.replaceAll(',', '.'));
+                final parsed = parseFormDouble(raw.replaceAll(',', '.'));
                 if (parsed == null) {
                   return 'Valor numerico invalido';
                 }
@@ -825,7 +811,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
 
     final surface = surfaceRaw.isEmpty
         ? (widget.initial?.surfaceArea ?? 0)
-        : (double.tryParse(surfaceRaw.replaceAll(',', '.')) ?? 0);
+        : (parseFormDouble(surfaceRaw.replaceAll(',', '.')) ?? 0);
     final capacity = capacityRaw.isEmpty
         ? (widget.initial?.capacity ?? 0)
         : (int.tryParse(capacityRaw) ?? 0);
@@ -872,7 +858,7 @@ class _LocationFormSheetState extends State<LocationFormSheet> {
             }
             continue;
           }
-          final value = double.tryParse(raw.replaceAll(',', '.'));
+          final value = parseFormDouble(raw.replaceAll(',', '.'));
           if (value == null) continue;
 
           preservedAttributes.add(

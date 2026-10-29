@@ -9,6 +9,8 @@ export 'entities/movement_record.dart';
 export 'entities/production_record.dart';
 export 'entities/reproduction_record.dart';
 export 'entities/weight_record.dart';
+export 'entities/weaning_record.dart';
+export 'services/animal_record_validation.dart';
 export 'enums/animal_status.dart';
 export 'enums/category.dart';
 export 'enums/health_status.dart';

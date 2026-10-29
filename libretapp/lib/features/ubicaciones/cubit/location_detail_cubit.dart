@@ -33,18 +33,17 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
       _onLocationsUpdated,
       onError: (Object error) {
         if (!isClosed) {
-          emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+          emit(
+            state.copyWith(isLoading: false, errorMessage: error.toString()),
+          );
         }
       },
     );
-    _animalSub = animalRepository.watchAll().listen(
-      (animals) {
-        if (!isClosed) {
-          emit(state.copyWith(allAnimals: animals));
-        }
-      },
-      onError: (_) {},
-    );
+    _animalSub = animalRepository.watchAll().listen((animals) {
+      if (!isClosed) {
+        emit(state.copyWith(allAnimals: animals));
+      }
+    }, onError: (_) {});
   }
 
   final String _locationUuid;
@@ -66,6 +65,23 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
         isLoading: false,
         errorMessage: null,
       ),
+    );
+  }
+
+  Future<void> retry() async {
+    emit(state.copyWith(isLoading: true, errorMessage: null));
+    await _locationSub?.cancel();
+    _locationSub = _locationRepository.watchAll().listen(
+      _onLocationsUpdated,
+      onError: (_) {
+        if (!isClosed)
+          emit(
+            state.copyWith(
+              isLoading: false,
+              errorMessage: 'No se pudo cargar la ubicación',
+            ),
+          );
+      },
     );
   }
 
@@ -112,9 +128,8 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   Future<void> addSeeding(SeedingRecord record) =>
       _mutate(() => _locationRepository.addSeeding(_locationUuid, record));
 
-  Future<void> addIrrigation(IrrigationRecord record) => _mutate(
-    () => _locationRepository.addIrrigation(_locationUuid, record),
-  );
+  Future<void> addIrrigation(IrrigationRecord record) =>
+      _mutate(() => _locationRepository.addIrrigation(_locationUuid, record));
 
   Future<void> addRain(RainRecord record) =>
       _mutate(() => _locationRepository.addRain(_locationUuid, record));
@@ -122,9 +137,8 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   Future<void> addCost(LocationCostRecord record) =>
       _mutate(() => _locationRepository.addCost(_locationUuid, record));
 
-  Future<void> addMaintenance(MaintenanceRecord record) => _mutate(
-    () => _locationRepository.addMaintenance(_locationUuid, record),
-  );
+  Future<void> addMaintenance(MaintenanceRecord record) =>
+      _mutate(() => _locationRepository.addMaintenance(_locationUuid, record));
 
   Future<void> addCrop(CropRecord crop) =>
       _mutate(() => _locationRepository.addCrop(_locationUuid, crop));
@@ -134,6 +148,7 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
 
   Future<void> deleteCrop(String cropUuid) => _mutate(
     () => _locationRepository.deleteCrop(_locationUuid, cropUuid),
+    propagateError: false,
   );
 
   Future<void> addCropWatering(String cropUuid, CropWateringRecord record) =>
@@ -151,7 +166,8 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
 
   Future<void> addCropHealth(String cropUuid, CropHealthRecord record) =>
       _mutate(
-        () => _locationRepository.addCropHealth(_locationUuid, cropUuid, record),
+        () =>
+            _locationRepository.addCropHealth(_locationUuid, cropUuid, record),
       );
 
   Future<void> addCropTask(String cropUuid, CropTask task) => _mutate(
@@ -159,16 +175,13 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
   );
 
   Future<void> completeCropTask(String cropUuid, String taskUuid) => _mutate(
-    () => _locationRepository.completeCropTask(
-      _locationUuid,
-      cropUuid,
-      taskUuid,
-    ),
+    () =>
+        _locationRepository.completeCropTask(_locationUuid, cropUuid, taskUuid),
+    propagateError: false,
   );
 
-  Future<void> addInventoryItem(InventoryItem item) => _mutate(
-    () => _locationRepository.addInventoryItem(_locationUuid, item),
-  );
+  Future<void> addInventoryItem(InventoryItem item) =>
+      _mutate(() => _locationRepository.addInventoryItem(_locationUuid, item));
 
   Future<void> updateInventoryItem(InventoryItem item) => _mutate(
     () => _locationRepository.updateInventoryItem(_locationUuid, item),
@@ -178,14 +191,27 @@ class LocationDetailCubit extends Cubit<LocationDetailState> {
     () => _locationRepository.removeInventoryItem(_locationUuid, itemUuid),
   );
 
-  Future<void> _mutate(Future<void> Function() action) async {
+  Future<void> _mutate(
+    Future<void> Function() action, {
+    bool propagateError = true,
+  }) async {
+    if (!isClosed) emit(state.copyWith(errorMessage: null));
     try {
       await action();
-      await onPlanningChanged?.call();
     } catch (error) {
-      if (!isClosed) {
-        emit(state.copyWith(errorMessage: error.toString()));
-      }
+      if (!isClosed) emit(state.copyWith(errorMessage: 'No se pudo guardar'));
+      if (propagateError) rethrow;
+      return;
+    }
+    try {
+      await onPlanningChanged?.call();
+    } catch (_) {
+      if (!isClosed)
+        emit(
+          state.copyWith(
+            errorMessage: 'Registro guardado. No se pudo actualizar la agenda.',
+          ),
+        );
     }
   }
 

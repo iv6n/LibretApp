@@ -336,6 +336,15 @@ void main() {
         find.byKey(const ValueKey('ubicaciones-root-filter-row')),
         findsNothing,
       );
+      expect(find.byTooltip('Filtrar categorías'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('ubicaciones-category-filter-row')),
+        findsNothing,
+      );
+
+      await tester.tap(find.byTooltip('Filtrar categorías'));
+      await tester.pumpAndSettle();
+
       expect(
         find.byKey(const ValueKey('ubicaciones-category-filter-row')),
         findsOneWidget,

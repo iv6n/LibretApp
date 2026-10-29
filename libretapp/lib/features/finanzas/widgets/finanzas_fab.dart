@@ -2,6 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../application/finanzas_bloc.dart';
+import '../application/finanzas_event.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 
@@ -40,7 +43,13 @@ class _FinanzasFabState extends State<FinanzasFab> {
     if (index == 1) {
       return FloatingActionButton.extended(
         heroTag: 'finanzas_fab_ingreso',
-        onPressed: () => context.pushNamed(AppRoutes.nameRegistroIngreso),
+        onPressed: () async {
+          final changed = await context.pushNamed<bool>(AppRoutes.nameRegistroIngreso);
+          if (changed == true && context.mounted) {
+            final bloc = context.read<FinanzasBloc>();
+            if (bloc.state.period != null) bloc.add(LoadPeriod(bloc.state.period!));
+          }
+        },
         icon: const Icon(Icons.add),
         label: const Text('Ingreso'),
       );
@@ -48,7 +57,13 @@ class _FinanzasFabState extends State<FinanzasFab> {
     if (index == 2) {
       return FloatingActionButton.extended(
         heroTag: 'finanzas_fab_gasto',
-        onPressed: () => context.pushNamed(AppRoutes.nameRegistroGastoGeneral),
+        onPressed: () async {
+          final changed = await context.pushNamed<bool>(AppRoutes.nameRegistroGastoGeneral);
+          if (changed == true && context.mounted) {
+            final bloc = context.read<FinanzasBloc>();
+            if (bloc.state.period != null) bloc.add(LoadPeriod(bloc.state.period!));
+          }
+        },
         icon: const Icon(Icons.add),
         label: const Text('Gasto'),
       );

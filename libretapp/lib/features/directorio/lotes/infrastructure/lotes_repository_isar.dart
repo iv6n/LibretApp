@@ -1,7 +1,10 @@
 /// features \u203a directorio \u203a lotes \u203a infrastructure \u203a lotes_repository_isar \u2014 Isar implementation of LotesRepository.
 library;
 
-import 'package:isar/isar.dart';
+import 'package:libretapp/core/database/isar_write_transaction.dart';
+import 'package:libretapp/core/utils/numeric_validation.dart';
+
+import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/isar/isar_lote.dart';
@@ -34,10 +37,11 @@ class LotesRepositoryIsar implements LotesRepository {
 
   @override
   Future<void> upsert(LoteEntity lote) async {
+    requireFiniteNumbers(lote);
     final isar = await _isar;
     final isarLote = lote.toIsarLote();
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final existing = await isar.isarLotes
           .where()
           .uuidEqualTo(lote.uuid)
@@ -54,7 +58,7 @@ class LotesRepositoryIsar implements LotesRepository {
   @override
   Future<void> clearAll() async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarLotes.clear();
     });
   }
@@ -75,6 +79,11 @@ class LotesRepositoryIsar implements LotesRepository {
     double? dailyFeedKgPerHead,
     double? liveWeightPricePerKg,
   }) async {
+    requireFiniteNumbers([
+      feedPricePerKg,
+      dailyFeedKgPerHead,
+      liveWeightPricePerKg,
+    ]);
     final isar = await _isar;
     final uuid =
         'lote-${DateTime.now().millisecondsSinceEpoch}-${DateTime.now().microsecond}';
@@ -94,7 +103,7 @@ class LotesRepositoryIsar implements LotesRepository {
       ..lastUpdateDate = now
       ..synced = false;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarLotes.put(isarLote);
     });
 
@@ -103,10 +112,11 @@ class LotesRepositoryIsar implements LotesRepository {
 
   @override
   Future<void> updateLote(LoteEntity lote) async {
+    requireFiniteNumbers(lote);
     final isar = await _isar;
     final isarLote = lote.toIsarLote();
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final existing = await isar.isarLotes
           .where()
           .uuidEqualTo(lote.uuid)
@@ -123,7 +133,7 @@ class LotesRepositoryIsar implements LotesRepository {
   @override
   Future<void> purge(String uuid) async {
     final isar = await _isar;
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       await isar.isarLotes.where().uuidEqualTo(uuid).deleteAll();
     });
   }
@@ -132,7 +142,7 @@ class LotesRepositoryIsar implements LotesRepository {
   Future<void> deleteLote(String uuid) async {
     final isar = await _isar;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final lote = await isar.isarLotes.where().uuidEqualTo(uuid).findFirst();
       if (lote != null) {
         lote
@@ -152,7 +162,7 @@ class LotesRepositoryIsar implements LotesRepository {
   }) async {
     final isar = await _isar;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final lote = await isar.isarLotes
           .where()
           .uuidEqualTo(loteUuid)
@@ -174,7 +184,7 @@ class LotesRepositoryIsar implements LotesRepository {
   }) async {
     final isar = await _isar;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final lote = await isar.isarLotes
           .where()
           .uuidEqualTo(loteUuid)
@@ -196,7 +206,7 @@ class LotesRepositoryIsar implements LotesRepository {
   }) async {
     final isar = await _isar;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final lote = await isar.isarLotes
           .where()
           .uuidEqualTo(loteUuid)
@@ -220,7 +230,7 @@ class LotesRepositoryIsar implements LotesRepository {
   }) async {
     final isar = await _isar;
 
-    await isar.writeTxn(() async {
+    await withIsarWriteTransaction(isar, () async {
       final lote = await isar.isarLotes
           .where()
           .uuidEqualTo(loteUuid)

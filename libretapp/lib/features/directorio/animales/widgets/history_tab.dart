@@ -109,6 +109,11 @@ class HistoryTab extends StatelessWidget {
       );
     }
 
+    for (final r in data.weanings) {
+      events.add(_TimelineEvent(date: r.date, icon: Icons.child_friendly,
+        color: AppColors.earth, title: 'Destete',
+        subtitle: r.weightKg == null ? r.notes : '${r.weightKg} kg · ${r.weightMethod == WeightMethod.scale ? 'Báscula' : 'Estimado'}'));
+    }
     // Health records
     for (final r in data.health) {
       events.add(
@@ -126,11 +131,11 @@ class HistoryTab extends StatelessWidget {
     for (final r in data.reproductions) {
       events.add(
         _TimelineEvent(
-          date: r.serviceDate,
+          date: r.eventDate,
           icon: Icons.favorite,
           color: AppColors.earth,
           title:
-              '${l10n.detailRecordsReproduction}: ${r.serviceType.displayName}',
+              '${l10n.detailRecordsReproduction}: ${r.serviceType?.displayName ?? 'Parto'}',
           subtitle: r.maleSireIdentifier ?? r.notes,
         ),
       );
@@ -227,12 +232,13 @@ class _WeightHistorySummary extends StatelessWidget {
       measuredAt: latest.date,
       history: ordered,
       currentRecordUuid: latest.recordUuid,
+      currentMethod: latest.method,
     );
     final cutoff = DateTime.now().subtract(const Duration(days: 30));
     final baseline = ordered
-        .where((record) => !record.date.isAfter(cutoff))
+        .where((record) => record.method == WeightMethod.scale && !record.date.isAfter(cutoff))
         .lastOrNull;
-    final last30Gain = baseline == null
+    final last30Gain = baseline == null || latest.method != WeightMethod.scale
         ? null
         : latest.weight - baseline.weight;
     final points = ordered.length > 8

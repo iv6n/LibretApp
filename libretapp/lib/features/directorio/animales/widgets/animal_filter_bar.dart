@@ -30,12 +30,7 @@ class AnimalFilterBar extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     final chips = AnimalTaxonomy.filterStageGroups()
-        .map(
-          (stages) => _StageChipConfig(
-            _stageGroupLabel(stages),
-            stages,
-          ),
-        )
+        .map((stages) => _StageChipConfig(_stageGroupLabel(stages), stages))
         .toList();
 
     return Column(
@@ -46,8 +41,13 @@ class AnimalFilterBar extends StatelessWidget {
             onChanged: onSearchChanged,
             decoration: InputDecoration(
               hintText: l10n.animalsSearchHint,
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: AppColors.accent),
+              hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               suffixIcon: searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear),
@@ -55,16 +55,23 @@ class AnimalFilterBar extends StatelessWidget {
                     )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.accent, width: 2),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -82,29 +89,29 @@ class AnimalFilterBar extends StatelessWidget {
                   l10n.animalsStageFilterLabel,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.visibility,
                     size: 18,
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 6),
                   Switch(
                     value: onlyAttention,
                     onChanged: onAttentionChanged,
-                    activeThumbColor: AppColors.accent,
+                    activeThumbColor: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     l10n.animalsOnlyAttention,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -118,7 +125,9 @@ class AnimalFilterBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Wrap(
             spacing: 8,
-            children: chips.map((cfg) => _buildStageChip(context, cfg)).toList(),
+            children: chips
+                .map((cfg) => _buildStageChip(context, cfg))
+                .toList(),
           ),
         ),
       ],

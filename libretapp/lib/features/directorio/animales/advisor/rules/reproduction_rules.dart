@@ -36,6 +36,7 @@ List<LivestockTip> evaluateReproductionRules(
 
 /// Hembra muy joven para servicio.
 LivestockTip? _youngAnimalService(AnimalEntity animal) {
+  if (!animal.hasKnownAge || animal.species != Species.cattle) return null;
   if (animal.sex != Sex.female) return null;
   if (animal.ageMonths >= 15) return null; // Edad mínima recomendada bovinos
 
@@ -58,9 +59,9 @@ LivestockTip? _serviceIntervalCheck(
   AnimalEntity animal,
   ReproductionRecord record,
 ) {
-  if (animal.lastServiceDate == null) return null;
+  if (record.serviceDate == null || animal.lastServiceDate == null) return null;
 
-  final daysSinceLastService = record.serviceDate
+  final daysSinceLastService = record.serviceDate!
       .difference(animal.lastServiceDate!)
       .inDays;
 
@@ -103,12 +104,13 @@ LivestockTip? _artificialInseminationTiming(
 
 /// Chequeo de preñez: recordar diagnóstico a los 30-45 días.
 LivestockTip? _pregnancyCheckReminder(ReproductionRecord record) {
+  if (record.serviceDate == null) return null;
   if (record.pregnancyResult != null &&
       record.pregnancyResult != PregnancyCheckResult.notChecked) {
     return null;
   }
 
-  final daysSinceService = DateTime.now().difference(record.serviceDate).inDays;
+  final daysSinceService = DateTime.now().difference(record.serviceDate!).inDays;
 
   if (daysSinceService < 28) {
     return LivestockTip(
@@ -266,7 +268,7 @@ LivestockTip? _seasonalBreedingTip(
     return null;
   }
 
-  final month = record.serviceDate.month;
+  final month = record.eventDate.month;
   // Temporada natural de celo en ovejas/cabras: marzo-mayo (trópico)
   // y febrero-junio (zonas templadas del hemisferio sur).
   final isOffSeason = month >= 8 && month <= 12;
@@ -317,7 +319,7 @@ LivestockTip? _repeatedServiceFailure(
   }
 
   // Si hay más de 3 ciclos desde el primer servicio sin quedar preñada.
-  final daysSinceFirstService = record.serviceDate
+  final daysSinceFirstService = record.serviceDate!
       .difference(animal.firstServiceDate!)
       .inDays;
   if (daysSinceFirstService < 63) return null; // 3 ciclos x 21 días

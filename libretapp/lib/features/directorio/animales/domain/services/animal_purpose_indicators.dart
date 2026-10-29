@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
+import '../entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/reproductive_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproductive_kpi_service.dart';
@@ -59,6 +60,8 @@ class PurposeIndicator {
 class AnimalIndicatorSnapshot {
   const AnimalIndicatorSnapshot({
     this.lastWeightKg,
+    this.lastWeightDate,
+    this.lastWeightMethod,
     this.averageDailyGainKg,
     this.milkLitersPerDay,
     this.daysInMilk,
@@ -72,6 +75,8 @@ class AnimalIndicatorSnapshot {
   static const AnimalIndicatorSnapshot empty = AnimalIndicatorSnapshot();
 
   final double? lastWeightKg;
+  final DateTime? lastWeightDate;
+  final WeightMethod? lastWeightMethod;
 
   /// Ganancia diaria de peso measured between the two most recent weighings,
   /// as opposed to [AnimalEntity.dailyGainEstimate] which is typed in by hand.
@@ -133,6 +138,7 @@ List<PurposeIndicator> indicatorsFor(
       indicators.addAll(_fiberIndicators(animal, data, reference));
     case ProductionPurpose.work:
     case ProductionPurpose.sport:
+      indicators.addAll(_companionIndicators(animal, data, reference));
       indicators.addAll(_workIndicators(animal));
     case ProductionPurpose.guard:
     case ProductionPurpose.companion:
@@ -141,7 +147,7 @@ List<PurposeIndicator> indicatorsFor(
       indicators.add(
         const PurposeIndicator(
           kind: PurposeIndicatorKind.definePurpose,
-          label: 'Definir propósito',
+          label: 'Propósito pendiente',
           severity: IndicatorSeverity.attention,
         ),
       );
@@ -149,12 +155,8 @@ List<PurposeIndicator> indicatorsFor(
       break;
   }
 
-  indicators.sort(
-    (a, b) => b.severity.index.compareTo(a.severity.index),
-  );
-  return List<PurposeIndicator>.unmodifiable(
-    indicators.take(maxIndicators),
-  );
+  indicators.sort((a, b) => b.severity.index.compareTo(a.severity.index));
+  return List<PurposeIndicator>.unmodifiable(indicators.take(maxIndicators));
 }
 
 PurposeIndicator? _withdrawalIndicator(
@@ -183,13 +185,14 @@ List<PurposeIndicator> _meatIndicators(
     indicators.add(
       PurposeIndicator(
         kind: PurposeIndicatorKind.weight,
-        label: _formatKg(weight),
+        label:
+            '${_formatKg(weight)}${data.lastWeightMethod == WeightMethod.estimated || data.lastWeightDate == null ? ' estimado' : ''}',
       ),
     );
   }
 
   // Prefer the gain measured between real weighings over the typed estimate.
-  final gain = data.averageDailyGainKg ?? animal.dailyGainEstimate;
+  final gain = data.averageDailyGainKg;
   if (gain != null && gain != 0) {
     final sign = gain > 0 ? '+' : '';
     indicators.add(
@@ -197,7 +200,9 @@ List<PurposeIndicator> _meatIndicators(
         kind: PurposeIndicatorKind.dailyGain,
         label: '$sign${_formatKg(gain)}/día',
         // Losing weight in a fattening animal is the whole signal.
-        severity: gain < 0 ? IndicatorSeverity.attention : IndicatorSeverity.neutral,
+        severity: gain < 0
+            ? IndicatorSeverity.attention
+            : IndicatorSeverity.neutral,
       ),
     );
   }
@@ -353,7 +358,9 @@ List<PurposeIndicator> _workIndicators(AnimalEntity animal) {
       PurposeIndicator(
         kind: PurposeIndicatorKind.bodyCondition,
         label: 'CC $score/5',
-        severity: score <= 2 ? IndicatorSeverity.attention : IndicatorSeverity.neutral,
+        severity: score <= 2
+            ? IndicatorSeverity.attention
+            : IndicatorSeverity.neutral,
       ),
     );
   }
@@ -380,8 +387,8 @@ List<PurposeIndicator> _companionIndicators(
       PurposeIndicator(
         kind: PurposeIndicatorKind.healthState,
         label: days < 0
-            ? 'Vacuna vencida'
-            : 'Vacuna en $days ${days == 1 ? 'día' : 'días'}',
+            ? 'Cuidado vencido'
+            : 'Cuidado en $days ${days == 1 ? 'día' : 'días'}',
         severity: days < 0
             ? IndicatorSeverity.attention
             : IndicatorSeverity.neutral,
@@ -445,6 +452,9 @@ PurposeIndicator? _reproductiveStateIndicator(AnimalEntity animal) {
 }
 
 PurposeIndicator _ageIndicator(AnimalEntity animal) {
+  if (!animal.hasKnownAge) {
+    return const PurposeIndicator(kind: PurposeIndicatorKind.age, label: 'Sin dato');
+  }
   final months = animal.ageMonths;
   final years = months ~/ 12;
   final label = years > 0

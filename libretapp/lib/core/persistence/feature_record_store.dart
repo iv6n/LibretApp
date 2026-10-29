@@ -1,7 +1,6 @@
 /// Persistence port for new domain verticals.
 library;
 
-
 class FeatureRecord {
   const FeatureRecord({
     required this.uuid,
@@ -72,13 +71,39 @@ class FeatureRecord {
 
 abstract interface class FeatureRecordStore {
   Future<FeatureRecord?> get(String farmId, String uuid);
-  Future<List<FeatureRecord>> list(String farmId, String kind, {bool includeDeleted = false});
+  Future<List<FeatureRecord>> list(
+    String farmId,
+    String kind, {
+    bool includeDeleted = false,
+  });
+
   /// Enumerates the shared envelope for backup/migration tooling. Legacy
   /// repositories may leave this unsupported while their collections are
   /// migrated; new web/native stores implement it transactionally.
   Future<List<FeatureRecord>> listAll({bool includeDeleted = false}) async =>
       throw UnsupportedError('Este almacenamiento aún no expone listAll.');
-  Future<void> put(FeatureRecord record, {List<FeatureRecord> alsoPut = const []});
-  Future<void> softDelete({required String farmId, required String uuid, required String kind});
+  Future<void> put(
+    FeatureRecord record, {
+    List<FeatureRecord> alsoPut = const [],
+  });
+  Future<void> softDelete({
+    required String farmId,
+    required String uuid,
+    required String kind,
+  });
   Future<void> markSynced(String farmId, String uuid, int revision);
+}
+
+/// The callback receives a store bound to one atomic database transaction.
+/// Reads used for availability/identity checks belong in the same callback.
+abstract interface class TransactionalFeatureRecordStore {
+  Future<T> runTransaction<T>(
+    Future<T> Function(FeatureRecordStore store) action,
+  );
+}
+
+/// Emits committed snapshots, including changes made by another repository or
+/// browser tab. Failed transactions must never publish their intermediate rows.
+abstract interface class WatchableFeatureRecordStore {
+  Stream<List<FeatureRecord>> watch(String farmId, String kind);
 }

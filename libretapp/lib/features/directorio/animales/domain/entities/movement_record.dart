@@ -41,6 +41,7 @@ class MovementRecord extends TimestampedRecord {
   const MovementRecord({
     this.fromLocation,
     required this.toLocation,
+    this.clearsLocation = false,
     required super.date,
     required this.reason,
     super.notes,
@@ -54,6 +55,7 @@ class MovementRecord extends TimestampedRecord {
   });
   final String? fromLocation;
   final String toLocation;
+  final bool clearsLocation;
   final MovementReason reason;
   final String? movedBy;
   final String? recordUuid;
@@ -65,6 +67,7 @@ class MovementRecord extends TimestampedRecord {
   MovementRecord copyWith({
     String? fromLocation,
     String? toLocation,
+    bool? clearsLocation,
     DateTime? date,
     MovementReason? reason,
     String? notes,
@@ -79,6 +82,7 @@ class MovementRecord extends TimestampedRecord {
     return MovementRecord(
       fromLocation: fromLocation ?? this.fromLocation,
       toLocation: toLocation ?? this.toLocation,
+      clearsLocation: clearsLocation ?? this.clearsLocation,
       date: date ?? this.date,
       reason: reason ?? this.reason,
       notes: notes ?? this.notes,
@@ -97,6 +101,7 @@ class MovementRecord extends TimestampedRecord {
     ...super.props,
     fromLocation,
     toLocation,
+    clearsLocation,
     reason,
     movedBy,
     recordUuid,

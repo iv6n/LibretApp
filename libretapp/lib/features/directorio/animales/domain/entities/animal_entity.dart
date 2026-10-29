@@ -1,4 +1,4 @@
-﻿/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a animal_entity \u2014 Animal domain entity.
+/// features \u203a directorio \u203a animales \u203a domain \u203a entities \u203a animal_entity \u2014 Animal domain entity.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -46,6 +46,8 @@ const Object _copyWithUnset = Object();
 /// - Equino (equine): Similar a bovino, con adaptaciones en reproductiva
 /// - Ovino (sheep): Similar a bovino, con adaptaciones menores
 /// - Nuevas especies: Agregar a enum Species y documentar campos relevantes
+enum BirthDatePrecision { exact, estimated, unknown }
+
 class AnimalEntity extends Equatable {
   const AnimalEntity({
     this.id,
@@ -63,6 +65,7 @@ class AnimalEntity extends Equatable {
     required this.breed,
     this.crossBreed,
     required this.birthDate,
+    this.birthDatePrecision = BirthDatePrecision.unknown,
     required this.ageMonths,
     this.weight,
     this.sireUuid,
@@ -107,6 +110,11 @@ class AnimalEntity extends Equatable {
     this.currentLocationId,
     this.initialLocationId,
     this.lastMovementDate,
+    this.manualVaccinated,
+    this.manualDewormed,
+    this.manualHasVitamins,
+    this.manualUnderObservation,
+    this.manualRequiresAttention,
     required this.underObservation,
     required this.requiresAttention,
     required this.riskLevel,
@@ -139,7 +147,11 @@ class AnimalEntity extends Equatable {
   final String breed;
   final String? crossBreed;
   final DateTime birthDate;
+  final BirthDatePrecision birthDatePrecision;
   final int ageMonths;
+  /// Negative when age and date of birth were not supplied by the user.
+  bool get hasKnownAge => ageMonths >= 0;
+  DateTime? get knownBirthDate => hasKnownAge ? birthDate : null;
   final double? weight;
   final String? sireUuid;
   final String? damUuid;
@@ -183,6 +195,11 @@ class AnimalEntity extends Equatable {
   final String? currentLocationId;
   final String? initialLocationId;
   final DateTime? lastMovementDate;
+  final bool? manualVaccinated;
+  final bool? manualDewormed;
+  final bool? manualHasVitamins;
+  final bool? manualUnderObservation;
+  final bool? manualRequiresAttention;
   final bool underObservation;
   final bool requiresAttention;
   final RiskLevel riskLevel;
@@ -216,6 +233,7 @@ class AnimalEntity extends Equatable {
     String? breed,
     Object? crossBreed = _copyWithUnset,
     DateTime? birthDate,
+    BirthDatePrecision? birthDatePrecision,
     int? ageMonths,
     Object? weight = _copyWithUnset,
     Object? sireUuid = _copyWithUnset,
@@ -260,6 +278,11 @@ class AnimalEntity extends Equatable {
     Object? currentLocationId = _copyWithUnset,
     Object? initialLocationId = _copyWithUnset,
     Object? lastMovementDate = _copyWithUnset,
+    bool? manualVaccinated,
+    bool? manualDewormed,
+    bool? manualHasVitamins,
+    bool? manualUnderObservation,
+    bool? manualRequiresAttention,
     bool? underObservation,
     bool? requiresAttention,
     RiskLevel? riskLevel,
@@ -295,6 +318,7 @@ class AnimalEntity extends Equatable {
       breed: breed ?? this.breed,
       crossBreed: nullable<String>(crossBreed, this.crossBreed),
       birthDate: birthDate ?? this.birthDate,
+      birthDatePrecision: birthDatePrecision ?? this.birthDatePrecision,
       ageMonths: ageMonths ?? this.ageMonths,
       weight: nullable<double>(weight, this.weight),
       sireUuid: nullable<String>(sireUuid, this.sireUuid),
@@ -363,10 +387,7 @@ class AnimalEntity extends Equatable {
       ),
       locationNotes: nullable<String>(locationNotes, this.locationNotes),
       feedFrequency: nullable<String>(feedFrequency, this.feedFrequency),
-      feedSupplements: nullable<String>(
-        feedSupplements,
-        this.feedSupplements,
-      ),
+      feedSupplements: nullable<String>(feedSupplements, this.feedSupplements),
       feedNotes: nullable<String>(feedNotes, this.feedNotes),
       earTagColor: nullable<String>(earTagColor, this.earTagColor),
       currentLocationId: nullable<String>(
@@ -381,6 +402,13 @@ class AnimalEntity extends Equatable {
         lastMovementDate,
         this.lastMovementDate,
       ),
+      manualVaccinated: manualVaccinated ?? this.manualVaccinated,
+      manualDewormed: manualDewormed ?? this.manualDewormed,
+      manualHasVitamins: manualHasVitamins ?? this.manualHasVitamins,
+      manualUnderObservation:
+          manualUnderObservation ?? this.manualUnderObservation,
+      manualRequiresAttention:
+          manualRequiresAttention ?? this.manualRequiresAttention,
       underObservation: underObservation ?? this.underObservation,
       requiresAttention: requiresAttention ?? this.requiresAttention,
       riskLevel: riskLevel ?? this.riskLevel,
@@ -415,6 +443,7 @@ class AnimalEntity extends Equatable {
     breed,
     crossBreed,
     birthDate,
+    birthDatePrecision,
     ageMonths,
     weight,
     sireUuid,
@@ -459,6 +488,11 @@ class AnimalEntity extends Equatable {
     currentLocationId,
     initialLocationId,
     lastMovementDate,
+    manualVaccinated,
+    manualDewormed,
+    manualHasVitamins,
+    manualUnderObservation,
+    manualRequiresAttention,
     underObservation,
     requiresAttention,
     riskLevel,

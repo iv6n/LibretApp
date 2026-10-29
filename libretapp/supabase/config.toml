@@ -19,3 +19,22 @@ file_size_limit = "100MiB"
 [auth]
 enabled = true
 site_url = "io.supabase.libretapp://login-callback"
+
+
+[auth.sms]
+enable_signup = true
+otp_length = 6
+otp_expiry = 300
+max_frequency = "60s"
+
+# The HTTP hooks verify Standard Webhooks signatures / server worker secrets.
+# Configure CAPTCHA (Turnstile), send_sms hook URI and its signing secret in
+# the STAGING project before enabling phone auth. Never use billable SMS here.
+[functions.send-sms]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.resume-deletions]
+verify_jwt = false

@@ -2,6 +2,7 @@
 library;
 
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
@@ -13,7 +14,6 @@ import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
-import 'package:libretapp/features/inicio/data/weather_service.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -29,19 +29,12 @@ class InicioDashboardService {
     required LocationRepository locationRepository,
     required PerfilRepository perfilRepository,
     required ReproductionRecordRepository reproductionRepository,
-    required WeatherService weatherService,
   }) : _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _agendaRepository = agendaRepository,
        _locationRepository = locationRepository,
        _perfilRepository = perfilRepository,
-       _reproductionRepository = reproductionRepository,
-       _weatherService = weatherService;
-
-  // Weather is supplementary to the operational dashboard. Keep the first
-  // dashboard result independent from a slow geocoder, GPS provider, or HTTP
-  // request so an unavailable network cannot hold the initial surface open.
-  static const _weatherLoadBudget = Duration(milliseconds: 250);
+       _reproductionRepository = reproductionRepository;
 
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
@@ -49,7 +42,6 @@ class InicioDashboardService {
   final LocationRepository _locationRepository;
   final PerfilRepository _perfilRepository;
   final ReproductionRecordRepository _reproductionRepository;
-  final WeatherService _weatherService;
 
   Future<InicioDashboardData> loadDashboard() async {
     final now = DateTime.now();
@@ -72,6 +64,9 @@ class InicioDashboardService {
     final perfil = results[5] as Perfil;
 
     final totalAnimals = (statistics['total'] as int?) ?? animals.length;
+    final livestockAnimals = animals
+        .where((animal) => !isPetAnimal(animal))
+        .toList();
     final attentionAnimals = (statistics['attention'] as int?) ?? 0;
     final totalAnimalCapacity = locations.fold<int>(
       0,
@@ -80,23 +75,38 @@ class InicioDashboardService {
 
     final unvaccinated = animals.where((a) => !a.vaccinated).length;
     final underObservation = animals.where((a) => a.underObservation).length;
-    final pendingEarTags = animals.where(hasPendingEarTag).length;
+    final pendingEarTags = livestockAnimals.where(hasPendingEarTag).length;
 
     // Category breakdown – only categories with ≥1 animal.
-    final categoryTotals = <Category, ({int male, int female})>{};
+    final categoryTotals = <Category, ({int male, int female, int unknown})>{};
     for (final animal in animals) {
       final cat = animal.category;
-      final prev = categoryTotals[cat] ?? (male: 0, female: 0);
-      categoryTotals[cat] = animal.sex == Sex.male
-          ? (male: prev.male + 1, female: prev.female)
-          : (male: prev.male, female: prev.female + 1);
+      final prev = categoryTotals[cat] ?? (male: 0, female: 0, unknown: 0);
+      categoryTotals[cat] = switch (animal.sex) {
+        Sex.male => (
+          male: prev.male + 1,
+          female: prev.female,
+          unknown: prev.unknown,
+        ),
+        Sex.female => (
+          male: prev.male,
+          female: prev.female + 1,
+          unknown: prev.unknown,
+        ),
+        Sex.unknown => (
+          male: prev.male,
+          female: prev.female,
+          unknown: prev.unknown + 1,
+        ),
+      };
     }
     final categoryBreakdown = categoryTotals.entries.map((e) {
       return CategorySummary(
         category: e.key,
-        total: e.value.male + e.value.female,
+        total: e.value.male + e.value.female + e.value.unknown,
         maleCount: e.value.male,
         femaleCount: e.value.female,
+        unknownCount: e.value.unknown,
       );
     }).toList()..sort((a, b) => b.total.compareTo(a.total));
 
@@ -168,8 +178,8 @@ class InicioDashboardService {
     if (alerts.isEmpty) {
       alerts.add(
         const InicioAlertItem(
-          title: 'Operación estable',
-          message: 'No se detectaron alertas críticas por ahora.',
+          title: 'Sin alertas urgentes',
+          message: 'Revisa las tareas y el seguimiento sanitario en Reportes.',
           severity: InicioAlertSeverity.info,
           targetRoute: AppRoutes.inicio,
         ),
@@ -198,7 +208,7 @@ class InicioDashboardService {
       );
     }
 
-    if (locations.isEmpty) {
+    if (locations.isEmpty && livestockAnimals.isNotEmpty) {
       tasks.add(
         const InicioTaskItem(
           title: 'Registrar ubicaciones base',
@@ -208,7 +218,7 @@ class InicioDashboardService {
       );
     }
 
-    if (activeLotes.isEmpty) {
+    if (activeLotes.isEmpty && livestockAnimals.isNotEmpty) {
       tasks.add(
         const InicioTaskItem(
           title: 'Crear un lote activo',
@@ -299,20 +309,12 @@ class InicioDashboardService {
         )
         .toList(growable: false);
 
-    WeatherData? weather;
-    try {
-      weather = await _weatherService
-          .getCurrentWeather(locations: locations, address: perfil.direccion)
-          .timeout(_weatherLoadBudget, onTimeout: () => null);
-    } catch (_) {
-      // Weather is supplementary: connectivity or location failures must not
-      // prevent the operational dashboard from loading.
-    }
-
     return InicioDashboardData(
       profileName: perfil.nombre,
       farmName: perfil.finca,
       totalAnimals: totalAnimals,
+      petCount: animals.where(isPetAnimal).length,
+      livestockCount: animals.where((animal) => !isPetAnimal(animal)).length,
       totalAnimalCapacity: totalAnimalCapacity,
       attentionAnimals: attentionAnimals,
       activeLotes: activeLotes.length,
@@ -324,7 +326,9 @@ class InicioDashboardService {
       lastUpdated: now,
       categoryBreakdown: categoryBreakdown,
       upcomingCalvings: upcomingCalvings,
-      weather: weather,
+      // Weather is loaded separately by WeatherHomeCard from the saved
+      // per-workspace location and its own cache.
+      weather: null,
       recentActivity: recentActivity,
       activeLocations: activeLocationSummaries,
     );

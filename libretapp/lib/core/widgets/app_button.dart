@@ -51,7 +51,7 @@ class AppButton extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.xs),
-              Text(loadingLabel ?? label),
+              Flexible(child: Text(loadingLabel ?? label)),
             ],
           )
         : Text(label);
@@ -109,21 +109,22 @@ class AppButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
         foregroundColor: danger ? error : theme.colorScheme.primary,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
       );
     }
 
     if (variant == AppButtonVariant.secondary) {
+      final accent = theme.brightness == Brightness.dark
+          ? theme.colorScheme.onSurface
+          : theme.colorScheme.primary;
       return OutlinedButton.styleFrom(
         minimumSize: Size(0, height),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        foregroundColor: theme.colorScheme.primary,
-        side: BorderSide(
-          color: theme.colorScheme.primary.withValues(alpha: 0.72),
-        ),
+        foregroundColor: accent,
+        side: BorderSide(color: accent.withValues(alpha: 0.72)),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
         ),
       );
     }
@@ -131,10 +132,10 @@ class AppButton extends StatelessWidget {
     return FilledButton.styleFrom(
       minimumSize: Size(0, height),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      backgroundColor: background ?? theme.colorScheme.tertiary,
-      foregroundColor: foreground ?? theme.colorScheme.onTertiary,
+      backgroundColor: background ?? theme.colorScheme.primary,
+      foregroundColor: foreground ?? theme.colorScheme.onPrimary,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
     );
   }
@@ -143,8 +144,12 @@ class AppButton extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return switch (variant) {
       AppButtonVariant.danger => scheme.onError,
-      AppButtonVariant.secondary || AppButtonVariant.tertiary => scheme.primary,
-      AppButtonVariant.primary => scheme.onTertiary,
+      AppButtonVariant.secondary =>
+        scheme.brightness == Brightness.dark
+            ? scheme.onSurface
+            : scheme.primary,
+      AppButtonVariant.tertiary => scheme.primary,
+      AppButtonVariant.primary => scheme.onPrimary,
     };
   }
 }

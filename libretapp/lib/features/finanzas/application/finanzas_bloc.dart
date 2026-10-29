@@ -91,6 +91,13 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
         }),
       );
 
+      var invalidRecordCount = 0;
+      bool valid(double? value) {
+        if (value != null && value.isFinite && value > 0) return true;
+        invalidRecordCount++; return false;
+      }
+      final validIncomes = incomes.where((i) => valid(i.amount)).toList();
+      final validExpenses = expenses.where((e) => valid(e.amount)).toList();
       double totalAnimalCosts = 0;
       double totalAnimalSales = 0;
       final profitabilities = <AnimalProfitability>[];
@@ -98,8 +105,8 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
       for (final data in animalRecords) {
         final animal = data.animal;
         final uuid = animal.uuid as String;
-        final costs = data.costs;
-        final commercials = data.commercials;
+        final costs = data.costs.where((c) => valid(c.amount)).toList();
+        final commercials = data.commercials.where((c) => (c.amount == null && !const {CommercialRecordType.sale, CommercialRecordType.purchase, CommercialRecordType.priceUpdate}.contains(c.type)) || valid(c.amount)).toList();
 
         // Period-scoped totals — used for both the summary and per-animal view
         // so that both tabs always show the same numbers for the same period.
@@ -122,7 +129,7 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
         // a one-time expense that should only hit the period it happened in,
         // not every period the animal is viewed under.
         final purchaseCostNullable = animal.purchasePrice as double?;
-        final purchaseCost = purchaseCostNullable != null
+        final purchaseCost = purchaseCostNullable != null && valid(purchaseCostNullable)
             ? (period.contains(animal.creationDate as DateTime)
                   ? purchaseCostNullable
                   : 0.0)
@@ -150,8 +157,8 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
 
       profitabilities.sort((a, b) => b.netResult.compareTo(a.netResult));
 
-      final totalIncome = incomes.fold(0.0, (sum, i) => sum + i.amount);
-      final totalGeneralExpenses = expenses.fold(
+      final totalIncome = validIncomes.fold(0.0, (sum, i) => sum + i.amount);
+      final totalGeneralExpenses = validExpenses.fold(
         0.0,
         (sum, e) => sum + e.amount,
       );
@@ -162,6 +169,7 @@ class FinanzasBloc extends Bloc<FinanzasEvent, FinanzasState> {
         totalGeneralExpenses: totalGeneralExpenses,
         totalAnimalCosts: totalAnimalCosts,
         totalAnimalSales: totalAnimalSales,
+        invalidRecordCount: invalidRecordCount,
       );
 
       emit(

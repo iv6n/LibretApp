@@ -80,7 +80,7 @@ class AppShellFab extends StatelessWidget {
             ),
             if (secondary != null)
               Positioned(
-                right: 32,
+                right: 16,
                 top: 0,
                 bottom: 0,
                 child: Center(
@@ -89,6 +89,10 @@ class AppShellFab extends StatelessWidget {
                     width: _fabHeight,
                     child: FloatingActionButton.small(
                       heroTag: secondary.heroTag ?? 'shell_fab_secondary',
+                      tooltip: secondary.tooltip,
+                      backgroundColor: fabBackground,
+                      foregroundColor: fabForeground,
+                      shape: const CircleBorder(),
                       elevation: 2,
                       onPressed: secondary.onPressed,
                       child: Icon(secondary.icon),

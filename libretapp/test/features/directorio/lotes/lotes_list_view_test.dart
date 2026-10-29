@@ -1,13 +1,33 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/lotes/lotes_list_view.dart';
+import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/enums/location_type.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
+
+class _SingleSubscriptionLocations implements LocationRepository {
+  final changes = StreamController<List<LocationEntity>>();
+  int watchCalls = 0;
+
+  @override
+  Stream<List<LocationEntity>> watchAll() {
+    watchCalls++;
+    return changes.stream;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class _FakeLotesRepository implements LotesRepository {
   _FakeLotesRepository(this._lotes);
@@ -125,13 +145,23 @@ class _FakeLotesRepository implements LotesRepository {
       _lotes.where((lote) => !lote.active).toList();
 }
 
-Future<void> _pumpLotes(WidgetTester tester, List<LoteEntity> lotes) async {
+Future<void> _pumpLotes(
+  WidgetTester tester,
+  List<LoteEntity> lotes, {
+  double bottomInset = 0,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.lightTheme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('es'),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(padding: EdgeInsets.only(bottom: bottomInset)),
+        child: child!,
+      ),
       home: BlocProvider(
         create: (_) => LotesBloc(_FakeLotesRepository(lotes)),
         child: const LotesListView(),
@@ -145,6 +175,120 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('LotesListView', () {
+    testWidgets('keeps location updates when activating the directory tab', (
+      tester,
+    ) async {
+      final locations = _SingleSubscriptionLocations();
+      addTearDown(locations.changes.close);
+      var active = false;
+      late StateSetter rebuild;
+      const destination = LocationEntity(
+        uuid: 'destination',
+        name: 'Potrero destino',
+        type: LocationType.pasture,
+        surfaceArea: 1,
+        capacity: 3,
+        waterSource: '',
+        terrainType: '',
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlocProvider(
+            create: (_) => LotesBloc(
+              _FakeLotesRepository([
+                LoteEntity(
+                  uuid: 'moved-lot',
+                  name: 'Lote trasladado',
+                  currentLocationId: destination.uuid,
+                  createdAt: DateTime(2026, 10, 25),
+                  lastUpdateDate: DateTime(2026, 10, 25),
+                ),
+              ]),
+            ),
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                rebuild = setState;
+                return LotesListView(
+                  shellInteractionsEnabled: active,
+                  locationRepository: locations,
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      locations.changes.add([destination]);
+      await tester.pumpAndSettle();
+      expect(find.text('Potrero destino'), findsOneWidget);
+
+      rebuild(() => active = true);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Potrero destino'), findsOneWidget);
+
+      locations.changes.add([
+        destination.copyWith(name: 'Potrero actualizado'),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('Potrero actualizado'), findsOneWidget);
+      rebuild(() => active = false);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Potrero actualizado'), findsOneWidget);
+      expect(locations.watchCalls, 1);
+    });
+
+    testWidgets(
+      'last active lot clears the dock when there are no closed lots',
+      (tester) async {
+        const height = 568.0;
+        const dockInset = 105.0;
+        tester.view.physicalSize = const Size(320, height);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await _pumpLotes(
+          tester,
+          List.generate(
+            8,
+            (index) => LoteEntity(
+              uuid: 'active-$index',
+              name: 'Lote $index',
+              createdAt: DateTime(2026, 9, 13),
+              lastUpdateDate: DateTime(2026, 9, 13),
+            ),
+          ),
+          bottomInset: dockInset,
+        );
+        final scrollable = tester.state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(CustomScrollView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        expect(scrollable.position.maxScrollExtent, greaterThan(0));
+        await tester.fling(
+          find.byType(CustomScrollView),
+          const Offset(0, -2000),
+          4000,
+        );
+        await tester.pumpAndSettle();
+        expect(scrollable.position.extentAfter, 0);
+
+        expect(
+          tester.getRect(find.byType(Slidable).last).bottom,
+          lessThanOrEqualTo(height - dockInset - 64),
+        );
+        expect(find.text('Lote 7').hitTestable(), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('delete asks confirmation and dispatches delete', (
       tester,
     ) async {
@@ -223,16 +367,26 @@ void main() {
         expect(find.text('Activos · 2'), findsOneWidget);
         expect(find.text('Cerrados · 1'), findsOneWidget);
 
-        await tester.tap(find.text('Activos 2'));
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Activos'),
+            matching: find.byType(AppDirectoryFilterChip),
+          ),
+        );
         await tester.pumpAndSettle();
         expect(find.text('2 lotes'), findsOneWidget);
         expect(find.text('Vientres productivos'), findsOneWidget);
         expect(find.text('Lote cerrado'), findsNothing);
         expect(find.text('Cerrados · 1'), findsNothing);
 
-        await tester.tap(find.text('Cerrados 1'));
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Cerrados'),
+            matching: find.byType(AppDirectoryFilterChip),
+          ),
+        );
         await tester.pumpAndSettle();
-        expect(find.text('1 lotes'), findsOneWidget);
+        expect(find.text('1 lote'), findsOneWidget);
         expect(find.text('Lote cerrado'), findsOneWidget);
         expect(find.text('No hay lotes cerrados'), findsNothing);
       },

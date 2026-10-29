@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -12,17 +13,26 @@ class AnimalSpeciesSelector extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.includeOther = true,
+    this.preferredSpecies = const [],
   });
 
   final Species value;
   final ValueChanged<Species> onChanged;
   final bool includeOther;
+  final List<Species> preferredSpecies;
 
   @override
   Widget build(BuildContext context) {
-    final values = includeOther
-        ? Species.values
-        : Species.values.where((species) => species != Species.other).toList();
+    final values = <Species>[
+      ...preferredSpecies.where(
+        (species) => includeOther || species != Species.other,
+      ),
+      ...Species.values.where(
+        (species) =>
+            (includeOther || species != Species.other) &&
+            !preferredSpecies.contains(species),
+      ),
+    ];
     return Semantics(
       label: 'Seleccionar especie',
       child: SingleChildScrollView(
@@ -72,10 +82,11 @@ class CompactSexSelector extends StatelessWidget {
         return SizedBox(
           height: 48,
           child: ChoiceChip(
-            avatar: Icon(
-              sex == Sex.female ? Icons.female : Icons.male,
-              size: 20,
-            ),
+            avatar: Icon(switch (sex) {
+              Sex.female => Icons.female,
+              Sex.male => Icons.male,
+              Sex.unknown => Icons.help_outline,
+            }, size: 20),
             label: Text(sex.displayName),
             selected: selected,
             onSelected: (_) => onChanged(sex),
@@ -102,7 +113,7 @@ class ApproximateAgeField extends StatelessWidget {
   final bool enabled;
 
   Future<void> _openPicker(BuildContext context) async {
-    final selected = await showModalBottomSheet<ApproximateAge>(
+    final selected = await showAppBottomSheet<ApproximateAge>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -151,6 +162,7 @@ class _AgePickerSheet extends StatefulWidget {
 class _AgePickerSheetState extends State<_AgePickerSheet> {
   late int _years;
   late int _months;
+  late bool _unknown;
   late final FixedExtentScrollController _yearsController;
   late final FixedExtentScrollController _monthsController;
 
@@ -159,6 +171,7 @@ class _AgePickerSheetState extends State<_AgePickerSheet> {
     super.initState();
     _years = widget.initialValue.years;
     _months = widget.initialValue.months;
+    _unknown = widget.initialValue.isUnknown;
     _yearsController = FixedExtentScrollController(initialItem: _years);
     _monthsController = FixedExtentScrollController(initialItem: _months);
   }
@@ -172,7 +185,9 @@ class _AgePickerSheetState extends State<_AgePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final age = ApproximateAge(years: _years, months: _months);
+    final age = _unknown
+        ? const ApproximateAge.unknown()
+        : ApproximateAge(years: _years, months: _months);
     final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -209,11 +224,13 @@ class _AgePickerSheetState extends State<_AgePickerSheet> {
                     semanticsLabel: 'Años',
                     controller: _yearsController,
                     count: ApproximateAge.maxYears + 1,
-                    labelFor: (index) =>
-                        '$index año${index == 1 ? '' : 's'}',
+                    labelFor: (index) => '$index año${index == 1 ? '' : 's'}',
                     onChanged: (index) {
                       HapticFeedback.selectionClick();
-                      setState(() => _years = index);
+                      setState(() {
+                        _years = index;
+                        _unknown = false;
+                      });
                     },
                   ),
                 ),
@@ -222,11 +239,13 @@ class _AgePickerSheetState extends State<_AgePickerSheet> {
                     semanticsLabel: 'Meses',
                     controller: _monthsController,
                     count: 12,
-                    labelFor: (index) =>
-                        '$index mes${index == 1 ? '' : 'es'}',
+                    labelFor: (index) => '$index mes${index == 1 ? '' : 'es'}',
                     onChanged: (index) {
                       HapticFeedback.selectionClick();
-                      setState(() => _months = index);
+                      setState(() {
+                        _months = index;
+                        _unknown = false;
+                      });
                     },
                   ),
                 ),
@@ -234,6 +253,13 @@ class _AgePickerSheetState extends State<_AgePickerSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
+          TextButton.icon(
+            onPressed: () =>
+                Navigator.of(context).pop(const ApproximateAge.unknown()),
+            icon: const Icon(Icons.help_outline),
+            label: const Text('No lo sé'),
+          ),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Expanded(
@@ -322,6 +348,7 @@ IconData _iconForSpecies(Species species) {
     case Species.poultry:
       return Icons.egg_outlined;
     case Species.canine:
+    case Species.feline:
       return Icons.pets;
     case Species.other:
       return Icons.category_outlined;
