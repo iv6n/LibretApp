@@ -7,7 +7,7 @@ part of 'isar_care.dart';
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetIsarCareRuleCollection on Isar {
   IsarCollection<IsarCareRule> get isarCareRules => this.collection();
@@ -90,7 +90,7 @@ const IsarCareRuleSchema = CollectionSchema(
   getId: _isarCareRuleGetId,
   getLinks: _isarCareRuleGetLinks,
   attach: _isarCareRuleAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _isarCareRuleEstimateSize(
@@ -2205,7 +2205,7 @@ extension IsarCareRuleQueryProperty
 }
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetIsarCareRecordCollection on Isar {
   IsarCollection<IsarCareRecord> get isarCareRecords => this.collection();
@@ -2292,7 +2292,7 @@ const IsarCareRecordSchema = CollectionSchema(
   getId: _isarCareRecordGetId,
   getLinks: _isarCareRecordGetLinks,
   attach: _isarCareRecordAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _isarCareRecordEstimateSize(
@@ -4011,7 +4011,7 @@ extension IsarCareRecordQueryProperty
 }
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetIsarScheduledCareCollection on Isar {
   IsarCollection<IsarScheduledCare> get isarScheduledCares => this.collection();
@@ -4099,7 +4099,7 @@ const IsarScheduledCareSchema = CollectionSchema(
   getId: _isarScheduledCareGetId,
   getLinks: _isarScheduledCareGetLinks,
   attach: _isarScheduledCareAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _isarScheduledCareEstimateSize(

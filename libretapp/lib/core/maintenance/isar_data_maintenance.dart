@@ -578,13 +578,15 @@ class IsarDataMaintenance implements DataMaintenance {
   Future<String?> saveSnapshot(String id) async {
     final bytes = await exportSnapshot(id);
     final extension = id.endsWith('.libretbackup') ? '' : '.libretrecovery';
-    final path = await FilePicker.platform.saveFile(
+    final savedUri = await FilePicker.saveFile(
       fileName: '$id$extension',
       bytes: bytes,
       dialogTitle: 'Guardar copia de recuperación',
     );
-    if (path != null) await File(path).writeAsBytes(bytes, flush: true);
-    return path;
+    if (savedUri == null) return null;
+    return savedUri.scheme == 'file'
+        ? savedUri.toFilePath()
+        : savedUri.toString();
   }
 
   Future<Map<String, dynamic>> _validateNative(String path) async {
@@ -634,17 +636,13 @@ class IsarDataMaintenance implements DataMaintenance {
 
   @override
   Future<bool> importSnapshot() async {
-    final picked = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      withData: true,
-    );
-    if (picked == null) return false;
-    final file = picked.files.single;
+    final file = await FilePicker.pickFile(type: FileType.any);
+    if (file == null) return false;
     if (!file.name.endsWith('.libretrecovery'))
       throw const FormatException(
         'Selecciona una copia .libretrecovery de este espacio.',
       );
-    final bytes = file.bytes ?? await File(file.path!).readAsBytes();
+    final bytes = await file.readAsBytes();
     final archive = ZipDecoder().decodeBytes(bytes, verify: true);
     final folder = Directory(await _path('native-import-${const Uuid().v4()}'));
     await folder.create();

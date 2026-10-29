@@ -17,8 +17,8 @@ def main():
     preserved = DRIFT.read_bytes()
     try:
         result = subprocess.run(
-            [shutil.which('dart') or 'dart', 'run', 'build_runner', 'build',
-             '--delete-conflicting-outputs'], cwd=ROOT, check=False)
+            [shutil.which('dart') or 'dart', 'run', 'build_runner', 'build'],
+            cwd=ROOT, check=False)
         return result.returncode
     finally:
         DRIFT.write_bytes(preserved)

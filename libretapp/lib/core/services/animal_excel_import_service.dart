@@ -11,7 +11,6 @@ library;
 
 import 'package:libretapp/core/utils/number_parsing.dart';
 
-
 import 'package:excel/excel.dart' as xlsx;
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
@@ -45,23 +44,19 @@ class AnimalExcelImportService {
   static final _dateFormat = DateFormat('dd/MM/yyyy');
 
   Future<AnimalExcelImportSummary?> importFromPickedFile() async {
-    final picked = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Seleccionar Excel de animales',
       type: FileType.custom,
       allowedExtensions: const ['xlsx'],
-      allowMultiple: false,
-      withData: true,
     );
 
-    if (picked == null || picked.files.isEmpty) {
+    if (file == null) {
       return null;
     }
 
-    final bytes = picked.files.single.bytes;
-    if (bytes == null || bytes.isEmpty) {
-      throw const FormatException(
-        'No se pudo leer el archivo seleccionado.',
-      );
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) {
+      throw const FormatException('No se pudo leer el archivo seleccionado.');
     }
     return importFromBytes(bytes);
   }
@@ -163,8 +158,7 @@ class AnimalExcelImportService {
       }
 
       final resolvedBirthDate =
-          birthDate ??
-          now.subtract(Duration(days: ageMonths * 30));
+          birthDate ?? now.subtract(Duration(days: ageMonths * 30));
       final lifeStage = AnimalTaxonomy.resolveLifeStage(
         species: species,
         sex: sex,

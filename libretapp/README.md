@@ -18,8 +18,9 @@ acceptance still require staging, owner details, and the checks in that guide.
 
 Requirements:
 
-- Flutter 3.47.5 (also pinned in CI), with bundled Dart 3.13.4
+- Flutter 3.47.9 (also pinned in CI), with bundled Dart 3.13.7
 - Java 17 and Android SDK 36 for Android builds
+- iOS 14 or newer for iOS builds
 - Docker and the Supabase CLI for database security tests
 
 Install dependencies and generate Isar sources:

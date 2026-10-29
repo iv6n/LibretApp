@@ -17,7 +17,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.47.9'
           channel: stable
           cache: true
 
@@ -61,7 +61,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.47.9'
           cache: true
       - run: flutter pub get
       - name: Build QA bundle using disposable test signing
@@ -102,7 +102,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.5'
+          flutter-version: '3.47.9'
           cache: true
       - run: flutter pub get
       - name: Enable KVM for the dedicated test emulator

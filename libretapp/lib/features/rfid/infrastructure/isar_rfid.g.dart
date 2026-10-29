@@ -7,7 +7,7 @@ part of 'isar_rfid.dart';
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetIsarRfidBindingCollection on Isar {
   IsarCollection<IsarRfidBinding> get isarRfidBindings => this.collection();
@@ -96,7 +96,7 @@ const IsarRfidBindingSchema = CollectionSchema(
   getId: _isarRfidBindingGetId,
   getLinks: _isarRfidBindingGetLinks,
   attach: _isarRfidBindingAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _isarRfidBindingEstimateSize(
@@ -2006,7 +2006,7 @@ extension IsarRfidBindingQueryProperty
 }
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types, experimental_member_use
 
 extension GetIsarRfidScanSessionCollection on Isar {
   IsarCollection<IsarRfidScanSession> get isarRfidScanSessions =>
@@ -2088,7 +2088,7 @@ const IsarRfidScanSessionSchema = CollectionSchema(
   getId: _isarRfidScanSessionGetId,
   getLinks: _isarRfidScanSessionGetLinks,
   attach: _isarRfidScanSessionAttach,
-  version: '3.3.2',
+  version: '3.4.1',
 );
 
 int _isarRfidScanSessionEstimateSize(

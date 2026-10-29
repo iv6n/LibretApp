@@ -65,15 +65,13 @@ class BackupService {
 
   Future<String?> exportToFile() async {
     final bytes = await createArchiveBytes();
-    final path = await FilePicker.platform.saveFile(
+    final savedUri = await FilePicker.saveFile(
       dialogTitle: 'Guardar respaldo',
       fileName: 'libretapp-backup.libretbackup',
-      type: FileType.custom,
-      allowedExtensions: const ['libretbackup'],
       bytes: bytes,
     );
-    if (path != null && path.isNotEmpty) await markLocalBackup();
-    return path;
+    if (savedUri != null) await markLocalBackup();
+    return savedUri?.toString();
   }
 
   Future<void> markLocalBackup() =>
@@ -93,19 +91,12 @@ class BackupService {
   Future<BackupImportSummary?> importFromFile({
     required BackupImportMode mode,
   }) async {
-    final picked = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Seleccionar respaldo',
       type: FileType.any,
-      withData: true,
     );
-    if (picked == null || picked.files.isEmpty) return null;
-    final file = picked.files.single;
-    final bytes = file.bytes;
-    if (bytes == null) {
-      throw const FormatException(
-        'El navegador no entregó el contenido del respaldo.',
-      );
-    }
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
     final lowerName = file.name.toLowerCase();
     if (!lowerName.endsWith('.libretbackup') && !lowerName.endsWith('.json')) {
       throw const FormatException(

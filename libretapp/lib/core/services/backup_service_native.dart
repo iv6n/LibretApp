@@ -178,26 +178,17 @@ class BackupService {
       '-',
     );
 
-    final savePath = await FilePicker.platform.saveFile(
+    final savedUri = await FilePicker.saveFile(
       dialogTitle: 'Guardar respaldo',
       fileName: 'libretapp-backup-$timestamp.libretbackup',
-      type: FileType.custom,
-      allowedExtensions: const ['libretbackup'],
-      // Android and iOS use ACTION_CREATE_DOCUMENT and require the payload
-      // here; desktop pickers return a path and are written below.
-      bytes: Platform.isAndroid || Platform.isIOS ? archiveBytes : null,
+      bytes: archiveBytes,
     );
 
-    if (savePath == null || savePath.isEmpty) {
-      return null;
-    }
-
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      final target = File(savePath);
-      await target.writeAsBytes(archiveBytes, flush: true);
-    }
+    if (savedUri == null) return null;
     await markLocalBackup();
-    return savePath;
+    return savedUri.scheme == 'file'
+        ? savedUri.toFilePath()
+        : savedUri.toString();
   }
 
   Future<void> markLocalBackup() async {
@@ -220,40 +211,29 @@ class BackupService {
   }) async {
     if (!_allowFileOperations)
       throw StateError('Sal de la demo para importar un respaldo.');
-    final picked = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Seleccionar respaldo',
       // Android's DocumentsUI does not know the custom `.libretbackup` MIME
       // type and disables the very files exported by LibretApp when a custom
       // extension filter is used. Let the picker show files, then validate
       // the extension before reading any bytes.
       type: FileType.any,
-      allowMultiple: false,
-      withData: false,
     );
 
-    if (picked == null || picked.files.isEmpty) {
-      return null;
-    }
+    if (file == null) return null;
 
-    final path = picked.files.single.path;
-    if (path == null || path.isEmpty) {
-      throw const FormatException(
-        'No se pudo leer la ruta del archivo seleccionado.',
-      );
-    }
-
-    final lowerPath = path.toLowerCase();
-    if (!lowerPath.endsWith('.libretbackup') && !lowerPath.endsWith('.json')) {
+    final lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith('.libretbackup') && !lowerName.endsWith('.json')) {
       throw const FormatException(
         'Selecciona un respaldo .libretbackup o .json.',
       );
     }
 
-    final source = File(path);
-    if (lowerPath.endsWith('.json')) {
-      return importFromJsonString(await source.readAsString(), mode: mode);
+    final bytes = await file.readAsBytes();
+    if (lowerName.endsWith('.json')) {
+      return importFromJsonString(utf8.decode(bytes), mode: mode);
     }
-    return importArchiveBytes(await source.readAsBytes(), mode: mode);
+    return importArchiveBytes(bytes, mode: mode);
   }
 
   Future<BackupImportSummary> importFromJsonString(

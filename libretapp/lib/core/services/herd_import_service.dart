@@ -35,16 +35,14 @@ class HerdImportService {
   static const maxRows = 10000;
 
   Future<HerdImportDocument?> pickDocument() async {
-    final picked = await FilePicker.platform.pickFiles(
+    final file = await FilePicker.pickFile(
       dialogTitle: 'Seleccionar hato',
       type: FileType.custom,
       allowedExtensions: const ['xlsx', 'csv', 'tsv'],
-      withData: true,
     );
-    if (picked == null || picked.files.isEmpty) return null;
-    final file = picked.files.single;
-    final bytes = file.bytes;
-    if (bytes == null || bytes.isEmpty)
+    if (file == null) return null;
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty)
       throw const FormatException('El archivo está vacío o no se pudo leer.');
     return readDocument(bytes, fileName: file.name);
   }
