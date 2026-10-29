@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/directorio/cultivos/view/cultivation_form_page.dart';
@@ -129,9 +130,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Todos 1'), findsOneWidget);
+      final allFilter = tester.widget<AppDirectoryFilterChip>(
+        find.byKey(const ValueKey('cultivos-filter-all')),
+      );
+      expect(allFilter.count, 1);
+      expect(allFilter.selected, isTrue);
       expect(find.text('Maíz blanco'), findsOneWidget);
-      expect(find.text('Registra tu primer cultivo'), findsNothing);
+      expect(find.text('Empieza a cuidar tus plantas y cultivos'), findsNothing);
     },
   );
 
@@ -169,7 +174,9 @@ void main() {
     expect(repository.getAllCalls, 1);
     expect(repository.watchAllCalls, 1);
     expect(
-      tester.widget<FilterChip>(find.byType(FilterChip).at(1)).selected,
+      tester.widget<AppDirectoryFilterChip>(
+        find.byKey(const ValueKey('cultivos-filter-active')),
+      ).selected,
       isTrue,
     );
 
