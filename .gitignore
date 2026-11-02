@@ -1,4 +1,10 @@
 # Generated audit and delivery artifacts kept outside the source tree.
+/.gradle/
+/.gradle-local/
+/.idea/
+/.vscode/settings.json
+/libretapp/.vscode/settings.json
+/libretapp/benchmark/results/
 /outputs/
 /libretapp/artifacts/
 /libretapp/outputs/
