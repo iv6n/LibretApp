@@ -16,7 +16,6 @@ import 'package:libretapp/core/workspace/workspace_registry.dart';
 import 'package:libretapp/core/workspace/workspace_manager.dart';
 import 'package:libretapp/core/workspace/workspace_files.dart';
 import 'package:libretapp/core/security/services/supabase_phone_auth.dart';
-import 'package:libretapp/core/backup/automatic_backup.dart';
 import 'package:libretapp/core/security/services/account_deletion_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -105,11 +104,19 @@ class _BootAppState extends State<_BootApp> {
       );
       final startupSpan = PerformanceMonitor().startSpan('app.startup');
       LoggerService.i('Iniciando configuración de LibretApp', tag: 'Main');
+      final preferencesSpan = PerformanceMonitor().startSpan(
+        'app.startup.preferences',
+      );
       final globalPrefs = SharedPrefsService(
         await SharedPreferences.getInstance(),
       );
+      preferencesSpan.stop();
+      final registrySpan = PerformanceMonitor().startSpan(
+        'app.startup.workspace_registry',
+      );
       final registry = WorkspaceRegistry(globalPrefs);
       await registry.load();
+      registrySpan.stop();
       if (ReleaseFeatures.cloudBackupEnabled) {
         await AccountDeletionService.recoverLocal(registry);
       }
@@ -124,9 +131,12 @@ class _BootAppState extends State<_BootApp> {
         registry: registry,
         auth: SupabasePhoneAuth(),
       );
-      await AutomaticBackup.initialize();
+      final locatorSpan = PerformanceMonitor().startSpan(
+        'app.startup.workspace_services',
+      );
       await setupLocator(workspace: registry.active ?? registry.guest);
       locator.registerSingleton<WorkspaceManager>(manager);
+      locatorSpan.stop();
       const enableTracing = kDebugMode || kProfileMode;
       if (enableTracing) {
         // Capture frame timings on physical profile builds so list/navigation
@@ -140,11 +150,19 @@ class _BootAppState extends State<_BootApp> {
       }
       startupSpan.stop(context: {'phase': 'bootstrap'});
 
+      final onboardingSpan = PerformanceMonitor().startSpan(
+        'app.startup.onboarding_detection',
+      );
+      final animalRepository = locator<AnimalRepository>();
       final showWelcome = await OnboardingStartupService(
         preferences: globalPrefs,
-        animalRepository: locator<AnimalRepository>(),
+        animalRepository: animalRepository,
+        hasAnimals: animalRepository is AnimalPresenceReader
+            ? (animalRepository as AnimalPresenceReader).hasAnyAnimals
+            : null,
         hasOtherUserData: workspaceHasUserData,
       ).shouldShowWelcome();
+      onboardingSpan.stop();
       if (!registry.hadRegistry && !showWelcome) {
         await registry.replace(registry.spaces, registry.guest.id);
       }

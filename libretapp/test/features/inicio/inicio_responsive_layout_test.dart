@@ -18,9 +18,12 @@ import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_service.dart';
 import 'package:libretapp/features/inicio/view/inicio_view.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.dart';
+import 'package:libretapp/features/inicio/widgets/weather_home_card.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/experience/care_profile.dart';
+import 'package:libretapp/core/experience/registration_preferences.dart';
 import 'package:libretapp/core/security/ports/phone_auth_port.dart';
 import 'package:libretapp/features/inicio/data/weather_preferences_service.dart';
 import 'package:libretapp/features/inicio/data/weather_service.dart';
@@ -39,37 +42,165 @@ void main() {
   });
 
   group('Inicio responsive layout', () {
-    testWidgets('guía inicial sustituye contadores vacíos', (tester) async {
+    testWidgets('guía inicial precede al clima y ofrece ambos registros', (
+      tester,
+    ) async {
       await _pumpInicio(tester, width: 360, firstRun: true, topInset: 24);
+      final gettingStarted = find.byKey(
+        const ValueKey('complete-getting-started'),
+      );
+      expect(gettingStarted, findsOneWidget);
+      expect(find.text('Añadir mascota'), findsOneWidget);
+      expect(find.text('Añadir animal'), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('complete-getting-started')),
-        findsOneWidget,
+        tester
+            .widget<FilledButton>(
+              find
+                  .ancestor(
+                    of: find.text('Añadir mascota'),
+                    matching: find.byType(FilledButton),
+                  )
+                  .first,
+            )
+            .onPressed,
+        isNotNull,
       );
       expect(
-        find.descendant(
-          of: find.byKey(const ValueKey('complete-getting-started')),
-          matching: find.text('Alta rápida'),
-        ),
-        findsOneWidget,
+        tester
+            .widget<OutlinedButton>(
+              find
+                  .ancestor(
+                    of: find.text('Añadir animal'),
+                    matching: find.byType(OutlinedButton),
+                  )
+                  .first,
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(
+        tester.getTopLeft(gettingStarted).dy,
+        lessThan(tester.getTopLeft(find.byType(WeatherHomeCard)).dy),
       );
       expect(find.text('Resumen del rancho'), findsNothing);
-      expect(find.text('Prioridad de hoy'), findsNothing);
+      expect(find.text('Cuidados de hoy'), findsNothing);
       expect(tester.getRect(find.byType(ListView)).top, 24);
       await tester.drag(find.byType(ListView), const Offset(0, -300));
       await tester.pumpAndSettle();
       expect(tester.getRect(find.byType(ListView)).top, 24);
     });
 
+    testWidgets('keeps the first animal guide when locations already exist', (
+      tester,
+    ) async {
+      await _pumpInicio(
+        tester,
+        width: 390,
+        firstRun: true,
+        preconfiguredEmpty: true,
+      );
+
+      expect(
+        find.byKey(const ValueKey('complete-getting-started')),
+        findsOneWidget,
+      );
+      expect(find.text('Tu resumen'), findsNothing);
+    });
+
+    testWidgets('empty guide fits a 320dp screen with large dark text', (
+      tester,
+    ) async {
+      await _pumpInicio(
+        tester,
+        width: 320,
+        textScale: 2,
+        dark: true,
+        firstRun: true,
+        careProfile: CareProfile.mixed,
+      );
+
+      expect(find.text('Añadir mascota'), findsOneWidget);
+      expect(find.text('Añadir animal'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final profile in CareProfile.values) {
+      testWidgets('empty guide follows the ${profile.name} profile', (
+        tester,
+      ) async {
+        await _pumpInicio(
+          tester,
+          width: 390,
+          firstRun: true,
+          careProfile: profile,
+        );
+
+        expect(
+          find.text('Añadir mascota'),
+          profile == CareProfile.pets || profile == CareProfile.mixed
+              ? findsOneWidget
+              : findsNothing,
+        );
+        expect(
+          find.text('Añadir animal'),
+          profile != CareProfile.pets ? findsOneWidget : findsNothing,
+        );
+      });
+    }
+
+    testWidgets('shows actionable care and hides duplicate empty tasks', (
+      tester,
+    ) async {
+      await _pumpInicio(tester, width: 390, noActionable: true);
+
+      expect(find.text('Cuidados de hoy'), findsOneWidget);
+      expect(find.text('Todo al día'), findsOneWidget);
+      expect(find.text('Sin pendientes críticos'), findsNothing);
+      expect(find.text('Prioridad de hoy'), findsNothing);
+    });
+
+    testWidgets('shows today and overdue activities once', (tester) async {
+      final now = DateUtils.dateOnly(DateTime.now());
+      await _pumpInicio(
+        tester,
+        width: 390,
+        dueEntries: [
+          _agendaEntry(
+            id: 'overdue',
+            title: 'Actividad vencida',
+            date: now.subtract(const Duration(days: 1)),
+          ),
+          _agendaEntry(id: 'today', title: 'Actividad de hoy', date: now),
+        ],
+        duplicateOverdueAlert: true,
+      );
+
+      expect(find.text('Actividad vencida'), findsOneWidget);
+      expect(find.text('Actividad de hoy'), findsOneWidget);
+      expect(find.text('Eventos vencidos'), findsNothing);
+      final overdueTile = tester.widget<ListTile>(
+        find
+            .ancestor(
+              of: find.text('Actividad vencida'),
+              matching: find.byType(ListTile),
+            )
+            .first,
+      );
+      expect(overdueTile.onTap, isNotNull);
+    });
+
     testWidgets(
       'dark priority text remains readable at 320dp and 200 percent text',
       (tester) async {
         await _pumpInicio(tester, width: 320, textScale: 2, dark: true);
-        final label = find.text('Prioridad de hoy');
-        final foreground = tester.widget<Text>(label).style!.color!;
-        final card = tester.widget<Container>(
-          find.ancestor(of: label, matching: find.byType(Container)).first,
+        final label = find.text('Cuidados de hoy');
+        final foreground =
+            tester.widget<Text>(label).style?.color ??
+            AppTheme.darkTheme.colorScheme.onSurface;
+        final card = tester.widget<Card>(
+          find.byKey(const ValueKey('inicio-pendientes-hoy')),
         );
-        final background = (card.decoration! as BoxDecoration).color!;
+        final background = card.color ?? AppTheme.darkTheme.colorScheme.surface;
         expect(textContrast(foreground, background), greaterThanOrEqualTo(4.5));
         expect(
           tester
@@ -84,7 +215,7 @@ void main() {
     testWidgets('keeps a single column below the tablet breakpoint', (
       tester,
     ) async {
-      await _pumpInicio(tester, width: 599);
+      await _pumpInicio(tester, width: 599, includeWidgetData: true);
 
       final health = _widgetRect(tester, 'healthAlerts');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
@@ -99,7 +230,7 @@ void main() {
     });
 
     testWidgets('uses two columns from the tablet breakpoint', (tester) async {
-      await _pumpInicio(tester, width: 600);
+      await _pumpInicio(tester, width: 600, includeWidgetData: true);
 
       final health = _widgetRect(tester, 'healthAlerts');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
@@ -118,7 +249,7 @@ void main() {
     testWidgets('keeps full-width cards and centers wide content', (
       tester,
     ) async {
-      await _pumpInicio(tester, width: 1400);
+      await _pumpInicio(tester, width: 1400, includeWidgetData: true);
 
       final health = _widgetRect(tester, 'healthAlerts');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
@@ -136,7 +267,12 @@ void main() {
     testWidgets('does not overflow with accessible text scaling', (
       tester,
     ) async {
-      await _pumpInicio(tester, width: 800, textScale: 1.4);
+      await _pumpInicio(
+        tester,
+        width: 800,
+        textScale: 1.4,
+        includeWidgetData: true,
+      );
 
       expect(tester.takeException(), isNull);
       expect(find.byKey(_widgetKey('healthAlerts')), findsOneWidget);
@@ -257,6 +393,12 @@ Future<void> _pumpInicio(
   double textScale = 1,
   bool dark = false,
   bool firstRun = false,
+  bool preconfiguredEmpty = false,
+  bool noActionable = false,
+  bool duplicateOverdueAlert = false,
+  List<AgendaEntry> dueEntries = const [],
+  bool includeWidgetData = false,
+  CareProfile? careProfile,
   double topInset = 0,
 }) async {
   tester.view.physicalSize = Size(width, 1200);
@@ -264,7 +406,14 @@ Future<void> _pumpInicio(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  SharedPreferences.setMockInitialValues({});
+  SharedPreferences.setMockInitialValues({
+    if (careProfile != null)
+      RegistrationPreferences.storageKey: RegistrationPreferences(
+        preferredSpecies: RegistrationPreferences.allSpecies,
+        includePlants: true,
+        careProfile: careProfile,
+      ).encode(),
+  });
   final prefs = SharedPrefsService(await SharedPreferences.getInstance());
   if (locator.isRegistered<WeatherPreferencesService>()) {
     await locator.unregister<WeatherPreferencesService>();
@@ -286,7 +435,14 @@ Future<void> _pumpInicio(
     WorkspaceManager(registry: registry, auth: const UnavailablePhoneAuth()),
   );
   final bloc = InicioBloc(
-    dashboardService: _FakeInicioDashboardService(firstRun: firstRun),
+    dashboardService: _FakeInicioDashboardService(
+      firstRun: firstRun,
+      preconfiguredEmpty: preconfiguredEmpty,
+      noActionable: noActionable,
+      duplicateOverdueAlert: duplicateOverdueAlert,
+      dueEntries: dueEntries,
+      includeWidgetData: includeWidgetData,
+    ),
     configRepository: DashboardConfigRepository(prefs),
     financeService: _FakeFinanceSummaryService(),
     libraryRepository: _FakeLibraryRepository(),
@@ -363,9 +519,21 @@ Rect _widgetRect(WidgetTester tester, String id) {
 Key _widgetKey(String id) => ValueKey<String>('dashboard-widget-$id');
 
 class _FakeInicioDashboardService implements InicioDashboardService {
-  _FakeInicioDashboardService({this.firstRun = false});
+  _FakeInicioDashboardService({
+    this.firstRun = false,
+    this.preconfiguredEmpty = false,
+    this.noActionable = false,
+    this.duplicateOverdueAlert = false,
+    this.dueEntries = const [],
+    this.includeWidgetData = false,
+  });
 
   final bool firstRun;
+  final bool preconfiguredEmpty;
+  final bool noActionable;
+  final bool duplicateOverdueAlert;
+  final List<AgendaEntry> dueEntries;
+  final bool includeWidgetData;
 
   @override
   Future<InicioDashboardData> loadDashboard() async {
@@ -375,12 +543,32 @@ class _FakeInicioDashboardService implements InicioDashboardService {
       totalAnimals: firstRun ? 0 : 12,
       totalAnimalCapacity: firstRun ? 0 : 30,
       attentionAnimals: 0,
-      activeLotes: firstRun ? 0 : 3,
-      totalLocations: firstRun ? 0 : 2,
-      upcomingEventsCount: 0,
-      upcomingEvents: const <AgendaEntry>[],
-      alerts: firstRun
+      activeLotes: firstRun && !preconfiguredEmpty ? 0 : 3,
+      totalLocations: firstRun && !preconfiguredEmpty ? 0 : 2,
+      upcomingEventsCount: includeWidgetData ? 1 : 0,
+      upcomingEvents: includeWidgetData
+          ? [
+              _agendaEntry(
+                id: 'upcoming',
+                title: 'Actividad próxima',
+                date: DateUtils.dateOnly(
+                  DateTime.now(),
+                ).add(const Duration(days: 2)),
+              ),
+            ]
+          : const <AgendaEntry>[],
+      dueEntries: dueEntries,
+      alerts: firstRun || noActionable
           ? const []
+          : duplicateOverdueAlert
+          ? const <InicioAlertItem>[
+              InicioAlertItem(
+                title: 'Eventos vencidos',
+                message: '1 actividad quedó fuera de fecha.',
+                severity: InicioAlertSeverity.warning,
+                targetRoute: '/agenda',
+              ),
+            ]
           : const <InicioAlertItem>[
               InicioAlertItem(
                 title: 'Revisar animales',
@@ -389,13 +577,57 @@ class _FakeInicioDashboardService implements InicioDashboardService {
                 targetRoute: '/directorio',
               ),
             ],
-      tasks: const <InicioTaskItem>[],
+      tasks: noActionable
+          ? const <InicioTaskItem>[
+              InicioTaskItem(
+                title: 'Sin pendientes críticos',
+                message: 'No hay pendientes.',
+                targetRoute: '/agenda',
+              ),
+            ]
+          : includeWidgetData
+          ? const <InicioTaskItem>[
+              InicioTaskItem(
+                title: 'Revisar lote',
+                message: 'Comprobar el seguimiento del lote.',
+                targetRoute: '/agenda',
+              ),
+            ]
+          : const <InicioTaskItem>[],
       lastUpdated: DateTime(2026, 1, 1),
       categoryBreakdown: const [],
-      upcomingCalvings: const [],
+      upcomingCalvings: includeWidgetData
+          ? [
+              CalvingItem(
+                animalUuid: 'animal-1',
+                animalTag: 'V-1',
+                animalName: 'Vaca de prueba',
+                expectedDate: DateTime.now().add(const Duration(days: 7)),
+                daysRemaining: 7,
+              ),
+            ]
+          : const [],
     );
   }
 }
+
+AgendaEntry _agendaEntry({
+  required String id,
+  required String title,
+  required DateTime date,
+}) => AgendaEntry(
+  id: id,
+  titulo: title,
+  descripcion: '',
+  fecha: date,
+  tipo: 'general',
+  animalIds: const [],
+  loteIds: const [],
+  ubicacion: '',
+  estado: AgendaEstado.pendiente,
+  completedAnimalIds: const [],
+  notas: '',
+);
 
 class _FakeFinanceSummaryService implements FinanceSummaryService {
   @override

@@ -1,6 +1,8 @@
 /// Tab B — financial summary.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,8 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/features/finanzas/widgets/kpi_card.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
+import 'package:libretapp/features/finanzas/domain/enums/financial_period_preset.dart';
+import 'package:libretapp/features/finanzas/domain/entities/financial_period_summary.dart';
 import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
 import 'package:libretapp/features/reportes/widgets/report_tiles.dart';
@@ -44,6 +48,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
       bottomInset + 8,
     );
     final fmt = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
     return BlocBuilder<ReportesCubit, ReportesState>(
       builder: (context, state) {
@@ -82,12 +87,51 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
             children: [
               ReportSectionCard(
                 title: s.invalidRecordCount > 0
-                    ? 'Balance parcial · revisar importes'
-                    : 'Balance del mes',
+                    ? 'Balance parcial'
+                    : 'Balance del periodo',
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_month_outlined, size: 20),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: DropdownButton<FinancialPeriodPreset>(
+                            value: state.financePreset,
+                            isExpanded: true,
+                            underline: const SizedBox.shrink(),
+                            items: FinancialPeriodPreset.values
+                                .map(
+                                  (preset) => DropdownMenuItem(
+                                    value: preset,
+                                    child: Text(preset.label),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (preset) {
+                              if (preset != null) {
+                                context
+                                    .read<ReportesCubit>()
+                                    .changeFinancePreset(preset);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _formatPeriod(s.period, locale),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     KpiCard(
-                      label: 'Balance del mes',
+                      label: 'Balance del periodo',
                       value: fmt.format(balance),
                       icon: balance >= 0
                           ? Icons.trending_up
@@ -108,13 +152,30 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                       icon: Icons.arrow_upward,
                       color: AppColors.error,
                     ),
+                    if (s.invalidRecordCount > 0) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        '${s.invalidRecordCount} registros con importes inválidos '
+                        'no se incluyeron en el balance.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => context.push(AppRoutes.finanzas),
+                          icon: const Icon(Icons.open_in_new, size: 18),
+                          label: const Text('Revisar en Finanzas'),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               ReportSectionCard(
-                title: 'Pulso financiero',
-                child: _FinancePulse(
-                  balance: balance,
+                title: 'Ingresos y egresos',
+                child: _FinanceComparison(
                   revenue: s.totalRevenue,
                   expenses: s.totalExpenses,
                   formatter: fmt,
@@ -143,7 +204,7 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                 child: detail.expenseBreakdown.isEmpty
                     ? const AppEmptyState(
                         icon: Icons.receipt_long_outlined,
-                        title: 'Sin gastos este mes',
+                        title: 'Sin gastos en este periodo',
                         message: 'Registra egresos para ver el desglose.',
                       )
                     : Column(
@@ -174,7 +235,8 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
                     ? const AppEmptyState(
                         icon: Icons.swap_horiz,
                         title: 'Sin movimientos',
-                        message: 'Aún no hay ingresos ni egresos este mes.',
+                        message:
+                            'Aún no hay ingresos ni egresos en este periodo.',
                       )
                     : Column(
                         children: detail.recentMovements
@@ -192,6 +254,11 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
         );
       },
     );
+  }
+
+  String _formatPeriod(DateRange period, String locale) {
+    final dateFormat = DateFormat('d MMM yyyy', locale);
+    return '${dateFormat.format(period.start)} – ${dateFormat.format(period.end)}';
   }
 
   Widget _movementTile(FinanceMovementItem m, NumberFormat fmt) {
@@ -241,15 +308,13 @@ class _ReportesFinanzasTabState extends State<ReportesFinanzasTab>
   }
 }
 
-class _FinancePulse extends StatelessWidget {
-  const _FinancePulse({
-    required this.balance,
+class _FinanceComparison extends StatelessWidget {
+  const _FinanceComparison({
     required this.revenue,
     required this.expenses,
     required this.formatter,
   });
 
-  final double balance;
   final double revenue;
   final double expenses;
   final NumberFormat formatter;
@@ -257,69 +322,95 @@ class _FinancePulse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final total = revenue + expenses;
-    final hasActivity = total > 0;
-    final positive = balance >= 0;
-    final revenueShare = total <= 0 ? 0.0 : revenue / total;
+    final scale = math.max(revenue, expenses).toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              !hasActivity
-                  ? Icons.info_outline
-                  : positive
-                  ? Icons.savings_outlined
-                  : Icons.priority_high,
-              color: !hasActivity
-                  ? theme.colorScheme.onSurfaceVariant
-                  : positive
-                  ? AppColors.success
-                  : AppColors.error,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                !hasActivity
-                    ? 'Sin movimientos este mes'
-                    : positive
-                    ? 'Margen positivo este mes'
-                    : 'Mes bajo presión',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
+        _FinanceBar(
+          label: 'Ingresos',
+          amount: revenue,
+          scale: scale,
+          color: AppColors.success,
+          formatter: formatter,
         ),
-        const SizedBox(height: 6),
-        Text(
-          formatter.format(balance.abs()),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: positive ? AppColors.success : AppColors.error,
-            fontWeight: FontWeight.w900,
+        const SizedBox(height: AppSpacing.md),
+        _FinanceBar(
+          label: 'Egresos',
+          amount: expenses,
+          scale: scale,
+          color: AppColors.error,
+          formatter: formatter,
+        ),
+        if (scale == 0) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Sin movimientos en este periodo.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _FinanceBar extends StatelessWidget {
+  const _FinanceBar({
+    required this.label,
+    required this.amount,
+    required this.scale,
+    required this.color,
+    required this.formatter,
+  });
+
+  final String label;
+  final double amount;
+  final double scale;
+  final Color color;
+  final NumberFormat formatter;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final value = Text(
+      formatter.format(amount),
+      softWrap: true,
+      maxLines: 2,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        color: color,
+        fontWeight: FontWeight.w800,
+      ),
+    );
+    final labelText = Text(
+      label,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+      ),
+    );
+    final largeText = MediaQuery.textScalerOf(context).scale(14) > 18;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (largeText) ...[
+          labelText,
+          value,
+        ] else
+          Row(
+            children: [
+              Expanded(child: labelText),
+              value,
+            ],
+          ),
+        const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(999),
           child: LinearProgressIndicator(
-            minHeight: 7,
-            value: revenueShare.clamp(0.0, 1.0),
-            backgroundColor: AppColors.error.withValues(alpha: 0.14),
-            valueColor: const AlwaysStoppedAnimation(AppColors.success),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          total <= 0
-              ? 'Registra ingresos o egresos para ver el pulso financiero.'
-              : 'Ingresos contra egresos, calculado con movimientos del periodo.',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            minHeight: 8,
+            value: scale <= 0 ? 0 : (amount / scale).clamp(0.0, 1.0),
+            backgroundColor: color.withValues(alpha: 0.14),
+            valueColor: AlwaysStoppedAnimation(color),
           ),
         ),
       ],

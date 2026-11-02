@@ -1,4 +1,4 @@
-﻿/// features \u203a inicio \u203a data \u203a inicio_dashboard_models \u2014 data models for the dashboard.
+/// features \u203a inicio \u203a data \u203a inicio_dashboard_models \u2014 data models for the dashboard.
 library;
 
 import 'package:equatable/equatable.dart';
@@ -196,6 +196,7 @@ class InicioDashboardData extends Equatable {
     required this.totalLocations,
     required this.upcomingEventsCount,
     required this.upcomingEvents,
+    this.dueEntries = const [],
     required this.alerts,
     required this.tasks,
     required this.lastUpdated,
@@ -217,6 +218,9 @@ class InicioDashboardData extends Equatable {
   final int totalLocations;
   final int upcomingEventsCount;
   final List<AgendaEntry> upcomingEvents;
+
+  /// Open Agenda activities due today or earlier. The Agenda owns the data.
+  final List<AgendaEntry> dueEntries;
   final List<InicioAlertItem> alerts;
   final List<InicioTaskItem> tasks;
   final DateTime lastUpdated;
@@ -239,6 +243,7 @@ class InicioDashboardData extends Equatable {
     totalLocations,
     upcomingEventsCount,
     upcomingEvents,
+    dueEntries,
     alerts,
     tasks,
     lastUpdated,

@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_growth_stage.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/crop_status.dart';
@@ -34,18 +35,12 @@ class CultivationCard extends StatelessWidget {
         ? 'Regar · ${_date(cultivation.nextWateringDate)}'
         : null;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(
-          color: overdue
-              ? scheme.error.withValues(alpha: 0.55)
-              : scheme.outlineVariant.withValues(alpha: 0.45),
-        ),
-      ),
+    return AppDirectoryCardFrame(
+      borderColor: overdue
+          ? scheme.error.withValues(alpha: 0.55)
+          : scheme.outlineVariant.withValues(alpha: 0.45),
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppDirectoryCardFrame.cornerRadius),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(14),

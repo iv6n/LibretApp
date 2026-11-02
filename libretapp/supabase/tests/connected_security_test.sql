@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(20);
 
 insert into auth.users(id, instance_id, aud, role, phone, phone_confirmed_at)
 values ('22000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000000','authenticated','authenticated','525555000001',now()),
@@ -40,6 +40,11 @@ select throws_ok($$insert into public.backup_snapshots(id,user_id,object_path,sh
   '22000000-0000-0000-0000-000000000001/22000000-0000-0000-0000-000000000004.libretbackup',repeat('a',64),100,11,'test')$$,
   '42501',null,'previously issued token cannot upload during deletion');
 reset role;
+select throws_ok($$insert into public.backup_snapshots(id,user_id,object_path,sha256,size_bytes,schema_version,app_version)
+  values('22000000-0000-0000-0000-000000000005','22000000-0000-0000-0000-000000000002',
+  '22000000-0000-0000-0000-000000000002/22000000-0000-0000-0000-000000000005.libretbackup',
+  repeat('a',64),10485761,11,'test')$$,
+  '23514',null,'new backups above the Free pilot limit are rejected');
 delete from auth.users where id='22000000-0000-0000-0000-000000000001';
 set local role authenticated;
 select ok(not public.account_is_active(),'old token denied after user deletion');

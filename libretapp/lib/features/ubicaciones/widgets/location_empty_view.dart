@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
+import 'package:libretapp/core/widgets/app_retry_state.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 
@@ -53,16 +54,11 @@ class UbicacionesErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppEmptyState(
-      icon: Icons.error_outline,
+    return AppRetryState(
       title: 'No se pudieron cargar las ubicaciones',
       message: message,
-      action: FilledButton.icon(
-        onPressed: () =>
-            context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
-        icon: const Icon(Icons.refresh),
-        label: const Text('Reintentar'),
-      ),
+      onRetry: () =>
+          context.read<UbicacionesBloc>().add(const LoadUbicaciones()),
     );
   }
 }

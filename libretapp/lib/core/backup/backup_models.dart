@@ -19,7 +19,7 @@ class BackupEnvelope {
   /// Stamped into every archive and cloud snapshot. Kept here so a version bump
   /// is a single edit — must stay in step with `version:` in pubspec.yaml.
   static const currentAppVersion = String.fromEnvironment(
-    'LIBRET_APP_VERSION', defaultValue: '0.1.3+6');
+    'LIBRET_APP_VERSION', defaultValue: '0.1.4+15');
 
   final int schemaVersion;
   final String appVersion;

@@ -2,31 +2,42 @@
 library;
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:stream_transform/stream_transform.dart';
+import 'package:libretapp/core/constants/ui_constants.dart';
+import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
-import 'package:libretapp/features/directorio/bloc/animales_tab_event.dart';
+import 'package:libretapp/features/directorio/bloc/animales_tab_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
-import 'package:libretapp/features/directorio/bloc/lotes_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/lotes_tab_state.dart';
 import 'package:libretapp/features/directorio/data/directorio_config_repository.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_bloc.dart';
-import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_event.dart';
 import 'package:libretapp/features/directorio/bloc/ubicaciones_tab_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
+import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   DirectorioBloc({
-    required this.animalesTabBloc,
-    required this.lotesTabBloc,
-    required this.ubicacionesTabBloc,
+    this.animalesTabBloc,
+    this.lotesTabBloc,
+    this.ubicacionesTabBloc,
+    AnimalRepository? animalRepository,
+    LotesRepository? lotesRepository,
+    LocationRepository? locationRepository,
     this.cultivationRepository,
     DirectorioConfigRepository? configRepository,
-  }) : _configRepository = configRepository,
+  }) : _animalRepository = animalRepository ?? animalesTabBloc?.repository,
+       _lotesRepository = lotesRepository ?? lotesTabBloc?.repository,
+       _locationRepository =
+           locationRepository ?? ubicacionesTabBloc?.repository,
+       _configRepository = configRepository,
        super(const DirectorioInitial()) {
     on<LoadDirectorioData>(_onLoadDirectorioData);
     on<ChangeDirectorioTab>(_onChangeTab);
@@ -38,12 +49,19 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
       transformer: (events, mapper) => events.asyncExpand(mapper),
     );
     on<StartSearch>(_onStartSearch);
-    on<PerformCombinedSearch>(_onPerformCombinedSearch);
+    on<PerformCombinedSearch>(
+      _onPerformCombinedSearch,
+      transformer: _debounceSearch(UiConstants.searchDebounceDuration),
+    );
     on<ClearSearch>(_onClearSearch);
+    on<ClearSearchQuery>(_onClearSearchQuery);
   }
-  final AnimalesTabBloc animalesTabBloc;
-  final LotesTabBloc lotesTabBloc;
-  final UbicacionesTabBloc ubicacionesTabBloc;
+  final AnimalesTabBloc? animalesTabBloc;
+  final LotesTabBloc? lotesTabBloc;
+  final UbicacionesTabBloc? ubicacionesTabBloc;
+  final AnimalRepository? _animalRepository;
+  final LotesRepository? _lotesRepository;
+  final LocationRepository? _locationRepository;
   final CultivationRepository? cultivationRepository;
   final DirectorioConfigRepository? _configRepository;
   int _searchGeneration = 0;
@@ -54,16 +72,22 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   ) async {
     emit(const DirectorioLoading());
     try {
-      // Cargamos todos los tabs
-      animalesTabBloc.add(const LoadAnimalesTab());
-      lotesTabBloc.add(const LoadLotesTab());
-      ubicacionesTabBloc.add(const LoadUbicacionesTab());
-
-      final config =
-          await _configRepository?.load() ?? defaultDirectorioSectionConfig;
-      final animalViewMode =
-          await _configRepository?.loadAnimalViewMode() ??
-          AnimalDirectoryViewMode.cards;
+      final preferenceSpan = PerformanceMonitor().startSpan(
+        'directorio.open.preferences',
+      );
+      final preferences = await Future.wait<Object>([
+        _configRepository?.load() ??
+            Future<DirectorioSectionConfig>.value(
+              defaultDirectorioSectionConfig,
+            ),
+        _configRepository?.loadAnimalViewMode() ??
+            Future<AnimalDirectoryViewMode>.value(
+              AnimalDirectoryViewMode.cards,
+            ),
+      ]);
+      preferenceSpan.stop();
+      final config = preferences[0] as DirectorioSectionConfig;
+      final animalViewMode = preferences[1] as AnimalDirectoryViewMode;
       final activeSection = _firstVisibleSection(config);
 
       emit(
@@ -130,6 +154,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
         isSearching: false,
         searchResults: [],
         searchQuery: '',
+        isSearchLoading: false,
+        searchFailedSources: const [],
       ),
     );
   }
@@ -196,6 +222,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
         isSearching: false,
         searchResults: [],
         searchQuery: '',
+        isSearchLoading: false,
+        searchFailedSources: const [],
       ),
     );
   }
@@ -210,6 +238,8 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
         isSearching: true,
         searchResults: [],
         searchQuery: '',
+        isSearchLoading: false,
+        searchFailedSources: const [],
       ),
     );
   }
@@ -225,44 +255,73 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
 
     if (query.isEmpty) {
       _searchGeneration++;
-      emit(currentState.copyWith(searchResults: [], searchQuery: ''));
+      emit(
+        currentState.copyWith(
+          searchResults: [],
+          searchQuery: '',
+          isSearchLoading: false,
+          searchFailedSources: const [],
+        ),
+      );
       return;
     }
 
-    final searchGeneration = ++_searchGeneration;
+    final searchGeneration = event.requestGeneration;
+    if (searchGeneration == null || searchGeneration != _searchGeneration) {
+      return;
+    }
+
+    emit(
+      currentState.copyWith(
+        searchResults: const [],
+        searchQuery: query,
+        isSearchLoading: true,
+        searchFailedSources: const [],
+      ),
+    );
 
     // Ordenamos según el tab activo
     final orders = _getSearchOrder(
       currentState.activeSection,
       currentState.orderedSections,
-      currentState.visibleSections,
     );
 
-    var animals = const <AnimalEntity>[];
-    if (orders.contains(CombinedSearchType.animal)) {
-      try {
-        animals = await animalesTabBloc.ensureLoaded();
-      } catch (_) {
-        // Keep the loaded directory state intact if the animal source fails.
-        // The next search can retry the tab load.
-        if (!isClosed && searchGeneration == _searchGeneration) {
-          emit(currentState.copyWith(searchResults: [], searchQuery: query));
-        }
-        return;
-      }
-    }
+    final animalTabState = animalesTabBloc?.state;
+    final lotesTabState = lotesTabBloc?.state;
+    final locationsTabState = ubicacionesTabBloc?.state;
+    final fallbackAnimals = animalTabState is AnimalesTabLoaded
+        ? animalTabState.animales
+        : null;
+    final fallbackLotes = lotesTabState is LotesTabLoaded
+        ? lotesTabState.lotes
+        : null;
+    final fallbackLocations = locationsTabState is UbicacionesTabLoaded
+        ? locationsTabState.ubicaciones
+        : null;
 
-    if (isClosed || searchGeneration != _searchGeneration) return;
-
-    var cultivations = const <CultivationEntity>[];
-    if (orders.contains(CombinedSearchType.cultivo) &&
-        cultivationRepository != null) {
-      try {
-        cultivations = await cultivationRepository!.getAll();
-      } catch (_) {
-        cultivations = const [];
-      }
-    }
+    final loads = await Future.wait<Object>([
+      _loadList<AnimalEntity>(
+        _animalRepository?.getAll,
+        fallbackItems: fallbackAnimals,
+      ),
+      _loadList<LoteEntity>(
+        _lotesRepository?.getAll,
+        fallbackItems: fallbackLotes,
+      ),
+      _loadList<CultivationEntity>(cultivationRepository?.getAll),
+      _loadList<LocationEntity>(
+        _locationRepository?.getAll,
+        fallbackItems: fallbackLocations,
+      ),
+    ]);
+    final animalLoad = loads[0] as _LoadedSearchItems<AnimalEntity>;
+    final loteLoad = loads[1] as _LoadedSearchItems<LoteEntity>;
+    final cultivationLoad = loads[2] as _LoadedSearchItems<CultivationEntity>;
+    final locationLoad = loads[3] as _LoadedSearchItems<LocationEntity>;
+    final animals = animalLoad.items;
+    final lotes = loteLoad.items;
+    final cultivations = cultivationLoad.items;
+    final ubicaciones = locationLoad.items;
 
     if (isClosed || searchGeneration != _searchGeneration) return;
 
@@ -287,20 +346,17 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
           }
         }
       } else if (order == CombinedSearchType.lote) {
-        final lotesState = lotesTabBloc.state;
-        if (lotesState is LotesTabLoaded) {
-          for (final lote in lotesState.lotes) {
-            if (_matchesQuery(lote, query)) {
-              _addResultIfNew(
-                seen,
-                results,
-                CombinedSearchResult(
-                  type: CombinedSearchType.lote,
-                  id: _getId(lote),
-                  name: _getLoteName(lote),
-                ),
-              );
-            }
+        for (final lote in lotes) {
+          if (_matchesQuery(lote, query)) {
+            _addResultIfNew(
+              seen,
+              results,
+              CombinedSearchResult(
+                type: CombinedSearchType.lote,
+                id: _getId(lote),
+                name: _getLoteName(lote),
+              ),
+            );
           }
         }
       } else if (order == CombinedSearchType.cultivo) {
@@ -318,26 +374,36 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
           }
         }
       } else if (order == CombinedSearchType.ubicacion) {
-        final ubicacionesState = ubicacionesTabBloc.state;
-        if (ubicacionesState is UbicacionesTabLoaded) {
-          for (final ubicacion in ubicacionesState.ubicaciones) {
-            if (_matchesQuery(ubicacion, query)) {
-              _addResultIfNew(
-                seen,
-                results,
-                CombinedSearchResult(
-                  type: CombinedSearchType.ubicacion,
-                  id: _getId(ubicacion),
-                  name: _getUbicacionName(ubicacion),
-                ),
-              );
-            }
+        for (final ubicacion in ubicaciones) {
+          if (_matchesQuery(ubicacion, query)) {
+            _addResultIfNew(
+              seen,
+              results,
+              CombinedSearchResult(
+                type: CombinedSearchType.ubicacion,
+                id: _getId(ubicacion),
+                name: _getUbicacionName(ubicacion),
+              ),
+            );
           }
         }
       }
     }
 
-    emit(latestState.copyWith(searchResults: results, searchQuery: query));
+    final failedSources = <CombinedSearchType>[
+      if (animalLoad.failed) CombinedSearchType.animal,
+      if (loteLoad.failed) CombinedSearchType.lote,
+      if (cultivationLoad.failed) CombinedSearchType.cultivo,
+      if (locationLoad.failed) CombinedSearchType.ubicacion,
+    ];
+    emit(
+      latestState.copyWith(
+        searchResults: results,
+        searchQuery: query,
+        isSearchLoading: false,
+        searchFailedSources: failedSources,
+      ),
+    );
   }
 
   void _onClearSearch(ClearSearch event, Emitter<DirectorioState> emit) {
@@ -350,6 +416,25 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
         isSearching: false,
         searchResults: [],
         searchQuery: '',
+        isSearchLoading: false,
+        searchFailedSources: const [],
+      ),
+    );
+  }
+
+  void _onClearSearchQuery(
+    ClearSearchQuery event,
+    Emitter<DirectorioState> emit,
+  ) {
+    final currentState = state;
+    if (currentState is! DirectorioLoaded) return;
+    _searchGeneration++;
+    emit(
+      currentState.copyWith(
+        searchResults: const [],
+        searchQuery: '',
+        isSearchLoading: false,
+        searchFailedSources: const [],
       ),
     );
   }
@@ -358,19 +443,14 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   List<CombinedSearchType> _getSearchOrder(
     DirectorioSection activeSection,
     List<DirectorioSection> orderedSections,
-    Set<DirectorioSection> visibleSections,
   ) {
     final config = DirectorioSectionConfig(
       orderedSections: orderedSections,
-      visibleSections: visibleSections,
+      visibleSections: defaultDirectorioVisibleSections,
     ).normalized();
     final searchSections = <DirectorioSection>[
-      if (config.visibleSections.contains(activeSection)) activeSection,
-      ...config.orderedSections.where(
-        (section) =>
-            config.visibleSections.contains(section) &&
-            section != activeSection,
-      ),
+      activeSection,
+      ...config.orderedSections.where((section) => section != activeSection),
     ];
     return searchSections
         .map((section) => section.searchType)
@@ -492,10 +572,39 @@ class DirectorioBloc extends Bloc<DirectorioEvent, DirectorioState> {
   }
 
   @override
-  Future<void> close() {
-    animalesTabBloc.close();
-    lotesTabBloc.close();
-    ubicacionesTabBloc.close();
-    return super.close();
+  Future<void> close() async {
+    await Future.wait([
+      if (animalesTabBloc != null) animalesTabBloc!.close(),
+      if (lotesTabBloc != null) lotesTabBloc!.close(),
+      if (ubicacionesTabBloc != null) ubicacionesTabBloc!.close(),
+    ]);
+    await super.close();
   }
+
+  Future<_LoadedSearchItems<T>> _loadList<T>(
+    Future<List<T>> Function()? load, {
+    List<T>? fallbackItems,
+  }) async {
+    if (load == null) {
+      return _LoadedSearchItems<T>(fallbackItems ?? const [], failed: false);
+    }
+    try {
+      return _LoadedSearchItems<T>(await load(), failed: false);
+    } catch (_) {
+      return _LoadedSearchItems<T>(fallbackItems ?? const [], failed: true);
+    }
+  }
+
+  EventTransformer<PerformCombinedSearch> _debounceSearch(Duration duration) =>
+      (events, mapper) => events
+          .map((event) => event.forGeneration(++_searchGeneration))
+          .debounce(duration)
+          .switchMap(mapper);
+}
+
+class _LoadedSearchItems<T> {
+  const _LoadedSearchItems(this.items, {required this.failed});
+
+  final List<T> items;
+  final bool failed;
 }

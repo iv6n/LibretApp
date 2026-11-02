@@ -335,4 +335,11 @@ void main() {
       );
     },
   );
+  test('US normalization requires ten national digits', () {
+    expect(normalizePhone('1', '(415) 555-0134'), '+14155550134');
+    expect(
+      () => normalizePhone('1', '555-0134'),
+      throwsA(isA<PhoneAuthFailure>()),
+    );
+  });
 }

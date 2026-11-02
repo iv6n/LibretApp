@@ -4,6 +4,13 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "libretapp Android (standard)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--flavor=standard"]
+    },
+    {
       "name": "libretapp (con respaldo en la nube)",
       "cwd": "libretapp",
       "request": "launch",

@@ -114,6 +114,8 @@ class ReportSummary extends Equatable {
   final List<SpeciesCount> bySpecies;
   final List<CategoryCount> byCategory;
   final List<CalvingItem> upcomingCalvings;
+
+  /// Unique active animals that are unvaccinated or under observation.
   final int healthAlertsCount;
   final int unvaccinatedCount;
   final int underObservationCount;

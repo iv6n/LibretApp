@@ -8,6 +8,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "libretapp Android (standard)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--flavor=standard"]
+    },
+    {
       "name": "libretapp (con respaldo en la nube)",
       "request": "launch",
       "type": "dart",

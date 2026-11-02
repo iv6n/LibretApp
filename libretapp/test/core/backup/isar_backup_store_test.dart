@@ -87,6 +87,34 @@ void main() {
   });
 
   test(
+    'presence check avoids backup capture for empty and historical data',
+    () async {
+      await profiles.savePerfil(
+        const Perfil(
+          id: '',
+          nombre: '',
+          apellido: '',
+          email: '',
+          telefono: '',
+          finca: '',
+          direccion: '',
+        ),
+      );
+      expect(await store.hasUserData(), isFalse);
+
+      await finances.addIncome(
+        IncomeRecord(
+          date: DateTime.utc(2020, 5, 1),
+          type: IncomeType.milkSale,
+          amount: 150,
+          currency: 'MXN',
+        ),
+      );
+      expect(await store.hasUserData(), isTrue);
+    },
+  );
+
+  test(
     'capture backfills stable recordUuid and replaceAll restores it',
     () async {
       await finances.addIncome(

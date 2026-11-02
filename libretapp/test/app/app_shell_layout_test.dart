@@ -22,7 +22,7 @@ void main() {
     );
     router.go(_branchPaths[2]);
     await tester.pumpAndSettle();
-    expect(find.text('Registrar'), findsNothing);
+    expect(find.text('Registrar'), findsOneWidget);
     expect(
       tester
           .widgetList<Semantics>(find.byType(Semantics))
@@ -125,7 +125,7 @@ void main() {
             expect(
               ShellInsets.bottomSafePadding(tester.element(list)),
               closeTo(
-                ShellInsets.defaultBarHeight +
+                ShellInsets.barHeightFor(tester.element(list)) +
                     ShellInsets.defaultBarBottomGap +
                     safeBottom,
                 0.01,
@@ -181,6 +181,9 @@ void main() {
       final decoration = tester.widget<Container>(scrim).decoration!;
       expect(decoration, isA<BoxDecoration>());
       expect((decoration as BoxDecoration).gradient, isA<LinearGradient>());
+      final dockGradient = decoration.gradient! as LinearGradient;
+      expect(dockGradient.colors.last.a, 1);
+      expect(dockGradient.colors[dockGradient.colors.length - 2].a, 1);
       expect(
         find
             .ancestor(of: scrim, matching: find.byType(IgnorePointer))

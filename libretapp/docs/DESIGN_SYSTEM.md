@@ -71,10 +71,12 @@ compartido solo cuando aparece una variante real reutilizable.
 - El catálogo de vaca, canino, felino, cultivos, ubicaciones y actividades es
   la referencia visual: ilustración 2.5D amable, fondo transparente, figura
   completa, encuadre centrado y nitidez suficiente para pantallas densas.
-- La bienvenida usa `onboarding_welcome_group.png`, una escena conjunta de
-  vaca, perro, gato y planta. La vista previa usa `vaca.webp` y
-  `onboarding_monstera_illustration.png`. Las tarjetas y textos son widgets,
-  no parte de una imagen plana. Las fotos subidas por usuarios son contenido.
+- La bienvenida usa `onboarding_welcome_group_v2.jpg`, una escena conjunta de
+  vaca, perro, gato, planta, siembra, caballo y cabra. La vista previa usa
+  `vaca.webp` y `onboarding_monstera_illustration.png`. La tercera pantalla usa
+  `onboarding_start_options.jpg`, con una persona organizando cuidados desde el
+  móvil. Las tarjetas y textos son widgets, no parte de una imagen plana.
+  Las fotos subidas por usuarios son contenido.
 - Usar términos apropiados para mascotas, ganado y cultivos. En mascotas,
   mostrar la etiqueta «Mascota» y evitar vocabulario de etapas ganaderas.
 

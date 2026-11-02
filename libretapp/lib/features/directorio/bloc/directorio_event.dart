@@ -77,17 +77,26 @@ class StartSearch extends DirectorioEvent {
 
 /// Evento para realizar búsqueda combinada
 class PerformCombinedSearch extends DirectorioEvent {
-  const PerformCombinedSearch(this.query);
+  const PerformCombinedSearch(this.query, {this.requestGeneration});
 
   final String query;
+  final int? requestGeneration;
+
+  PerformCombinedSearch forGeneration(int generation) =>
+      PerformCombinedSearch(query, requestGeneration: generation);
 
   @override
-  List<Object> get props => [query];
+  List<Object?> get props => [query, requestGeneration];
 }
 
 /// Evento para limpiar la búsqueda
 class ClearSearch extends DirectorioEvent {
   const ClearSearch();
+}
+
+/// Clears the current query while keeping the directory search open.
+class ClearSearchQuery extends DirectorioEvent {
+  const ClearSearchQuery();
 }
 
 /// Evento para cargar todos los datos

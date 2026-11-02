@@ -11,8 +11,6 @@ import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
 import 'package:libretapp/features/directorio/animales/bloc/animales_state.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/index.dart';
-import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
-import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/care_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/movement_record_repository.dart';
@@ -272,6 +270,36 @@ void main() {
       await _flush();
       state = bloc.state as AnimalesLoaded;
       expect(state.visibleAnimals, hasLength(21));
+    });
+
+    test('ranks an exact arete ahead of a name from later pages', () async {
+      final repository = _PagedAnimalRepository([
+        for (var i = 0; i < 20; i++)
+          _animal(uuid: 'cow-$i', lifeStage: LifeStage.cow),
+        _animal(
+          uuid: 'by-name',
+          lifeStage: LifeStage.cow,
+        ).copyWith(customName: 'Luna 1042'),
+        _animal(
+          uuid: 'by-tag',
+          lifeStage: LifeStage.cow,
+        ).copyWith(earTagNumber: '1042'),
+      ]);
+      final bloc = AnimalesBloc(
+        repository,
+        animalEditService: _editService(repository),
+      );
+      addTearDown(bloc.close);
+      bloc.add(const LoadAnimales());
+      await _flush();
+
+      bloc.add(const SearchQueryChanged('1042'));
+      await Future<void>.delayed(const Duration(milliseconds: 320));
+
+      expect((bloc.state as AnimalesLoaded).visibleAnimals.map((a) => a.uuid), [
+        'by-tag',
+        'by-name',
+      ]);
     });
 
     test('excludes animals that left the herd from the total', () async {

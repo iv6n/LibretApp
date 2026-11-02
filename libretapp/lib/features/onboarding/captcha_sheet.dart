@@ -7,9 +7,13 @@ Future<String?> requestCaptcha(BuildContext context) async {
   if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
     throw StateError('Falta configurar la verificación CAPTCHA del servicio.');
   }
-  return showModalBottomSheet<String>(context: context, useRootNavigator: true,
-    useSafeArea: true, isScrollControlled: true,
-    builder: (_) => _CaptchaSheet(uri: uri));
+  return showModalBottomSheet<String>(
+    context: context,
+    useRootNavigator: true,
+    useSafeArea: true,
+    isScrollControlled: true,
+    builder: (_) => _CaptchaSheet(uri: uri),
+  );
 }
 
 class _CaptchaSheet extends StatefulWidget {
@@ -26,27 +30,50 @@ class _CaptchaSheetState extends State<_CaptchaSheet> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..addJavaScriptChannel('LibretCaptcha', onMessageReceived: (message) {
-        if (mounted && message.message.isNotEmpty && message.message.length <= 4096) {
-          Navigator.pop(context, message.message);
-        }
-      })
-      ..setNavigationDelegate(NavigationDelegate(onNavigationRequest: (request) {
-        final uri = Uri.tryParse(request.url);
-        return uri?.scheme == 'https' &&
-            (uri?.host == widget.uri.host || uri?.host == 'challenges.cloudflare.com')
-            ? NavigationDecision.navigate : NavigationDecision.prevent;
-      }))
+      ..addJavaScriptChannel(
+        'LibretCaptcha',
+        onMessageReceived: (message) {
+          if (mounted &&
+              message.message.isNotEmpty &&
+              message.message.length <= 4096) {
+            Navigator.pop(context, message.message);
+          }
+        },
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (request) {
+            final uri = Uri.tryParse(request.url);
+            final allowed =
+                uri != null &&
+                ((uri.scheme == 'about' &&
+                        (uri.path == 'blank' || uri.path == 'srcdoc')) ||
+                    (uri.scheme == 'https' &&
+                        (uri.host == widget.uri.host ||
+                            uri.host == 'challenges.cloudflare.com')));
+            return allowed
+                ? NavigationDecision.navigate
+                : NavigationDecision.prevent;
+          },
+        ),
+      )
       ..loadRequest(widget.uri);
   }
+
   @override
   Widget build(BuildContext context) => SizedBox(
     height: MediaQuery.sizeOf(context).height * .65,
-    child: Column(children: [
-      ListTile(title: const Text('Verifica que eres una persona'),
-        trailing: IconButton(icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context))),
-      Expanded(child: WebViewWidget(controller: _controller)),
-    ]),
+    child: Column(
+      children: [
+        ListTile(
+          title: const Text('Verifica que eres una persona'),
+          trailing: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        Expanded(child: WebViewWidget(controller: _controller)),
+      ],
+    ),
   );
 }

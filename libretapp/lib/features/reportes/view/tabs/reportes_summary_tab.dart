@@ -10,6 +10,7 @@ import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/features/reportes/cubit/reportes_cubit.dart';
 import 'package:libretapp/features/reportes/data/report_summary.dart';
+import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/reportes/widgets/widgets.dart';
 import 'package:libretapp/features/reportes/widgets/report_tiles.dart';
 import 'package:libretapp/theme/app_theme.dart';
@@ -23,6 +24,9 @@ class ReportesSummaryTab extends StatefulWidget {
 
 class _ReportesSummaryTabState extends State<ReportesSummaryTab>
     with AutomaticKeepAliveClientMixin {
+  final _calvingsSectionKey = GlobalKey();
+  bool _showAllCalvings = false;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -71,12 +75,26 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
         if (summary == null) return const SizedBox.shrink();
 
         if (summary.totalAnimals == 0) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: const AppEmptyState(
-              icon: Icons.pets_outlined,
-              title: 'Sin animales registrados',
-              message: 'Registra animales para ver reportes del rancho.',
+          return RefreshIndicator(
+            onRefresh: () => context.read<ReportesCubit>().refreshReportes(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: listPadding,
+              children: [
+                AppEmptyState(
+                  icon: Icons.pets_outlined,
+                  title: 'Sin animales registrados',
+                  message: 'Registra animales para ver reportes del rancho.',
+                  action: FilledButton.icon(
+                    onPressed: () =>
+                        context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Registrar primer animal'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _shareDataSection(context),
+              ],
             ),
           );
         }
@@ -87,7 +105,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
             padding: listPadding,
             children: [
               ReportSummaryHeader(summary: summary),
-              _metricsGrid(summary),
+              _metricsGrid(context, summary),
               const SizedBox(height: AppSpacing.sm),
               _compositionSection(summary),
               if (summary.upcomingCalvings.isNotEmpty) ...[
@@ -99,7 +117,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
                 _activitySection(summary),
               ],
               const SizedBox(height: AppSpacing.sm),
-              _generateReportSection(context),
+              _shareDataSection(context),
             ],
           ),
         );
@@ -107,32 +125,60 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
     );
   }
 
-  Widget _metricsGrid(ReportSummary summary) {
+  Widget _metricsGrid(BuildContext context, ReportSummary summary) {
     return ReportTiles(
       children: [
         SummaryMetricCard(
           label: 'Total animales',
           value: '${summary.totalAnimals}',
           icon: Icons.pets_outlined,
+          onTap: () => context.push(AppRoutes.animalesPath(clearFilters: true)),
         ),
         SummaryMetricCard(
-          label: 'Alertas sanitarias',
+          label: 'Pendientes sanitarios',
           value: '${summary.healthAlertsCount}',
           icon: Icons.medical_services_outlined,
           accentColor: AppColors.warning,
+          onTap: summary.healthAlertsCount == 0
+              ? null
+              : () => context.push(
+                  AppRoutes.animalesPath(
+                    healthFilter: 'pending',
+                    clearFilters: true,
+                  ),
+                ),
         ),
         SummaryMetricCard(
-          label: 'Sin vacuna',
+          label: 'Sin vacuna registrada',
           value: '${summary.unvaccinatedCount}',
           icon: Icons.vaccines_outlined,
+          onTap: summary.unvaccinatedCount == 0
+              ? null
+              : () => context.push(
+                  AppRoutes.animalesPath(
+                    healthFilter: 'unvaccinated',
+                    clearFilters: true,
+                  ),
+                ),
         ),
         SummaryMetricCard(
           label: 'Próximos partos',
           value: '${summary.upcomingCalvings.length}',
           icon: Icons.pregnant_woman_outlined,
           accentColor: AppColors.secondary,
+          onTap: summary.upcomingCalvings.isEmpty ? null : _scrollToCalvings,
         ),
       ],
+    );
+  }
+
+  Future<void> _scrollToCalvings() async {
+    final sectionContext = _calvingsSectionKey.currentContext;
+    if (sectionContext == null) return;
+    await Scrollable.ensureVisible(
+      sectionContext,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 
@@ -181,6 +227,7 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
 
   Widget _calvingsSection(ReportSummary summary) {
     return ReportSectionCard(
+      key: _calvingsSectionKey,
       title: 'Próximos partos',
       trailing: Text(
         '${summary.upcomingCalvings.length}',
@@ -190,49 +237,79 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
         ),
       ),
       child: Column(
-        children: summary.upcomingCalvings.take(5).map((c) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.pregnant_woman_outlined,
-                    size: 18,
-                    color: AppColors.secondary,
-                  ),
+        children: [
+          ...summary.upcomingCalvings
+              .take(_showAllCalvings ? summary.upcomingCalvings.length : 5)
+              .map(_calvingTile),
+          if (summary.upcomingCalvings.length > 5)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: () => setState(() {
+                  _showAllCalvings = !_showAllCalvings;
+                }),
+                child: Text(
+                  _showAllCalvings
+                      ? 'Mostrar menos'
+                      : 'Ver todos los partos (${summary.upcomingCalvings.length})',
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        c.animalTag,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        'En ${c.daysRemaining} días · '
-                        '${DateFormat('d MMM', Localizations.localeOf(context).toLanguageTag()).format(c.expectedDate)}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          );
-        }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _calvingTile(CalvingItem calving) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () =>
+            context.push(AppRoutes.animalDetallePath(calving.animalUuid)),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8, top: 4),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.pregnant_woman_outlined,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      calving.animalTag,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      'En ${calving.daysRemaining} días · '
+                      '${DateFormat('d MMM', locale).format(calving.expectedDate)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -254,27 +331,16 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
     );
   }
 
-  Widget _generateReportSection(BuildContext context) {
+  Widget _shareDataSection(BuildContext context) {
     return ReportSectionCard(
-      title: 'Generar reporte',
+      title: 'Compartir datos',
       margin: EdgeInsets.zero,
-      child: ReportTiles(
-        children: [
-          ReportCard(
-            icon: ReportType.financial.icon,
-            title: ReportType.financial.label,
-            onTap: () => context.push(AppRoutes.finanzas),
-          ),
-          ReportCard(
-            icon: ReportType.pdfExport.icon,
-            title: 'Exportar datos',
-            subtitle: 'Excel / respaldo',
-            onTap: () => context.push(AppRoutes.exportar),
-          ),
-
-        ],
+      child: ReportCard(
+        icon: Icons.table_chart_outlined,
+        title: 'Exportar a Excel',
+        subtitle: 'Elige qué información incluir',
+        onTap: () => context.push(AppRoutes.exportar),
       ),
     );
   }
-
 }

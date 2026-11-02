@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/enums/location_category.dart';
@@ -96,7 +97,7 @@ class _UbicacionesLocationTreeState extends State<UbicacionesLocationTree> {
     final allByUuid = widget.state.treeSnapshot.allByUuid;
 
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(4, 0, 4, widget.listBottomPadding),
+      padding: EdgeInsets.only(bottom: widget.listBottomPadding),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           final row = rows[index];
@@ -113,7 +114,7 @@ class _UbicacionesLocationTreeState extends State<UbicacionesLocationTree> {
               :final visibleIds,
             ) =>
               UbicacionesCenteredSection(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _LocationGroupsPanel(
                   key: ValueKey('loc_groups_${parent.uuid}'),
                   parent: parent,
@@ -162,8 +163,8 @@ class _UbicacionesLocationTreeState extends State<UbicacionesLocationTree> {
       );
     }
 
-    return UbicacionesCenteredSection(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
+    return AppDirectoryCardFrame(
+      frameOnly: true,
       child: Slidable(
         key: ValueKey('slide_${location.uuid}'),
         startActionPane: ActionPane(
@@ -222,6 +223,7 @@ class _UbicacionesLocationTreeState extends State<UbicacionesLocationTree> {
                     ? () => _toggleExpanded(location.uuid)
                     : null,
                 isNested: entry.depth > 0,
+                standardizedDirectoryLayout: true,
                 hierarchyDepth: entry.depth,
                 ejidoCount: ejidoCount,
                 ejidoTotalCapacity: ejidoTotalCapacity,
@@ -848,6 +850,7 @@ class _GroupedLocationCardState extends State<_GroupedLocationCard> {
       totalAnimalCount: totalAnimalCount,
       averageWeightKg: averageWeight,
       isNested: true,
+      standardizedDirectoryLayout: true,
       childCount: visibleChildren.length,
       isExpanded: _expanded,
       onToggleExpanded: hasChildren
@@ -896,7 +899,7 @@ class _GroupedLocationCardState extends State<_GroupedLocationCard> {
               ),
             ],
           ),
-          child: card,
+          child: AppDirectoryCardFrame(frameOnly: true, child: card),
         ),
         if (_expanded && hasChildren)
           Padding(

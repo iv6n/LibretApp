@@ -65,7 +65,52 @@ void main() {
 
     expect(dashboard.weather, isNull);
   });
+
+  test(
+    'shows overdue and today Agenda entries but not completed or future ones',
+    () async {
+      final today = DateTime.now();
+      final day = DateTime(today.year, today.month, today.day);
+      final service = InicioDashboardService(
+        animalRepository: _AnimalRepo(const []),
+        lotesRepository: _LotesRepo(),
+        agendaRepository: _AgendaRepo([
+          _entry('future', day.add(const Duration(days: 1))),
+          _entry('today', day, sourceType: 'reproduction'),
+          _entry('overdue', day.subtract(const Duration(days: 2))),
+          _entry('completed', day, estado: AgendaEstado.completado),
+          _entry('rescheduled', day, estado: AgendaEstado.reprogramada),
+        ]),
+        locationRepository: _LocationRepo(),
+        perfilRepository: _PerfilRepo(),
+        reproductionRepository: _ReproductionRepo(),
+      );
+
+      final dashboard = await service.loadDashboard();
+      expect(dashboard.dueEntries.map((e) => e.id), ['overdue', 'today']);
+    },
+  );
 }
+
+AgendaEntry _entry(
+  String id,
+  DateTime date, {
+  String estado = AgendaEstado.pendiente,
+  String? sourceType,
+}) => AgendaEntry(
+  id: id,
+  titulo: id,
+  descripcion: '',
+  fecha: date,
+  tipo: 'reproducción',
+  animalIds: const [],
+  loteIds: const [],
+  ubicacion: '',
+  estado: estado,
+  completedAnimalIds: const [],
+  notas: '',
+  sourceType: sourceType,
+);
 
 AnimalEntity _animal({
   required String uuid,
@@ -129,8 +174,11 @@ class _LotesRepo implements LotesRepository {
 }
 
 class _AgendaRepo implements AgendaRepository {
+  _AgendaRepo([this.entries = const []]);
+  final List<AgendaEntry> entries;
+
   @override
-  Future<List<AgendaEntry>> fetchEntries() async => const [];
+  Future<List<AgendaEntry>> fetchEntries() async => entries;
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

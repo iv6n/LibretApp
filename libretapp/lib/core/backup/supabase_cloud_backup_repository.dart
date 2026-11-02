@@ -19,7 +19,8 @@ class SupabaseCloudBackupRepository implements CloudBackupRepository {
   final Future<bool> Function()? _wifiAvailable;
 
   static const _bucket = 'libret-backups';
-  static const _retention = 5;
+  static const _retention = 3;
+  static const _maxSnapshotBytes = 10 * 1024 * 1024;
 
   final SupabaseClient _client;
 
@@ -46,8 +47,8 @@ class SupabaseCloudBackupRepository implements CloudBackupRepository {
     await _requireWifi();
     final snapshotId = const Uuid().v4();
     final objectPath = '$userId/$snapshotId.libretbackup';
-    if (bytes.isEmpty || bytes.length > 104857600 || crypto.sha256.convert(bytes).toString() != sha256) {
-      throw const FormatException('Copia inválida o mayor de 100 MiB.');
+    if (bytes.isEmpty || bytes.length > _maxSnapshotBytes || crypto.sha256.convert(bytes).toString() != sha256) {
+      throw const FormatException('Copia inválida o mayor de 10 MiB. Exporta una copia local si supera ese límite.');
     }
     // Reservations allow cleanup after process death, including Storage orphans.
     await _client.from('backup_snapshots').insert({

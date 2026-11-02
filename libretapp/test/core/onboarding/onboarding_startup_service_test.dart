@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/onboarding/onboarding_startup_service.dart';
 import 'package:libretapp/core/services/prefs_keys.dart';
@@ -51,11 +53,47 @@ void main() {
     expect(repository.lookupCount, 0);
   });
 
-  test('an installation with other modules populated keeps its existing access', () async {
+  test(
+    'an installation with other modules populated keeps its existing access',
+    () async {
+      final prefs = await preferences({});
+      final service = OnboardingStartupService(
+        preferences: prefs,
+        animalRepository: _AnimalRepository(const []),
+        hasOtherUserData: () async => true,
+      );
+      expect(await service.shouldShowWelcome(), isFalse);
+      expect(prefs.getBool(PrefsKeys.onboardingCompletedV1), isTrue);
+    },
+  );
+
+  test('animal and module presence checks run concurrently', () async {
     final prefs = await preferences({});
-    final service = OnboardingStartupService(preferences: prefs, animalRepository: _AnimalRepository(const []), hasOtherUserData: () async => true);
-    expect(await service.shouldShowWelcome(), isFalse);
-    expect(prefs.getBool(PrefsKeys.onboardingCompletedV1), isTrue);
+    final animalCheck = Completer<bool>();
+    final moduleCheck = Completer<bool>();
+    var animalStarted = false;
+    var moduleStarted = false;
+    final service = OnboardingStartupService(
+      preferences: prefs,
+      animalRepository: _AnimalRepository(const []),
+      hasAnimals: () {
+        animalStarted = true;
+        return animalCheck.future;
+      },
+      hasOtherUserData: () {
+        moduleStarted = true;
+        return moduleCheck.future;
+      },
+    );
+
+    final welcome = service.shouldShowWelcome();
+    await Future<void>.delayed(Duration.zero);
+    expect(animalStarted, isTrue);
+    expect(moduleStarted, isTrue);
+
+    animalCheck.complete(false);
+    moduleCheck.complete(true);
+    expect(await welcome, isFalse);
   });
 }
 

@@ -416,7 +416,29 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       result = result.where((a) => _searchFilterSexes.contains(a.sex));
     }
 
-    return result.toList();
+    final matches = result.toList();
+    if (normalized.isNotEmpty) {
+      matches.sort((a, b) {
+        final byRelevance = _searchRank(
+          a,
+          normalized,
+        ).compareTo(_searchRank(b, normalized));
+        if (byRelevance != 0) return byRelevance;
+        return a.uuid.compareTo(b.uuid);
+      });
+    }
+    return matches;
+  }
+
+  int _searchRank(AnimalEntity animal, String query) {
+    final tag = animal.earTagNumber.toLowerCase();
+    final name = (animal.customName ?? animal.visualId ?? '').toLowerCase();
+    if (tag == query) return 0;
+    if (tag.startsWith(query)) return 1;
+    if (_matchesEarTagQuery(animal.earTagNumber, query)) return 2;
+    if (name.startsWith(query)) return 3;
+    if (name.contains(query)) return 4;
+    return 5;
   }
 
   AnimalesLoaded _buildLoadedState() {

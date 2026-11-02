@@ -296,7 +296,7 @@ void main() {
       expect(find.text('Finca B'), findsWidgets);
     });
 
-    testWidgets('oculta el selector cuando existe una sola raíz', (
+    testWidgets('muestra el filtro general cuando existe una sola raíz', (
       tester,
     ) async {
       const root = LocationEntity(
@@ -334,7 +334,11 @@ void main() {
 
       expect(
         find.byKey(const ValueKey('ubicaciones-root-filter-row')),
-        findsNothing,
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('ubicaciones-root-filter-all')),
+        findsOneWidget,
       );
       expect(find.byTooltip('Filtrar categorías'), findsOneWidget);
       expect(

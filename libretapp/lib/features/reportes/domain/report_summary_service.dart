@@ -62,23 +62,27 @@ class ReportSummaryService {
     final categoryTotals = <Category, int>{};
     var unvaccinated = 0;
     var underObservation = 0;
+    var sanitaryPending = 0;
 
     for (final animal in animals) {
       speciesTotals.update(animal.species, (c) => c + 1, ifAbsent: () => 1);
       categoryTotals.update(animal.category, (c) => c + 1, ifAbsent: () => 1);
       if (!animal.vaccinated) unvaccinated++;
       if (animal.underObservation) underObservation++;
+      if (!animal.vaccinated || animal.underObservation) sanitaryPending++;
     }
 
-    final bySpecies = speciesTotals.entries
-        .map((e) => SpeciesCount(species: e.key, count: e.value))
-        .toList()
-      ..sort((a, b) => b.count.compareTo(a.count));
+    final bySpecies =
+        speciesTotals.entries
+            .map((e) => SpeciesCount(species: e.key, count: e.value))
+            .toList()
+          ..sort((a, b) => b.count.compareTo(a.count));
 
-    final byCategory = categoryTotals.entries
-        .map((e) => CategoryCount(category: e.key, count: e.value))
-        .toList()
-      ..sort((a, b) => b.count.compareTo(a.count));
+    final byCategory =
+        categoryTotals.entries
+            .map((e) => CategoryCount(category: e.key, count: e.value))
+            .toList()
+          ..sort((a, b) => b.count.compareTo(a.count));
 
     final calvingWindow = today.add(const Duration(days: 21));
     final calvingRaw = await _reproductionRepository.getUpcomingCalvings(
@@ -121,7 +125,8 @@ class ReportSummaryService {
               final m = entry.record;
               return RecentRecordItem(
                 title: 'Movimiento',
-                subtitle: m.notes ?? '${m.reason.displayName} → ${m.toLocation}',
+                subtitle:
+                    m.notes ?? '${m.reason.displayName} → ${m.toLocation}',
                 date: m.date,
                 animalTag: animal.earTagNumber,
                 route: AppRoutes.animalDetallePath(animal.uuid),
@@ -152,7 +157,7 @@ class ReportSummaryService {
       bySpecies: bySpecies,
       byCategory: byCategory,
       upcomingCalvings: upcomingCalvings,
-      healthAlertsCount: unvaccinated + underObservation,
+      healthAlertsCount: sanitaryPending,
       unvaccinatedCount: unvaccinated,
       underObservationCount: underObservation,
       recentMovements: recentMovements,

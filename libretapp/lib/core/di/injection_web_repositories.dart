@@ -31,6 +31,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/produ
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_dto.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_directory_read_model.dart';
 import 'package:libretapp/core/persistence/feature_record_store.dart';
 import 'package:libretapp/core/tenancy/tenancy.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
@@ -45,13 +46,92 @@ import 'package:libretapp/features/rfid/domain/rfid_models.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/crop_records.dart';
 
 class WebAnimalRepository
-    implements AnimalRepository, RegisteredAnimalSpeciesReader {
+    implements
+        AnimalRepository,
+        RegisteredAnimalSpeciesReader,
+        AnimalPresenceReader {
   WebAnimalRepository(this._store, this._context);
 
   static const _kind = 'animal';
   final FeatureRecordStore _store;
   final FarmContextRepository _context;
   final _changes = StreamController<void>.broadcast();
+  late final _directoryReadModel = AnimalDirectoryReadModelCache(
+    _loadActiveAnimals,
+  );
+  StreamSubscription<dynamic>? _directoryInvalidationSubscription;
+  Future<void>? _directoryInvalidationWatchFuture;
+  String? _directoryFarmId;
+
+  Future<AnimalDirectoryReadModel> _activeDirectoryReadModel() async {
+    final farmId = await _farmId;
+    await _selectDirectoryFarm(farmId);
+    await _ensureDirectoryInvalidationWatch(farmId);
+    return _directoryReadModel.read();
+  }
+
+  Future<void> _selectDirectoryFarm(String farmId) async {
+    if (_directoryFarmId == farmId) return;
+    await _directoryInvalidationSubscription?.cancel();
+    _directoryInvalidationSubscription = null;
+    _directoryReadModel.invalidate();
+    _directoryFarmId = farmId;
+  }
+
+  Future<void> _ensureDirectoryInvalidationWatch(String farmId) async {
+    final pending = _directoryInvalidationWatchFuture;
+    if (pending != null) await pending;
+    if (_directoryFarmId != farmId) {
+      await _directoryInvalidationSubscription?.cancel();
+      _directoryInvalidationSubscription = null;
+      final currentFarmId = _directoryFarmId;
+      if (currentFarmId != null) {
+        return _ensureDirectoryInvalidationWatch(currentFarmId);
+      }
+      return;
+    }
+    if (_directoryInvalidationSubscription != null) return;
+
+    final future = () async {
+      if (_store is WatchableFeatureRecordStore) {
+        var first = true;
+        _directoryInvalidationSubscription =
+            (_store as WatchableFeatureRecordStore).watch(farmId, _kind).listen(
+              (_) {
+                if (first) {
+                  first = false;
+                  return;
+                }
+                _directoryReadModel.invalidate();
+              },
+            );
+      } else {
+        _directoryInvalidationSubscription = _changes.stream.listen((_) {
+          _directoryReadModel.invalidate();
+        });
+      }
+    }();
+    _directoryInvalidationWatchFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_directoryInvalidationWatchFuture, future)) {
+        _directoryInvalidationWatchFuture = null;
+      }
+    }
+    if (_directoryFarmId != farmId) {
+      await _directoryInvalidationSubscription?.cancel();
+      _directoryInvalidationSubscription = null;
+      final currentFarmId = _directoryFarmId;
+      if (currentFarmId != null) {
+        await _ensureDirectoryInvalidationWatch(currentFarmId);
+      }
+    }
+  }
+
+  Future<List<AnimalEntity>> _loadActiveAnimals() async => (await _read())
+      .where((animal) => animal.status.isInActiveHerd)
+      .toList(growable: false);
 
   Future<String> get _farmId async =>
       (await _context.current())?.farm.uuid ?? 'default-farm';
@@ -97,6 +177,7 @@ class WebAnimalRepository
         synced: false,
       ),
     );
+    _directoryReadModel.invalidate();
     _changes.add(null);
     return saved;
   }
@@ -105,14 +186,18 @@ class WebAnimalRepository
   Stream<List<AnimalEntity>> watchAll() async* {
     final observable = _store;
     if (observable is WatchableFeatureRecordStore) {
+      final farmId = await _farmId;
+      await _selectDirectoryFarm(farmId);
+      await _ensureDirectoryInvalidationWatch(farmId);
       yield* (observable as WatchableFeatureRecordStore)
-          .watch(await _farmId, _kind)
-          .map(
-            (rows) => rows
+          .watch(farmId, _kind)
+          .map((rows) {
+            _directoryReadModel.invalidate();
+            return rows
                 .map((r) => AnimalDto.fromJson(r.payload).toEntity())
                 .where((a) => a.status.isInActiveHerd)
-                .toList(growable: false),
-          );
+                .toList(growable: false);
+          });
       return;
     }
     yield await getAll();
@@ -134,19 +219,23 @@ class WebAnimalRepository
   @override
   Future<bool> refreshFromRemote({bool force = false}) async => false;
   @override
-  Future<List<AnimalEntity>> getAll() async => (await _read())
-      .where((a) => a.status.isInActiveHerd)
-      .toList(growable: false);
+  Future<List<AnimalEntity>> getAll() async =>
+      (await _activeDirectoryReadModel()).animals;
   @override
   Future<Set<Species>> getRegisteredSpecies() async =>
       (await _read()).map((animal) => animal.species).toSet();
+  @override
+  Future<bool> hasAnyAnimals() async => (await _read()).isNotEmpty;
   @override
   Future<List<AnimalEntity>> getAllIncludingInactive() async => _read();
   @override
   Future<List<AnimalEntity>> getPage({
     required int offset,
     required int limit,
-  }) async => (await getAll()).skip(offset).take(limit).toList(growable: false);
+  }) async => (await _activeDirectoryReadModel()).animals
+      .skip(offset)
+      .take(limit)
+      .toList(growable: false);
   @override
   Future<AnimalEntity?> getByUuid(String uuid) => _readOne(uuid);
   @override
@@ -179,21 +268,17 @@ class WebAnimalRepository
       (await getAll()).where((a) => !a.synced).toList(growable: false);
   @override
   Future<Map<LifeStage, int>> getActiveStageCounts() async {
-    final counts = <LifeStage, int>{};
-    for (final animal in await getAll())
-      counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
-    return counts;
+    return (await _activeDirectoryReadModel()).stageCounts;
   }
 
   @override
   Future<Map<Species, Map<LifeStage, int>>> getActiveTaxonomyCounts() async {
-    final counts = <Species, Map<LifeStage, int>>{};
-    for (final animal in await getAll()) {
-      counts
-          .putIfAbsent(animal.species, () => <LifeStage, int>{})
-          .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
-    }
-    return counts;
+    return (await _activeDirectoryReadModel()).taxonomyCounts;
+  }
+
+  @override
+  Future<Map<LifeStage, int>> getActiveCompanionStageCounts() async {
+    return (await _activeDirectoryReadModel()).companionStageCounts;
   }
 
   @override
@@ -234,12 +319,14 @@ class WebAnimalRepository
   @override
   Future<void> purge(String uuid) async {
     await _store.softDelete(farmId: await _farmId, uuid: uuid, kind: _kind);
+    _directoryReadModel.invalidate();
     _changes.add(null);
   }
 
   @override
   Future<void> clearAll() async {
     for (final animal in await _read()) await purge(animal.uuid);
+    _directoryReadModel.invalidate();
     _changes.add(null);
   }
 

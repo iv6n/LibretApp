@@ -7,6 +7,7 @@ library;
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/features/finanzas/domain/finance_summary_service.dart';
+import 'package:libretapp/features/finanzas/domain/enums/financial_period_preset.dart';
 import 'package:libretapp/features/reportes/data/report_summary.dart';
 import 'package:libretapp/features/reportes/domain/report_summary_service.dart';
 
@@ -16,6 +17,7 @@ class ReportesState extends Equatable {
   const ReportesState({
     this.reportStatus = ReportesLoadStatus.initial,
     this.financeStatus = ReportesLoadStatus.initial,
+    this.financePreset = FinancialPeriodPreset.thisMonth,
     this.reportSummary,
     this.financeDetail,
     this.errorMessage,
@@ -23,6 +25,7 @@ class ReportesState extends Equatable {
 
   final ReportesLoadStatus reportStatus;
   final ReportesLoadStatus financeStatus;
+  final FinancialPeriodPreset financePreset;
   final ReportSummary? reportSummary;
   final FinanceSummaryDetail? financeDetail;
   final String? errorMessage;
@@ -30,6 +33,7 @@ class ReportesState extends Equatable {
   ReportesState copyWith({
     ReportesLoadStatus? reportStatus,
     ReportesLoadStatus? financeStatus,
+    FinancialPeriodPreset? financePreset,
     ReportSummary? reportSummary,
     FinanceSummaryDetail? financeDetail,
     String? errorMessage,
@@ -37,6 +41,7 @@ class ReportesState extends Equatable {
     return ReportesState(
       reportStatus: reportStatus ?? this.reportStatus,
       financeStatus: financeStatus ?? this.financeStatus,
+      financePreset: financePreset ?? this.financePreset,
       reportSummary: reportSummary ?? this.reportSummary,
       financeDetail: financeDetail ?? this.financeDetail,
       errorMessage: errorMessage,
@@ -47,6 +52,7 @@ class ReportesState extends Equatable {
   List<Object?> get props => [
     reportStatus,
     financeStatus,
+    financePreset,
     reportSummary,
     financeDetail,
     errorMessage,
@@ -88,9 +94,23 @@ class ReportesCubit extends Cubit<ReportesState> {
 
   Future<void> loadFinanzas() async {
     if (state.financeStatus == ReportesLoadStatus.loaded) return;
+    await _fetchFinanzas(state.financePreset);
+  }
+
+  Future<void> changeFinancePreset(FinancialPeriodPreset preset) async {
+    if (preset == state.financePreset &&
+        state.financeStatus == ReportesLoadStatus.loaded) {
+      return;
+    }
+    emit(state.copyWith(financePreset: preset));
+    await _fetchFinanzas(preset);
+  }
+
+  Future<void> _fetchFinanzas(FinancialPeriodPreset preset) async {
     emit(state.copyWith(financeStatus: ReportesLoadStatus.loading));
     try {
-      final detail = await _financeService.loadForPreset();
+      final detail = await _financeService.loadForPreset(preset: preset);
+      if (state.financePreset != preset) return;
       emit(
         state.copyWith(
           financeStatus: ReportesLoadStatus.loaded,
@@ -99,6 +119,7 @@ class ReportesCubit extends Cubit<ReportesState> {
         ),
       );
     } catch (e) {
+      if (state.financePreset != preset) return;
       emit(
         state.copyWith(
           financeStatus: ReportesLoadStatus.error,
@@ -130,22 +151,6 @@ class ReportesCubit extends Cubit<ReportesState> {
   }
 
   Future<void> refreshFinanzas() async {
-    emit(state.copyWith(financeStatus: ReportesLoadStatus.loading));
-    try {
-      final detail = await _financeService.loadForPreset();
-      emit(
-        state.copyWith(
-          financeStatus: ReportesLoadStatus.loaded,
-          financeDetail: detail,
-        ),
-      );
-    } catch (e) {
-      emit(
-        state.copyWith(
-          financeStatus: ReportesLoadStatus.error,
-          errorMessage: e.toString(),
-        ),
-      );
-    }
+    await _fetchFinanzas(state.financePreset);
   }
 }

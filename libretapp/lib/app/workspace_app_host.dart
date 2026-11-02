@@ -7,9 +7,15 @@ import 'package:libretapp/app/app.dart';
 import 'package:libretapp/app/app_router.dart';
 import 'package:libretapp/app/theme/theme_bloc.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/core/demo/demo_scenario_service.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/shared_prefs_service.dart';
+import 'package:libretapp/core/onboarding/profile_onboarding_service.dart';
+import 'package:libretapp/core/backup/automatic_backup.dart';
+import 'package:libretapp/core/backup/supabase_config.dart';
+import 'package:libretapp/core/security/services/supabase_session.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/workspace/workspace_files.dart';
 import 'package:libretapp/core/workspace/workspace_manager.dart';
 import 'package:libretapp/core/workspace/workspace_registry.dart';
@@ -43,6 +49,7 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
   AppLifecycleListener? _lifecycle;
   Widget? _tree;
   bool _switching = true;
+  bool _optionalServicesStarted = false;
   String? _error;
   @override
   void initState() {
@@ -57,10 +64,24 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
   }
 
   Future<void> _initialize(String initialLocation) async {
+    final compositionSpan = PerformanceMonitor().startSpan(
+      'workspace.compose.first_screen',
+      context: {'workspace_id': widget.manager.current?.id},
+    );
     try {
       await _compose(initialLocation);
-      if (mounted) setState(() => _switching = false);
+      if (mounted) {
+        setState(() => _switching = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          compositionSpan.stop(context: {'phase': 'first_frame'});
+          unawaited(_startOptionalServices());
+          _syncReminders();
+        });
+      } else {
+        compositionSpan.stop(context: {'phase': 'unmounted'});
+      }
     } catch (error) {
+      compositionSpan.stop(context: {'phase': 'failed'});
       if (mounted) {
         setState(() {
           _switching = false;
@@ -71,14 +92,23 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
   }
 
   Future<void> _compose(String initialLocation) async {
+    final preferenceSpan = PerformanceMonitor().startSpan(
+      'workspace.compose.registration_preferences',
+    );
     await _ensureRegistrationPreferences();
-    _syncReminders();
+    preferenceSpan.stop();
+    var destination = initialLocation;
+    if (destination != AppRoutes.onboarding &&
+        widget.manager.current?.kind == WorkspaceKind.account &&
+        await locator<ProfileOnboardingService>().shouldOffer()) {
+      destination = AppRoutes.onboardingProfile;
+    }
     _experience = AppExperienceController(
       locator<SharedPrefsService>(),
       demo: widget.manager.isDemo,
     );
     _router = createAppRouter(
-      initialLocation: initialLocation,
+      initialLocation: destination,
       onboardingError: _error,
     );
     _error = null;
@@ -207,6 +237,10 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
     required bool enterApp,
     Future<void> Function()? beforeOpen,
   }) async {
+    final compositionSpan = PerformanceMonitor().startSpan(
+      'workspace.switch.first_screen',
+      context: {'workspace_id': workspace.id},
+    );
     final previous = locator.isRegistered<LocalWorkspace>()
         ? locator<LocalWorkspace>()
         : null;
@@ -236,10 +270,6 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
       }
       await setupLocator(workspace: workspace);
       locator.registerSingleton<WorkspaceManager>(widget.manager);
-      await locator<WeatherAlertsService>().syncExisting(
-        workspace: workspace,
-        experience: AppExperience.complete,
-      );
       if (workspace.isDemo) {
         if (!locator.isRegistered<DemoScenarioService>()) {
           throw UnsupportedError('La demo está disponible en Android.');
@@ -249,8 +279,19 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
       await widget.manager.registry.preferences.setInt('onboarding.page.v2', 4);
       if (!mounted) return;
       await _compose(enterApp ? AppRoutes.inicio : AppRoutes.onboarding);
-      if (mounted) setState(() => _switching = false);
+      if (mounted) {
+        setState(() => _switching = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          compositionSpan.stop(context: {'phase': 'first_frame'});
+          unawaited(_startOptionalServices());
+          _syncReminders();
+          unawaited(_syncWeatherAlerts(workspace));
+        });
+      } else {
+        compositionSpan.stop(context: {'phase': 'unmounted'});
+      }
     } catch (_) {
+      compositionSpan.stop(context: {'phase': 'failed'});
       if (mounted) {
         setState(() {
           _switching = false;
@@ -260,6 +301,39 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
       }
       rethrow;
     }
+  }
+
+  Future<void> _syncWeatherAlerts(LocalWorkspace workspace) async {
+    try {
+      await locator<WeatherAlertsService>().syncExisting(
+        workspace: workspace,
+        experience: AppExperience.complete,
+      );
+    } catch (error) {
+      debugPrint('No se pudieron preparar las alertas del clima: $error');
+    }
+  }
+
+  Future<void> _startOptionalServices() async {
+    if (_optionalServicesStarted) return;
+    _optionalServicesStarted = true;
+    final tasks = <Future<void>>[
+      AutomaticBackup.initialize().then<void>((_) {}).catchError((
+        Object error,
+      ) {
+        debugPrint('No se pudo inicializar el respaldo automático: $error');
+      }),
+    ];
+    if (SupabaseConfig.isConfigured &&
+        (ReleaseFeatures.phoneAuthEnabled ||
+            ReleaseFeatures.cloudBackupEnabled)) {
+      tasks.add(
+        SupabaseSession.client().then<void>((_) {}).catchError((Object error) {
+          debugPrint('El servicio de cuentas no está disponible: $error');
+        }),
+      );
+    }
+    await Future.wait(tasks);
   }
 
   @override

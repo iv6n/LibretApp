@@ -48,9 +48,9 @@ String normalizePhone(String dialCode, String number) {
   final prefix = dialCode.replaceAll('+', '').trim();
   final normalized = '+$prefix$digits';
   if (!RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(normalized) ||
-      (prefix == '52' && digits.length != 10)) {
+      ((prefix == '52' || prefix == '1') && digits.length != 10)) {
     throw const PhoneAuthFailure(
-      'Revisa el número. Para México escribe los 10 dígitos, sin +52.',
+      'Revisa el número. Para México o Estados Unidos escribe 10 dígitos, sin prefijo.',
     );
   }
   return normalized;

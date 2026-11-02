@@ -22,14 +22,24 @@ class DashboardWidgetHost extends StatelessWidget {
     required this.config,
     required this.data,
     this.financeDetail,
+    this.financeLoading = false,
+    this.financeErrorMessage,
     this.libraryItems = const [],
+    this.libraryLoading = false,
+    this.libraryErrorMessage,
+    this.onRetrySupplements,
     super.key,
   });
 
   final DashboardWidgetConfig config;
   final InicioDashboardData data;
   final FinanceSummaryDetail? financeDetail;
+  final bool financeLoading;
+  final String? financeErrorMessage;
   final List<LibraryManifestBook> libraryItems;
+  final bool libraryLoading;
+  final String? libraryErrorMessage;
+  final VoidCallback? onRetrySupplements;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +63,9 @@ class DashboardWidgetHost extends StatelessWidget {
       ),
       DashboardWidgetType.financeMonth => _FinanceWidget(
         detail: financeDetail,
+        isLoading: financeLoading,
+        errorMessage: financeErrorMessage,
+        onRetry: onRetrySupplements,
         showSectionAction: showSectionAction,
       ),
       DashboardWidgetType.activeLocations => _LocationStatusWidget(
@@ -65,6 +78,9 @@ class DashboardWidgetHost extends StatelessWidget {
       DashboardWidgetType.inventory => const _InventoryWidget(),
       DashboardWidgetType.libraryPicks => _LibraryPicksWidget(
         items: libraryItems,
+        isLoading: libraryLoading,
+        errorMessage: libraryErrorMessage,
+        onRetry: onRetrySupplements,
         showSectionAction: showSectionAction,
       ),
     };
@@ -202,9 +218,13 @@ class _HealthAlertsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final alerts = data.alerts
-        .where((a) => a.severity != InicioAlertSeverity.info)
+        .where(
+          (a) =>
+              a.severity != InicioAlertSeverity.info &&
+              !a.title.toLowerCase().contains('vencid'),
+        )
         .toList();
-    final display = alerts.isEmpty ? data.alerts.take(2) : alerts;
+    final display = alerts;
     final status = Theme.of(context).extension<AppStatusTheme>();
 
     return DashboardWidgetCard(
@@ -277,17 +297,34 @@ class _UpcomingCalvingsWidget extends StatelessWidget {
 }
 
 class _FinanceWidget extends StatelessWidget {
-  const _FinanceWidget({this.detail, required this.showSectionAction});
+  const _FinanceWidget({
+    this.detail,
+    required this.isLoading,
+    this.errorMessage,
+    this.onRetry,
+    required this.showSectionAction,
+  });
 
   final FinanceSummaryDetail? detail;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
   final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
     if (detail == null) {
-      return const DashboardWidgetCard(
+      final status = errorMessage != null
+          ? DashboardWidgetStatus.error
+          : isLoading
+          ? DashboardWidgetStatus.loading
+          : DashboardWidgetStatus.empty;
+      return DashboardWidgetCard(
         title: 'Finanzas del mes',
-        status: DashboardWidgetStatus.loading,
+        status: status,
+        errorMessage: errorMessage,
+        onRetry: onRetry,
+        emptyTitle: 'Sin movimientos financieros',
         child: SizedBox.shrink(),
       );
     }
@@ -551,20 +588,33 @@ class _InventoryWidget extends StatelessWidget {
 class _LibraryPicksWidget extends StatelessWidget {
   const _LibraryPicksWidget({
     required this.items,
+    required this.isLoading,
+    this.errorMessage,
+    this.onRetry,
     required this.showSectionAction,
   });
 
   final List<LibraryManifestBook> items;
+  final bool isLoading;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
   final bool showSectionAction;
 
   @override
   Widget build(BuildContext context) {
     final picks = items.take(3).toList();
+    final status = picks.isNotEmpty
+        ? DashboardWidgetStatus.data
+        : errorMessage != null
+        ? DashboardWidgetStatus.error
+        : isLoading
+        ? DashboardWidgetStatus.loading
+        : DashboardWidgetStatus.empty;
     return DashboardWidgetCard(
       title: 'Biblioteca recomendada',
-      status: picks.isEmpty
-          ? DashboardWidgetStatus.empty
-          : DashboardWidgetStatus.data,
+      status: status,
+      errorMessage: errorMessage,
+      onRetry: onRetry,
       emptyTitle: 'Sin recomendaciones',
       onTap: () => context.push(AppRoutes.perfil),
       trailing: _sectionAction(

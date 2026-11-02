@@ -137,6 +137,68 @@ void main() {
       expect(filtered.map((animal) => animal.uuid), ['pending']);
     });
 
+    test(
+      'sanitary pending filter includes each unvaccinated or observed animal once',
+      () {
+        final unvaccinated = _buildAnimal(
+          uuid: 'unvaccinated',
+          earTagNumber: 'unvaccinated',
+          vaccinated: false,
+        );
+        final observed = _buildAnimal(
+          uuid: 'observed',
+          earTagNumber: 'observed',
+          vaccinated: true,
+          underObservation: true,
+        );
+        final both = _buildAnimal(
+          uuid: 'both',
+          earTagNumber: 'both',
+          vaccinated: false,
+          underObservation: true,
+        );
+        final healthy = _buildAnimal(
+          uuid: 'healthy',
+          earTagNumber: 'healthy',
+          vaccinated: true,
+        );
+
+        controller.setHealthFilter(AnimalHealthFilter.pending);
+
+        expect(
+          controller
+              .applyFilters([unvaccinated, observed, both, healthy])
+              .map((animal) => animal.uuid)
+              .toSet(),
+          {'unvaccinated', 'observed', 'both'},
+        );
+      },
+    );
+
+    test(
+      'unvaccinated filter excludes observed animals with vaccination recorded',
+      () {
+        final unvaccinated = _buildAnimal(
+          uuid: 'unvaccinated',
+          earTagNumber: 'unvaccinated',
+          vaccinated: false,
+        );
+        final observed = _buildAnimal(
+          uuid: 'observed',
+          earTagNumber: 'observed',
+          vaccinated: true,
+          underObservation: true,
+        );
+
+        controller.setHealthFilter(AnimalHealthFilter.unvaccinated);
+
+        expect(
+          controller.applyFilters([unvaccinated, observed]).map((a) => a.uuid),
+          ['unvaccinated'],
+        );
+      },
+    );
+
     test('filters selected species and its available stages together', () {
       final cattle = _buildAnimal(
         uuid: 'cattle',
@@ -164,6 +226,54 @@ void main() {
 
       expect(filtered.map((animal) => animal.uuid), ['goat']);
     });
+
+    test(
+      'companion filter includes companion animals across species',
+      () async {
+        final cattleCompanion = _buildAnimal(
+          uuid: 'cattle-companion',
+          earTagNumber: 'C-2',
+          species: Species.cattle,
+        ).copyWith(productionPurpose: ProductionPurpose.companion);
+        final felineCompanion = _buildAnimal(
+          uuid: 'feline-companion',
+          earTagNumber: 'F-1',
+          species: Species.feline,
+          lifeStage: LifeStage.cat,
+        ).copyWith(productionPurpose: ProductionPurpose.companion);
+        final productiveCattle = _buildAnimal(
+          uuid: 'productive-cattle',
+          earTagNumber: 'C-3',
+          species: Species.cattle,
+        );
+
+        await controller.loadTaxonomy([
+          cattleCompanion,
+          felineCompanion,
+          productiveCattle,
+        ]);
+        controller.setCompanion(true);
+
+        expect(
+          controller.state.companionStageCounts.values.reduce((a, b) => a + b),
+          2,
+        );
+        expect(
+          controller
+              .applyFilters([
+                cattleCompanion,
+                felineCompanion,
+                productiveCattle,
+              ])
+              .map((animal) => animal.uuid),
+          ['cattle-companion', 'feline-companion'],
+        );
+
+        controller.setSpecies(Species.cattle);
+        expect(controller.state.selectedCompanion, isFalse);
+        expect(controller.state.selectedStages, isEmpty);
+      },
+    );
   });
 }
 
@@ -173,6 +283,7 @@ AnimalEntity _buildAnimal({
   String? visualId,
   Species species = Species.cattle,
   bool underObservation = false,
+  bool vaccinated = false,
   bool requiresAttention = false,
   RiskLevel riskLevel = RiskLevel.low,
   HealthStatus healthStatus = HealthStatus.good,
@@ -193,7 +304,7 @@ AnimalEntity _buildAnimal({
     birthDate: DateTime(2023, 1, 1),
     ageMonths: 24,
     healthStatus: healthStatus,
-    vaccinated: false,
+    vaccinated: vaccinated,
     dewormed: false,
     hasVitamins: false,
     hasChronicIssues: false,

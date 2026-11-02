@@ -9,6 +9,24 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('DirectorioSearchResultsPanel', () {
+    testWidgets('shows directory guidance before a query is entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: DirectorioSearchResultsPanel(results: [])),
+        ),
+      );
+
+      expect(find.text('Busca en todo tu directorio'), findsOneWidget);
+      expect(
+        find.text(
+          'Encuentra animales, lotes, plantas y ubicaciones desde aquí.',
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('shows correct icon and label by type', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -36,13 +54,72 @@ void main() {
         ),
       );
 
-      expect(find.text('animal'), findsOneWidget);
-      expect(find.text('lote'), findsOneWidget);
-      expect(find.text('ubicacion'), findsOneWidget);
+      expect(find.text('animales'), findsOneWidget);
+      expect(find.text('lotes'), findsOneWidget);
+      expect(find.text('ubicaciones'), findsOneWidget);
 
       expect(find.byIcon(Icons.pets), findsOneWidget);
       expect(find.byIcon(Icons.agriculture), findsOneWidget);
       expect(find.byIcon(Icons.location_on), findsOneWidget);
+    });
+
+    testWidgets('shows partial source failure and offers retry', (
+      tester,
+    ) async {
+      var retried = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DirectorioSearchResultsPanel(
+              query: 'corral',
+              results: const [],
+              failedSources: const [CombinedSearchType.ubicacion],
+              onRetry: () => retried = true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('No pudimos consultar: ubicaciones'), findsOneWidget);
+      expect(find.text('No hay resultados disponibles'), findsOneWidget);
+      await tester.tap(find.text('Reintentar'));
+      expect(retried, isTrue);
+    });
+
+    testWidgets('groups hits in the order provided by the active tab', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DirectorioSearchResultsPanel(
+              query: 'coincide',
+              groupOrder: [
+                CombinedSearchType.ubicacion,
+                CombinedSearchType.animal,
+              ],
+              results: [
+                CombinedSearchResult(
+                  type: CombinedSearchType.animal,
+                  id: 'animal-1',
+                  name: 'Animal',
+                ),
+                CombinedSearchResult(
+                  type: CombinedSearchType.ubicacion,
+                  id: 'ubicacion-1',
+                  name: 'Ubicación',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.text('Ubicaciones')).dy,
+        lessThan(tester.getTopLeft(find.text('Animales')).dy),
+      );
+      expect(find.text('2 resultados para “coincide”'), findsOneWidget);
     });
 
     testWidgets('tap on item opens expected detail route', (tester) async {

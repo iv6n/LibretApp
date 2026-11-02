@@ -236,19 +236,56 @@ class _BackupStatusCard extends StatelessWidget {
         : local != null
         ? 'Copia local creada'
         : 'Datos solo en este teléfono';
+    final subtitle = hasRecords && local == null && uploaded == null
+        ? 'Crear copia de seguridad'
+        : 'Revisar y exportar respaldos';
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Card(
-        child: ListTile(
-          leading: const Icon(Icons.backup_outlined),
-          title: Text(title),
-          subtitle: Text(
-            hasRecords && local == null && uploaded == null
-                ? 'Ya tienes registros. Crea una copia de seguridad.'
-                : 'Revisa y exporta tus respaldos',
-          ),
-          trailing: const Icon(Icons.chevron_right),
+      child: Material(
+        color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: cs.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
           onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 64),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              child: Row(
+                children: [
+                  Icon(Icons.backup_outlined, size: 22, color: cs.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

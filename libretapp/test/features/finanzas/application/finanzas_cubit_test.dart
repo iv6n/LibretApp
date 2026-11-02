@@ -104,6 +104,16 @@ class _FakeAnimalRepository implements AnimalRepository {
       const {};
 
   @override
+  Future<Map<LifeStage, int>> getActiveCompanionStageCounts() async {
+    final counts = <LifeStage, int>{};
+    for (final animal in _animals) {
+      if (animal.productionPurpose != ProductionPurpose.companion) continue;
+      counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  @override
   Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) async =>
       animal;
 

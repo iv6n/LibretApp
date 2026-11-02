@@ -121,6 +121,19 @@ class _EmptyReproductionRepository implements ReproductionRecordRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+class _MutableReproductionRepository implements ReproductionRecordRepository {
+  _MutableReproductionRepository(this.records);
+  List<ReproductionRecord> records;
+
+  @override
+  Future<List<ReproductionRecord>> getReproductionRecords(
+    String animalUuid,
+  ) async => records;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 class _InMemoryAgendaRepository
     implements AgendaRepository, AtomicAgendaRepository {
   List<AgendaEntry> _entries = [];
@@ -231,18 +244,77 @@ void main() {
       AnimalRepository? animalRepository,
       LocationRepository? locationRepository,
       CultivationRepository? cultivationRepository,
+      ReproductionRecordRepository? reproductionRepository,
     }) {
       return AgendaReminderSyncService(
         animalRepository: animalRepository ?? _FakeAnimalRepository(animals),
         agendaRepository: agendaRepository,
         healthRepo: _EmptyHealthRepository(),
-        reproductionRepo: _EmptyReproductionRepository(),
+        reproductionRepo:
+            reproductionRepository ?? _EmptyReproductionRepository(),
         careRepo: careRepo,
         careCalendarService: CareCalendarService(careRepo),
         locationRepository: locationRepository,
         cultivationRepository: cultivationRepository,
       );
     }
+
+    test(
+      'a goat cycle changes from a check to calving dates without duplicates',
+      () async {
+        final serviceDate = DateTime(2026, 1, 10);
+        final due = serviceDate.add(const Duration(days: 150));
+        final reproduction = _MutableReproductionRepository([
+          ReproductionRecord(
+            id: 'cycle-1',
+            serviceDate: serviceDate,
+            serviceType: ServiceType.naturalService,
+            expectedCalvingDate: due,
+          ),
+        ]);
+        final agenda = _InMemoryAgendaRepository();
+        final sync = buildService(
+          animals: [_cow().copyWith(species: Species.goat)],
+          agendaRepository: agenda,
+          reproductionRepository: reproduction,
+        );
+
+        await sync.sync();
+        var entries = await agenda.fetchEntries();
+        expect(
+          entries.where(
+            (entry) => entry.titulo.startsWith('Chequeo de preñez'),
+          ),
+          hasLength(1),
+        );
+        expect(
+          entries.where((entry) => entry.titulo.startsWith('Parto estimado')),
+          isEmpty,
+        );
+
+        reproduction.records = [
+          reproduction.records.single.copyWith(
+            pregnancyCheckDate: serviceDate.add(const Duration(days: 35)),
+            pregnancyResult: PregnancyCheckResult.positive,
+          ),
+        ];
+        await sync.sync();
+        await sync.sync();
+        entries = await agenda.fetchEntries();
+        expect(entries.map((entry) => entry.id).toSet().length, entries.length);
+        expect(
+          entries.where(
+            (entry) => entry.titulo.startsWith('Chequeo de preñez'),
+          ),
+          isEmpty,
+        );
+        expect(
+          entries.where((entry) => entry.titulo.startsWith('Parto estimado')),
+          hasLength(1),
+        );
+        expect(entries.where((entry) => entry.fecha == due), hasLength(1));
+      },
+    );
 
     test('a due care rule reaches the Agenda as an auto:care entry', () async {
       await careRepo.saveRule(

@@ -34,6 +34,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_
 import 'package:libretapp/features/ubicaciones/infrastructure/isar/isar_location.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/reproductive_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/sex.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_reproduction_record.dart';
 
@@ -85,17 +86,26 @@ class AnimalProjectionRecalculator {
   static Future<void> prepareLocationProjection(Isar db, String uuid) async {
     final animal = await db.isarAnimals.where().uuidEqualTo(uuid).findFirst();
     if (animal == null || animal.locationProjectionInitialized == true) return;
-    final history = await db.isarMovementRecords.where().animalUuidEqualTo(uuid).sortByDate().findAll();
+    final history = await db.isarMovementRecords
+        .where()
+        .animalUuidEqualTo(uuid)
+        .sortByDate()
+        .findAll();
     if (history.isEmpty) {
       animal.registrationLocationId = animal.currentLocationId;
       animal.registrationMovementDate = animal.lastMovementDate;
     } else {
       animal.registrationLocationId = animal.initialLocationId;
-      if (animal.registrationLocationId == null && history.first.fromLocation != null) {
-        final origin = await db.isarLocations.where().uuidEqualTo(history.first.fromLocation!).findFirst();
+      if (animal.registrationLocationId == null &&
+          history.first.fromLocation != null) {
+        final origin = await db.isarLocations
+            .where()
+            .uuidEqualTo(history.first.fromLocation!)
+            .findFirst();
         animal.registrationLocationId = origin?.uuid;
       }
-      animal.locationProjectionUncertain = animal.registrationLocationId == null;
+      animal.locationProjectionUncertain =
+          animal.registrationLocationId == null;
     }
     animal.locationProjectionInitialized = true;
     await db.isarAnimals.put(animal);
@@ -253,9 +263,15 @@ class AnimalProjectionRecalculator {
     final types = records.map((record) => record.type).toSet();
     _prepareHealthProvenance(animal);
     animal
-      ..vaccinated = animal.manualVaccinated! || types.contains(HealthRecordType.vaccine.name)
-      ..dewormed = animal.manualDewormed! || types.contains(HealthRecordType.deworming.name)
-      ..hasVitamins = animal.manualHasVitamins! || types.contains(HealthRecordType.vitamins.name);
+      ..vaccinated =
+          animal.manualVaccinated! ||
+          types.contains(HealthRecordType.vaccine.name)
+      ..dewormed =
+          animal.manualDewormed! ||
+          types.contains(HealthRecordType.deworming.name)
+      ..hasVitamins =
+          animal.manualHasVitamins! ||
+          types.contains(HealthRecordType.vitamins.name);
 
     final hasDisease = types.contains(HealthRecordType.disease.name);
     animal.underObservation = animal.manualUnderObservation! || hasDisease;
@@ -340,7 +356,7 @@ class AnimalProjectionRecalculator {
       case 'positive':
         animal
           ..reproductiveStatus = ReproductiveStatus.pregnant.name
-          ..expectedCalvingDate = _expectedCalving(latest);
+          ..expectedCalvingDate = _expectedCalving(latest, animal);
       case 'negative':
         animal
           ..reproductiveStatus = ReproductiveStatus.active.name
@@ -350,16 +366,25 @@ class AnimalProjectionRecalculator {
         // projected date gives the dashboard something to count down to.
         animal
           ..reproductiveStatus = ReproductiveStatus.active.name
-          ..expectedCalvingDate = _expectedCalving(latest);
+          ..expectedCalvingDate = _expectedCalving(latest, animal);
     }
   }
 
   /// The date the breeder typed, or the standard gestation projected from the
   /// service when they left it empty.
-  static DateTime _expectedCalving(IsarReproductionRecord record) =>
+  static DateTime _expectedCalving(
+    IsarReproductionRecord record,
+    IsarAnimal animal,
+  ) =>
       record.expectedCalvingDate ??
       const ReproductionScheduler()
-          .estimate(serviceDate: record.serviceDate!)
+          .estimate(
+            serviceDate: record.serviceDate!,
+            species: Species.values.firstWhere(
+              (value) => value.name == animal.species,
+              orElse: () => Species.cattle,
+            ),
+          )
           .dueDate;
 
   /// Whether the animal is still in the herd.

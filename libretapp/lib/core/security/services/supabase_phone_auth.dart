@@ -104,8 +104,8 @@ class SupabasePhoneAuth implements PhoneAuthPort {
     String token, {
     PhoneAccessIntent intent = PhoneAccessIntent.createAccount,
   }) {
-    if (!RegExp(r'^\+52\d{10}$').hasMatch(phone) || token.isEmpty) {
-      throw const PhoneAuthFailure('Verifica el CAPTCHA y tu número mexicano.');
+    if (!RegExp(r'^\+(?:52|1)\d{10}$').hasMatch(phone) || token.isEmpty) {
+      throw const PhoneAuthFailure('Verifica el CAPTCHA y tu número.');
     }
     return _run(
       (client) => client.auth.signInWithOtp(

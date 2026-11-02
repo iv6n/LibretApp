@@ -23,8 +23,8 @@ Descripción completa, sujeta a la aceptación de las funciones conectadas:
 > Con una cuenta verificada por SMS a un teléfono mexicano puedes guardar y
 > restaurar respaldos completos. Elige una copia manual o activa respaldos
 > automáticos cada 24 horas, por Wi-Fi y con batería suficiente. Android puede
-> aplazarlos. Se conservan hasta cinco copias verificadas por cuenta, de hasta
-> 100 MiB cada una. Al restaurar eliges Fusionar o Reemplazar.
+> aplazarlos. Se conservan hasta tres copias verificadas por cuenta, de hasta
+> 10 MiB cada una. Al restaurar eliges Fusionar o Reemplazar.
 >
 > Tu cuenta no sincroniza continuamente los teléfonos. Para llevar los registros
 > a otro equipo necesitas restaurar una copia. También puedes exportar un

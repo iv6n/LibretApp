@@ -16,6 +16,7 @@ class DashboardWidgetCard extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.errorMessage,
+    this.onRetry,
     this.emptyTitle,
     this.emptyMessage,
     super.key,
@@ -27,6 +28,7 @@ class DashboardWidgetCard extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final String? errorMessage;
+  final VoidCallback? onRetry;
   final String? emptyTitle;
   final String? emptyMessage;
 
@@ -85,6 +87,13 @@ class DashboardWidgetCard extends StatelessWidget {
                     icon: Icons.error_outline,
                     title: 'Error',
                     message: errorMessage ?? 'No se pudo cargar',
+                    action: onRetry == null
+                        ? null
+                        : TextButton.icon(
+                            onPressed: onRetry,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Reintentar'),
+                          ),
                   ),
                   DashboardWidgetStatus.empty => AppEmptyState(
                     icon: Icons.inbox_outlined,

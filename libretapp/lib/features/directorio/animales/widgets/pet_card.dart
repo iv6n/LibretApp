@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_card.dart';
@@ -68,21 +69,13 @@ class PetCard extends StatelessWidget {
       Color.alphaBlend(cardOverlay, colors.surface),
     );
 
-    return Card(
+    return AppDirectoryCardFrame(
       key: const ValueKey('pet_card'),
-      margin: const EdgeInsets.only(bottom: 14),
-      clipBehavior: Clip.antiAlias,
       color: cardColor,
-      elevation: 1.2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: AnimalPalette.cardBorder(context, isSelected: isSelected),
-          width: isSelected ? 1.5 : 1,
-        ),
-      ),
+      borderColor: AnimalPalette.cardBorder(context, isSelected: isSelected),
+      borderWidth: isSelected ? 1.5 : 1,
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDirectoryCardFrame.cornerRadius),
         onTap: isPreview
             ? null
             : onTap ??
@@ -170,10 +163,16 @@ class PetCard extends StatelessWidget {
                                 iconColor: AnimalPalette.cardTextSecondary(
                                   context,
                                 ),
-                                showStageLabel: false,
                                 onSelected: onMenuAction!,
                                 onMenuOpenChanged: onQuickMenuOpenChanged,
                                 onPrepareQuickMenu: onPrepareQuickMenu,
+                              )
+                            else
+                              TagChip(
+                                fontSize: 10,
+                                label: 'MASCOTA',
+                                accentColor: speciesColor,
+                                outlined: false,
                               ),
                           ],
                         ),
@@ -182,14 +181,6 @@ class PetCard extends StatelessWidget {
                           spacing: 5,
                           runSpacing: 3,
                           children: [
-                            TagChip(
-                              fontSize: 11,
-                              label: 'MASCOTA',
-                              accentColor: speciesColor,
-                              textColor: AnimalPalette.summaryChipText,
-                              tintOpacity: 0.10,
-                              borderOpacity: 0.28,
-                            ),
                             TagChip(
                               fontSize: 11,
                               label: animal.species.displayName.toUpperCase(),

@@ -13,6 +13,7 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
+import 'package:libretapp/features/agenda/domain/agenda_task_grouping.dart';
 import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/perfil/data/perfil_model.dart';
 import 'package:libretapp/features/perfil/data/perfil_repository.dart';
@@ -54,6 +55,10 @@ class InicioDashboardService {
       _locationRepository.getAll(),
       _agendaRepository.fetchEntries(),
       _perfilRepository.fetchPerfil(),
+      _reproductionRepository.getUpcomingCalvings(
+        today,
+        today.add(const Duration(days: 21)),
+      ),
     ]);
 
     final statistics = results[0] as Map<String, dynamic>;
@@ -62,6 +67,8 @@ class InicioDashboardService {
     final locations = results[3] as List<LocationEntity>;
     final eventos = results[4] as List<AgendaEntry>;
     final perfil = results[5] as Perfil;
+    final calvingRaw =
+        results[6] as List<({String animalUuid, DateTime expectedCalvingDate})>;
 
     final totalAnimals = (statistics['total'] as int?) ?? animals.length;
     final livestockAnimals = animals
@@ -123,13 +130,21 @@ class InicioDashboardService {
     final overdueEvents = eventos
         .where((e) => e.fecha.isBefore(today) && isOpenAgendaEntry(e))
         .length;
+    const taskGrouper = AgendaTaskGrouper();
+    final dueEntries =
+        eventos.where((entry) {
+          final day = DateTime(
+            entry.fecha.year,
+            entry.fecha.month,
+            entry.fecha.day,
+          );
+          return !day.isAfter(today) && !taskGrouper.isTerminal(entry);
+        }).toList()..sort((a, b) {
+          final byDate = a.fecha.compareTo(b.fecha);
+          return byDate != 0 ? byDate : a.id.compareTo(b.id);
+        });
 
     // Calvings in the next 21 days.
-    final calvingWindow = today.add(const Duration(days: 21));
-    final calvingRaw = await _reproductionRepository.getUpcomingCalvings(
-      today,
-      calvingWindow,
-    );
     final animalMap = {for (final a in animals) a.uuid: a};
     final upcomingCalvings =
         calvingRaw
@@ -321,6 +336,7 @@ class InicioDashboardService {
       totalLocations: locations.length,
       upcomingEventsCount: upcomingEvents.length,
       upcomingEvents: upcomingEvents.take(4).toList(growable: false),
+      dueEntries: dueEntries,
       alerts: alerts,
       tasks: tasks,
       lastUpdated: now,

@@ -13,11 +13,9 @@ import 'package:libretapp/features/directorio/animales/animals.dart'
     hide ClearSearch;
 import 'package:libretapp/features/directorio/animales/bloc/animales_event.dart'
     as animales_event;
-import 'package:libretapp/features/directorio/bloc/animales_tab_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_bloc.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_event.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
-import 'package:libretapp/features/directorio/bloc/lotes_tab_bloc.dart';
 import 'package:libretapp/features/directorio/cultivos/view/cultivos_list_view.dart';
 import 'package:libretapp/features/directorio/lotes/lotes_list_view.dart';
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_page.dart';
@@ -545,6 +543,10 @@ class _DirectorioViewState extends State<DirectorioView>
                                 onChanged: _onSearchChanged,
                                 hintText: 'Buscar en el directorio',
                                 onClose: _toggleSearch,
+                                onClear: () => context
+                                    .read<DirectorioBloc>()
+                                    .add(const ClearSearchQuery()),
+                                singleClearOrCloseAction: true,
                               ),
                             )
                           : Text(
@@ -555,11 +557,12 @@ class _DirectorioViewState extends State<DirectorioView>
                           ? const []
                           : !_isSearching
                           ? [
-                              AppIconButton(
-                                icon: Icons.search,
-                                tooltip: 'Buscar en el directorio',
-                                onPressed: _toggleSearch,
-                              ),
+                              if (_activeSection != DirectorioSection.animales)
+                                AppIconButton(
+                                  icon: Icons.search,
+                                  tooltip: 'Buscar en el directorio',
+                                  onPressed: _toggleSearch,
+                                ),
                               _buildDirectoryMenu(context),
                             ]
                           : const [],
@@ -617,10 +620,29 @@ class _DirectorioViewState extends State<DirectorioView>
   Widget _buildSearchResults() {
     return BlocBuilder<DirectorioBloc, DirectorioState>(
       builder: (context, state) {
-        final results = state is DirectorioLoaded
-            ? state.searchResults
-            : const <CombinedSearchResult>[];
-        return DirectorioSearchResultsPanel(results: results);
+        final loaded = state is DirectorioLoaded ? state : null;
+        final results = loaded?.searchResults ?? const <CombinedSearchResult>[];
+        final groupOrder = loaded == null
+            ? CombinedSearchType.values
+            : <CombinedSearchType>[
+                loaded.activeSection.searchType,
+                ...loaded.orderedSections
+                    .where((section) => section != loaded.activeSection)
+                    .map((section) => section.searchType),
+              ];
+        return DirectorioSearchResultsPanel(
+          query: loaded?.searchQuery ?? '',
+          results: results,
+          groupOrder: groupOrder,
+          isLoading: loaded?.isSearchLoading ?? false,
+          failedSources:
+              loaded?.searchFailedSources ?? const <CombinedSearchType>[],
+          onRetry: loaded == null || loaded.searchQuery.isEmpty
+              ? null
+              : () => context.read<DirectorioBloc>().add(
+                  PerformCombinedSearch(loaded.searchQuery),
+                ),
+        );
       },
     );
   }
@@ -642,9 +664,9 @@ class _DirectorioViewState extends State<DirectorioView>
       case DirectorioSection.animales:
         return KeyedSubtree(
           key: _animalesTabKey,
-          child: BlocProvider<AnimalesTabBloc>.value(
-            value: context.read<AnimalesTabBloc>(),
-            child: AnimalesListView(
+          child: _DeferredDirectorySection(
+            active: isActive,
+            builder: () => AnimalesListView(
               shellInteractionsEnabled: isActive,
               viewMode: switch (context.read<DirectorioBloc>().state) {
                 DirectorioLoaded(:final animalViewMode) => animalViewMode,
@@ -656,22 +678,28 @@ class _DirectorioViewState extends State<DirectorioView>
       case DirectorioSection.lotes:
         return KeyedSubtree(
           key: _lotesTabKey,
-          child: BlocProvider<LotesTabBloc>.value(
-            value: context.read<LotesTabBloc>(),
-            child: LotesListView(shellInteractionsEnabled: isActive),
+          child: _DeferredDirectorySection(
+            active: isActive,
+            builder: () => LotesListView(shellInteractionsEnabled: isActive),
           ),
         );
       case DirectorioSection.cultivos:
         return KeyedSubtree(
           key: _cultivosTabKey,
-          child: _DeferredCultivosTab(active: isActive),
+          child: _DeferredDirectorySection(
+            active: isActive,
+            builder: () => CultivosListView(shellInteractionsEnabled: isActive),
+          ),
         );
       case DirectorioSection.ubicaciones:
         return KeyedSubtree(
           key: _ubicacionesTabKey,
-          child: UbicacionesPage(
-            showHeader: false,
-            shellInteractionsEnabled: isActive,
+          child: _DeferredDirectorySection(
+            active: isActive,
+            builder: () => UbicacionesPage(
+              showHeader: false,
+              shellInteractionsEnabled: isActive,
+            ),
           ),
         );
     }
@@ -761,22 +789,26 @@ class _DirectorioViewState extends State<DirectorioView>
   }
 }
 
-/// Keeps Cultivos out of the initial Directorio build, then keeps its state
-/// alive after the first visit so switching tabs does not restart its reads.
-class _DeferredCultivosTab extends StatefulWidget {
-  const _DeferredCultivosTab({required this.active});
+/// Delays each tab's data subscriptions until the user visits that section.
+class _DeferredDirectorySection extends StatefulWidget {
+  const _DeferredDirectorySection({
+    required this.active,
+    required this.builder,
+  });
 
   final bool active;
+  final Widget Function() builder;
 
   @override
-  State<_DeferredCultivosTab> createState() => _DeferredCultivosTabState();
+  State<_DeferredDirectorySection> createState() =>
+      _DeferredDirectorySectionState();
 }
 
-class _DeferredCultivosTabState extends State<_DeferredCultivosTab> {
+class _DeferredDirectorySectionState extends State<_DeferredDirectorySection> {
   late bool _activated = widget.active;
 
   @override
-  void didUpdateWidget(covariant _DeferredCultivosTab oldWidget) {
+  void didUpdateWidget(covariant _DeferredDirectorySection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.active) _activated = true;
   }
@@ -792,7 +824,7 @@ class _DeferredCultivosTabState extends State<_DeferredCultivosTab> {
         child: AppLoadingIndicator.inline(),
       );
     }
-    return CultivosListView(shellInteractionsEnabled: widget.active);
+    return widget.builder();
   }
 }
 
@@ -947,33 +979,290 @@ class _DirectorioTabsMenuRow extends StatelessWidget {
 }
 
 class DirectorioSearchResultsPanel extends StatelessWidget {
-  const DirectorioSearchResultsPanel({required this.results, super.key});
+  const DirectorioSearchResultsPanel({
+    required this.results,
+    this.query = '',
+    this.groupOrder = const [
+      CombinedSearchType.animal,
+      CombinedSearchType.lote,
+      CombinedSearchType.cultivo,
+      CombinedSearchType.ubicacion,
+    ],
+    this.isLoading = false,
+    this.failedSources = const [],
+    this.onRetry,
+    super.key,
+  });
 
   final List<CombinedSearchResult> results;
+  final String query;
+  final List<CombinedSearchType> groupOrder;
+  final bool isLoading;
+  final List<CombinedSearchType> failedSources;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    if (results.isEmpty) {
-      return const AppEmptyState(
-        compact: true,
-        icon: Icons.search_off,
-        title: 'No se encontraron resultados',
-        message: 'Prueba con otro término de búsqueda.',
+    final theme = Theme.of(context);
+    final grouped = <CombinedSearchType, List<CombinedSearchResult>>{
+      for (final type in groupOrder)
+        type: results.where((result) => result.type == type).toList(),
+    };
+    final hasQuery = query.trim().isNotEmpty;
+    final slivers = <Widget>[];
+
+    if (!hasQuery && results.isEmpty) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 42, 24, 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.travel_explore,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Busca en todo tu directorio',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Encuentra animales, lotes, plantas y ubicaciones desde aquí.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final result = results[index];
-        return ListTile(
-          leading: buildDirectorioTypeIcon(context, result.type),
-          title: Text(result.name),
-          subtitle: Text(result.type.label),
-          onTap: () => openDirectorioSearchResult(context, result),
+    if (hasQuery && isLoading) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 36),
+            child: Column(
+              children: [
+                const AppLoadingIndicator.inline(),
+                const SizedBox(height: 12),
+                Text('Buscando “$query”…'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (failedSources.isNotEmpty) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: _SearchSourcesWarning(
+              sources: failedSources,
+              onRetry: onRetry,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (hasQuery && !isLoading && results.isEmpty) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: AppEmptyState(
+              compact: true,
+              icon: failedSources.isEmpty
+                  ? Icons.search_off
+                  : Icons.cloud_off_outlined,
+              title: failedSources.isEmpty
+                  ? 'No se encontraron resultados'
+                  : 'No hay resultados disponibles',
+              message: failedSources.isEmpty
+                  ? 'Prueba con otro término de búsqueda.'
+                  : 'Algunas secciones no respondieron. Puedes intentarlo de nuevo.',
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (hasQuery && !isLoading && results.isNotEmpty) {
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(
+              '${results.length} ${results.length == 1 ? 'resultado' : 'resultados'} para “$query”',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!isLoading) {
+      for (final type in groupOrder) {
+        final typeResults = grouped[type] ?? const <CombinedSearchResult>[];
+        if (typeResults.isEmpty) continue;
+        slivers.add(
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
+              child: _SearchResultGroupHeader(
+                type: type,
+                count: typeResults.length,
+              ),
+            ),
+          ),
         );
-      },
+        slivers.add(
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final result = typeResults[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 3),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      child: buildDirectorioTypeIcon(context, type),
+                    ),
+                    title: Text(result.name),
+                    subtitle: Text(_searchTypeLabel(type)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => openDirectorioSearchResult(context, result),
+                  ),
+                );
+              }, childCount: typeResults.length),
+            ),
+          ),
+        );
+      }
+    }
+
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 32)));
+    return CustomScrollView(slivers: slivers);
+  }
+}
+
+class _SearchResultGroupHeader extends StatelessWidget {
+  const _SearchResultGroupHeader({required this.type, required this.count});
+
+  final CombinedSearchType type;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Text(
+          _searchTypeTitle(type),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: theme.colorScheme.onSecondaryContainer,
+            ),
+          ),
+        ),
+      ],
     );
+  }
+}
+
+class _SearchSourcesWarning extends StatelessWidget {
+  const _SearchSourcesWarning({required this.sources, this.onRetry});
+
+  final List<CombinedSearchType> sources;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labels = sources.map(_searchTypeLabel).join(', ');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No pudimos consultar: $labels',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onErrorContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (onRetry != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+String _searchTypeLabel(CombinedSearchType type) {
+  switch (type) {
+    case CombinedSearchType.animal:
+      return 'animales';
+    case CombinedSearchType.lote:
+      return 'lotes';
+    case CombinedSearchType.cultivo:
+      return 'plantas y cultivos';
+    case CombinedSearchType.ubicacion:
+      return 'ubicaciones';
+  }
+}
+
+String _searchTypeTitle(CombinedSearchType type) {
+  switch (type) {
+    case CombinedSearchType.animal:
+      return 'Animales';
+    case CombinedSearchType.lote:
+      return 'Lotes';
+    case CombinedSearchType.cultivo:
+      return 'Plantas y cultivos';
+    case CombinedSearchType.ubicacion:
+      return 'Ubicaciones';
   }
 }
 

@@ -141,7 +141,6 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final itemColor = isSelected ? selectedColor : unselectedColor;
-    final largeText = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.5;
 
     return Semantics(
       button: true,
@@ -151,10 +150,7 @@ class _NavButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: largeText ? 2 : 6,
-            horizontal: 2,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -163,11 +159,11 @@ class _NavButton extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+                softWrap: true,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: isSelected ? 10 : 9,
+                  fontSize: 12,
                   height: 1.05,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   color: itemColor,

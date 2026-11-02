@@ -909,6 +909,10 @@ class _EditPerfilSheetState extends State<_EditPerfilSheet> {
   late final TextEditingController _finca;
   late final TextEditingController _upp;
   late final TextEditingController _direccion;
+  late bool _showUpp;
+  late bool _showEmail;
+  late bool _showTelefono;
+  late bool _showDireccion;
 
   @override
   void initState() {
@@ -920,6 +924,10 @@ class _EditPerfilSheetState extends State<_EditPerfilSheet> {
     _finca = TextEditingController(text: widget.perfil.finca);
     _upp = TextEditingController(text: widget.perfil.upp);
     _direccion = TextEditingController(text: widget.perfil.direccion);
+    _showUpp = widget.perfil.showUpp;
+    _showEmail = widget.perfil.showEmail;
+    _showTelefono = widget.perfil.showTelefono;
+    _showDireccion = widget.perfil.showDireccion;
   }
 
   @override
@@ -945,6 +953,10 @@ class _EditPerfilSheetState extends State<_EditPerfilSheet> {
       finca: _finca.text.trim(),
       upp: _upp.text.trim(),
       direccion: _direccion.text.trim(),
+      showUpp: _showUpp,
+      showEmail: _showEmail,
+      showTelefono: _showTelefono,
+      showDireccion: _showDireccion,
     );
     context.read<PerfilBloc>().add(SavePerfil(updated));
   }
@@ -1058,6 +1070,42 @@ class _EditPerfilSheetState extends State<_EditPerfilSheet> {
                 TextFormField(
                   controller: _direccion,
                   decoration: const InputDecoration(labelText: 'Dirección'),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Mostrar en mi perfil',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Solo aparecen los datos con valor que selecciones. Tócalos en el perfil para copiarlos.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('UPP'),
+                  value: _showUpp,
+                  onChanged: (value) => setState(() => _showUpp = value),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Correo'),
+                  value: _showEmail,
+                  onChanged: (value) => setState(() => _showEmail = value),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Teléfono'),
+                  value: _showTelefono,
+                  onChanged: (value) => setState(() => _showTelefono = value),
+                ),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Dirección'),
+                  value: _showDireccion,
+                  onChanged: (value) => setState(() => _showDireccion = value),
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(

@@ -1,6 +1,6 @@
 export function recentPhoneOtp(claims: Record<string, unknown>, phone: string | undefined, now = Date.now() / 1000): boolean {
   const metadata = claims.app_metadata as {provider?: unknown; providers?: unknown} | undefined;
-  if (!phone || !/^52\d{10}$/.test(phone.replace(/^\+/, '')) ||
+  if (!phone || !/^(?:52|1)\d{10}$/.test(phone.replace(/^\+/, '')) ||
       claims.phone !== phone || claims.is_anonymous === true || claims.role !== 'authenticated' ||
       (claims.email != null && claims.email !== '') || metadata?.provider !== 'phone' ||
       !Array.isArray(metadata.providers) || metadata.providers.length !== 1 || metadata.providers[0] !== 'phone') return false;
@@ -9,10 +9,10 @@ export function recentPhoneOtp(claims: Record<string, unknown>, phone: string | 
     entry.timestamp <= now && now - entry.timestamp <= 300);
 }
 
-export function normalizeMexicanPhone(phone: unknown): string {
+export function normalizeAllowedPhone(phone: unknown): string {
   if (typeof phone !== 'string') throw new Error('Invalid phone');
   const normalized = '+' + phone.replace(/^\+/, '');
-  if (!/^\+52\d{10}$/.test(normalized)) throw new Error('Mexico only');
+  if (!/^\+(?:52|1)\d{10}$/.test(normalized)) throw new Error('Unsupported country');
   return normalized;
 }
 
@@ -23,5 +23,5 @@ export function parseSmsEvent(input: unknown): {user: {id: string; phone: string
       typeof value.sms?.otp !== 'string' || !/^\d{6}$/.test(value.sms.otp)) {
     throw new Error('Invalid SMS hook payload');
   }
-  return { user: {id: value.user.id, phone: normalizeMexicanPhone(value.user.phone)}, sms: {otp: value.sms.otp} };
+  return { user: {id: value.user.id, phone: normalizeAllowedPhone(value.user.phone)}, sms: {otp: value.sms.otp} };
 }

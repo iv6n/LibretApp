@@ -22,6 +22,7 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/weani
 import 'package:libretapp/features/directorio/animales/infrastructure/weaning_record_repository_isar.dart';
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/core/backup/backup_store.dart';
+import 'package:libretapp/core/backup/deferred_cloud_backup_repository.dart';
 import 'package:libretapp/core/maintenance/data_maintenance.dart';
 import 'package:libretapp/core/maintenance/isar_data_maintenance.dart';
 import 'package:libretapp/core/backup/cloud_backup_repository.dart';
@@ -45,6 +46,7 @@ import 'package:libretapp/core/security/services/secure_logger_service.dart';
 import 'package:libretapp/core/security/services/supabase_auth_service.dart';
 import 'package:libretapp/core/security/services/token_store_service.dart';
 import 'package:libretapp/core/database/isar_database.dart';
+import 'package:libretapp/core/performance/performance_monitor.dart';
 import 'package:libretapp/core/services/animal_excel_import_service.dart';
 import 'package:libretapp/core/services/herd_import_service.dart';
 import 'package:libretapp/features/registro/lotes/batch_record_service.dart';
@@ -152,6 +154,9 @@ Future<void> disposeLocator() async {
 }
 
 Future<bool> workspaceHasUserData() async {
+  final backupStore = locator<BackupStore>();
+  if (backupStore is IsarBackupStore) return backupStore.hasUserData();
+
   final snapshot = await locator<BackupStore>().capture();
   if (snapshot.profile.entries.any(
     (entry) =>
@@ -202,18 +207,9 @@ Future<void> setupLocator({
   ),
 }) async {
   ReleaseFeatures.demoMode = workspace.isDemo;
-  if (SupabaseConfig.isConfigured &&
-      (ReleaseFeatures.phoneAuthEnabled ||
-          ReleaseFeatures.cloudBackupEnabled)) {
-    try {
-      await SupabaseSession.client();
-    } catch (_) {
-      LoggerService.w(
-        'El servicio de cuentas no está disponible; los datos locales siguen accesibles.',
-        tag: 'Auth',
-      );
-    }
-  }
+  final databaseSpan = PerformanceMonitor().startSpan(
+    'workspace.setup.database_open',
+  );
   final directory = await workspaceDirectory(workspace);
   final isarDatabase = workspace.legacy
       ? IsarDatabase()
@@ -222,6 +218,7 @@ Future<void> setupLocator({
           name: 'libretapp_${workspace.id}',
         );
   await isarDatabase.initialize();
+  databaseSpan.stop();
 
   if (_resetLocalDbOnStartup) {
     if (kReleaseMode) {
@@ -254,8 +251,18 @@ Future<void> setupLocator({
   _registerDemo();
   _registerFieldHardware();
   _registerPlanSlices();
-  await (locator<PerfilRepository>() as PerfilIsarRepository).migrate();
-  await locator<FarmMigrationService>().ensureDefaultFarm();
+  await Future.wait<void>([
+    PerformanceMonitor().measure<void>(
+      'workspace.setup.profile_migration',
+      run: () =>
+          (locator<PerfilRepository>() as PerfilIsarRepository).migrate(),
+    ),
+    PerformanceMonitor().measure<void>(
+      'workspace.setup.farm_migration',
+      run: () =>
+          locator<FarmMigrationService>().ensureDefaultFarm().then((_) {}),
+    ),
+  ]);
 }
 
 void _registerInfrastructure(
@@ -821,24 +828,29 @@ void _registerBackupExport() {
       () =>
           ReleaseFeatures.cloudBackupEnabled &&
               workspace.kind == WorkspaceKind.account &&
-              SupabaseConfig.isConfigured &&
-              SupabaseSession.initializedClient != null
-          ? SupabaseCloudBackupRepository(
-              Supabase.instance.client,
-              identity: BackupIdentity(
-                workspace: workspace,
-                activeWorkspace: () async {
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.reload();
-                  final registry = WorkspaceRegistry(SharedPrefsService(prefs));
-                  await registry.load(startup: false);
-                  if (prefs.getString('account.deletion.${workspace.id}') !=
-                      null)
-                    return null;
-                  return registry.active;
-                },
-              ),
-            )
+              SupabaseConfig.isConfigured
+          ? DeferredCloudBackupRepository(() async {
+              final client = await SupabaseSession.client();
+              return SupabaseCloudBackupRepository(
+                client,
+                identity: BackupIdentity(
+                  workspace: workspace,
+                  activeWorkspace: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.reload();
+                    final registry = WorkspaceRegistry(
+                      SharedPrefsService(prefs),
+                    );
+                    await registry.load(startup: false);
+                    if (prefs.getString('account.deletion.${workspace.id}') !=
+                        null) {
+                      return null;
+                    }
+                    return registry.active;
+                  },
+                ),
+              );
+            })
           : const UnavailableCloudBackupRepository(),
     )
     ..registerLazySingleton<CloudBackupService>(

@@ -49,7 +49,7 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
   Timer? _timer;
   static const _countries = {
     'MX': ('México', '52'),
-    'US': ('Estados Unidos / Canadá', '1'),
+    'US': ('Estados Unidos', '1'),
     'GT': ('Guatemala', '502'),
     'ES': ('España', '34'),
     'OTHER': ('Otro país', ''),
@@ -79,14 +79,25 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
           );
       final auth = widget.manager.auth;
       if (auth is SupabasePhoneAuth) {
-        if (!RegExp(r'^\+52\d{10}$').hasMatch(phone)) {
+        if (!RegExp(r'^\+(?:52|1)\d{10}$').hasMatch(phone)) {
           throw const PhoneAuthFailure(
-            'Esta versión admite números de México (+52).',
+            'Esta versión admite números de México (+52) y Estados Unidos (+1).',
           );
         }
-        final token = await requestCaptcha(context);
-        if (token == null) return;
-        await auth.requestCodeWithCaptcha(phone, token, intent: widget.intent);
+        const captchaUrl = String.fromEnvironment('LIBRET_CAPTCHA_URL');
+        if (ReleaseFeatures.connected || captchaUrl.isNotEmpty) {
+          final token = await requestCaptcha(context);
+          if (token == null) return;
+          await auth.requestCodeWithCaptcha(
+            phone,
+            token,
+            intent: widget.intent,
+          );
+        } else {
+          // Standard is an internal pilot. The connected public build requires
+          // CAPTCHA and is validated separately before release.
+          await auth.requestCode(phone, intent: widget.intent);
+        }
       } else {
         await auth.requestCode(phone, intent: widget.intent);
       }
@@ -200,7 +211,7 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
                     widget.linkGuest
                         ? 'Vincular mi número'
                         : widget.intent == PhoneAccessIntent.createAccount
-                        ? 'Crear cuenta con teléfono'
+                        ? 'Acceder con teléfono'
                         : 'Iniciar sesión con teléfono',
                     style: theme.textTheme.titleLarge,
                   ),
@@ -217,7 +228,7 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
               widget.linkGuest
                   ? 'Vincular tu número identifica tu cuenta. Tus registros siguen guardados en este teléfono. Conserva un respaldo fuera del dispositivo.'
                   : widget.intent == PhoneAccessIntent.createAccount
-                  ? 'Verifica tu número para crear una cuenta. El SMS solo confirma que tienes acceso a ese teléfono.'
+                  ? 'Si ya tienes una cuenta, podrás entrar. Si es tu primera vez, se creará al verificar el código SMS.'
                   : 'Escribe el número asociado a tu cuenta. Si no existe, el acceso no creará una cuenta nueva.',
             ),
             const SizedBox(height: 16),
@@ -233,7 +244,9 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
                 items: _countries.entries
                     .where(
                       (entry) =>
-                          !ReleaseFeatures.publicRelease || entry.key == 'MX',
+                          !ReleaseFeatures.publicRelease ||
+                          entry.key == 'MX' ||
+                          entry.key == 'US',
                     )
                     .map(
                       (e) => DropdownMenuItem(
@@ -270,7 +283,11 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
                   prefixText: _country == 'OTHER'
                       ? null
                       : '+${_countries[_country]!.$2} ',
-                  helperText: _country == 'MX' ? '10 dígitos, sin +52' : null,
+                  helperText: _country == 'MX'
+                      ? '10 dígitos, sin +52'
+                      : _country == 'US'
+                      ? '10 dígitos, sin +1'
+                      : null,
                 ),
               ),
               const SizedBox(height: 20),
@@ -279,10 +296,8 @@ class _PhoneAuthSheetState extends State<PhoneAuthSheet> {
                 child: const Text('Enviar código por SMS'),
               ),
               const SizedBox(height: 8),
-              Text(
-                widget.intent == PhoneAccessIntent.createAccount
-                    ? 'En otro dispositivo tus registros locales no aparecerán automáticamente.'
-                    : 'Si no reconocemos el número, no crearemos una cuenta.',
+              const Text(
+                'Tus registros se guardan en este teléfono y no se sincronizan automáticamente.',
               ),
             ] else ...[
               Text('Enviamos un código a $_sentPhone.'),

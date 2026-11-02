@@ -22,16 +22,20 @@ import 'package:libretapp/features/registro/bloc/index.dart';
 import 'package:libretapp/features/registro/widgets/animal_selector.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
 
+enum ReproductionInitialStep { service, diagnosis, calving }
+
 /// Page wrapper that provides [RegistroBloc] for the reproduction registration form.
 class RegistroReproduccionPage extends StatelessWidget {
   const RegistroReproduccionPage({
     this.preset,
     this.animalUuid,
     this.recordId,
+    this.initialStep,
     super.key,
   });
   final String? animalUuid;
   final String? recordId;
+  final ReproductionInitialStep? initialStep;
 
   final String? preset;
 
@@ -45,6 +49,7 @@ class RegistroReproduccionPage extends StatelessWidget {
         preset: preset,
         animalUuid: animalUuid,
         recordId: recordId,
+        initialStep: initialStep,
       ),
     );
   }
@@ -56,9 +61,11 @@ class _RegistroReproduccionView extends StatefulWidget {
     this.preset,
     this.animalUuid,
     this.recordId,
+    this.initialStep,
   });
   final String? animalUuid;
   final String? recordId;
+  final ReproductionInitialStep? initialStep;
 
   final String? preset;
 
@@ -72,6 +79,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   ReproductionRecord? _submitted;
   bool _submitting = false;
   bool _loading = false;
+  bool _moreDetailsExpanded = false;
+  bool _expectedCalvingManuallyEdited = false;
   String? _loadError;
   var _serviceType = ServiceType.naturalService;
   var _serviceDate = DateTime.now();
@@ -146,6 +155,17 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
           _serviceDate = record.serviceDate ?? DateTime.now();
           _serviceType = record.serviceType ?? ServiceType.naturalService;
           _expectedCalvingDate = record.expectedCalvingDate;
+          final originalEstimate = record.serviceDate == null
+              ? null
+              : const ReproductionScheduler()
+                    .estimate(
+                      serviceDate: record.serviceDate!,
+                      species: animal.species,
+                    )
+                    .dueDate;
+          _expectedCalvingManuallyEdited =
+              record.expectedCalvingDate != null &&
+              record.expectedCalvingDate != originalEstimate;
           _serviceNotesCtrl.text = record.notes ?? '';
           _calvingNotesCtrl.text = record.calvingNotes ?? '';
           _responsibleCtrl.text = record.servicedBy ?? '';
@@ -208,9 +228,13 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   /// Fills the expected calving from the service date using the standard
   /// gestation, so the user gets a date without having to compute it. Manual
   /// edits win: this only ever writes when the field is still untouched.
-  void _projectExpectedCalving() {
+  void _projectExpectedCalving({bool force = false}) {
+    if (_expectedCalvingManuallyEdited && !force) return;
     _expectedCalvingDate = const ReproductionScheduler()
-        .estimate(serviceDate: _serviceDate)
+        .estimate(
+          serviceDate: _serviceDate,
+          species: _selectedAnimal?.species ?? Species.cattle,
+        )
         .dueDate;
   }
 
@@ -221,6 +245,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       _pendingDiagnosis = null;
       _calvingMode = false;
       _diagnosisMode = false;
+      _expectedCalvingManuallyEdited = false;
+      _projectExpectedCalving(force: true);
     });
     if (animal == null) return;
 
@@ -251,7 +277,14 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       _responsibleCtrl.text = current?.servicedBy ?? "";
       // Landing here from the "parición" shortcut means the calving is the
       // reason the user opened the page.
-      _calvingMode = widget.preset?.toLowerCase() == 'paricion';
+      _calvingMode =
+          widget.preset?.toLowerCase() == 'paricion' ||
+          (widget.initialStep == ReproductionInitialStep.calving &&
+              open != null);
+      _diagnosisMode =
+          widget.initialStep == ReproductionInitialStep.diagnosis &&
+          pending != null &&
+          !_calvingMode;
       if (open != null) {
         _calvingDate = DateTime.now();
         _calvingOutcome = CalvingOutcome.liveBirth;
@@ -311,7 +344,10 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
         expectedCalvingDate: _diagnosisResult == PregnancyCheckResult.positive
             ? pending.expectedCalvingDate ??
                   const ReproductionScheduler()
-                      .estimate(serviceDate: pending.serviceDate!)
+                      .estimate(
+                        serviceDate: pending.serviceDate!,
+                        species: _selectedAnimal!.species,
+                      )
                       .dueDate
             : null,
       ),
@@ -535,36 +571,6 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
               }),
             ),
           ],
-          // Picking the sire from the herd is what fills maleSireUuid, and
-          // that is what links the calf's paternal side, feeds the bull's
-          // own service history and lets the inbreeding check work.
-          AnimalSelector(
-            label: l10n.detailFormReproductionSire,
-            selectedAnimal: _selectedSire,
-            eligible: _isEligibleSire,
-            onSelected: (sire) => setState(() {
-              _selectedSire = sire;
-              if (sire != null) _externalSireCtrl.clear();
-            }),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _externalSireCtrl,
-            enabled: _selectedSire == null,
-            decoration: const InputDecoration(
-              labelText: 'O semental externo al hato',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _responsibleCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Responsable',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
           if (_diagnosisMode) ...[
             _DiagnosisFields(
               checkDate: _diagnosisDate,
@@ -583,15 +589,6 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                   setState(() => _calvingOutcome = value),
               onEaseChanged: (value) => setState(() => _calvingEase = value),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: InputDecoration(
-                labelText: l10n.detailFormReproductionNotes,
-                border: const OutlineInputBorder(),
-              ),
-              maxLines: 2,
-              controller: _calvingNotesCtrl,
-            ),
             if (_editing?.hasCalved == true &&
                 _editing?.calvingOutcome == CalvingOutcome.liveBirth)
               TextButton(
@@ -600,6 +597,20 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                 child: const Text('Crear o vincular cría'),
               ),
           ] else ...[
+            AppDateField(
+              labelText: 'Fecha de monta o inseminación',
+              value: _serviceDate,
+              firstDate: DateTime(_serviceDate.year - 5),
+              lastDate: DateTime(_serviceDate.year + 1),
+              onChanged: (date) {
+                if (date == null) return;
+                setState(() {
+                  _serviceDate = date;
+                  _projectExpectedCalving();
+                });
+              },
+            ),
+            const SizedBox(height: 12),
             DropdownButtonFormField<ServiceType>(
               isExpanded: true,
               initialValue: _serviceType,
@@ -625,41 +636,82 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                 if (v != null) setState(() => _serviceType = v);
               },
             ),
-            const SizedBox(height: 12),
-            AppDateField(
-              labelText: 'Fecha de servicio',
-              value: _serviceDate,
-              firstDate: DateTime(_serviceDate.year - 5),
-              lastDate: DateTime(_serviceDate.year + 1),
-              onChanged: (date) {
-                if (date == null) return;
-                setState(() {
-                  _serviceDate = date;
-                  _projectExpectedCalving();
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            AppDateField(
-              labelText: l10n.detailFormReproductionExpectedCalving,
-              value: _expectedCalvingDate,
-              emptyLabel: 'Sin fecha estimada',
-              firstDate: DateTime(_serviceDate.year - 1),
-              lastDate: DateTime(_serviceDate.year + 2),
-              onChanged: (date) {
-                if (date != null) setState(() => _expectedCalvingDate = date);
-              },
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: InputDecoration(
-                labelText: l10n.detailFormReproductionNotes,
-                border: const OutlineInputBorder(),
+            if (_expectedCalvingDate != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'Parto estimado si se confirma la preñez: '
+                  '${DateFormat('dd/MM/yyyy').format(_expectedCalvingDate!)}',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
-              maxLines: 2,
-              controller: _serviceNotesCtrl,
-            ),
           ],
+          const SizedBox(height: 16),
+          ExpansionTile(
+            key: const ValueKey('reproduction-more-details'),
+            initiallyExpanded: _moreDetailsExpanded,
+            onExpansionChanged: (expanded) =>
+                setState(() => _moreDetailsExpanded = expanded),
+            title: const Text('Más datos'),
+            childrenPadding: const EdgeInsets.only(bottom: 12),
+            children: [
+              AnimalSelector(
+                label: l10n.detailFormReproductionSire,
+                selectedAnimal: _selectedSire,
+                eligible: _isEligibleSire,
+                onSelected: (sire) => setState(() {
+                  _selectedSire = sire;
+                  if (sire != null) _externalSireCtrl.clear();
+                }),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _externalSireCtrl,
+                enabled: _selectedSire == null,
+                decoration: const InputDecoration(
+                  labelText: 'O semental externo al hato',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _responsibleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Responsable',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (!_diagnosisMode && !_calvingMode) ...[
+                const SizedBox(height: 12),
+                AppDateField(
+                  labelText: 'Ajustar fecha estimada de parto',
+                  value: _expectedCalvingDate,
+                  firstDate: DateTime(_serviceDate.year - 1),
+                  lastDate: DateTime(_serviceDate.year + 2),
+                  onChanged: (date) {
+                    if (date != null)
+                      setState(() {
+                        _expectedCalvingDate = date;
+                        _expectedCalvingManuallyEdited = true;
+                      });
+                  },
+                ),
+              ],
+              if (!_diagnosisMode) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: l10n.detailFormReproductionNotes,
+                    border: const OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                  controller: _calvingMode
+                      ? _calvingNotesCtrl
+                      : _serviceNotesCtrl,
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );

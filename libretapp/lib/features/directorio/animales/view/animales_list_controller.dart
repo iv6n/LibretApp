@@ -14,8 +14,11 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
 
 const Object _selectedSpeciesUnset = Object();
+const Object _selectedHealthFilterUnset = Object();
 const Object _selectedLoteUnset = Object();
 const Object _selectedLocationUnset = Object();
+
+enum AnimalHealthFilter { pending, unvaccinated }
 
 @immutable
 class AnimalesListState {
@@ -24,10 +27,13 @@ class AnimalesListState {
     required this.selectedStages,
     required this.onlyAttention,
     required this.onlyPendingEarTag,
+    this.healthFilter,
     this.selectedSpecies,
+    this.selectedCompanion = false,
     this.selectedLoteUuid,
     this.selectedLocationUuid,
     this.taxonomyCounts = const <Species, Map<LifeStage, int>>{},
+    this.companionStageCounts = const <LifeStage, int>{},
     this.includeInactive = false,
     this.indicatorSnapshots = const <String, AnimalIndicatorSnapshot>{},
   });
@@ -43,10 +49,13 @@ class AnimalesListState {
   final Set<LifeStage> selectedStages;
   final bool onlyAttention;
   final bool onlyPendingEarTag;
+  final AnimalHealthFilter? healthFilter;
   final Species? selectedSpecies;
+  final bool selectedCompanion;
   final String? selectedLoteUuid;
   final String? selectedLocationUuid;
   final Map<Species, Map<LifeStage, int>> taxonomyCounts;
+  final Map<LifeStage, int> companionStageCounts;
 
   /// Shows animals that left the herd — sold, dead or archived. Off by
   /// default so the list reflects what is actually out in the field.
@@ -61,10 +70,13 @@ class AnimalesListState {
     Set<LifeStage>? selectedStages,
     bool? onlyAttention,
     bool? onlyPendingEarTag,
+    Object? healthFilter = _selectedHealthFilterUnset,
     Object? selectedSpecies = _selectedSpeciesUnset,
+    bool? selectedCompanion,
     Object? selectedLoteUuid = _selectedLoteUnset,
     Object? selectedLocationUuid = _selectedLocationUnset,
     Map<Species, Map<LifeStage, int>>? taxonomyCounts,
+    Map<LifeStage, int>? companionStageCounts,
     bool? includeInactive,
     Map<String, AnimalIndicatorSnapshot>? indicatorSnapshots,
   }) {
@@ -73,9 +85,13 @@ class AnimalesListState {
       selectedStages: selectedStages ?? this.selectedStages,
       onlyAttention: onlyAttention ?? this.onlyAttention,
       onlyPendingEarTag: onlyPendingEarTag ?? this.onlyPendingEarTag,
+      healthFilter: identical(healthFilter, _selectedHealthFilterUnset)
+          ? this.healthFilter
+          : healthFilter as AnimalHealthFilter?,
       selectedSpecies: identical(selectedSpecies, _selectedSpeciesUnset)
           ? this.selectedSpecies
           : selectedSpecies as Species?,
+      selectedCompanion: selectedCompanion ?? this.selectedCompanion,
       selectedLoteUuid: identical(selectedLoteUuid, _selectedLoteUnset)
           ? this.selectedLoteUuid
           : selectedLoteUuid as String?,
@@ -84,6 +100,7 @@ class AnimalesListState {
           ? this.selectedLocationUuid
           : selectedLocationUuid as String?,
       taxonomyCounts: taxonomyCounts ?? this.taxonomyCounts,
+      companionStageCounts: companionStageCounts ?? this.companionStageCounts,
       includeInactive: includeInactive ?? this.includeInactive,
       indicatorSnapshots: indicatorSnapshots ?? this.indicatorSnapshots,
     );
@@ -92,8 +109,10 @@ class AnimalesListState {
   bool get hasFilters =>
       selectedStages.isNotEmpty ||
       selectedSpecies != null ||
+      selectedCompanion ||
       onlyAttention ||
       onlyPendingEarTag ||
+      healthFilter != null ||
       selectedLoteUuid != null ||
       selectedLocationUuid != null ||
       includeInactive;
@@ -149,9 +168,20 @@ class AnimalesListController extends ChangeNotifier {
   /// Loads whole-herd species/stage availability so filter chips never depend
   /// on which animal page happens to be visible.
   Future<void> loadTaxonomy([Iterable<AnimalEntity>? fallbackAnimals]) async {
-    final counts = _animalRepository == null
-        ? _taxonomyFromAnimals(fallbackAnimals ?? const <AnimalEntity>[])
-        : await _animalRepository.getActiveTaxonomyCounts();
+    final Map<Species, Map<LifeStage, int>> counts;
+    final Map<LifeStage, int> companionCounts;
+    if (_animalRepository == null) {
+      final animals = fallbackAnimals ?? const <AnimalEntity>[];
+      counts = _taxonomyFromAnimals(animals);
+      companionCounts = _companionCountsFromAnimals(animals);
+    } else {
+      final loaded = await Future.wait<Object>([
+        _animalRepository.getActiveTaxonomyCounts(),
+        _animalRepository.getActiveCompanionStageCounts(),
+      ]);
+      counts = loaded[0] as Map<Species, Map<LifeStage, int>>;
+      companionCounts = loaded[1] as Map<LifeStage, int>;
+    }
     if (_disposed) return;
 
     final selected = _state.selectedSpecies;
@@ -161,6 +191,7 @@ class AnimalesListController extends ChangeNotifier {
     _setState(
       _state.copyWith(
         taxonomyCounts: counts,
+        companionStageCounts: companionCounts,
         selectedSpecies: nextSelected,
         selectedStages: _stagesForSpecies(
           _state.selectedStages,
@@ -196,6 +227,17 @@ class AnimalesListController extends ChangeNotifier {
       counts
           .putIfAbsent(animal.species, () => <LifeStage, int>{})
           .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
+  Map<LifeStage, int> _companionCountsFromAnimals(
+    Iterable<AnimalEntity> animals,
+  ) {
+    final counts = <LifeStage, int>{};
+    for (final animal in animals) {
+      if (animal.productionPurpose != ProductionPurpose.companion) continue;
+      counts.update(animal.lifeStage, (count) => count + 1, ifAbsent: () => 1);
     }
     return counts;
   }
@@ -341,6 +383,17 @@ class AnimalesListController extends ChangeNotifier {
     _setState(
       _state.copyWith(
         selectedSpecies: species,
+        selectedCompanion: false,
+        selectedStages: const <LifeStage>{},
+      ),
+    );
+  }
+
+  void setCompanion(bool selected) {
+    _setState(
+      _state.copyWith(
+        selectedCompanion: selected,
+        selectedSpecies: null,
         selectedStages: const <LifeStage>{},
       ),
     );
@@ -352,6 +405,10 @@ class AnimalesListController extends ChangeNotifier {
 
   void setOnlyPendingEarTag(bool value) {
     _setState(_state.copyWith(onlyPendingEarTag: value));
+  }
+
+  void setHealthFilter(AnimalHealthFilter? filter) {
+    _setState(_state.copyWith(healthFilter: filter));
   }
 
   void setLoteUuid(String? uuid) {
@@ -423,6 +480,9 @@ class AnimalesListController extends ChangeNotifier {
       final matchesSpecies =
           _state.selectedSpecies == null ||
           _state.selectedSpecies == animal.species;
+      final matchesCompanion =
+          !_state.selectedCompanion ||
+          animal.productionPurpose == ProductionPurpose.companion;
 
       final needsAttention =
           animal.requiresAttention ||
@@ -435,6 +495,12 @@ class AnimalesListController extends ChangeNotifier {
       final matchesAttention = !_state.onlyAttention || needsAttention;
       final matchesPendingEarTag =
           !_state.onlyPendingEarTag || hasPendingEarTag(animal);
+      final matchesHealthFilter = switch (_state.healthFilter) {
+        AnimalHealthFilter.pending =>
+          !animal.vaccinated || animal.underObservation,
+        AnimalHealthFilter.unvaccinated => !animal.vaccinated,
+        null => true,
+      };
       final matchesLote =
           _state.selectedLoteUuid == null ||
           animal.batchUuid == _state.selectedLoteUuid;
@@ -448,9 +514,11 @@ class AnimalesListController extends ChangeNotifier {
           _state.includeInactive || animal.status.isInActiveHerd;
 
       return matchesSpecies &&
+          matchesCompanion &&
           matchesStage &&
           matchesAttention &&
           matchesPendingEarTag &&
+          matchesHealthFilter &&
           matchesLote &&
           matchesLocation &&
           matchesHerd;

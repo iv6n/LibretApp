@@ -16,6 +16,12 @@ class AgendaCalendarPeriod {
   static const double weekdayHeight = 20;
   static const double weekdayGap = 4;
 
+  static double rowHeightFor(double textScale) =>
+      rowHeight + (textScale - 1.3).clamp(0, 2) * 24;
+
+  static double weekdayHeightFor(double textScale) =>
+      weekdayHeight + (textScale - 1.3).clamp(0, 2) * 18;
+
   static DateTime day(DateTime value) =>
       DateTime(value.year, value.month, value.day);
 
@@ -121,10 +127,14 @@ class AgendaCalendarPeriod {
     return '${start.day}–$endLabel';
   }
 
-  static double height(CalendarMode mode, DateTime visibleDate) =>
-      weekdayHeight +
+  static double height(
+    CalendarMode mode,
+    DateTime visibleDate, {
+    double textScale = 1,
+  }) =>
+      weekdayHeightFor(textScale) +
       weekdayGap +
-      (days(mode, visibleDate).length ~/ 7) * rowHeight;
+      (days(mode, visibleDate).length ~/ 7) * rowHeightFor(textScale);
 }
 
 class AgendaCalendar extends StatelessWidget {
@@ -146,13 +156,15 @@ class AgendaCalendar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+    final rowHeight = AgendaCalendarPeriod.rowHeightFor(textScale);
     const dayHeaders = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
     final dias = AgendaCalendarPeriod.days(mode, visibleDate);
 
     return Column(
       children: [
         SizedBox(
-          height: AgendaCalendarPeriod.weekdayHeight,
+          height: AgendaCalendarPeriod.weekdayHeightFor(textScale),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: dayHeaders
@@ -173,14 +185,14 @@ class AgendaCalendar extends StatelessWidget {
         ),
         const SizedBox(height: AgendaCalendarPeriod.weekdayGap),
         SizedBox(
-          height: (dias.length ~/ 7) * AgendaCalendarPeriod.rowHeight,
+          height: (dias.length ~/ 7) * rowHeight,
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisExtent: AgendaCalendarPeriod.rowHeight,
+              mainAxisExtent: rowHeight,
             ),
             itemCount: dias.length,
             itemBuilder: (context, index) {
@@ -199,18 +211,20 @@ class AgendaCalendar extends StatelessWidget {
                 margin: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
                   color: seleccionado
-                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: esHoy
                         ? theme.colorScheme.primary
-                        : Colors.grey.shade300,
-                    width: esHoy ? 1.4 : 1,
+                        : theme.colorScheme.outlineVariant.withValues(
+                            alpha: 0.6,
+                          ),
+                    width: esHoy ? 1.6 : 0.7,
                   ),
                 ),
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                   onTap: isDelMes ? () => onDaySelected(dia) : null,
                   child: Padding(
                     padding: const EdgeInsets.all(3),
@@ -226,7 +240,9 @@ class AgendaCalendar extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: isDelMes
+                                  color: seleccionado
+                                      ? theme.colorScheme.onPrimary
+                                      : isDelMes
                                       ? theme.colorScheme.onSurface
                                       : theme.disabledColor,
                                   fontWeight: seleccionado
@@ -240,7 +256,9 @@ class AgendaCalendar extends StatelessWidget {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
+                                  color: seleccionado
+                                      ? theme.colorScheme.onPrimary
+                                      : theme.colorScheme.primary,
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -258,7 +276,9 @@ class AgendaCalendar extends StatelessWidget {
                                     width: 6,
                                     height: 6,
                                     decoration: BoxDecoration(
-                                      color: colorForTipo(e.tipo),
+                                      color: seleccionado
+                                          ? theme.colorScheme.onPrimary
+                                          : colorForTipo(e.tipo),
                                       shape: BoxShape.circle,
                                     ),
                                   ),

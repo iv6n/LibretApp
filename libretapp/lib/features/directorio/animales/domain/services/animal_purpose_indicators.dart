@@ -6,6 +6,7 @@ import '../entities/weight_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/reproductive_status.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/reproductive_kpi_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/reproduction_scheduler.dart';
 
 /// What an indicator is measuring. Typed so the UI can style or reorder
 /// without parsing the rendered label, and so tests assert on meaning rather
@@ -453,7 +454,10 @@ PurposeIndicator? _reproductiveStateIndicator(AnimalEntity animal) {
 
 PurposeIndicator _ageIndicator(AnimalEntity animal) {
   if (!animal.hasKnownAge) {
-    return const PurposeIndicator(kind: PurposeIndicatorKind.age, label: 'Sin dato');
+    return const PurposeIndicator(
+      kind: PurposeIndicatorKind.age,
+      label: 'Sin dato',
+    );
   }
   final months = animal.ageMonths;
   final years = months ~/ 12;
@@ -463,20 +467,20 @@ PurposeIndicator _ageIndicator(AnimalEntity animal) {
   return PurposeIndicator(kind: PurposeIndicatorKind.age, label: label);
 }
 
-// Standard bovine gestation length, mirroring ReproductionScheduler's default.
-const int _gestationDays = 283;
-
 int? _pregnancyMonthsFromEntity(AnimalEntity animal, DateTime now) {
   var serviceDate = animal.lastServiceDate ?? animal.firstServiceDate;
   if (serviceDate == null && animal.expectedCalvingDate != null) {
     serviceDate = animal.expectedCalvingDate!.subtract(
-      const Duration(days: _gestationDays),
+      Duration(days: ReproductionScheduler.gestationDaysFor(animal.species)),
     );
   }
   if (serviceDate == null || serviceDate.isAfter(now)) return null;
 
   final months = (now.difference(serviceDate).inDays / 30.44).floor();
-  return months.clamp(0, 9);
+  return months.clamp(
+    0,
+    (ReproductionScheduler.gestationDaysFor(animal.species) / 30.44).ceil(),
+  );
 }
 
 String _formatKg(double value) => '${_formatDecimal(value)} kg';

@@ -15,9 +15,9 @@ aplicado migraciones a un proyecto remoto ni habilitado envíos facturables.
   recorrido público no ofrece correo. Toda operación de respaldo vuelve a
   comprobar usuario, teléfono confirmado y espacio activo persistido.
 - Subidas reservadas antes de Storage; conciliación de respuestas perdidas,
-  SHA-256, máximo 100 MiB y conservación de cinco copias verificadas. Los
+  SHA-256, máximo 10 MiB y conservación de tres copias verificadas. Los
   archivos incompletos se limpian en una operación posterior tras 24 horas.
-  La limpieza es recuperable y puede dejar más de cinco copias temporalmente
+  La limpieza es recuperable y puede dejar más de tres copias temporalmente
   si falla: comprobar retención también en el ensayo.
 - Restauración requiere Fusionar/Reemplazar y vuelve a componer el espacio.
 - WorkManager diario, opt-in por cuenta, red sin medición más comprobación de
@@ -50,6 +50,17 @@ valide el código de Supabase y no un código externo de Verify, y validar el co
 real de ese canal antes de activar facturación. No cambiar el proyecto existente
 hasta resolver esa prueba y preservar su cuenta y datos. El archivo local sigue
 ignorado por Git y no se imprimen sus credenciales.
+
+Para la prueba cerrada de 15 usuarios se conserva **Verify** en el proyecto
+existente. No registrar el hook `send-sms` ni activar `SMS_BILLING_ENABLED`: las
+cuotas de ese hook no protegen el flujo Verify. La cuenta Twilio debe salir de
+Trial antes de admitir destinatarios no verificados. Comprobar límites de Auth,
+CAPTCHA, Fraud Guard, permisos de México y consumo en ambas consolas.
+Verify cobra la tarifa de verificación exitosa además del canal SMS; no usar el
+precio de Programmable Messaging como costo total del piloto.
+Para el candidato con Verify, `verify_limits` exige evidencia de CAPTCHA,
+límites de Supabase Auth, Fraud Guard y permisos geográficos de Twilio. No
+marcar esa aceptación con las pruebas de `reserve_sms` del hook inactivo.
 
 ## Preparar un proyecto de ensayo
 

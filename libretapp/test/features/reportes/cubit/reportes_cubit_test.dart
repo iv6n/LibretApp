@@ -32,6 +32,7 @@ class _FakeReportSummaryService implements ReportSummaryService {
 class _FakeFinanceSummaryService implements FinanceSummaryService {
   bool shouldFail = false;
   int callCount = 0;
+  final presets = <FinancialPeriodPreset>[];
 
   @override
   Future<FinanceSummaryDetail> loadForPreset({
@@ -39,6 +40,7 @@ class _FakeFinanceSummaryService implements FinanceSummaryService {
     DateTime? now,
   }) async {
     callCount++;
+    presets.add(preset);
     if (shouldFail) throw StateError('boom');
     return FinanceSummaryDetail(
       summary: FinancialPeriodSummary(
@@ -142,6 +144,20 @@ void main() {
       expect(cubit.state.financeStatus, ReportesLoadStatus.loaded);
     });
   });
+
+  test(
+    'changing the finance preset loads and retains the selected period',
+    () async {
+      await cubit.loadFinanzas();
+      await cubit.changeFinancePreset(FinancialPeriodPreset.lastMonth);
+
+      expect(cubit.state.financePreset, FinancialPeriodPreset.lastMonth);
+      expect(financeService.presets.last, FinancialPeriodPreset.lastMonth);
+
+      await cubit.refreshFinanzas();
+      expect(financeService.presets.last, FinancialPeriodPreset.lastMonth);
+    },
+  );
 
   test('reportes and finanzas state are independent of each other', () async {
     financeService.shouldFail = true;

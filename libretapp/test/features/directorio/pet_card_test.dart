@@ -95,6 +95,10 @@ void main() {
 
     expect(find.text('MASCOTA'), findsOneWidget);
     expect(find.text('FELINO'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('MASCOTA')).dy,
+      lessThan(tester.getTopLeft(find.text('FELINO')).dy),
+    );
     expect(find.text('Vaca'), findsNothing);
     expect(
       find.byWidgetPredicate(

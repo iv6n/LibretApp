@@ -1,7 +1,11 @@
 /// features > inicio > view > inicio_view - customizable home dashboard.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
@@ -33,8 +37,42 @@ class InicioView extends StatefulWidget {
   State<InicioView> createState() => _InicioViewState();
 }
 
-class _InicioViewState extends State<InicioView> {
+class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
   String? _preferenceSignature;
+  AgendaRefreshSignal? _agendaRefreshSignal;
+  StreamSubscription<void>? _animalChanges;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (locator.isRegistered<AgendaRefreshSignal>()) {
+      _agendaRefreshSignal = locator<AgendaRefreshSignal>()
+        ..addListener(_refreshDashboard);
+    }
+    if (locator.isRegistered<AnimalRepository>()) {
+      _animalChanges = locator<AnimalRepository>().watchChanges().listen(
+        (_) => _refreshDashboard(),
+      );
+    }
+  }
+
+  void _refreshDashboard() {
+    if (mounted) context.read<InicioBloc>().add(const RefreshInicio());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshDashboard();
+  }
+
+  @override
+  void dispose() {
+    _agendaRefreshSignal?.removeListener(_refreshDashboard);
+    _animalChanges?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -73,17 +111,12 @@ class _InicioViewState extends State<InicioView> {
               children: [
                 const WeatherHomeCard(),
                 Expanded(
-                  child: AppEmptyState(
-                    icon: Icons.error_outline,
+                  child: AppRetryState(
                     title: 'No se pudo cargar Inicio',
                     message: state.errorMessage,
-                    action: FilledButton.icon(
-                      onPressed: () {
-                        context.read<InicioBloc>().add(const LoadInicio());
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reintentar'),
-                    ),
+                    onRetry: () {
+                      context.read<InicioBloc>().add(const LoadInicio());
+                    },
                   ),
                 ),
               ],
@@ -95,10 +128,9 @@ class _InicioViewState extends State<InicioView> {
 
         final theme = Theme.of(context);
         final bottomInset = ShellInsets.bottomSafePadding(context);
-        final firstRun =
-            data.totalAnimals == 0 &&
-            data.activeLotes == 0 &&
-            data.totalLocations == 0;
+        // Keep the animal onboarding visible until the first animal exists.
+        // Locations and lots may already be configured independently.
+        final firstRun = data.totalAnimals == 0;
         final careProfile = resolveCareProfileFromCounts(
           selected: preferences?.careProfile,
           pets: data.petCount,
@@ -107,6 +139,10 @@ class _InicioViewState extends State<InicioView> {
         );
         final widgets = List.of(state.widgetConfigs)
           ..sort((a, b) => a.order.compareTo(b.order));
+        final todayCareItems = _buildTodayCareItems(
+          data,
+          DateUtils.dateOnly(DateTime.now()),
+        );
 
         return SafeArea(
           top: true,
@@ -122,8 +158,11 @@ class _InicioViewState extends State<InicioView> {
               color: theme.scaffoldBackgroundColor,
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  final textScale =
+                      MediaQuery.textScalerOf(context).scale(14) / 14;
                   final isTablet =
-                      constraints.maxWidth >= InicioView._tabletBreakpoint;
+                      constraints.maxWidth >= InicioView._tabletBreakpoint &&
+                      textScale <= 1.3;
                   final contentWidth = constraints.maxWidth
                       .clamp(0.0, InicioView._dashboardMaxWidth)
                       .toDouble();
@@ -147,39 +186,31 @@ class _InicioViewState extends State<InicioView> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 DashboardHeader(data: data),
-                                const SizedBox(height: AppSpacing.sm),
-                                const WeatherHomeCard(),
-                                const SizedBox(height: AppSpacing.sm),
                                 if (firstRun)
                                   _GettingStartedCard(profile: careProfile)
-                                else ...[
-                                  if (careProfile == CareProfile.pets ||
-                                      careProfile == CareProfile.mixed) ...[
-                                    Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: OutlinedButton.icon(
-                                        onPressed: () => context.pushNamed(
-                                          AppRoutes.nameAnimalNuevoRapido,
-                                          queryParameters: const {
-                                            'kind': 'pet',
-                                          },
-                                        ),
-                                        icon: const Icon(Icons.pets_outlined),
-                                        label: const Text('Añadir mascota'),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                  ],
-                                  _TodayPriorityPanel(data: data),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  _CareProfileSummaryCard(
+                                else
+                                  _CareDashboardOverview(
+                                    isTablet: isTablet,
+                                    data: data,
+                                    profile: careProfile,
+                                    items: todayCareItems,
+                                  ),
+                                const SizedBox(height: AppSpacing.sm),
+                                if (!firstRun) ...[
+                                  _DashboardPrimaryActions(
                                     profile: careProfile,
                                     data: data,
                                   ),
+                                  const SizedBox(height: AppSpacing.sm),
                                 ],
-                                const SizedBox(height: AppSpacing.sm),
                                 QuickActionGrid(
-                                  actions: state.quickActions,
+                                  actions: state.quickActions
+                                      .where(
+                                        (action) =>
+                                            action.routeName !=
+                                            AppRoutes.nameAnimalNuevoRapido,
+                                      )
+                                      .toList(growable: false),
                                   onCustomizeTap: () =>
                                       showDashboardCustomizeSheet(
                                         context: context,
@@ -202,9 +233,19 @@ class _InicioViewState extends State<InicioView> {
                                   widgets: widgets,
                                   data: data,
                                   financeDetail: state.financeDetail,
+                                  financeLoading: state.financeLoading,
+                                  financeErrorMessage:
+                                      state.financeErrorMessage,
                                   libraryItems: state.libraryPicks,
-                                  showOnlyPopulated: firstRun,
+                                  libraryLoading: state.libraryLoading,
+                                  libraryErrorMessage:
+                                      state.libraryErrorMessage,
+                                  onRetrySupplements: () => context
+                                      .read<InicioBloc>()
+                                      .add(const RefreshInicio()),
+                                  showOnlyPopulated: true,
                                 ),
+                                const WeatherHomeCard(),
                               ],
                             ),
                           ),
@@ -230,72 +271,212 @@ class _GettingStartedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      key: const ValueKey('complete-getting-started'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
+    final artwork = _animalArtwork(profile);
+    final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420 || textScale > 1.25;
+        final content = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               profile == CareProfile.pets
                   ? 'Empieza con tus mascotas'
-                  : profile == CareProfile.mixed
-                  ? 'Empieza con animales y cuidados'
                   : profile == CareProfile.livestock
-                  ? 'Empieza con tu ganado'
-                  : 'Empieza a organizar tus cuidados',
+                  ? 'Empieza con tus animales'
+                  : 'Organiza el cuidado de tus animales',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Registra el primero para tener sus cuidados y actividades a la mano.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _GettingStartedActions(profile: profile),
+          ],
+        );
+        return Card(
+          key: const ValueKey('complete-getting-started'),
+          color: theme.colorScheme.surfaceContainerLow,
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: compact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(alignment: Alignment.centerRight, child: artwork),
+                      const SizedBox(height: AppSpacing.xs),
+                      content,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(child: content),
+                      const SizedBox(width: AppSpacing.md),
+                      artwork,
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+Widget _animalArtwork(CareProfile? profile) {
+  final assets = switch (profile) {
+    CareProfile.pets => const [
+      'assets/images/canino.webp',
+      'assets/images/felino.png',
+    ],
+    CareProfile.livestock => const ['assets/images/vaca.webp'],
+    CareProfile.mixed || null => const [
+      'assets/images/vaca.webp',
+      'assets/images/canino.webp',
+      'assets/images/felino.png',
+    ],
+  };
+  return ExcludeSemantics(
+    child: SizedBox(
+      width: 150,
+      height: 86,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          for (var index = 0; index < assets.length; index++)
+            Positioned(
+              left: (150 - (72 + (assets.length - 1) * 39)) / 2 + index * 39,
+              child: Image.asset(
+                assets[index],
+                width: 72,
+                height: 72,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _GettingStartedActions extends StatelessWidget {
+  const _GettingStartedActions({required this.profile});
+
+  final CareProfile? profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final showPet =
+        profile == CareProfile.pets ||
+        profile == CareProfile.mixed ||
+        profile == null;
+    final showAnimal = profile != CareProfile.pets;
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        if (showPet)
+          FilledButton.icon(
+            onPressed: () => context.pushNamed(
+              AppRoutes.nameAnimalNuevoRapido,
+              queryParameters: const {'kind': 'pet'},
+            ),
+            icon: const Icon(Icons.pets_outlined),
+            label: const Text('Añadir mascota'),
+          ),
+        if (showAnimal)
+          if (showPet)
+            OutlinedButton.icon(
+              onPressed: () =>
+                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Añadir animal'),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () =>
+                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Añadir animal'),
+            ),
+      ],
+    );
+  }
+}
+
+class _CareProfileSummaryCard extends StatelessWidget {
+  const _CareProfileSummaryCard({
+    required this.profile,
+    required this.data,
+    required this.pendingCount,
+  });
+
+  final CareProfile? profile;
+  final InicioDashboardData data;
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final pets =
+        data.petCount > 0 ||
+        profile == CareProfile.pets ||
+        profile == CareProfile.mixed;
+    final livestock =
+        data.livestockCount > 0 ||
+        profile == CareProfile.livestock ||
+        profile == CareProfile.mixed;
+    return Card(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Tu resumen',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Text(
-              profile == CareProfile.pets
-                  ? 'Añade una mascota para organizar sus cuidados y citas.'
-                  : profile == CareProfile.mixed
-                  ? 'Añade mascotas o ganado y consulta sus actividades en una agenda común.'
-                  : 'Registra tu primer animal para ver aquí su seguimiento.',
-            ),
-            const SizedBox(height: AppSpacing.sm),
             Wrap(
+              alignment: WrapAlignment.spaceBetween,
               spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
+              runSpacing: AppSpacing.sm,
               children: [
-                FilledButton.icon(
-                  onPressed: () => context.pushNamed(
-                    AppRoutes.nameAnimalNuevoRapido,
-                    queryParameters: profile == CareProfile.pets
-                        ? const <String, dynamic>{'kind': 'pet'}
-                        : const <String, dynamic>{},
+                if (pets)
+                  _SummaryMetric(
+                    icon: Icons.pets_outlined,
+                    label: 'Mascotas',
+                    count: data.petCount,
                   ),
-                  icon: const Icon(Icons.add),
-                  label: Text(
-                    profile == CareProfile.pets
-                        ? 'Añadir mascota'
-                        : 'Alta rápida',
+                if (livestock)
+                  _SummaryMetric(
+                    icon: Icons.agriculture_outlined,
+                    label: 'Ganado',
+                    count: data.livestockCount,
                   ),
+                if (profile == null)
+                  _SummaryMetric(
+                    icon: Icons.pets_outlined,
+                    label: 'Animales',
+                    count: data.totalAnimals,
+                  ),
+                _SummaryMetric(
+                  icon: Icons.event_available_outlined,
+                  label: 'Pendientes',
+                  count: pendingCount,
+                  attention: pendingCount > 0,
                 ),
-                if (profile == CareProfile.mixed ||
-                    profile == CareProfile.livestock)
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.pushNamed(AppRoutes.nameUbicacionNueva),
-                    icon: const Icon(Icons.add_location_alt_outlined),
-                    label: const Text('Añadir ubicación'),
-                  ),
-                if (profile == CareProfile.mixed ||
-                    profile == CareProfile.livestock)
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: Text(
-                      profile == CareProfile.mixed
-                          ? 'Añadir ganado'
-                          : 'Añadir animal',
-                    ),
-                  ),
               ],
             ),
           ],
@@ -305,91 +486,144 @@ class _GettingStartedCard extends StatelessWidget {
   }
 }
 
-class _CareProfileSummaryCard extends StatelessWidget {
-  const _CareProfileSummaryCard({required this.profile, required this.data});
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric({
+    required this.icon,
+    required this.label,
+    required this.count,
+    this.attention = false,
+  });
+  final IconData icon;
+  final String label;
+  final int count;
+  final bool attention;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 84,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 20),
+          const SizedBox(height: AppSpacing.xxs),
+          Text(
+            '$count',
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: attention
+                  ? (theme.extension<AppStatusTheme>()?.warning ??
+                        AppColors.warning)
+                  : theme.colorScheme.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            maxLines: 2,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CareDashboardOverview extends StatelessWidget {
+  const _CareDashboardOverview({
+    required this.isTablet,
+    required this.data,
+    required this.profile,
+    required this.items,
+  });
+
+  final bool isTablet;
+  final InicioDashboardData data;
+  final CareProfile? profile;
+  final List<_HomeCareItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final carePanel = _TodayCarePanel(items: items);
+    final summary = _CareProfileSummaryCard(
+      profile: profile,
+      data: data,
+      pendingCount: items.length,
+    );
+    if (!isTablet) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          carePanel,
+          const SizedBox(height: AppSpacing.sm),
+          summary,
+        ],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 3, child: carePanel),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(flex: 2, child: summary),
+      ],
+    );
+  }
+}
+
+class _DashboardPrimaryActions extends StatelessWidget {
+  const _DashboardPrimaryActions({required this.profile, required this.data});
 
   final CareProfile? profile;
   final InicioDashboardData data;
 
   @override
   Widget build(BuildContext context) {
-    final pets = profile == CareProfile.pets || profile == CareProfile.mixed;
-    final livestock =
-        profile == CareProfile.livestock || profile == CareProfile.mixed;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              profile == CareProfile.pets
-                  ? 'Resumen de mascotas'
-                  : profile == CareProfile.mixed
-                  ? 'Resumen conjunto'
-                  : profile == CareProfile.livestock
-                  ? 'Resumen ganadero'
-                  : 'Resumen',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+    final showPets =
+        profile == CareProfile.pets ||
+        profile == CareProfile.mixed ||
+        data.petCount > 0;
+    final showAnimals = profile != CareProfile.pets || data.livestockCount > 0;
+    final showBoth = showPets && showAnimals;
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        if (showPets)
+          FilledButton.icon(
+            onPressed: () => context.pushNamed(
+              AppRoutes.nameAnimalNuevoRapido,
+              queryParameters: const {'kind': 'pet'},
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: [
-                if (pets)
-                  _CountPill(
-                    icon: Icons.pets_outlined,
-                    label: 'Mascotas',
-                    count: data.petCount,
-                  ),
-                if (livestock)
-                  _CountPill(
-                    icon: Icons.agriculture_outlined,
-                    label: profile == CareProfile.mixed ? 'Ganado' : 'Animales',
-                    count: data.livestockCount,
-                  ),
-                if (profile == null)
-                  _CountPill(
-                    icon: Icons.pets_outlined,
-                    label: 'Animales',
-                    count: data.totalAnimals,
-                  ),
-                _CountPill(
-                  icon: Icons.event_outlined,
-                  label: 'Pendientes',
-                  count: data.upcomingEventsCount,
-                ),
-                if (livestock && profile != CareProfile.mixed)
-                  _CountPill(
-                    icon: Icons.layers_outlined,
-                    label: 'Lotes',
-                    count: data.activeLotes,
-                  ),
-              ],
+            icon: const Icon(Icons.pets_outlined),
+            label: const Text('Añadir mascota'),
+          ),
+        if (showAnimals)
+          if (showBoth)
+            OutlinedButton.icon(
+              onPressed: () =>
+                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Añadir animal'),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () =>
+                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Alta rápida'),
             ),
-          ],
+        OutlinedButton.icon(
+          onPressed: () =>
+              context.go(AppRoutes.animalesPath(focusSearch: true)),
+          icon: const Icon(Icons.search),
+          label: const Text('Buscar animal'),
         ),
-      ),
+      ],
     );
   }
-}
-
-class _CountPill extends StatelessWidget {
-  const _CountPill({
-    required this.icon,
-    required this.label,
-    required this.count,
-  });
-  final IconData icon;
-  final String label;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) =>
-      Chip(avatar: Icon(icon, size: 18), label: Text('$label: $count'));
 }
 
 class _DashboardWidgetsLayout extends StatelessWidget {
@@ -398,7 +632,12 @@ class _DashboardWidgetsLayout extends StatelessWidget {
     required this.widgets,
     required this.data,
     required this.financeDetail,
+    required this.financeLoading,
+    required this.financeErrorMessage,
     required this.libraryItems,
+    required this.libraryLoading,
+    required this.libraryErrorMessage,
+    required this.onRetrySupplements,
     required this.showOnlyPopulated,
   });
 
@@ -406,7 +645,12 @@ class _DashboardWidgetsLayout extends StatelessWidget {
   final List<DashboardWidgetConfig> widgets;
   final InicioDashboardData data;
   final FinanceSummaryDetail? financeDetail;
+  final bool financeLoading;
+  final String? financeErrorMessage;
   final List<LibraryManifestBook> libraryItems;
+  final bool libraryLoading;
+  final String? libraryErrorMessage;
+  final VoidCallback onRetrySupplements;
   final bool showOnlyPopulated;
 
   @override
@@ -414,26 +658,33 @@ class _DashboardWidgetsLayout extends StatelessWidget {
     final enabledWidgets = widgets.where((widget) {
       if (!widget.enabled) return false;
       if (widget.type == DashboardWidgetType.healthAlerts &&
-          !data.alerts.any((a) => a.severity != InicioAlertSeverity.info)) {
+          !data.alerts.any(_isHealthAlertItem)) {
         return false;
       }
       if (!showOnlyPopulated) return true;
       return switch (widget.type) {
-        DashboardWidgetType.animalSummary ||
-        DashboardWidgetType.activeLocations ||
+        DashboardWidgetType.animalSummary => data.totalAnimals > 0,
+        DashboardWidgetType.activeLocations => data.activeLocations.isNotEmpty,
         DashboardWidgetType.inventory => false,
         DashboardWidgetType.upcomingEvents => data.upcomingEvents.isNotEmpty,
         DashboardWidgetType.healthAlerts => true,
         DashboardWidgetType.upcomingCalvings =>
           data.upcomingCalvings.isNotEmpty,
         DashboardWidgetType.financeMonth =>
-          financeDetail != null &&
-              (financeDetail!.summary.totalRevenue != 0 ||
-                  financeDetail!.summary.totalExpenses != 0),
+          financeLoading ||
+              financeErrorMessage != null ||
+              (financeDetail != null &&
+                  (financeDetail!.summary.totalRevenue != 0 ||
+                      financeDetail!.summary.totalExpenses != 0)),
         DashboardWidgetType.recentActivity => data.recentActivity.isNotEmpty,
-        DashboardWidgetType.pendingTasks => data.tasks.isNotEmpty,
+        DashboardWidgetType.pendingTasks => data.tasks.any(
+          (task) => !task.title.trimLeft().toLowerCase().startsWith('sin '),
+        ),
         DashboardWidgetType.weather => data.weather != null,
-        DashboardWidgetType.libraryPicks => libraryItems.isNotEmpty,
+        DashboardWidgetType.libraryPicks =>
+          libraryItems.isNotEmpty ||
+              libraryLoading ||
+              libraryErrorMessage != null,
       };
     }).toList();
 
@@ -463,7 +714,12 @@ class _DashboardWidgetsLayout extends StatelessWidget {
                 config: config,
                 data: data,
                 financeDetail: financeDetail,
+                financeLoading: financeLoading,
+                financeErrorMessage: financeErrorMessage,
                 libraryItems: libraryItems,
+                libraryLoading: libraryLoading,
+                libraryErrorMessage: libraryErrorMessage,
+                onRetrySupplements: onRetrySupplements,
               ),
             );
           }).toList(),
@@ -479,7 +735,12 @@ class _DashboardWidgetsLayout extends StatelessWidget {
         config: config,
         data: data,
         financeDetail: financeDetail,
+        financeLoading: financeLoading,
+        financeErrorMessage: financeErrorMessage,
         libraryItems: libraryItems,
+        libraryLoading: libraryLoading,
+        libraryErrorMessage: libraryErrorMessage,
+        onRetrySupplements: onRetrySupplements,
       ),
     );
   }
@@ -495,136 +756,255 @@ class _DashboardWidgetsLayout extends StatelessWidget {
   }
 }
 
-class _TodayPriorityPanel extends StatelessWidget {
-  const _TodayPriorityPanel({required this.data});
+bool _isHealthAlertItem(InicioAlertItem alert) =>
+    alert.severity != InicioAlertSeverity.info &&
+    !alert.title.toLowerCase().contains('vencid');
 
-  final InicioDashboardData data;
+class _HomeCareItem {
+  const _HomeCareItem({
+    required this.title,
+    required this.message,
+    required this.route,
+    required this.tone,
+    required this.priority,
+    this.entryId,
+    this.date,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final actionableAlerts = data.alerts
-        .where((a) => a.severity != InicioAlertSeverity.info)
-        .toList(growable: false);
-    final primaryAlert = actionableAlerts.isNotEmpty
-        ? actionableAlerts.first
-        : _firstItem(data.alerts);
-    final primaryTask = _firstItem(data.tasks);
-    final calving = _firstItem(data.upcomingCalvings);
+  final String title;
+  final String message;
+  final String route;
+  final _CareItemTone tone;
+  final int priority;
+  final String? entryId;
+  final DateTime? date;
+}
 
-    final title =
-        primaryAlert?.title ??
-        primaryTask?.title ??
-        (calving != null ? 'Próximo parto' : 'Rancho en orden');
-    final message =
-        primaryAlert?.message ??
-        primaryTask?.message ??
-        (calving != null
-            ? '${calving.animalTag} en ${calving.daysRemaining} días'
-            : 'No hay pendientes críticos por ahora.');
-    final route = primaryAlert?.targetRoute ?? primaryTask?.targetRoute;
-    final severity = primaryAlert?.severity;
-    final color = switch (severity) {
-      InicioAlertSeverity.critical => AppColors.error,
-      InicioAlertSeverity.warning => AppColors.warning,
-      InicioAlertSeverity.info => AppColors.primary,
-      null => primaryTask != null ? AppColors.accent : AppColors.success,
+enum _CareItemTone { critical, warning, normal }
+
+List<_HomeCareItem> _buildTodayCareItems(
+  InicioDashboardData data,
+  DateTime today,
+) {
+  final items = <_HomeCareItem>[];
+  final dueEntries = List.of(data.dueEntries)
+    ..sort((a, b) => a.fecha.compareTo(b.fecha));
+
+  for (final alert in data.alerts) {
+    if (alert.severity == InicioAlertSeverity.info) continue;
+    final isOverdueAgendaAlert = alert.title.toLowerCase().contains('vencid');
+    if (isOverdueAgendaAlert && dueEntries.isNotEmpty) continue;
+    final tone = switch (alert.severity) {
+      InicioAlertSeverity.critical => _CareItemTone.critical,
+      InicioAlertSeverity.warning => _CareItemTone.warning,
+      InicioAlertSeverity.info => _CareItemTone.normal,
     };
-
-    final background = Color.alphaBlend(
-      color.withValues(alpha: theme.brightness == Brightness.dark ? .18 : .08),
-      theme.colorScheme.surface,
-    );
-    final foreground = readableTextColor(color, background);
-    final bodyForeground = readableTextColor(
-      theme.colorScheme.onSurfaceVariant,
-      background,
-    );
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        onTap: route == null ? null : () => context.push(route),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            border: Border.all(color: color.withValues(alpha: 0.22)),
-            color: background,
-            boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.shadow.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: AppControlMetrics.compactIconButtonSize,
-                height: AppControlMetrics.compactIconButtonSize,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-                child: Icon(
-                  severity == null
-                      ? Icons.today_outlined
-                      : Icons.warning_amber_rounded,
-                  color: foreground,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Prioridad de hoy',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      title,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      message,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: bodyForeground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (route != null) ...[
-                const SizedBox(width: AppSpacing.xs),
-                Icon(Icons.chevron_right, color: foreground),
-              ],
-            ],
-          ),
-        ),
+    items.add(
+      _HomeCareItem(
+        title: alert.title,
+        message: alert.message,
+        route: alert.targetRoute,
+        tone: tone,
+        priority: tone == _CareItemTone.critical ? 0 : 1,
       ),
     );
   }
 
-  T? _firstItem<T>(List<T> items) {
-    if (items.isEmpty) return null;
-    return items.first;
+  for (final entry in dueEntries) {
+    final day = DateUtils.dateOnly(entry.fecha);
+    final overdue = day.isBefore(today);
+    items.add(
+      _HomeCareItem(
+        title: entry.titulo,
+        message: overdue
+            ? 'Vencida desde ${entry.fecha.day}/${entry.fecha.month}'
+            : 'Programada para hoy',
+        route: AppRoutes.agenda,
+        entryId: entry.id,
+        date: day,
+        tone: overdue ? _CareItemTone.warning : _CareItemTone.normal,
+        priority: overdue ? 1 : 2,
+      ),
+    );
+  }
+
+  for (final task in data.tasks) {
+    if (task.title.trimLeft().toLowerCase().startsWith('sin ')) continue;
+    if (items.any((item) => item.route == task.targetRoute)) continue;
+    items.add(
+      _HomeCareItem(
+        title: task.title,
+        message: task.message,
+        route: task.targetRoute,
+        tone: _CareItemTone.normal,
+        priority: 3,
+      ),
+    );
+  }
+
+  items.sort((a, b) {
+    final byPriority = a.priority.compareTo(b.priority);
+    if (byPriority != 0) return byPriority;
+    final aDate = a.date;
+    final bDate = b.date;
+    if (aDate != null && bDate != null) return aDate.compareTo(bDate);
+    return 0;
+  });
+  return items;
+}
+
+class _TodayCarePanel extends StatelessWidget {
+  const _TodayCarePanel({required this.items});
+
+  final List<_HomeCareItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Card(
+      key: const ValueKey('inicio-pendientes-hoy'),
+      color: colors.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Cuidados de hoy',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (items.isNotEmpty)
+                  Text(
+                    '${items.length}',
+                    semanticsLabel:
+                        '${items.length} pendiente${items.length == 1 ? '' : 's'}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      color:
+                          theme.extension<AppStatusTheme>()?.success ??
+                          AppColors.success,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Todo al día',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            'No hay actividades vencidas ni avisos urgentes.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              for (final item in items.take(3)) _TodayCareTile(item: item),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => context.go(AppRoutes.agenda),
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('Ver agenda completa'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayCareTile extends StatelessWidget {
+  const _TodayCareTile({required this.item});
+
+  final _HomeCareItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final status = theme.extension<AppStatusTheme>();
+    final toneColor = switch (item.tone) {
+      _CareItemTone.critical => status?.error ?? theme.colorScheme.error,
+      _CareItemTone.warning => status?.warning ?? AppColors.warning,
+      _CareItemTone.normal => theme.colorScheme.primary,
+    };
+    final background = Color.alphaBlend(
+      toneColor.withValues(
+        alpha: theme.brightness == Brightness.dark ? .22 : .10,
+      ),
+      theme.colorScheme.surface,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        child: ListTile(
+          minVerticalPadding: AppSpacing.xxs,
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          leading: Icon(
+            item.entryId != null
+                ? (item.tone == _CareItemTone.warning
+                      ? Icons.event_busy_outlined
+                      : Icons.event_available_outlined)
+                : (item.tone == _CareItemTone.critical
+                      ? Icons.priority_high_rounded
+                      : Icons.notifications_active_outlined),
+            color: readableTextColor(toneColor, background),
+          ),
+          title: Text(
+            item.title,
+            softWrap: true,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(item.message, softWrap: true),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            if (item.entryId != null) {
+              context.pushNamed(
+                AppRoutes.nameAgendaTask,
+                pathParameters: {'id': item.entryId!},
+              );
+            } else {
+              context.push(item.route);
+            }
+          },
+        ),
+      ),
+    );
   }
 }

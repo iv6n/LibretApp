@@ -67,7 +67,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Todo lo que cuidas,\nen un lugar.'), findsOneWidget);
+    expect(
+      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
+      findsOneWidget,
+    );
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 150));
       expect(
@@ -121,11 +124,11 @@ void main() {
       ),
     );
     expect(find.text('¿Qué vas a registrar?'), findsNothing);
-    expect(find.text('Un toque personal'), findsNothing);
-    expect(find.text('Empezar sin cuenta'), findsNothing);
+    expect(find.text('Un toque personal'), findsOneWidget);
+    expect(find.text('Ahora no'), findsOneWidget);
     expect(manager.current!.kind, WorkspaceKind.account);
     await transition(manager.signOut);
-    expect(find.text('Empezar sin cuenta'), findsOneWidget);
+    expect(find.text('Continuar como invitado'), findsOneWidget);
     expect(find.text('Crear cuenta con teléfono'), findsNothing);
     expect(manager.current, isNull);
     expect(tester.takeException(), isNull);

@@ -114,6 +114,8 @@ class DirectorioLoaded extends DirectorioState {
     required this.isSearching,
     required this.searchResults,
     required this.searchQuery,
+    this.isSearchLoading = false,
+    this.searchFailedSources = const <CombinedSearchType>[],
   });
 
   /// Active directory section.
@@ -147,6 +149,12 @@ class DirectorioLoaded extends DirectorioState {
   /// Query de búsqueda actual
   final String searchQuery;
 
+  /// True while the current query is being evaluated across the directory.
+  final bool isSearchLoading;
+
+  /// Sources that could not be read; successful sources may still have hits.
+  final List<CombinedSearchType> searchFailedSources;
+
   DirectorioLoaded copyWith({
     DirectorioSection? activeSection,
     List<DirectorioSection>? orderedSections,
@@ -155,6 +163,8 @@ class DirectorioLoaded extends DirectorioState {
     bool? isSearching,
     List<CombinedSearchResult>? searchResults,
     String? searchQuery,
+    bool? isSearchLoading,
+    List<CombinedSearchType>? searchFailedSources,
   }) {
     return DirectorioLoaded(
       activeSection: activeSection ?? this.activeSection,
@@ -164,6 +174,8 @@ class DirectorioLoaded extends DirectorioState {
       isSearching: isSearching ?? this.isSearching,
       searchResults: searchResults ?? this.searchResults,
       searchQuery: searchQuery ?? this.searchQuery,
+      isSearchLoading: isSearchLoading ?? this.isSearchLoading,
+      searchFailedSources: searchFailedSources ?? this.searchFailedSources,
     );
   }
 
@@ -176,6 +188,8 @@ class DirectorioLoaded extends DirectorioState {
     isSearching,
     searchResults,
     searchQuery,
+    isSearchLoading,
+    searchFailedSources,
   ];
 }
 

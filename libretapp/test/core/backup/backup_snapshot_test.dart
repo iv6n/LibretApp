@@ -404,6 +404,28 @@ void main() {
     ]);
   });
 
+  test('free pilot retention keeps three newest verified snapshots', () {
+    final snapshots = List.generate(
+      5,
+      (index) => CloudBackupMetadata(
+        id: 'snapshot-$index',
+        objectPath: 'user/snapshot-$index.libretbackup',
+        sha256: 'digest-$index',
+        sizeBytes: 100,
+        schemaVersion: 4,
+        appVersion: '0.1.0+2',
+        createdAt: DateTime.utc(2026, 7, 29).subtract(Duration(days: index)),
+        verified: true,
+      ),
+    );
+
+    expect(
+      const CloudBackupRetentionPolicy(retain: 3)
+          .expired(snapshots).map((snapshot) => snapshot.id),
+      ['snapshot-3', 'snapshot-4'],
+    );
+  });
+
   test(
     'retention cleanup failure does not invalidate newer snapshots',
     () async {

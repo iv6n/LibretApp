@@ -36,7 +36,6 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell>
     implements ShellFabHostState<AppShell>, ShellChromeHostState<AppShell> {
-  static const double _barHeight = ShellInsets.defaultBarHeight;
   static const double _barHorizontalPadding = 10;
   static const double _barBottomGap = ShellInsets.defaultBarBottomGap;
 
@@ -65,6 +64,10 @@ class _AppShellState extends State<AppShell>
     final fabConfig = _fabForIndex(selectedIndex);
     final accent = Theme.of(context).colorScheme.primary;
     final shellTheme = Theme.of(context).extension<ShellChromeTheme>();
+    final barHeight = ShellInsets.barHeightFor(context);
+    final centerWidth = MediaQuery.textScalerOf(context).scale(12) >= 20
+        ? 68.0
+        : 56.0;
 
     final navItems = List<AppNavItemConfig>.generate(
       _navItems.length,
@@ -82,7 +85,7 @@ class _AppShellState extends State<AppShell>
       visible: chromeVisible,
       navigationEnabled: navigationEnabled,
       child: Scaffold(
-        // Let scrollable content continue beneath the transparent dock areas.
+        // Let scrollable content continue beneath the dock fade.
         extendBody: true,
         // Each page's Scaffold owns keyboard resizing.
         resizeToAvoidBottomInset: false,
@@ -99,7 +102,7 @@ class _AppShellState extends State<AppShell>
                     builder: (bodyContext) {
                       final media = MediaQuery.of(bodyContext);
                       final bottomInset = chromeVisible
-                          ? _barHeight +
+                          ? barHeight +
                                 _barBottomGap +
                                 MediaQuery.viewPaddingOf(context).bottom
                           : media.padding.bottom;
@@ -128,25 +131,21 @@ class _AppShellState extends State<AppShell>
                     key: const ValueKey('shell_dock_scrim'),
                     height:
                         56 +
-                        _barHeight +
+                        barHeight +
                         _barBottomGap +
                         MediaQuery.paddingOf(context).bottom,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        stops: const [0, 0.38, 0.76, 1],
+                        stops: const [0, 0.32, 0.58, 1],
                         colors: [
                           Colors.transparent,
                           Theme.of(
                             context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.08),
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.22),
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.36),
+                          ).scaffoldBackgroundColor.withValues(alpha: 0.72),
+                          Theme.of(context).scaffoldBackgroundColor,
+                          Theme.of(context).scaffoldBackgroundColor,
                         ],
                       ),
                     ),
@@ -172,7 +171,8 @@ class _AppShellState extends State<AppShell>
                       isHomeSelected: isHomeSelected,
                       accent: isHomeSelected ? homeFabColor : accent,
                     ),
-                    barHeight: _barHeight,
+                    barHeight: barHeight,
+                    centerGapWidth: centerWidth,
                     barHorizontalPadding: _barHorizontalPadding,
                     barBottomGap: _barBottomGap,
                     backgroundColor:
@@ -194,7 +194,7 @@ class _AppShellState extends State<AppShell>
                   config: fabConfig,
                   dockPadding: ShellInsets.fabDockPadding(
                     context,
-                    barHeight: _barHeight,
+                    barHeight: barHeight,
                     barBottomGap: _barBottomGap,
                     lift: -34,
                   ),
@@ -253,7 +253,6 @@ class _AppShellState extends State<AppShell>
     final inactiveForeground = theme.brightness == Brightness.dark
         ? theme.colorScheme.onSurfaceVariant
         : onSurface.withValues(alpha: 0.46);
-    final largeText = MediaQuery.textScalerOf(context).scale(14) / 14 >= 1.5;
     final navBackground =
         theme.extension<ShellChromeTheme>()?.navBackground ??
         theme.colorScheme.surface;
@@ -309,24 +308,23 @@ class _AppShellState extends State<AppShell>
                 ),
               ),
             ),
-            if (!largeText)
-              SizedBox(
-                width: 48,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    height: 1.05,
-                    fontWeight: isHomeSelected
-                        ? FontWeight.w800
-                        : FontWeight.w700,
-                    color: labelColor,
-                  ),
+            SizedBox(
+              width: MediaQuery.textScalerOf(context).scale(12) >= 20 ? 68 : 56,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                softWrap: true,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.05,
+                  fontWeight: isHomeSelected
+                      ? FontWeight.w800
+                      : FontWeight.w700,
+                  color: labelColor,
                 ),
               ),
+            ),
           ],
         ),
       ),

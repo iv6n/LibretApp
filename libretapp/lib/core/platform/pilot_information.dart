@@ -41,7 +41,7 @@ class PilotInformationSheet extends StatelessWidget {
         const AppPageHeader(title: 'Privacidad y datos locales'),
         const Text(
           ReleaseFeatures.cloudBackupEnabled
-              ? 'Tus registros y fotografías se guardan en este dispositivo. Si verificas una cuenta por teléfono, Supabase gestiona la sesión y Twilio entrega el SMS. Puedes crear respaldos manuales o activar los automáticos cada 24 horas, solo por Wi-Fi; Android puede aplazarlos. Invitado y demo no suben datos automáticamente. Se conservan hasta cinco copias verificadas de hasta 100 MiB por cuenta. No hay sincronización continua ni pagos.'
+              ? 'Tus registros y fotografías se guardan en este dispositivo. Si verificas una cuenta por teléfono, Supabase gestiona la sesión y Twilio entrega el SMS. Puedes crear respaldos manuales o activar los automáticos cada 24 horas, solo por Wi-Fi; Android puede aplazarlos. Se conservan hasta tres copias verificadas de hasta 10 MiB por cuenta. No hay sincronización continua ni pagos.'
               : 'Tus registros, fotografías y datos del rancho se guardan en este dispositivo. El piloto funciona sin conexión como invitado; también puedes explorar la demo. Tú decides cuándo exportar o compartir un archivo y con quién.',
         ),
         const SizedBox(height: AppSpacing.sm),

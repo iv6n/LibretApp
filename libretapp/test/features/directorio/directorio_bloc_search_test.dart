@@ -118,7 +118,7 @@ void main() {
         const ChangeDirectorioSection(DirectorioSection.ubicaciones),
       );
       directorioBloc.add(const StartSearch());
-      directorioBloc.add(const PerformCombinedSearch('potrero'));
+      _dispatchSearch(directorioBloc, 'potrero');
       await _flushEvents();
       final before = directorioBloc.state as DirectorioLoaded;
 
@@ -139,7 +139,7 @@ void main() {
     });
 
     test(
-      'LoadDirectorioData leaves state loaded and triggers all tab loads',
+      'LoadDirectorioData loads configuration without starting tab watchers',
       () async {
         final recordingAnimalesTabBloc = _RecordingAnimalesTabBloc(
           _FakeAnimalRepository(),
@@ -163,16 +163,16 @@ void main() {
         expect(bloc.state, isA<DirectorioLoaded>());
         expect(
           recordingAnimalesTabBloc.recordedEvents.whereType<LoadAnimalesTab>(),
-          hasLength(1),
+          isEmpty,
         );
         expect(
           recordingLotesTabBloc.recordedEvents.whereType<LoadLotesTab>(),
-          hasLength(1),
+          isEmpty,
         );
         expect(
           recordingUbicacionesTabBloc.recordedEvents
               .whereType<LoadUbicacionesTab>(),
-          hasLength(1),
+          isEmpty,
         );
         final loaded = bloc.state as DirectorioLoaded;
         expect(loaded.orderedSections, defaultDirectorioSectionOrder);
@@ -192,7 +192,7 @@ void main() {
     );
 
     test(
-      'global search waits for the complete animal tab and ignores stale queries',
+      'combined search loads on demand and ignores stale query results',
       () async {
         final repository = _ControlledAnimalRepository();
         final animalTabBloc = AnimalesTabBloc(repository);
@@ -209,14 +209,17 @@ void main() {
         expect(bloc.state, isA<DirectorioLoaded>());
 
         bloc.add(const PerformCombinedSearch('late-first'));
+        await Future<void>.delayed(const Duration(milliseconds: 280));
         bloc.add(const PerformCombinedSearch('late-second'));
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await Future<void>.delayed(const Duration(milliseconds: 280));
 
-        repository.emit([
-          _buildAnimal(
-            uuid: 'animal-loaded-after-search',
-            earTagNumber: 'late-second',
-          ),
+        expect(repository.pending, hasLength(2));
+        repository.pending[1].complete([
+          _buildAnimal(uuid: 'animal-new', earTagNumber: 'late-second'),
+        ]);
+        await _flushEvents();
+        repository.pending[0].complete([
+          _buildAnimal(uuid: 'animal-old', earTagNumber: 'late-first'),
         ]);
         await _flushEvents();
 
@@ -224,7 +227,7 @@ void main() {
         expect(loaded.searchQuery, 'late-second');
         expect(loaded.searchResults, hasLength(1));
         expect(loaded.searchResults.single.type, CombinedSearchType.animal);
-        expect(loaded.searchResults.single.id, 'animal-loaded-after-search');
+        expect(loaded.searchResults.single.id, 'animal-new');
 
         await bloc.close();
         await animalTabBloc.close();
@@ -256,7 +259,7 @@ void main() {
       ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('  norte  '));
+      _dispatchSearch(directorioBloc, '  norte  ');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -296,7 +299,7 @@ void main() {
       );
       await _flushEvents();
 
-      bloc.add(const PerformCombinedSearch('tomate'));
+      _dispatchSearch(bloc, 'tomate');
       await _flushEvents();
 
       var loaded = bloc.state as DirectorioLoaded;
@@ -305,7 +308,7 @@ void main() {
       expect(loaded.searchResults.single.id, 'cultivo-tomate-42');
       expect(loaded.searchResults.single.name, 'Tomate cherry');
 
-      bloc.add(const PerformCombinedSearch('tomate-42'));
+      _dispatchSearch(bloc, 'tomate-42');
       await _flushEvents();
 
       loaded = bloc.state as DirectorioLoaded;
@@ -314,7 +317,7 @@ void main() {
       await bloc.close();
     });
 
-    test('search does not break and uses only loaded tabs', () async {
+    test('search uses loaded tab data if a repository read fails', () async {
       final animal = _buildAnimal(
         uuid: 'animal-partial-1',
         earTagNumber: 'Coincide Animal',
@@ -328,7 +331,7 @@ void main() {
       ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('coincide'));
+      _dispatchSearch(directorioBloc, 'coincide');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -348,43 +351,73 @@ void main() {
       );
     });
 
-    test('search ignores hidden directory sections', () async {
-      final animal = _buildAnimal(
-        uuid: 'animal-visible',
-        earTagNumber: 'Coincide Animal',
-      );
-      final lote = _buildLote(uuid: 'lote-hidden', nombre: 'Coincide Lote');
-      final location = _buildLocation(
-        uuid: 'ubic-visible',
-        name: 'Coincide Ubicacion',
-      );
+    test(
+      'search finds full-repository animals before a tab is loaded',
+      () async {
+        final animal = _buildAnimal(
+          uuid: 'animal-unloaded-tab',
+          earTagNumber: 'DIRECTORY-8831',
+        );
+        final bloc = DirectorioBloc(
+          animalRepository: _FakeAnimalRepository([animal]),
+        );
+        bloc.add(const LoadDirectorioData());
+        await _flushEvents();
+        bloc.add(const StartSearch());
+        await _flushEvents();
 
-      animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
-      lotesTabBloc.add(LotesTabStreamUpdated([lote]));
-      ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
-      await _flushEvents();
+        _dispatchSearch(bloc, '8831');
+        await _flushEvents();
 
-      directorioBloc.add(
-        const SetDirectorioVisibleSections(
-          visibleSections: {
-            DirectorioSection.animales,
-            DirectorioSection.ubicaciones,
-          },
-          activeSection: DirectorioSection.ubicaciones,
-        ),
-      );
-      await _flushEvents();
+        final loaded = bloc.state as DirectorioLoaded;
+        expect(loaded.searchResults, hasLength(1));
+        expect(loaded.searchResults.single.id, 'animal-unloaded-tab');
+        expect(loaded.searchFailedSources, isEmpty);
+        await bloc.close();
+      },
+    );
 
-      directorioBloc.add(const PerformCombinedSearch('coincide'));
-      await _flushEvents();
+    test(
+      'search includes hidden directory sections after the active tab',
+      () async {
+        final animal = _buildAnimal(
+          uuid: 'animal-visible',
+          earTagNumber: 'Coincide Animal',
+        );
+        final lote = _buildLote(uuid: 'lote-hidden', nombre: 'Coincide Lote');
+        final location = _buildLocation(
+          uuid: 'ubic-visible',
+          name: 'Coincide Ubicacion',
+        );
 
-      final loaded = directorioBloc.state as DirectorioLoaded;
-      expect(loaded.activeSection, DirectorioSection.ubicaciones);
-      expect(loaded.searchResults.map((result) => result.type), [
-        CombinedSearchType.ubicacion,
-        CombinedSearchType.animal,
-      ]);
-    });
+        animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
+        lotesTabBloc.add(LotesTabStreamUpdated([lote]));
+        ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
+        await _flushEvents();
+
+        directorioBloc.add(
+          const SetDirectorioVisibleSections(
+            visibleSections: {
+              DirectorioSection.animales,
+              DirectorioSection.ubicaciones,
+            },
+            activeSection: DirectorioSection.ubicaciones,
+          ),
+        );
+        await _flushEvents();
+
+        _dispatchSearch(directorioBloc, 'coincide');
+        await _flushEvents();
+
+        final loaded = directorioBloc.state as DirectorioLoaded;
+        expect(loaded.activeSection, DirectorioSection.ubicaciones);
+        expect(loaded.searchResults.map((result) => result.type), [
+          CombinedSearchType.ubicacion,
+          CombinedSearchType.animal,
+          CombinedSearchType.lote,
+        ]);
+      },
+    );
 
     test(
       'visible sections event falls back when active section is hidden',
@@ -486,7 +519,7 @@ void main() {
       );
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('coincide'));
+      _dispatchSearch(directorioBloc, 'coincide');
       await _flushEvents();
 
       final loaded = directorioBloc.state as DirectorioLoaded;
@@ -504,7 +537,7 @@ void main() {
       lotesTabBloc.add(LotesTabStreamUpdated([lote]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('777'));
+      _dispatchSearch(directorioBloc, '777');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -529,7 +562,7 @@ void main() {
       lotesTabBloc.add(LotesTabStreamUpdated([duplicatedA, duplicatedB]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('dup'));
+      _dispatchSearch(directorioBloc, 'dup');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -557,7 +590,7 @@ void main() {
       directorioBloc.add(const ChangeDirectorioTab(1));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('match'));
+      _dispatchSearch(directorioBloc, 'match');
       await _flushEvents();
 
       final loaded = directorioBloc.state as DirectorioLoaded;
@@ -580,7 +613,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('lola'));
+      _dispatchSearch(directorioBloc, 'lola');
       await _flushEvents();
 
       final loaded = directorioBloc.state as DirectorioLoaded;
@@ -598,7 +631,7 @@ void main() {
       ubicacionesTabBloc.add(UbicacionesTabStreamUpdated([location]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('  póTrErO  '));
+      _dispatchSearch(directorioBloc, '  póTrErO  ');
       await _flushEvents();
 
       final loaded = directorioBloc.state as DirectorioLoaded;
@@ -624,7 +657,7 @@ void main() {
         lotesTabBloc.add(LotesTabStreamUpdated([lote]));
         await _flushEvents();
 
-        directorioBloc.add(const PerformCombinedSearch('duplicado-1'));
+        _dispatchSearch(directorioBloc, 'duplicado-1');
         await _flushEvents();
 
         final loaded = directorioBloc.state as DirectorioLoaded;
@@ -665,7 +698,7 @@ void main() {
         await _flushEvents();
 
         final stopwatch = Stopwatch()..start();
-        directorioBloc.add(const PerformCombinedSearch('item'));
+        _dispatchSearch(directorioBloc, 'item');
         await _flushEvents();
         stopwatch.stop();
 
@@ -689,7 +722,7 @@ void main() {
       directorioBloc.add(const ChangeDirectorioTab(1));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('coincidente'));
+      _dispatchSearch(directorioBloc, 'coincidente');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -715,7 +748,7 @@ void main() {
       directorioBloc.add(const ChangeDirectorioTab(2));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('coincidente'));
+      _dispatchSearch(directorioBloc, 'coincidente');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -735,7 +768,7 @@ void main() {
       directorioBloc.add(const StartSearch());
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('limpiable'));
+      _dispatchSearch(directorioBloc, 'limpiable');
       await _flushEvents();
 
       final beforeClear = directorioBloc.state;
@@ -764,7 +797,7 @@ void main() {
       directorioBloc.add(const StartSearch());
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('cambio'));
+      _dispatchSearch(directorioBloc, 'cambio');
       await _flushEvents();
 
       directorioBloc.add(const ChangeDirectorioTab(2));
@@ -790,14 +823,14 @@ void main() {
         directorioBloc.add(const StartSearch());
         await _flushEvents();
 
-        directorioBloc.add(const PerformCombinedSearch('vacio'));
+        _dispatchSearch(directorioBloc, 'vacio');
         await _flushEvents();
 
         final stateWithResults = directorioBloc.state as DirectorioLoaded;
         expect(stateWithResults.searchResults, isNotEmpty);
         expect(stateWithResults.searchQuery, 'vacio');
 
-        directorioBloc.add(const PerformCombinedSearch('   '));
+        _dispatchSearch(directorioBloc, '   ');
         await _flushEvents();
 
         final stateAfterEmpty = directorioBloc.state;
@@ -830,7 +863,7 @@ void main() {
         directorioBloc.add(const ChangeDirectorioTab(1));
         await _flushEvents();
 
-        directorioBloc.add(const PerformCombinedSearch('match'));
+        _dispatchSearch(directorioBloc, 'match');
         await _flushEvents();
 
         final state = directorioBloc.state;
@@ -867,7 +900,7 @@ void main() {
         directorioBloc.add(const ChangeDirectorioTab(2));
         await _flushEvents();
 
-        directorioBloc.add(const PerformCombinedSearch('match'));
+        _dispatchSearch(directorioBloc, 'match');
         await _flushEvents();
 
         final state = directorioBloc.state;
@@ -888,7 +921,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('6849'));
+      _dispatchSearch(directorioBloc, '6849');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -910,7 +943,7 @@ void main() {
         animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
         await _flushEvents();
 
-        directorioBloc.add(const PerformCombinedSearch('2658976849'));
+        _dispatchSearch(directorioBloc, '2658976849');
         await _flushEvents();
 
         final state = directorioBloc.state;
@@ -931,7 +964,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('002658976849'));
+      _dispatchSearch(directorioBloc, '002658976849');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -951,7 +984,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('65897'));
+      _dispatchSearch(directorioBloc, '65897');
       await _flushEvents();
 
       final state = directorioBloc.state;
@@ -970,7 +1003,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('6849'));
+      _dispatchSearch(directorioBloc, '6849');
       await _flushEvents();
 
       final state = directorioBloc.state as DirectorioLoaded;
@@ -985,7 +1018,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('9999'));
+      _dispatchSearch(directorioBloc, '9999');
       await _flushEvents();
 
       final state = directorioBloc.state as DirectorioLoaded;
@@ -1001,7 +1034,7 @@ void main() {
       await _flushEvents();
 
       // 65897 is substring starting at index 6
-      directorioBloc.add(const PerformCombinedSearch('65897'));
+      _dispatchSearch(directorioBloc, '65897');
       await _flushEvents();
 
       final state = directorioBloc.state as DirectorioLoaded;
@@ -1020,7 +1053,7 @@ void main() {
       animalesTabBloc.add(AnimalesTabStreamUpdated([animal1, animal2]));
       await _flushEvents();
 
-      directorioBloc.add(const PerformCombinedSearch('6849'));
+      _dispatchSearch(directorioBloc, '6849');
       await _flushEvents();
 
       final state = directorioBloc.state as DirectorioLoaded;
@@ -1034,7 +1067,17 @@ void main() {
 }
 
 Future<void> _flushEvents() async {
-  await Future<void>.delayed(const Duration(milliseconds: 20));
+  await Future<void>.delayed(
+    Duration(milliseconds: _searchWasDispatched ? 280 : 20),
+  );
+  _searchWasDispatched = false;
+}
+
+bool _searchWasDispatched = false;
+
+void _dispatchSearch(DirectorioBloc bloc, String query) {
+  _searchWasDispatched = true;
+  bloc.add(PerformCombinedSearch(query));
 }
 
 LoteEntity _buildLote({required String uuid, required String nombre}) {
@@ -1097,8 +1140,21 @@ LocationEntity _buildLocation({required String uuid, required String name}) {
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
+  _FakeAnimalRepository([this.animals]);
+
+  final List<AnimalEntity>? animals;
+
   @override
   Stream<List<AnimalEntity>> watchAll() => Stream.value(const <AnimalEntity>[]);
+
+  @override
+  Future<List<AnimalEntity>> getAll() async {
+    final configuredAnimals = animals;
+    if (configuredAnimals == null) {
+      throw StateError('No full animal list configured for this test.');
+    }
+    return configuredAnimals;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => null;
@@ -1110,6 +1166,16 @@ class _ControlledAnimalRepository implements AnimalRepository {
 
   @override
   Stream<List<AnimalEntity>> watchAll() => _controller.stream;
+
+  final List<Completer<List<AnimalEntity>>> pending =
+      <Completer<List<AnimalEntity>>>[];
+
+  @override
+  Future<List<AnimalEntity>> getAll() {
+    final completer = Completer<List<AnimalEntity>>();
+    pending.add(completer);
+    return completer.future;
+  }
 
   void emit(List<AnimalEntity> animals) => _controller.add(animals);
 

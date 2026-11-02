@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/lotes/domain/entities/lote_entity.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -45,20 +46,11 @@ class LoteCard extends StatelessWidget {
         ? colorScheme.primary
         : colorScheme.outlineVariant;
 
-    return Card(
+    return AppDirectoryCardFrame(
       color: cardColor,
-      margin: const EdgeInsets.only(bottom: 14),
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-          width: 1,
-        ),
-      ),
-      elevation: 1.2,
+      borderColor: colorScheme.outlineVariant.withValues(alpha: 0.38),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDirectoryCardFrame.cornerRadius),
         onTap: onTap,
         child: Stack(
           children: [

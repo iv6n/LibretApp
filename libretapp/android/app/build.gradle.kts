@@ -26,7 +26,7 @@ if (isReleaseTask && !hasReleaseSigning && !qaSigning) {
 
 android {
     namespace = "app.libret"
-    compileSdk = 36
+    compileSdk = 37
     buildToolsVersion = "36.0.0"
     ndkVersion = flutter.ndkVersion
 

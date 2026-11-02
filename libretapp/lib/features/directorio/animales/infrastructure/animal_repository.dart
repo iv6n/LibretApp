@@ -4,6 +4,7 @@ library;
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/life_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+import 'package:libretapp/features/directorio/animales/domain/enums/production_purpose.dart';
 
 /// Contrato para la persistencia y acceso de datos de animales.
 abstract class AnimalRepository {
@@ -55,6 +56,18 @@ abstract class AnimalRepository {
     return counts;
   }
 
+  /// Active companion animals broken down by life stage for the directory
+  /// filter. The default keeps lightweight test and alternate repositories
+  /// compatible; persistent repositories can answer from their read model.
+  Future<Map<LifeStage, int>> getActiveCompanionStageCounts() async {
+    final counts = <LifeStage, int>{};
+    for (final animal in await getAll()) {
+      if (animal.productionPurpose != ProductionPurpose.companion) continue;
+      counts.update(animal.lifeStage, (count) => count + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
+
   /// Persists lifecycle-derived fields without turning age advancement into
   /// directory activity. Real persistence overrides this default method.
   Future<AnimalEntity> updateDerivedLifecycle(AnimalEntity animal) =>
@@ -86,4 +99,9 @@ abstract class AnimalRepository {
 /// directory or triggering unrelated history migrations.
 abstract interface class RegisteredAnimalSpeciesReader {
   Future<Set<Species>> getRegisteredSpecies();
+}
+
+/// Fast existence check for startup routing; must not hydrate directory rows.
+abstract interface class AnimalPresenceReader {
+  Future<bool> hasAnyAnimals();
 }

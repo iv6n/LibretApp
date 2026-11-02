@@ -198,6 +198,30 @@ void main() {
     });
   });
   group('reproduction', () {
+    for (final (species, days) in [(Species.sheep, 147), (Species.goat, 150)]) {
+      test(
+        '$species projects the expected birth from its own gestation',
+        () async {
+          const animalUuid = 'species-projection';
+          await _seedAnimal(uuid: animalUuid, species: species);
+          final serviceDate = DateTime(2026, 1, 10);
+          final repo = ReproductionRecordRepositoryIsar(IsarDatabase());
+          await repo.addReproductionRecord(
+            animalUuid,
+            ReproductionRecord(
+              serviceDate: serviceDate,
+              serviceType: ServiceType.naturalService,
+            ),
+          );
+
+          expect(
+            (await _read(animalUuid)).expectedCalvingDate,
+            serviceDate.add(Duration(days: days)),
+          );
+        },
+      );
+    }
+
     test(
       'the newest record decides the cycle, not the last one saved',
       () async {
@@ -337,7 +361,11 @@ void main() {
   });
 }
 
-Future<void> _seedAnimal({String uuid = _uuid, Sex sex = Sex.female}) async {
+Future<void> _seedAnimal({
+  String uuid = _uuid,
+  Sex sex = Sex.female,
+  Species species = Species.cattle,
+}) async {
   final repo = AnimalRepositoryIsar(
     IsarDatabase(),
     SharedPrefsService(await SharedPreferences.getInstance()),
@@ -348,9 +376,17 @@ Future<void> _seedAnimal({String uuid = _uuid, Sex sex = Sex.female}) async {
     AnimalEntity(
       uuid: uuid,
       earTagNumber: 'TAG-$uuid',
-      species: Species.cattle,
-      category: sex == Sex.female ? Category.cow : Category.bull,
-      lifeStage: sex == Sex.female ? LifeStage.cow : LifeStage.bull,
+      species: species,
+      category: species == Species.cattle
+          ? (sex == Sex.female ? Category.cow : Category.bull)
+          : Category.reproduction,
+      lifeStage: species == Species.sheep
+          ? LifeStage.ewe
+          : species == Species.goat
+          ? LifeStage.goat
+          : sex == Sex.female
+          ? LifeStage.cow
+          : LifeStage.bull,
       sex: sex,
       breed: 'Cebu',
       birthDate: DateTime(2021, 1, 1),

@@ -10,8 +10,7 @@ import 'package:libretapp/theme/app_theme.dart';
 Widget _app({
   Future<void> Function()? guest,
   Future<void> Function(AppExperience)? demo,
-  Future<void> Function()? createPhone,
-  Future<void> Function()? signInPhone,
+  Future<void> Function()? phoneAccess,
   Future<void> Function(int)? progress,
   int page = 0,
   double scale = 1,
@@ -26,8 +25,7 @@ Widget _app({
           initialPage: page,
           onStartEmpty: guest ?? () async {},
           onInstallDemo: demo ?? (_) async {},
-          onCreatePhone: createPhone,
-          onSignInPhone: signInPhone,
+          onAccessPhone: phoneAccess,
           onProgress: progress,
         ),
       ),
@@ -60,103 +58,163 @@ Future<void> _tap(WidgetTester tester, String text) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _goToAccess(WidgetTester tester) async {
+  await tester.drag(find.byType(PageView), const Offset(-480, 0));
+  await tester.pumpAndSettle();
+  await tester.drag(find.byType(PageView), const Offset(-480, 0));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('presenta dos pantallas y omitir abre la vista previa', (
+  testWidgets('presenta tres pantallas deslizables con ejemplos variados', (
     tester,
   ) async {
-    var lastProgress = -1;
-    await tester.pumpWidget(
-      _app(progress: (page) async => lastProgress = page),
+    final progress = <int>[];
+    await tester.pumpWidget(_app(progress: (page) async => progress.add(page)));
+
+    expect(
+      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
+      findsOneWidget,
     );
+    expect(find.text('Guarda su historia'), findsOneWidget);
+    expect(find.text('Planea cuidados'), findsOneWidget);
+    expect(find.text('Recibe avisos'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Vaca, perro, gato y planta frente a una siembra, con un caballo y una cabra al fondo',
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Pantalla 1 de 3'), findsOneWidget);
 
-    expect(find.text('Todo lo que cuidas,\nen un lugar.'), findsOneWidget);
-    expect(find.text('Fichas'), findsOneWidget);
-    expect(find.text('Actividades'), findsOneWidget);
-    expect(find.text('Avisos'), findsOneWidget);
-    expect(find.text('¿Qué vas a registrar?'), findsNothing);
-
-    await _tap(tester, 'Omitir');
-
-    expect(lastProgress, 1);
-    expect(find.text('Cada cuidado,\nbien organizado.'), findsOneWidget);
+    await tester.drag(find.byType(PageView), const Offset(-480, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
     expect(find.text('VISTA PREVIA · DATOS FICTICIOS'), findsOneWidget);
-    expect(find.text('Luna'), findsOneWidget);
+    expect(find.text('Prieta'), findsOneWidget);
+    expect(find.text('Capitán'), findsOneWidget);
+    expect(find.text('Maíz blanco'), findsOneWidget);
     expect(find.text('Mi monstera'), findsOneWidget);
-    expect(find.text('Riego · Mañana'), findsOneWidget);
-    expect(find.text('Empezar sin cuenta'), findsOneWidget);
-    expect(find.text('Probar con ejemplos'), findsOneWidget);
-    expect(find.text('¿Qué vas a registrar?'), findsNothing);
+    expect(find.bySemanticsLabel('Pantalla 2 de 3'), findsOneWidget);
+    expect(progress, [1]);
+
+    await tester.drag(find.byType(PageView), const Offset(-480, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'Persona organizando cuidados desde su teléfono junto a un perro y una siembra',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Acceder con teléfono'), findsOneWidget);
+    expect(find.text('Continuar como invitado'), findsOneWidget);
+    expect(find.text('Ver demo'), findsOneWidget);
+    expect(
+      find.text(
+        'Prueba fichas y actividades ficticias en un espacio separado.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Pantalla 3 de 3'), findsOneWidget);
+    expect(progress, [1, 2]);
   });
 
-  testWidgets('volver y continuar conservan el progreso', (tester) async {
+  testWidgets('continuar, volver y omitir mueven entre las tres pantallas', (
+    tester,
+  ) async {
     final progress = <int>[];
     await tester.pumpWidget(_app(progress: (page) async => progress.add(page)));
 
     await _tap(tester, 'Continuar');
-    expect(find.text('Cada cuidado,\nbien organizado.'), findsOneWidget);
+    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
     await _tap(tester, 'Volver');
-    expect(find.text('Todo lo que cuidas,\nen un lugar.'), findsOneWidget);
-    expect(progress, [1, 0]);
+    expect(
+      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
+      findsOneWidget,
+    );
+
+    await _tap(tester, 'Omitir');
+    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    await _tap(tester, 'Volver');
+    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
+    expect(progress, [1, 0, 2, 1]);
   });
 
-  testWidgets('entrar como invitado abre Inicio sin pedir preferencias', (
-    tester,
-  ) async {
+  testWidgets('omitir desde la segunda pantalla va al acceso', (tester) async {
+    await tester.pumpWidget(_app(page: 1));
+    await _tap(tester, 'Omitir');
+    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+  });
+
+  testWidgets('entrar como invitado abre Inicio', (tester) async {
     var starts = 0;
     await tester.pumpWidget(_app(guest: () async => starts++));
-    await _tap(tester, 'Continuar');
-    await _tap(tester, 'Empezar sin cuenta');
+    await _goToAccess(tester);
+    await _tap(tester, 'Continuar como invitado');
 
     expect(starts, 1);
     expect(find.text('Inicio listo'), findsOneWidget);
   });
 
-  testWidgets('mantiene la demo aislada y abre la experiencia completa', (
-    tester,
-  ) async {
+  testWidgets('demo abre ejemplos en un espacio separado', (tester) async {
     AppExperience? selected;
     await tester.pumpWidget(_app(demo: (value) async => selected = value));
-    await _tap(tester, 'Continuar');
-    await _tap(tester, 'Probar con ejemplos');
+    await _goToAccess(tester);
+    await _tap(tester, 'Ver demo');
 
     expect(selected, AppExperience.complete);
     expect(find.text('Inicio listo'), findsOneWidget);
   });
 
-  testWidgets('ofrece acceso telefónico desde un panel secundario', (
-    tester,
-  ) async {
-    var creates = 0;
-    var signsIn = 0;
-    await tester.pumpWidget(
-      _app(
-        page: 1,
-        createPhone: () async => creates++,
-        signInPhone: () async => signsIn++,
+  testWidgets('acceder con teléfono usa un único flujo', (tester) async {
+    var accesses = 0;
+    await tester.pumpWidget(_app(phoneAccess: () async => accesses++));
+    await _goToAccess(tester);
+    await _tap(tester, 'Acceder con teléfono');
+
+    expect(accesses, 1);
+    expect(
+      find.text(
+        'Accede con tu teléfono, empieza como invitado o explora la app con ejemplos.',
       ),
+      findsOneWidget,
     );
-
-    await _tap(tester, 'Acceder con teléfono');
-    expect(find.text('Crear cuenta'), findsOneWidget);
-    expect(find.text('Ya tengo cuenta'), findsOneWidget);
-    await _tap(tester, 'Crear cuenta');
-    expect(creates, 1);
-    expect(signsIn, 0);
-    expect(find.text('Cada cuidado,\nbien organizado.'), findsOneWidget);
-
-    await _tap(tester, 'Acceder con teléfono');
-    await _tap(tester, 'Ya tengo cuenta');
-    expect(signsIn, 1);
+    expect(find.text('Crear cuenta'), findsNothing);
+    expect(find.text('Ya tengo cuenta'), findsNothing);
+    expect(find.text('Empieza a tu manera.'), findsOneWidget);
   });
 
-  testWidgets('muestra errores recuperables si falla la entrada', (
+  testWidgets('explica si el acceso telefónico no está disponible', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app());
+    await _goToAccess(tester);
+
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Acceder con teléfono'),
+    );
+    expect(button.onPressed, isNull);
+    expect(
+      find.text('El acceso por teléfono no está disponible en esta versión.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Empieza como invitado o explora la app con ejemplos.'),
+      findsOneWidget,
+    );
+    expect(find.text('Continuar como invitado'), findsOneWidget);
+    expect(find.text('Ver demo'), findsOneWidget);
+  });
+
+  testWidgets('muestra errores recuperables al entrar como invitado', (
     tester,
   ) async {
     await tester.pumpWidget(
       _app(guest: () async => throw StateError('storage unavailable')),
     );
-    await _tap(tester, 'Continuar');
-    await _tap(tester, 'Empezar sin cuenta');
+    await _goToAccess(tester);
+    await _tap(tester, 'Continuar como invitado');
 
     expect(
       find.text(
@@ -164,12 +222,12 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Empezar sin cuenta'), findsOneWidget);
+    expect(find.text('Continuar como invitado'), findsOneWidget);
   });
 
   for (final mode in [ThemeMode.light, ThemeMode.dark]) {
     testWidgets(
-      'ambas pantallas se adaptan a 320 × 568 dp y texto al 200 % en $mode',
+      'las tres pantallas admiten 320 × 568 dp y texto al 200 % en $mode',
       (tester) async {
         tester.view.physicalSize = const Size(320, 568);
         tester.view.devicePixelRatio = 1;
@@ -180,11 +238,14 @@ void main() {
         expect(tester.takeException(), isNull);
         await _tap(tester, 'Continuar');
         expect(tester.takeException(), isNull);
-        await tester.ensureVisible(find.text('Empezar sin cuenta'));
-        expect(find.text('Probar con ejemplos'), findsOneWidget);
+        await tester.ensureVisible(find.text('Continuar'));
+        await _tap(tester, 'Continuar');
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(find.text('Ver demo'));
+        expect(find.text('Continuar como invitado'), findsOneWidget);
         expect(
           find.text(
-            'Tus registros se guardan aquí. Haz copias periódicas fuera del teléfono.',
+            'Tus registros se guardan en este dispositivo. Haz copias de seguridad periódicas.',
           ),
           findsOneWidget,
         );

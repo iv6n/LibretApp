@@ -446,11 +446,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
               margin: const EdgeInsets.all(12),
               child: ListTile(
                 title: const Text('Ficha por completar'),
-                subtitle: const Text('Los datos no registrados se muestran como Sin dato.'),
+                subtitle: const Text(
+                  'Los datos no registrados se muestran como Sin dato.',
+                ),
                 trailing: TextButton(
                   onPressed: () async {
-                    await context.pushNamed(AppRoutes.nameAnimalCompletar,
-                      pathParameters: {'uuid': widget.animalUuid});
+                    await context.pushNamed(
+                      AppRoutes.nameAnimalCompletar,
+                      pathParameters: {'uuid': widget.animalUuid},
+                    );
                     if (mounted) _reload();
                   },
                   child: const Text('Completar ficha'),
@@ -501,6 +505,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
             lotesRepository: widget.lotesRepository,
             onChanged: _reload,
             onShowCare: () => _tabController.animateTo(1),
+            onShowRecords: () => _tabController.animateTo(2),
             onEditPurpose: () async {
               final saved = await context.pushNamed(
                 AppRoutes.nameAnimalEditar,

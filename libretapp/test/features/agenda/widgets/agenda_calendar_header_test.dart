@@ -27,7 +27,21 @@ class _Animals extends Fake implements AnimalRepository {
 
 class _Entries extends Fake implements AgendaRepository {
   @override
-  Future<List<AgendaEntry>> fetchEntries() async => [];
+  Future<List<AgendaEntry>> fetchEntries() async => [
+    AgendaEntry(
+      id: 'general-task',
+      titulo: 'Revisar cuidados',
+      descripcion: '',
+      fecha: DateTime.now().add(const Duration(days: 1)),
+      tipo: 'cuidado',
+      animalIds: const [],
+      loteIds: const [],
+      ubicacion: '',
+      estado: AgendaEstado.pendiente,
+      completedAnimalIds: const [],
+      notas: '',
+    ),
+  ];
 }
 
 class _Workforce extends Fake implements WorkforceRepository {
@@ -168,7 +182,7 @@ void main() {
         find.byType(AgendaCalendar),
       );
       expect(initial.mode, CalendarMode.week);
-      final selectedDay = initial.selectedDay;
+      final selectedDay = initial.selectedDay!;
 
       final previousX = tester.getCenter(find.byTooltip('Periodo anterior')).dx;
       final dateFinder = find.byKey(const ValueKey('agenda_period_label'));
@@ -202,7 +216,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
       expect(
         find.text(
-          AgendaCalendarPeriod.label(CalendarMode.week, selectedDay!, 'es'),
+          AgendaCalendarPeriod.label(CalendarMode.week, selectedDay, 'es'),
           findRichText: true,
         ),
         findsOneWidget,
@@ -227,22 +241,39 @@ void main() {
 
       await tester.tap(find.byTooltip('Cambiar vista: Semanal'));
       await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.text('Quincenal')));
-      await tester.pumpAndSettle();
       final fortnight = tester.widget<AgendaCalendar>(
         find.byType(AgendaCalendar),
       );
       expect(fortnight.mode, CalendarMode.twoWeeks);
       expect(fortnight.selectedDay, selectedDay);
+      expect(find.text('Quincenal'), findsNothing);
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -40));
+      await tester.pumpAndSettle();
+      final collapsedFortnight = tester.widget<AgendaCalendar>(
+        find.byType(AgendaCalendar),
+      );
+      expect(collapsedFortnight.mode, CalendarMode.week);
+      expect(
+        AgendaCalendarPeriod.days(
+          CalendarMode.week,
+          collapsedFortnight.visibleDate,
+        ),
+        contains(AgendaCalendarPeriod.day(selectedDay)),
+      );
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 500));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<AgendaCalendar>(find.byType(AgendaCalendar)).mode,
+        CalendarMode.twoWeeks,
+      );
 
       expect(find.byTooltip('Cambiar vista: Quincenal'), findsOneWidget);
       await tester.tap(find.byTooltip('Cambiar vista: Quincenal'));
       await tester.pumpAndSettle();
-      await tester.tapAt(tester.getCenter(find.text('Mensual')));
-      await tester.pumpAndSettle();
       final month = tester.widget<AgendaCalendar>(find.byType(AgendaCalendar));
       expect(month.mode, CalendarMode.month);
       expect(month.selectedDay, selectedDay);
+      expect(find.text('Mensual'), findsNothing);
       expect(tester.takeException(), isNull);
 
       final targetDay = selectedDay.day == 15 ? 16 : 15;
@@ -254,9 +285,25 @@ void main() {
       );
       expect(tester.getSize(find.byType(AppBar)).height, greaterThan(100));
 
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -40));
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(AppBar)).height, greaterThan(100));
+      final scrolledMonth = tester.widget<AgendaCalendar>(
+        find.byType(AgendaCalendar),
+      );
+      expect(scrolledMonth.mode, CalendarMode.week);
+      expect(
+        AgendaCalendarPeriod.days(CalendarMode.week, scrolledMonth.visibleDate),
+        contains(DateTime(selectedDay.year, selectedDay.month, targetDay)),
+      );
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, 500));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<AgendaCalendar>(find.byType(AgendaCalendar)).mode,
+        CalendarMode.month,
+      );
       await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
       await tester.pumpAndSettle();
-      expect(tester.getSize(find.byType(AppBar)).height, lessThan(100));
       expect(find.byTooltip('Periodo siguiente'), findsOneWidget);
       expect(find.byTooltip('Cambiar vista: Mensual'), findsOneWidget);
       expect(find.byTooltip('Buscar agenda'), findsOneWidget);
@@ -272,6 +319,24 @@ void main() {
       );
       await tester.tap(find.byTooltip('Cambiar vista: Mensual'));
       await tester.pumpAndSettle();
+      final collapsed = tester.widget<AgendaCalendar>(
+        find.byType(AgendaCalendar),
+      );
+      expect(collapsed.mode, CalendarMode.week);
+      expect(
+        collapsed.selectedDay,
+        AgendaCalendarPeriod.navigate(
+          CalendarMode.month,
+          DateTime(selectedDay.year, selectedDay.month, targetDay),
+          1,
+        ),
+      );
+      final selectedWeek = AgendaCalendarPeriod.days(
+        collapsed.mode,
+        collapsed.visibleDate,
+      );
+      expect(selectedWeek, contains(collapsed.selectedDay));
+      expect(selectedWeek.first.weekday, DateTime.monday);
       expect(find.text('Personal y cuadrillas'), findsNothing);
       await tester.tapAt(const Offset(10, 600));
       await tester.pumpAndSettle();
@@ -282,10 +347,10 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).focusNode?.hasFocus,
         isTrue,
       );
-      expect(find.byTooltip('Cambiar vista: Mensual'), findsNothing);
+      expect(find.byTooltip('Cambiar vista: Semanal'), findsNothing);
       await tester.tap(find.byTooltip('Cerrar búsqueda'));
       await tester.pumpAndSettle();
-      expect(find.byTooltip('Cambiar vista: Mensual'), findsOneWidget);
+      expect(find.byTooltip('Cambiar vista: Semanal'), findsOneWidget);
       expect(find.byTooltip('Buscar agenda'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
@@ -334,8 +399,6 @@ void main() {
     expect(find.byTooltip('Buscar agenda'), findsOneWidget);
     expect(find.byKey(const ValueKey('agenda_period_label')), findsOneWidget);
     await tester.tap(find.byTooltip('Cambiar vista: Semanal'));
-    await tester.pumpAndSettle();
-    await tester.tapAt(tester.getCenter(find.text('Quincenal')));
     await tester.pumpAndSettle();
     expect(
       tester.widget<AgendaCalendar>(find.byType(AgendaCalendar)).mode,

@@ -48,6 +48,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   Species _species = Species.cattle;
   Sex _sex = Sex.unknown;
   ApproximateAge _age = const ApproximateAge.unknown();
+  _BirthInputMode _birthInputMode = _BirthInputMode.unknown;
+  DateTime? _exactBirthDate;
   ProductionPurpose? _purpose;
   String? _profilePhoto;
   bool _saving = false;
@@ -86,7 +88,15 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   AnimalRegistrationSeed _currentSeed() => AnimalRegistrationSeed(
     species: _species,
     sex: _sex,
-    ageMonths: _age.totalMonths,
+    ageMonths: _selectedAgeMonths(DateTime.now()),
+    birthDate: _birthInputMode == _BirthInputMode.exact
+        ? _exactBirthDate
+        : null,
+    birthDatePrecision: _birthInputMode == _BirthInputMode.exact
+        ? BirthDatePrecision.exact
+        : _birthInputMode == _BirthInputMode.approximate && !_age.isUnknown
+        ? BirthDatePrecision.estimated
+        : BirthDatePrecision.unknown,
     identification: _nullableText(_identificationCtrl.text),
     name: _nullableText(_nameCtrl.text),
     breed: _nullableText(_breedCtrl.text),
@@ -102,6 +112,14 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
   Future<void> _save() async {
     if (_saving) return;
     FocusScope.of(context).unfocus();
+    if (_birthInputMode == _BirthInputMode.exact && _exactBirthDate == null) {
+      _showMessage('Elige la fecha de nacimiento.');
+      return;
+    }
+    if (_birthInputMode == _BirthInputMode.approximate && _age.isUnknown) {
+      _showMessage('Elige la edad aproximada o selecciona No lo sé.');
+      return;
+    }
     final identification = _identificationCtrl.text.trim();
     final weight = parseFormDouble(_weightCtrl.text);
     if (_weightCtrl.text.trim().isNotEmpty && weight == null) {
@@ -125,9 +143,12 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     setState(() => _saving = true);
     try {
       final now = DateTime.now();
-      final birthDate = _age.isUnknown
-          ? DateTime.fromMillisecondsSinceEpoch(0)
-          : _age.estimatedBirthDate(now);
+      final ageMonths = _selectedAgeMonths(now);
+      final birthDate = switch (_birthInputMode) {
+        _BirthInputMode.exact => _exactBirthDate!,
+        _BirthInputMode.approximate => _age.estimatedBirthDate(now),
+        _BirthInputMode.unknown => DateTime.fromMillisecondsSinceEpoch(0),
+      };
       final lifecycle = AnimalLifecycleCalculator.calculate(
         birthDate: birthDate,
         species: _species,
@@ -136,7 +157,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
       final category = AnimalTaxonomy.defaultCategory(
         species: _species,
         sex: _sex,
-        ageMonths: _age.totalMonths,
+        ageMonths: ageMonths,
       );
       final lifeStage = AnimalTaxonomy.resolveLifeStage(
         species: _species,
@@ -164,10 +185,12 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           breed: _breedCtrl.text,
           crossBreed: null,
           birthDate: birthDate,
-          birthDatePrecision: _age.isUnknown
-              ? BirthDatePrecision.unknown
-              : BirthDatePrecision.estimated,
-          ageMonths: _age.totalMonths,
+          birthDatePrecision: switch (_birthInputMode) {
+            _BirthInputMode.exact => BirthDatePrecision.exact,
+            _BirthInputMode.approximate => BirthDatePrecision.estimated,
+            _BirthInputMode.unknown => BirthDatePrecision.unknown,
+          },
+          ageMonths: ageMonths,
           weight: weight,
           sireUuid: null,
           damUuid: null,
@@ -245,7 +268,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         showBackupSuggestion: showBackupSuggestion,
       );
       if (!mounted) return;
-      await _handleSuccessAction(action, uuid);
+      await _handleSuccessAction(action, animal);
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -266,6 +289,7 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           context: context,
           useRootNavigator: true,
           builder: (dialogContext) => AlertDialog(
+            scrollable: true,
             icon: const Icon(Icons.pending_actions_outlined),
             title: const Text('Dejar arete pendiente'),
             content: const Text(
@@ -326,9 +350,22 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: AppSpacing.lg),
+              if (_canRegisterService(animal)) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.of(
+                      sheetContext,
+                    ).pop(_QuickSaveAction.registerService),
+                    icon: const Icon(Icons.event_available_outlined),
+                    label: const Text('Registrar monta'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+              ],
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => Navigator.of(
                     sheetContext,
                   ).pop(_QuickSaveAction.registerAnother),
@@ -370,9 +407,26 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
 
   Future<void> _handleSuccessAction(
     _QuickSaveAction? action,
-    String uuid,
+    AnimalEntity animal,
   ) async {
+    final uuid = animal.uuid;
     switch (action) {
+      case _QuickSaveAction.registerService:
+        final saved = await context.pushNamed<bool>(
+          AppRoutes.nameAnimalRegistroReproduccion,
+          pathParameters: {'uuid': uuid},
+          queryParameters: const {'step': 'service'},
+        );
+        if (!mounted) return;
+        if (saved == true) {
+          context.go(AppRoutes.animalDetallePath(uuid));
+        } else {
+          final nextAction = await _showSuccessActions(
+            animal,
+            showBackupSuggestion: false,
+          );
+          if (mounted) await _handleSuccessAction(nextAction, animal);
+        }
       case _QuickSaveAction.registerAnother:
         setState(() {
           _identificationCtrl.clear();
@@ -381,6 +435,8 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
           _weightCtrl.clear();
           _sex = Sex.unknown;
           _age = const ApproximateAge.unknown();
+          _birthInputMode = _BirthInputMode.unknown;
+          _exactBirthDate = null;
         });
         _identificationFocus.requestFocus();
       case _QuickSaveAction.completeProfile:
@@ -397,19 +453,49 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     }
   }
 
+  bool _canRegisterService(AnimalEntity animal) =>
+      animal.sex == Sex.female &&
+      {Species.cattle, Species.sheep, Species.goat}.contains(animal.species);
+
+  int _selectedAgeMonths(DateTime now) => switch (_birthInputMode) {
+    _BirthInputMode.exact when _exactBirthDate != null =>
+      AnimalLifecycleCalculator.monthsBetween(_exactBirthDate!, now),
+    _BirthInputMode.approximate => _age.totalMonths,
+    _ => -1,
+  };
+
+  Future<void> _pickExactBirthDate() async {
+    final today = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _exactBirthDate ?? today,
+      firstDate: DateTime(1900),
+      lastDate: today,
+    );
+    if (mounted && date != null) {
+      setState(() {
+        _exactBirthDate = date;
+        _birthInputMode = _BirthInputMode.exact;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final policy = _policy;
+    final largeText = MediaQuery.textScalerOf(context).scale(14) >= 22;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alta rápida'),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _openFullRegistration,
-            child: const Text('Ficha completa'),
-          ),
-        ],
+        actions: largeText
+            ? null
+            : [
+                TextButton(
+                  onPressed: _saving ? null : _openFullRegistration,
+                  child: const Text('Ficha completa'),
+                ),
+              ],
       ),
       body: AppFormBody(
         child: Column(
@@ -449,43 +535,6 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            AnimalPhotoField(
-              photoPath: _profilePhoto,
-              species: _species,
-              enabled: !_saving,
-              compact: true,
-              onChanged: (path) => setState(() => _profilePhoto = path),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _breedCtrl,
-              key: const ValueKey('animal-quick-breed'),
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Raza — opcional',
-                prefixIcon: Icon(Icons.pets_outlined),
-              ),
-            ),
-            if (policy.purposeOptions.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.lg),
-              Text('Propósito — opcional', style: theme.textTheme.labelLarge),
-              const SizedBox(height: AppSpacing.xs),
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: policy.purposeOptions.map((purpose) {
-                  final selected = _purpose == purpose;
-                  return ChoiceChip(
-                    label: Text(purpose.displayName),
-                    selected: selected,
-                    onSelected: (_) => setState(() {
-                      _purpose = selected ? null : purpose;
-                    }),
-                  );
-                }).toList(),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
             Text('Sexo', style: theme.textTheme.labelLarge),
             const SizedBox(height: AppSpacing.xs),
             CompactSexSelector(
@@ -493,26 +542,111 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
               onChanged: (sex) => setState(() => _sex = sex),
             ),
             const SizedBox(height: AppSpacing.lg),
-            ApproximateAgeField(
-              value: _age,
-              onChanged: (age) => setState(() => _age = age),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _weightCtrl,
-              key: const ValueKey('animal-quick-weight'),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+            Text('Nacimiento o edad', style: theme.textTheme.labelLarge),
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                for (final (mode, label) in const [
+                  (_BirthInputMode.exact, 'Fecha'),
+                  (_BirthInputMode.approximate, 'Edad'),
+                  (_BirthInputMode.unknown, 'No lo sé'),
+                ])
+                  ChoiceChip(
+                    label: Text(label),
+                    selected: _birthInputMode == mode,
+                    onSelected: (_) => setState(() => _birthInputMode = mode),
+                  ),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Peso (kg) — opcional',
-                prefixIcon: Icon(Icons.monitor_weight_outlined),
-                suffixText: 'kg',
-              ),
             ),
+            if (_birthInputMode == _BirthInputMode.exact) ...[
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                key: const ValueKey('animal-quick-exact-birth-date'),
+                onPressed: _pickExactBirthDate,
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: Text(
+                  _exactBirthDate == null
+                      ? 'Elegir fecha de nacimiento'
+                      : '${_exactBirthDate!.day}/${_exactBirthDate!.month}/${_exactBirthDate!.year}',
+                ),
+              ),
+            ],
+            if (_birthInputMode == _BirthInputMode.approximate) ...[
+              const SizedBox(height: AppSpacing.sm),
+              ApproximateAgeField(
+                value: _age,
+                onChanged: (age) => setState(() => _age = age),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            ExpansionTile(
+              key: const ValueKey('animal-quick-more-data'),
+              title: const Text('Más datos'),
+              children: [
+                AnimalPhotoField(
+                  photoPath: _profilePhoto,
+                  species: _species,
+                  enabled: !_saving,
+                  compact: true,
+                  onChanged: (path) => setState(() => _profilePhoto = path),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _breedCtrl,
+                  key: const ValueKey('animal-quick-breed'),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Raza — opcional',
+                    prefixIcon: Icon(Icons.pets_outlined),
+                  ),
+                ),
+                if (policy.purposeOptions.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Propósito — opcional',
+                    style: theme.textTheme.labelLarge,
+                  ),
+                  Wrap(
+                    spacing: AppSpacing.xs,
+                    runSpacing: AppSpacing.xs,
+                    children: policy.purposeOptions.map((purpose) {
+                      final selected = _purpose == purpose;
+                      return ChoiceChip(
+                        label: Text(purpose.displayName),
+                        selected: selected,
+                        onSelected: (_) => setState(() {
+                          _purpose = selected ? null : purpose;
+                        }),
+                      );
+                    }).toList(),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: _weightCtrl,
+                  key: const ValueKey('animal-quick-weight'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d.,]')),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'Peso (kg) — opcional',
+                    prefixIcon: Icon(Icons.monitor_weight_outlined),
+                    suffixText: 'kg',
+                  ),
+                ),
+              ],
+            ),
+            if (largeText)
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _openFullRegistration,
+                icon: const Icon(Icons.assignment_outlined),
+                label: const Text('Abrir ficha completa'),
+              ),
           ],
         ),
       ),
@@ -553,11 +687,14 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
 }
 
 enum _QuickSaveAction {
+  registerService,
   registerAnother,
   completeProfile,
   backToDirectory,
   openBackups,
 }
+
+enum _BirthInputMode { exact, approximate, unknown }
 
 IconData _identificationIcon(AnimalRegistrationPolicy policy) {
   switch (policy.identificationKind) {

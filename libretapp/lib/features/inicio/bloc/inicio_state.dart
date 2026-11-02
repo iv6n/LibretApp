@@ -18,7 +18,11 @@ class InicioState extends Equatable {
     this.widgetConfigs = const [],
     this.quickActions = const [],
     this.financeDetail,
+    this.financeLoading = false,
+    this.financeErrorMessage,
     this.libraryPicks = const [],
+    this.libraryLoading = false,
+    this.libraryErrorMessage,
   });
 
   factory InicioState.initial() {
@@ -31,7 +35,11 @@ class InicioState extends Equatable {
   final List<DashboardWidgetConfig> widgetConfigs;
   final List<DashboardQuickAction> quickActions;
   final FinanceSummaryDetail? financeDetail;
+  final bool financeLoading;
+  final String? financeErrorMessage;
   final List<LibraryManifestBook> libraryPicks;
+  final bool libraryLoading;
+  final String? libraryErrorMessage;
 
   bool get isLoading =>
       status == InicioStatus.loading || status == InicioStatus.refreshing;
@@ -43,7 +51,13 @@ class InicioState extends Equatable {
     List<DashboardWidgetConfig>? widgetConfigs,
     List<DashboardQuickAction>? quickActions,
     FinanceSummaryDetail? financeDetail,
+    bool? financeLoading,
+    String? financeErrorMessage,
+    bool clearFinanceError = false,
     List<LibraryManifestBook>? libraryPicks,
+    bool? libraryLoading,
+    String? libraryErrorMessage,
+    bool clearLibraryError = false,
   }) {
     return InicioState(
       status: status ?? this.status,
@@ -52,7 +66,15 @@ class InicioState extends Equatable {
       widgetConfigs: widgetConfigs ?? this.widgetConfigs,
       quickActions: quickActions ?? this.quickActions,
       financeDetail: financeDetail ?? this.financeDetail,
+      financeLoading: financeLoading ?? this.financeLoading,
+      financeErrorMessage: clearFinanceError
+          ? null
+          : financeErrorMessage ?? this.financeErrorMessage,
       libraryPicks: libraryPicks ?? this.libraryPicks,
+      libraryLoading: libraryLoading ?? this.libraryLoading,
+      libraryErrorMessage: clearLibraryError
+          ? null
+          : libraryErrorMessage ?? this.libraryErrorMessage,
     );
   }
 
@@ -64,6 +86,10 @@ class InicioState extends Equatable {
     widgetConfigs,
     quickActions,
     financeDetail,
+    financeLoading,
+    financeErrorMessage,
     libraryPicks,
+    libraryLoading,
+    libraryErrorMessage,
   ];
 }

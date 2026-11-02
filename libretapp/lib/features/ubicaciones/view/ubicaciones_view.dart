@@ -13,7 +13,7 @@ import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.d
 import 'package:libretapp/features/ubicaciones/view/ubicaciones_search_app_bar.dart';
 import 'package:libretapp/features/ubicaciones/widgets/confirm_delete_location_dialog.dart';
 import 'package:libretapp/features/ubicaciones/widgets/location_empty_view.dart';
-import 'package:libretapp/features/ubicaciones/widgets/ubicaciones_centered_section.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/ubicaciones/widgets/ubicaciones_filter_bar.dart';
 import 'package:libretapp/features/ubicaciones/widgets/ubicaciones_location_tree.dart';
 
@@ -59,9 +59,11 @@ class UbicacionesView extends StatelessWidget {
       builder: (context, state) {
         final isSearching = state is UbicacionesLoaded && state.isSearching;
         final scaffold = Scaffold(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+          backgroundColor: showHeader
+              ? Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.25)
+              : Theme.of(context).scaffoldBackgroundColor,
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -115,8 +117,10 @@ class UbicacionesView extends StatelessWidget {
               SliverToBoxAdapter(child: UbicacionesFilterBar(state: state)),
             SliverFillRemaining(
               hasScrollBody: false,
-              child: UbicacionesCenteredSection(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding),
+              child: AppDirectoryEmptySlot(
+                bottomPadding: state.allUbicaciones.isEmpty
+                    ? ShellInsets.bottomSafePadding(context)
+                    : listBottomPadding,
                 child: state.allUbicaciones.isEmpty
                     ? LocationEmptyView(
                         onCreate: () {

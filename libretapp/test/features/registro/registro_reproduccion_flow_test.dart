@@ -9,6 +9,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/widgets/app_date_field.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -28,10 +29,15 @@ void main() {
 
   late _FakeReproductionRepository reproductionRepo;
 
-  void register({List<ReproductionRecord> records = const []}) {
+  void register({
+    List<ReproductionRecord> records = const [],
+    AnimalEntity? animal,
+  }) {
     reproductionRepo = _FakeReproductionRepository(records);
     locator
-      ..registerSingleton<AnimalRepository>(_FakeAnimalRepository())
+      ..registerSingleton<AnimalRepository>(
+        _FakeAnimalRepository(animal ?? _cow),
+      )
       ..registerSingleton<ReproductionRecordRepository>(reproductionRepo)
       ..registerSingleton<WeightRecordRepository>(_Unused())
       ..registerSingleton<HealthRecordRepository>(_Unused())
@@ -43,16 +49,27 @@ void main() {
 
   tearDown(() async => locator.reset());
 
-  Future<void> open(WidgetTester tester) async {
+  Future<void> open(
+    WidgetTester tester, {
+    ReproductionInitialStep? initialStep,
+    bool preselected = false,
+    String? recordId,
+  }) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('es'),
-        home: const RegistroReproduccionPage(),
+        home: RegistroReproduccionPage(
+          animalUuid: preselected ? _cow.uuid : null,
+          initialStep: initialStep,
+          recordId: recordId,
+        ),
       ),
     );
     await tester.pumpAndSettle();
+
+    if (preselected) return;
 
     // Two selectors now live on the page — the cow and the sire — so this
     // has to target the first one explicitly.
@@ -82,8 +99,82 @@ void main() {
         '${due.day.toString().padLeft(2, '0')}/'
         '${due.month.toString().padLeft(2, '0')}/${due.year}';
 
-    expect(find.text(label), findsOneWidget);
+    expect(find.textContaining(label), findsOneWidget);
   });
+
+  for (final (species, days) in [(Species.sheep, 147), (Species.goat, 150)]) {
+    testWidgets('$species gets its own projected birth date', (tester) async {
+      register(animal: _cow.copyWith(species: species));
+      await open(tester, preselected: true);
+      final due = DateTime.now().add(Duration(days: days));
+      final label =
+          '${due.day.toString().padLeft(2, '0')}/'
+          '${due.month.toString().padLeft(2, '0')}/${due.year}';
+      expect(find.textContaining(label), findsOneWidget);
+    });
+  }
+
+  testWidgets('a manually adjusted due date survives a service-date change', (
+    tester,
+  ) async {
+    register();
+    await open(tester, preselected: true);
+    await tester.ensureVisible(find.text('Más datos'));
+    await tester.tap(find.text('Más datos'));
+    await tester.pumpAndSettle();
+    final fields = tester
+        .widgetList<AppDateField>(
+          find.byType(AppDateField, skipOffstage: false),
+        )
+        .toList();
+    expect(fields, hasLength(2));
+    final manual = DateTime(2027, 7, 10);
+    fields.last.onChanged(manual);
+    await tester.pumpAndSettle();
+
+    final serviceField = tester.widget<AppDateField>(
+      find.byType(AppDateField, skipOffstage: false).first,
+    );
+    serviceField.onChanged(DateTime(2026, 9, 1));
+    await tester.pumpAndSettle();
+    expect(find.text('10/07/2027'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Guardar'));
+    await tester.tap(find.text('Guardar'));
+    await tester.pumpAndSettle();
+    expect(reproductionRepo.saved.single.expectedCalvingDate, manual);
+  });
+
+  testWidgets(
+    'editing an automatic estimate follows the changed service date',
+    (tester) async {
+      final oldService = DateTime(2026, 1, 10);
+      register(
+        records: [
+          ReproductionRecord(
+            id: '1',
+            serviceDate: oldService,
+            serviceType: ServiceType.naturalService,
+            expectedCalvingDate: oldService.add(const Duration(days: 283)),
+          ),
+        ],
+      );
+      await open(tester, preselected: true, recordId: '1');
+
+      final serviceField = tester.widget<AppDateField>(
+        find.byType(AppDateField).first,
+      );
+      final changedService = DateTime(2026, 2, 1);
+      serviceField.onChanged(changedService);
+      await tester.pumpAndSettle();
+
+      final due = changedService.add(const Duration(days: 283));
+      final label =
+          '${due.day.toString().padLeft(2, '0')}/'
+          '${due.month.toString().padLeft(2, '0')}/${due.year}';
+      expect(find.textContaining(label), findsOneWidget);
+    },
+  );
 
   testWidgets('an undiagnosed service offers the diagnosis step', (
     tester,
@@ -101,11 +192,56 @@ void main() {
 
     expect(find.text('Registrar diagnóstico de preñez'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'));
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Guardar diagnóstico'), findsOneWidget);
     expect(find.text('Resultado'), findsOneWidget);
+  });
+
+  testWidgets('a direct diagnosis link opens the matching step', (
+    tester,
+  ) async {
+    register(
+      records: [
+        ReproductionRecord(
+          id: '1',
+          serviceDate: DateTime(2026, 1, 10),
+          serviceType: ServiceType.naturalService,
+        ),
+      ],
+    );
+    await open(
+      tester,
+      initialStep: ReproductionInitialStep.diagnosis,
+      preselected: true,
+    );
+
+    expect(find.text('Guardar diagnóstico'), findsOneWidget);
+    expect(find.text('Resultado'), findsOneWidget);
+  });
+
+  testWidgets('a direct calving link opens the matching step', (tester) async {
+    register(
+      records: [
+        ReproductionRecord(
+          id: '1',
+          serviceDate: DateTime(2026, 1, 10),
+          pregnancyResult: PregnancyCheckResult.positive,
+          expectedCalvingDate: DateTime(2026, 10, 20),
+        ),
+      ],
+    );
+    await open(
+      tester,
+      initialStep: ReproductionInitialStep.calving,
+      preselected: true,
+    );
+
+    expect(find.text('Registrar parto'), findsOneWidget);
+    expect(find.text('Desenlace'), findsOneWidget);
   });
 
   testWidgets('a confirmed pregnancy offers the calving step', (tester) async {
@@ -167,7 +303,9 @@ void main() {
     );
     await open(tester);
 
-    await tester.tap(find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'));
+    await tester.tap(
+      find.widgetWithText(SwitchListTile, 'Registrar diagnóstico de preñez'),
+    );
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Guardar diagnóstico'));
     await tester.tap(find.text('Guardar diagnóstico'));
@@ -178,7 +316,8 @@ void main() {
     expect(
       saved.id,
       '7',
-      reason: 'keeping the id is what makes this an update instead of a new '
+      reason:
+          'keeping the id is what makes this an update instead of a new '
           'cycle for the same pregnancy',
     );
     expect(saved.pregnancyResult, PregnancyCheckResult.positive);
@@ -211,8 +350,15 @@ class _FakeReproductionRepository implements ReproductionRecordRepository {
 }
 
 class _FakeAnimalRepository implements AnimalRepository {
+  _FakeAnimalRepository(this.animal);
+  final AnimalEntity animal;
+
   @override
-  Future<List<AnimalEntity>> getAll() async => [_cow];
+  Future<List<AnimalEntity>> getAll() async => [animal];
+
+  @override
+  Future<AnimalEntity?> getByUuid(String uuid) async =>
+      uuid == animal.uuid ? animal : null;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

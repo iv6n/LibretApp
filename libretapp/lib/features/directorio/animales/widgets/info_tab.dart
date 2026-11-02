@@ -19,6 +19,9 @@ import 'package:libretapp/l10n/app_localizations.dart';
 import 'package:libretapp/theme/app_theme.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_summary_panel.dart';
+import 'package:libretapp/features/directorio/animales/widgets/reproduction_followup_card.dart';
+import 'package:libretapp/features/registro/view/registro_reproduccion_page.dart'
+    show ReproductionInitialStep;
 
 class InfoTab extends StatefulWidget {
   const InfoTab({
@@ -29,6 +32,7 @@ class InfoTab extends StatefulWidget {
     this.data,
     this.onChanged,
     this.onShowCare,
+    this.onShowRecords,
     this.onEditPurpose,
   });
 
@@ -38,6 +42,7 @@ class InfoTab extends StatefulWidget {
   final DetailData? data;
   final VoidCallback? onChanged;
   final VoidCallback? onShowCare;
+  final VoidCallback? onShowRecords;
   final VoidCallback? onEditPurpose;
 
   @override
@@ -158,6 +163,9 @@ class _InfoTabState extends State<InfoTab> {
         widget.accentColor ?? detailStageColor(widget.animal.lifeStage);
     final healthColor = detailColorFromHex(widget.animal.healthStatus.hexColor);
     final riskColor = detailColorFromHex(widget.animal.riskLevel.hexColor);
+    final latestReproduction = ReproductiveKpiService.latestCycleOf(
+      widget.data?.reproductions ?? const <ReproductionRecord>[],
+    );
     final bottomInset = ShellInsets.bottomSafePadding(context);
     final fabBottomPadding = ShellInsets.fabDockPadding(context);
     // Use the larger of content inset and FAB dock to keep items clear.
@@ -182,6 +190,21 @@ class _InfoTabState extends State<InfoTab> {
       padding: EdgeInsets.fromLTRB(16, 14, 16, listBottomPadding),
       child: Column(
         children: [
+          if (ReproductionFollowup.supports(widget.animal) &&
+              widget.data != null)
+            ReproductionFollowupCard(
+              animal: widget.animal,
+              records: widget.data!.reproductions,
+              onAction: (ReproductionInitialStep step) async {
+                final saved = await context.pushNamed<bool>(
+                  AppRoutes.nameAnimalRegistroReproduccion,
+                  pathParameters: {'uuid': widget.animal.uuid},
+                  queryParameters: {'step': step.name},
+                );
+                if (saved == true && mounted) widget.onChanged?.call();
+              },
+              onShowRecords: widget.onShowRecords ?? () {},
+            ),
           AnimalSummaryPanel(
             animal: widget.animal,
             data: widget.data,
@@ -540,7 +563,11 @@ class _InfoTabState extends State<InfoTab> {
                   icon: Icons.update_outlined,
                 ),
                 InfoRow(
-                  label: l10n.labelExpectedCalving,
+                  label:
+                      latestReproduction?.pregnancyResult ==
+                          PregnancyCheckResult.positive
+                      ? l10n.labelExpectedCalving
+                      : 'Parto estimado si se confirma la preñez',
                   value: formatDate(widget.animal.expectedCalvingDate),
                   icon: Icons.event_outlined,
                 ),

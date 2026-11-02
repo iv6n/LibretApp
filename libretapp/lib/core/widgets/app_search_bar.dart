@@ -16,6 +16,7 @@ class AppSearchBar extends StatefulWidget {
     this.onClear,
     this.onClose,
     this.onFilterTap,
+    this.singleClearOrCloseAction = false,
     this.autofocus = false,
     super.key,
   });
@@ -28,6 +29,7 @@ class AppSearchBar extends StatefulWidget {
   final VoidCallback? onClear;
   final VoidCallback? onClose;
   final VoidCallback? onFilterTap;
+  final bool singleClearOrCloseAction;
   final bool autofocus;
 
   @override
@@ -89,24 +91,39 @@ class _AppSearchBarState extends State<AppSearchBar> {
                     onPressed: widget.onFilterTap,
                     compact: true,
                   ),
-                if (showClear)
+                if (widget.singleClearOrCloseAction)
                   AppIconButton(
-                    tooltip: l10n.uiClear,
-                    icon: Icons.clear,
-                    onPressed: () {
-                      widget.controller.clear();
-                      widget.onChanged('');
-                      widget.onClear?.call();
-                    },
+                    tooltip: showClear ? l10n.uiClear : l10n.uiClose,
+                    icon: showClear ? Icons.clear : Icons.close,
+                    onPressed: showClear
+                        ? () {
+                            widget.controller.clear();
+                            widget.onChanged('');
+                            widget.onClear?.call();
+                          }
+                        : widget.onClose,
                     compact: true,
-                  ),
-                if (widget.onClose != null)
-                  AppIconButton(
-                    tooltip: l10n.uiClose,
-                    icon: Icons.close,
-                    onPressed: widget.onClose,
-                    compact: true,
-                  ),
+                  )
+                else ...[
+                  if (showClear)
+                    AppIconButton(
+                      tooltip: l10n.uiClear,
+                      icon: Icons.clear,
+                      onPressed: () {
+                        widget.controller.clear();
+                        widget.onChanged('');
+                        widget.onClear?.call();
+                      },
+                      compact: true,
+                    ),
+                  if (widget.onClose != null)
+                    AppIconButton(
+                      tooltip: l10n.uiClose,
+                      icon: Icons.close,
+                      onPressed: widget.onClose,
+                      compact: true,
+                    ),
+                ],
               ],
             ),
           ),

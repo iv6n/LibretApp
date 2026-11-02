@@ -15,6 +15,7 @@ import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_presentation.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/health_record_repository.dart';
@@ -56,12 +57,16 @@ class _AnimalesListViewState extends State<AnimalesListView>
   late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
   late final TabController _tabController;
+  late final TextEditingController _searchController;
+  late final FocusNode _searchFocusNode;
   bool _isAtTop = true;
   bool _isNearListEnd = true;
   bool _isScrollingUp = false;
   bool _quickMenuOpen = false;
+  bool _showStageFilters = false;
   bool _taxonomyRefreshInFlight = false;
   String? _lastRouteFilterKey;
+  String? _lastBlocSearchQuery;
   String? _taxonomySourceKey;
   double _quickMenuExtraPadding = 0;
   double _lastScrollOffset = 0;
@@ -71,6 +76,8 @@ class _AnimalesListViewState extends State<AnimalesListView>
     super.initState();
     _scrollController = ScrollController()..addListener(_handleScroll);
     _tabController = TabController(length: 2, vsync: this);
+    _searchController = TextEditingController();
+    _searchFocusNode = FocusNode();
     _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
       locationRepository: locator<LocationRepository>(),
@@ -111,27 +118,58 @@ class _AnimalesListViewState extends State<AnimalesListView>
       final query = GoRouterState.of(context).uri.queryParameters;
       final pendingEarTag = query['pendingEarTag'] == 'true';
       final attention = query['attention'] == 'true';
+      final clearFilters = query['clearFilters'] == 'true';
+      final healthFilter = switch (query['health']) {
+        'pending' => AnimalHealthFilter.pending,
+        'unvaccinated' => AnimalHealthFilter.unvaccinated,
+        _ => null,
+      };
       final loteUuid = query['lote']?.trim();
       final locationUuid = query['ubicacion']?.trim();
+      final focusSearch = query['buscar'] == '1';
       final key = [
         pendingEarTag,
         attention,
+        clearFilters,
+        healthFilter?.name ?? '',
         loteUuid ?? '',
         locationUuid ?? '',
+        focusSearch,
       ].join('|');
       if (_lastRouteFilterKey == key) return;
       _lastRouteFilterKey = key;
+      if (focusSearch) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _searchFocusNode.requestFocus();
+        });
+      }
+
+      if (clearFilters) {
+        _animalController.setSpecies(null);
+        _animalController.setOnlyPendingEarTag(false);
+        _animalController.setOnlyAttention(false);
+        _animalController.setHealthFilter(null);
+        _animalController.setLoteUuid(null);
+        _animalController.setLocationUuid(null);
+        _animalController.setIncludeInactive(false);
+        context.read<AnimalesBloc>()
+          ..add(const ClearSearch())
+          ..add(const SetSearchFilters());
+      }
 
       _animalController.setOnlyPendingEarTag(pendingEarTag);
       _animalController.setOnlyAttention(attention);
+      _animalController.setHealthFilter(healthFilter);
       _animalController.setLoteUuid(
         loteUuid == null || loteUuid.isEmpty ? null : loteUuid,
       );
       _animalController.setLocationUuid(
         locationUuid == null || locationUuid.isEmpty ? null : locationUuid,
       );
-      if (pendingEarTag ||
+      if (clearFilters ||
+          pendingEarTag ||
           attention ||
+          healthFilter != null ||
           (loteUuid?.isNotEmpty ?? false) ||
           (locationUuid?.isNotEmpty ?? false)) {
         _ensureAllAnimalsForFilter();
@@ -146,6 +184,8 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _tabController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     _animalController.dispose();
     super.dispose();
   }
@@ -375,26 +415,39 @@ class _AnimalesListViewState extends State<AnimalesListView>
         }
 
         final filtered = _animalController.applyFilters(state.visibleAnimals);
+        if (_lastBlocSearchQuery != state.searchQuery) {
+          _lastBlocSearchQuery = state.searchQuery;
+          _searchController.value = TextEditingValue(
+            text: state.searchQuery,
+            selection: TextSelection.collapsed(
+              offset: state.searchQuery.length,
+            ),
+          );
+        }
         // Counted across the whole herd by the bloc, not over the pages
         // loaded so far — otherwise every chip would read low and climb as
         // the user scrolled.
         final taxonomyCounts = _animalController.state.taxonomyCounts;
         final selectedSpecies = _animalController.state.selectedSpecies;
-        final stageSpecies =
-            selectedSpecies ??
-            (taxonomyCounts.length == 1
-                ? taxonomyCounts.keys.first
-                : taxonomyCounts.isEmpty
-                ? _singleSpeciesInPage(state.allAnimals)
-                : null);
-        final stageCounts = taxonomyCounts.isNotEmpty
+        final selectedCompanion = _animalController.state.selectedCompanion;
+        final stageSpecies = selectedCompanion
+            ? null
+            : selectedSpecies ??
+                  (taxonomyCounts.length == 1
+                      ? taxonomyCounts.keys.first
+                      : taxonomyCounts.isEmpty
+                      ? _singleSpeciesInPage(state.allAnimals)
+                      : null);
+        final stageCounts = selectedCompanion
+            ? _animalController.state.companionStageCounts
+            : taxonomyCounts.isNotEmpty
             ? _animalController.selectedSpeciesStageCounts
             : state.herdStageCounts;
 
         final taxonomySourceKey = state.allAnimals
             .map(
               (animal) =>
-                  '${animal.uuid}:${animal.species.name}:${animal.lifeStage.name}:${animal.ageMonths}',
+                  '${animal.uuid}:${animal.species.name}:${animal.lifeStage.name}:${animal.ageMonths}:${animal.productionPurpose.name}',
             )
             .join('|');
         if ((_animalController.taxonomyTotal != state.herdTotal ||
@@ -428,6 +481,30 @@ class _AnimalesListViewState extends State<AnimalesListView>
           children: [
             Column(
               children: [
+                if (!state.isSelectionMode)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                    child: TextField(
+                      key: const ValueKey('animal-visible-search'),
+                      controller: _searchController,
+                      focusNode: _searchFocusNode,
+                      textInputAction: TextInputAction.search,
+                      onChanged: (value) => context.read<AnimalesBloc>().add(
+                        SearchQueryChanged(value),
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Buscar por arete o nombre',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: state.searchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Limpiar búsqueda y filtros',
+                                onPressed: _clearAnimalFilters,
+                                icon: const Icon(Icons.close),
+                              ),
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async => context.read<AnimalesBloc>().add(
@@ -437,6 +514,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                       context: context,
                       state: state,
                       filtered: filtered,
+                      l10n: l10n,
                       listBottomPadding: listBottomPadding,
                       locationResolver: _animalController.locationForAnimal,
                       snapshotResolver: (animal) =>
@@ -446,16 +524,22 @@ class _AnimalesListViewState extends State<AnimalesListView>
                         context: context,
                         state: state,
                         filtered: filtered,
-                        listBottomPadding: listBottomPadding,
                         l10n: l10n,
                         selectedStages: _animalController.state.selectedStages,
                         availableStages: stageCounts.keys.toSet(),
                         stageCounts: stageCounts,
                         taxonomyCounts: taxonomyCounts,
                         selectedSpecies: selectedSpecies,
+                        selectedCompanion: selectedCompanion,
+                        companionStageCounts:
+                            _animalController.state.companionStageCounts,
                         stageSpecies: stageSpecies,
                         onSpeciesChanged: (species) {
                           _animalController.setSpecies(species);
+                          _ensureAllAnimalsForFilter();
+                        },
+                        onCompanionChanged: (selected) {
+                          _animalController.setCompanion(selected);
                           _ensureAllAnimalsForFilter();
                         },
                         onStagesChanged: (stages) {
@@ -643,6 +727,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required BuildContext context,
     required AnimalesLoaded state,
     required List<AnimalEntity> filtered,
+    required AppLocalizations l10n,
     required double listBottomPadding,
     required List<Widget> header,
     required LocationEntity? Function(AnimalEntity) locationResolver,
@@ -653,10 +738,32 @@ class _AnimalesListViewState extends State<AnimalesListView>
     // page through there is nothing more to load.
     final showLoadingMore = state.isLoadingMore && filtered.isNotEmpty;
 
+    if (filtered.isEmpty) {
+      return CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          if (header.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Column(mainAxisSize: MainAxisSize.min, children: header),
+            ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: AppDirectoryEmptySlot(
+              bottomPadding: state.herdTotal == 0
+                  ? ShellInsets.bottomSafePadding(context)
+                  : listBottomPadding,
+              child: _buildAnimalEmptyState(context, state, l10n),
+            ),
+          ),
+        ],
+      );
+    }
+
     return ListView.builder(
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(4, 0, 4, listBottomPadding),
+      padding: EdgeInsets.only(bottom: listBottomPadding),
       itemCount: header.length + filtered.length + (showLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index < header.length) return header[index];
@@ -681,8 +788,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
     );
   }
 
-  /// The widgets above the animal rows: the filter chips and the count
-  /// line, or the whole empty state when nothing matches.
+  /// The widgets above the animal rows: filter strips and the count line.
   String _animalEmptyIllustration(BuildContext context) {
     final preferences = AppExperienceScope.maybeOf(context)?.value;
     if (preferences?.careProfile == CareProfile.pets) {
@@ -695,19 +801,69 @@ class _AnimalesListViewState extends State<AnimalesListView>
     return 'assets/images/vaca.webp';
   }
 
+  Widget _buildAnimalEmptyState(
+    BuildContext context,
+    AnimalesLoaded state,
+    AppLocalizations l10n,
+  ) {
+    final isNarrowed =
+        state.searchQuery.trim().isNotEmpty ||
+        state.searchFilterStages.isNotEmpty ||
+        state.searchFilterSexes.isNotEmpty ||
+        _animalController.state.hasFilters;
+    final firstAnimal = state.herdTotal == 0 && !isNarrowed;
+    return AppEmptyState(
+      illustrationAsset: firstAnimal ? _animalEmptyIllustration(context) : null,
+      icon: Icons.search_off_outlined,
+      title: firstAnimal ? 'Tus animales, en un lugar' : l10n.animalsEmptyTitle,
+      message: firstAnimal
+          ? 'Registra el primero para empezar a llevar su seguimiento.'
+          : state.searchQuery.isNotEmpty
+          ? 'No encontré animales con ese arete o nombre. Prueba otra búsqueda.'
+          : l10n.animalsEmptySubtitle,
+      action: firstAnimal
+          ? FilledButton.icon(
+              onPressed: () =>
+                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+              icon: const Icon(Icons.add),
+              label: const Text('Registrar animal'),
+            )
+          : OutlinedButton.icon(
+              onPressed: _clearAnimalFilters,
+              icon: const Icon(Icons.filter_alt_off_outlined),
+              label: const Text('Limpiar filtros'),
+            ),
+    );
+  }
+
+  void _clearAnimalFilters() {
+    _animalController.setSpecies(null);
+    _animalController.setStages({});
+    _animalController.setOnlyPendingEarTag(false);
+    _animalController.setOnlyAttention(false);
+    _animalController.setHealthFilter(null);
+    _animalController.setLoteUuid(null);
+    _animalController.setLocationUuid(null);
+    context.read<AnimalesBloc>()
+      ..add(const ClearSearch())
+      ..add(const SetSearchFilters());
+  }
+
   List<Widget> _buildListHeader({
     required BuildContext context,
     required AnimalesLoaded state,
     required List<AnimalEntity> filtered,
-    required double listBottomPadding,
     required AppLocalizations l10n,
     required Set<LifeStage> selectedStages,
     required Set<LifeStage> availableStages,
     required Map<LifeStage, int> stageCounts,
     required Map<Species, Map<LifeStage, int>> taxonomyCounts,
     required Species? selectedSpecies,
+    required bool selectedCompanion,
+    required Map<LifeStage, int> companionStageCounts,
     required Species? stageSpecies,
     required ValueChanged<Species?> onSpeciesChanged,
+    required ValueChanged<bool> onCompanionChanged,
     required ValueChanged<Set<LifeStage>> onStagesChanged,
     required bool onlyPendingEarTag,
     required ValueChanged<bool> onPendingEarTagChanged,
@@ -725,7 +881,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
         state.searchFilterStages.isNotEmpty ||
         state.searchFilterSexes.isNotEmpty ||
         _animalController.state.hasFilters;
-    final firstAnimal = state.herdTotal == 0 && !isNarrowed;
     final headerCount = isNarrowed ? filtered.length : state.herdTotal;
 
     const calfStages = {
@@ -744,88 +899,74 @@ class _AnimalesListViewState extends State<AnimalesListView>
     final calfUnknownCount = isOnlyCalfFilter
         ? filtered.where((a) => a.sex == Sex.unknown).length
         : 0;
+    final showStageFilters = _showStageFilters || selectedStages.isNotEmpty;
 
     if (filtered.isEmpty) {
-      return [
-        const SizedBox(height: 1),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+      final filters = <Widget>[
+        if (!hideStageChips)
+          _speciesFilterChips(
+            l10n: l10n,
+            taxonomyCounts: taxonomyCounts,
+            selectedSpecies: selectedSpecies,
+            selectedCompanion: selectedCompanion,
+            companionCount: companionStageCounts.values.fold<int>(
+              0,
+              (sum, count) => sum + count,
+            ),
+            theme: theme,
+            onSpeciesChanged: onSpeciesChanged,
+            onCompanionChanged: onCompanionChanged,
+            showStageFilters: showStageFilters,
+            onToggleStages: () => setState(() {
+              _showStageFilters = !_showStageFilters;
+            }),
+          ),
+        if (!hideStageChips && showStageFilters)
+          _stageFilterChips(
+            l10n: l10n,
+            selectedStages: selectedStages,
+            availableStages: availableStages,
+            stageCounts: stageCounts,
+            species: stageSpecies,
+            companionOnly: selectedCompanion,
+            theme: theme,
+            onStagesChanged: onStagesChanged,
+          ),
+        if (!hideStageChips && _showPendingEarTagFilterChip)
+          AppDirectoryFilterRow(
             children: [
-              if (!hideStageChips)
-                _speciesFilterChips(
-                  l10n: l10n,
-                  taxonomyCounts: taxonomyCounts,
-                  selectedSpecies: selectedSpecies,
-                  theme: theme,
-                  onSpeciesChanged: onSpeciesChanged,
-                ),
-              if (!hideStageChips)
-                _stageFilterChips(
-                  l10n: l10n,
-                  selectedStages: selectedStages,
-                  availableStages: availableStages,
-                  stageCounts: stageCounts,
-                  species: stageSpecies,
-                  theme: theme,
-                  onStagesChanged: onStagesChanged,
-                ),
-              if (!hideStageChips && _showPendingEarTagFilterChip) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilterChip(
-                    avatar: const Icon(
-                      Icons.pending_actions_outlined,
-                      size: 18,
-                    ),
-                    label: Text(l10n.animalsOnlyPendingTag),
-                    selected: onlyPendingEarTag,
-                    onSelected: onPendingEarTagChanged,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              AppEmptyState(
-                illustrationAsset: firstAnimal
-                    ? _animalEmptyIllustration(context)
-                    : null,
-                icon: Icons.search_off_outlined,
-                title: firstAnimal
-                    ? 'Tus animales, en un lugar'
-                    : l10n.animalsEmptyTitle,
-                message: firstAnimal
-                    ? 'Registra el primero para empezar a llevar su seguimiento.'
-                    : l10n.animalsEmptySubtitle,
-                action: firstAnimal
-                    ? FilledButton.icon(
-                        onPressed: () =>
-                            context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Registrar animal'),
-                      )
-                    : OutlinedButton.icon(
-                        onPressed: () {
-                          onSpeciesChanged(null);
-                          onStagesChanged({});
-                          onPendingEarTagChanged(false);
-                          _animalController.setOnlyAttention(false);
-                          _animalController.setLoteUuid(null);
-                          _animalController.setLocationUuid(null);
-                          context.read<AnimalesBloc>().add(const ClearSearch());
-                          context.read<AnimalesBloc>().add(
-                            const SetSearchFilters(),
-                          );
-                        },
-                        icon: const Icon(Icons.filter_alt_off_outlined),
-                        label: const Text('Limpiar filtros'),
-                      ),
+              FilterChip(
+                avatar: const Icon(Icons.pending_actions_outlined, size: 18),
+                label: Text(l10n.animalsOnlyPendingTag),
+                selected: onlyPendingEarTag,
+                onSelected: onPendingEarTagChanged,
               ),
             ],
           ),
-        ),
+      ];
+      filters.removeWhere((widget) => widget is SizedBox && widget.width == 0);
+      if (filters.isEmpty) {
+        filters.add(
+          AppDirectoryFilterRow(
+            children: [
+              AppDirectoryFilterChip(
+                label: 'Todos',
+                count: state.herdTotal,
+                icon: Icons.pets_outlined,
+                selected: !isNarrowed,
+                onTap: _clearAnimalFilters,
+              ),
+            ],
+          ),
+        );
+      }
+      return [
+        if (isNarrowed)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Text('0 resultados', style: theme.textTheme.labelLarge),
+          ),
+        ...filters,
       ];
     }
 
@@ -846,16 +987,27 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 l10n: l10n,
                 taxonomyCounts: taxonomyCounts,
                 selectedSpecies: selectedSpecies,
+                selectedCompanion: selectedCompanion,
+                companionCount: companionStageCounts.values.fold<int>(
+                  0,
+                  (sum, count) => sum + count,
+                ),
                 theme: theme,
                 onSpeciesChanged: onSpeciesChanged,
+                onCompanionChanged: onCompanionChanged,
+                showStageFilters: showStageFilters,
+                onToggleStages: () => setState(() {
+                  _showStageFilters = !_showStageFilters;
+                }),
               ),
-            if (!hideStageChips)
+            if (!hideStageChips && showStageFilters)
               _stageFilterChips(
                 l10n: l10n,
                 selectedStages: selectedStages,
                 availableStages: availableStages,
                 stageCounts: stageCounts,
                 species: stageSpecies,
+                companionOnly: selectedCompanion,
                 theme: theme,
                 onStagesChanged: onStagesChanged,
               ),
@@ -1034,47 +1186,44 @@ class _AnimalesListViewState extends State<AnimalesListView>
         ),
       );
     }
-    return _CenteredSection(
-      padding: const EdgeInsets.symmetric(horizontal: 2),
-      child: Slidable(
-        key: ValueKey('slide_${animal.uuid}'),
-        enabled: !state.isSelectionMode,
-        startActionPane: ActionPane(
-          motion: const DrawerMotion(),
-          extentRatio: 0.22,
-          children: [
-            SlidableAction(
-              onPressed: (_) =>
-                  context.push(AppRoutes.animalRegistroPesoPath(animal.uuid)),
-              backgroundColor: Colors.green.shade600,
-              foregroundColor: Colors.white,
-              icon: Icons.monitor_weight_outlined,
-              label: 'Pesar',
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(20),
-              ),
+    return Slidable(
+      key: ValueKey('slide_${animal.uuid}'),
+      enabled: !state.isSelectionMode,
+      startActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.22,
+        children: [
+          SlidableAction(
+            onPressed: (_) =>
+                context.push(AppRoutes.animalRegistroPesoPath(animal.uuid)),
+            backgroundColor: Colors.green.shade600,
+            foregroundColor: Colors.white,
+            icon: Icons.monitor_weight_outlined,
+            label: 'Pesar',
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(20),
             ),
-          ],
-        ),
-        endActionPane: ActionPane(
-          motion: const DrawerMotion(),
-          extentRatio: 0.22,
-          children: [
-            SlidableAction(
-              onPressed: (_) =>
-                  context.push(AppRoutes.animalRegistroSaludPath(animal.uuid)),
-              backgroundColor: Colors.blue.shade700,
-              foregroundColor: Colors.white,
-              icon: Icons.medical_services_outlined,
-              label: 'Salud',
-              borderRadius: const BorderRadius.horizontal(
-                right: Radius.circular(20),
-              ),
-            ),
-          ],
-        ),
-        child: animalCard,
+          ),
+        ],
       ),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.22,
+        children: [
+          SlidableAction(
+            onPressed: (_) =>
+                context.push(AppRoutes.animalRegistroSaludPath(animal.uuid)),
+            backgroundColor: Colors.blue.shade700,
+            foregroundColor: Colors.white,
+            icon: Icons.medical_services_outlined,
+            label: 'Salud',
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(20),
+            ),
+          ),
+        ],
+      ),
+      child: animalCard,
     );
   }
 }
@@ -1090,6 +1239,7 @@ Widget _stageFilterChips({
   required Set<LifeStage> availableStages,
   required Map<LifeStage, int> stageCounts,
   required Species? species,
+  bool companionOnly = false,
   required ThemeData theme,
   required ValueChanged<Set<LifeStage>> onStagesChanged,
 }) {
@@ -1098,10 +1248,12 @@ Widget _stageFilterChips({
     0,
     (sum, count) => sum + count,
   );
-  var configs = _stageConfigsForSpecies(
-    l10n,
-    species,
-  ).where((cfg) => cfg.stages.any(availableStages.contains)).toList();
+  var configs = companionOnly
+      ? _companionStageConfigs(availableStages)
+      : _stageConfigsForSpecies(
+          l10n,
+          species,
+        ).where((cfg) => cfg.stages.any(availableStages.contains)).toList();
   if (configs.isEmpty && species != null && availableStages.isNotEmpty) {
     configs = availableStages
         .map(
@@ -1115,36 +1267,29 @@ Widget _stageFilterChips({
 
   if (totalCount == 0 && configs.isEmpty) return const SizedBox.shrink();
 
-  return SizedBox(
-    height: 60,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-      itemCount: 1 + configs.length,
-      separatorBuilder: (context, _) => const SizedBox(width: 7),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _StageFilterChip(
-            theme: theme,
-            label: l10n.stageFilterAll,
-            count: totalCount,
-            isSelected: !hasStageFilters,
-            onSelected: () => onStagesChanged({}),
-          );
-        }
-
-        final config = configs[index - 1];
-        final isSelected = config.stages.any(selectedStages.contains);
-        final count = config.stages
-            .map((s) => stageCounts[s] ?? 0)
-            .fold<int>(0, (a, b) => a + b);
-
-        return _StageFilterChip(
+  return AppDirectoryFilterRow(
+    children: [
+      _StageFilterChip(
+        theme: theme,
+        label: 'Todas las etapas',
+        count: totalCount,
+        isSelected: !hasStageFilters,
+        onSelected: () => onStagesChanged({}),
+      ),
+      for (final config in configs)
+        _StageFilterChip(
           theme: theme,
-          label: config.labelResolver(count),
-          count: count,
-          isSelected: isSelected,
+          label: config.labelResolver(
+            config.stages
+                .map((stage) => stageCounts[stage] ?? 0)
+                .fold<int>(0, (a, b) => a + b),
+          ),
+          count: config.stages
+              .map((stage) => stageCounts[stage] ?? 0)
+              .fold<int>(0, (a, b) => a + b),
+          isSelected: config.stages.any(selectedStages.contains),
           onSelected: () {
+            final isSelected = config.stages.any(selectedStages.contains);
             final updated = Set<LifeStage>.from(selectedStages);
             if (isSelected) {
               updated.removeAll(config.stages);
@@ -1153,10 +1298,24 @@ Widget _stageFilterChips({
             }
             onStagesChanged(updated);
           },
-        );
-      },
-    ),
+        ),
+    ],
   );
+}
+
+List<_StageChipConfig> _companionStageConfigs(Set<LifeStage> stages) {
+  final grouped = <String, List<LifeStage>>{};
+  final orderedStages = stages.toList()
+    ..sort((a, b) => a.index.compareTo(b.index));
+  for (final stage in orderedStages) {
+    grouped.putIfAbsent(stage.displayName, () => <LifeStage>[]).add(stage);
+  }
+  return grouped.entries
+      .map(
+        (entry) =>
+            _StageChipConfig((count) => '${entry.key} ($count)', entry.value),
+      )
+      .toList(growable: false);
 }
 
 List<_StageChipConfig> _stageConfigsForSpecies(
@@ -1244,10 +1403,17 @@ Widget _speciesFilterChips({
   required AppLocalizations l10n,
   required Map<Species, Map<LifeStage, int>> taxonomyCounts,
   required Species? selectedSpecies,
+  required bool selectedCompanion,
+  required int companionCount,
   required ThemeData theme,
   required ValueChanged<Species?> onSpeciesChanged,
+  required ValueChanged<bool> onCompanionChanged,
+  required bool showStageFilters,
+  required VoidCallback onToggleStages,
 }) {
-  if (taxonomyCounts.length < 2) return const SizedBox.shrink();
+  if (taxonomyCounts.isEmpty && companionCount == 0) {
+    return const SizedBox.shrink();
+  }
 
   final totalCount = taxonomyCounts.values.fold<int>(
     0,
@@ -1256,38 +1422,39 @@ Widget _speciesFilterChips({
   final species = taxonomyCounts.keys.toList()
     ..sort((a, b) => a.index.compareTo(b.index));
 
-  return SizedBox(
-    height: 60,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-      itemCount: species.length + 1,
-      separatorBuilder: (context, _) => const SizedBox(width: 7),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _StageFilterChip(
-            theme: theme,
-            label: l10n.stageFilterAll,
-            count: totalCount,
-            isSelected: selectedSpecies == null,
-            onSelected: () => onSpeciesChanged(null),
-          );
-        }
-
-        final value = species[index - 1];
-        final count = taxonomyCounts[value]!.values.fold<int>(
-          0,
-          (a, b) => a + b,
-        );
-        return _StageFilterChip(
-          theme: theme,
-          label: value.displayName,
-          count: count,
-          isSelected: selectedSpecies == value,
-          onSelected: () => onSpeciesChanged(value),
-        );
-      },
+  return AppDirectoryFilterRow(
+    trailing: TextButton.icon(
+      onPressed: onToggleStages,
+      icon: Icon(showStageFilters ? Icons.expand_less : Icons.tune, size: 18),
+      label: const Text('Etapas'),
     ),
+    children: [
+      _StageFilterChip(
+        theme: theme,
+        label: l10n.stageFilterAll,
+        count: totalCount,
+        isSelected: selectedSpecies == null && !selectedCompanion,
+        onSelected: () => onSpeciesChanged(null),
+      ),
+      if (selectedCompanion ||
+          (companionCount > 0 && companionCount < totalCount))
+        _StageFilterChip(
+          theme: theme,
+          label: 'Mascota',
+          count: companionCount,
+          isSelected: selectedCompanion,
+          onSelected: () => onCompanionChanged(!selectedCompanion),
+        ),
+      for (final value in species)
+        if (species.length > 1 || selectedSpecies == value)
+          _StageFilterChip(
+            theme: theme,
+            label: value.displayName,
+            count: taxonomyCounts[value]!.values.fold<int>(0, (a, b) => a + b),
+            isSelected: selectedSpecies == value,
+            onSelected: () => onSpeciesChanged(value),
+          ),
+    ],
   );
 }
 
@@ -1527,20 +1694,6 @@ class _StageChipConfig {
 
   final String Function(int count) labelResolver;
   final List<LifeStage> stages;
-}
-
-class _CenteredSection extends StatelessWidget {
-  const _CenteredSection({required this.child, this.padding = EdgeInsets.zero});
-  final Widget child;
-  final EdgeInsets padding;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 720),
-      child: Padding(padding: padding, child: child),
-    );
-  }
 }
 
 String _animalCardLabel(AnimalEntity animal) {

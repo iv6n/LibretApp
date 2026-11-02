@@ -66,64 +66,73 @@ void main() {
     await IsarDatabase().close();
   });
 
-  test(
-    'save persists animal in Isar and can be fetched by uuid',
-    () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final sharedPrefs = await SharedPreferences.getInstance();
+  test('save persists animal in Isar and can be fetched by uuid', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final sharedPrefs = await SharedPreferences.getInstance();
 
-      final repository = AnimalRepositoryIsar(
-        IsarDatabase(),
-        SharedPrefsService(sharedPrefs),
-        _FakeAnimalRemoteDataSource(),
-      );
+    final repository = AnimalRepositoryIsar(
+      IsarDatabase(),
+      SharedPrefsService(sharedPrefs),
+      _FakeAnimalRemoteDataSource(),
+    );
 
-      await repository.clearAll();
+    await repository.clearAll();
 
-      final now = DateTime.now();
-      final animal = AnimalEntity(
-        uuid: 'isar-test-1',
-        earTagNumber: 'TAG-ISAR-001',
-        customName: 'Isar Animal',
-        visualId: 'VIS-ISAR-001',
-        species: Species.cattle,
-        category: Category.cow,
-        lifeStage: LifeStage.cow,
-        sex: Sex.female,
-        breed: 'Cebu',
-        birthDate: DateTime(2021, 1, 1),
-        ageMonths: 60,
-        healthStatus: HealthStatus.good,
-        vaccinated: true,
-        dewormed: true,
-        hasVitamins: false,
-        hasChronicIssues: false,
-        reproductiveStatus: ReproductiveStatus.unknown,
-        productionPurpose: ProductionPurpose.undefined,
-        productionStage: ProductionStage.unknown,
-        productionSystem: ProductionSystem.unknown,
-        underObservation: false,
-        requiresAttention: false,
-        riskLevel: RiskLevel.low,
-        gallery: const <String>[],
-        synced: true,
-        creationDate: now,
-        lastUpdateDate: now,
-      );
+    final now = DateTime.now();
+    final animal = AnimalEntity(
+      uuid: 'isar-test-1',
+      earTagNumber: 'TAG-ISAR-001',
+      customName: 'Isar Animal',
+      visualId: 'VIS-ISAR-001',
+      species: Species.cattle,
+      category: Category.cow,
+      lifeStage: LifeStage.cow,
+      sex: Sex.female,
+      breed: 'Cebu',
+      birthDate: DateTime(2021, 1, 1),
+      ageMonths: 60,
+      healthStatus: HealthStatus.good,
+      vaccinated: true,
+      dewormed: true,
+      hasVitamins: false,
+      hasChronicIssues: false,
+      reproductiveStatus: ReproductiveStatus.unknown,
+      productionPurpose: ProductionPurpose.undefined,
+      productionStage: ProductionStage.unknown,
+      productionSystem: ProductionSystem.unknown,
+      underObservation: false,
+      requiresAttention: false,
+      riskLevel: RiskLevel.low,
+      gallery: const <String>[],
+      synced: true,
+      creationDate: now,
+      lastUpdateDate: now,
+    );
 
-      final saved = await repository.save(animal);
-      final fetched = await repository.getByUuid('isar-test-1');
-      final total = await repository.count();
+    final saved = await repository.save(animal);
+    final page = await repository.getPage(offset: 0, limit: 20);
+    final fetched = await repository.getByUuid('isar-test-1');
+    final total = await repository.count();
 
-      expect(saved.uuid, 'isar-test-1');
-      expect(saved.synced, isFalse);
-      expect(fetched, isNotNull);
-      expect(fetched!.earTagNumber, 'TAG-ISAR-001');
-      expect(fetched.synced, isFalse);
-      expect(total, 1);
-    },
-    skip: !_canRunIsarNative(),
-  );
+    expect(saved.uuid, 'isar-test-1');
+    expect(saved.synced, isFalse);
+    expect(fetched, isNotNull);
+    expect(fetched!.earTagNumber, 'TAG-ISAR-001');
+    expect(fetched.synced, isFalse);
+    expect(total, 1);
+    expect(page, hasLength(1));
+    expect(page.single.uuid, 'isar-test-1');
+
+    await repository.update(fetched.copyWith(customName: 'Updated Animal'));
+    expect(
+      (await repository.getPage(offset: 0, limit: 20)).single.customName,
+      'Updated Animal',
+    );
+
+    await repository.delete('isar-test-1');
+    expect(await repository.getPage(offset: 0, limit: 20), isEmpty);
+    expect(await repository.count(), 0);
+  }, skip: !_canRunIsarNative());
 
   test(
     'sold and dead animals leave the active herd but stay in the pedigree',
@@ -219,249 +228,234 @@ void main() {
     skip: !_canRunIsarNative(),
   );
 
-  test(
-    'round-trips adaptive production purposes through Isar',
-    () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final sharedPrefs = await SharedPreferences.getInstance();
-      final repository = AnimalRepositoryIsar(
-        IsarDatabase(),
-        SharedPrefsService(sharedPrefs),
-        _FakeAnimalRemoteDataSource(),
-      );
+  test('round-trips adaptive production purposes through Isar', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final sharedPrefs = await SharedPreferences.getInstance();
+    final repository = AnimalRepositoryIsar(
+      IsarDatabase(),
+      SharedPrefsService(sharedPrefs),
+      _FakeAnimalRemoteDataSource(),
+    );
 
-      for (final purpose in [
-        ProductionPurpose.sport,
-        ProductionPurpose.eggs,
-        ProductionPurpose.fiber,
-        ProductionPurpose.guard,
-      ]) {
-        final uuid = 'purpose-${purpose.name}';
-        await repository.save(
-          _buildAnimal(
-            uuid: uuid,
-            earTag: 'TAG-${purpose.name}',
-            breed: 'Prueba',
-            productionPurpose: purpose,
+    for (final purpose in [
+      ProductionPurpose.sport,
+      ProductionPurpose.eggs,
+      ProductionPurpose.fiber,
+      ProductionPurpose.guard,
+    ]) {
+      final uuid = 'purpose-${purpose.name}';
+      await repository.save(
+        _buildAnimal(
+          uuid: uuid,
+          earTag: 'TAG-${purpose.name}',
+          breed: 'Prueba',
+          productionPurpose: purpose,
+        ),
+      );
+      final restored = await repository.getByUuid(uuid);
+      expect(restored?.productionPurpose, purpose);
+    }
+  }, skip: !_canRunIsarNative());
+
+  test('watchAll reflects save update and delete operations', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final sharedPrefs = await SharedPreferences.getInstance();
+
+    final repository = AnimalRepositoryIsar(
+      IsarDatabase(),
+      SharedPrefsService(sharedPrefs),
+      _FakeAnimalRemoteDataSource(),
+    );
+
+    await repository.clearAll();
+
+    for (var i = 0; i < 6; i++) {
+      await repository.save(
+        _buildAnimal(
+          uuid: 'stream-base-$i',
+          earTag: 'TAG-BASE-$i',
+          breed: 'Cebu',
+        ),
+      );
+    }
+
+    // watchAll() returns a single-subscription stream (it's backed by an
+    // async* generator) — this test needs to await several firstWhere()
+    // calls against the same stream over time, which requires a stream
+    // that supports being listened to more than once.
+    final stream = repository.watchAll().asBroadcastStream();
+    final initial = await stream
+        .firstWhere((items) => items.length >= 6)
+        .timeout(const Duration(seconds: 3));
+    expect(initial.length, greaterThanOrEqualTo(6));
+
+    final created = _buildAnimal(
+      uuid: 'stream-new',
+      earTag: 'TAG-NEW',
+      breed: 'Brahman',
+    );
+    // Subscribe before writing: a broadcast stream does not replay an
+    // update that arrives while save/update/delete is being awaited.
+    final afterSaveFuture = stream
+        .firstWhere((items) => items.any((item) => item.uuid == 'stream-new'))
+        .timeout(const Duration(seconds: 3));
+    await repository.save(created);
+    final afterSave = await afterSaveFuture;
+    expect(afterSave.any((item) => item.uuid == 'stream-new'), isTrue);
+
+    final updated = created.copyWith(earTagNumber: 'TAG-UPDATED');
+    final afterUpdateFuture = stream
+        .firstWhere(
+          (items) => items.any(
+            (item) =>
+                item.uuid == 'stream-new' && item.earTagNumber == 'TAG-UPDATED',
           ),
-        );
-        final restored = await repository.getByUuid(uuid);
-        expect(restored?.productionPurpose, purpose);
-      }
-    },
-    skip: !_canRunIsarNative(),
-  );
+        )
+        .timeout(const Duration(seconds: 3));
+    await repository.update(updated);
+    final afterUpdate = await afterUpdateFuture;
+    final updatedEntity = afterUpdate.firstWhere(
+      (item) => item.uuid == 'stream-new',
+    );
+    expect(updatedEntity.earTagNumber, 'TAG-UPDATED');
 
-  test(
-    'watchAll reflects save update and delete operations',
-    () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final sharedPrefs = await SharedPreferences.getInstance();
+    final afterDeleteFuture = stream
+        .firstWhere((items) => items.every((item) => item.uuid != 'stream-new'))
+        .timeout(const Duration(seconds: 3));
+    await repository.delete('stream-new');
+    final afterDelete = await afterDeleteFuture;
+    expect(afterDelete.any((item) => item.uuid == 'stream-new'), isFalse);
+  }, skip: !_canRunIsarNative());
 
-      final repository = AnimalRepositoryIsar(
-        IsarDatabase(),
-        SharedPrefsService(sharedPrefs),
-        _FakeAnimalRemoteDataSource(),
-      );
+  test('persists and reads all supported animal record types', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final sharedPrefs = await SharedPreferences.getInstance();
 
-      await repository.clearAll();
+    final db = IsarDatabase();
+    final repository = AnimalRepositoryIsar(
+      db,
+      SharedPrefsService(sharedPrefs),
+      _FakeAnimalRemoteDataSource(),
+    );
+    final weightRepo = WeightRecordRepositoryIsar(db);
+    final healthRepo = HealthRecordRepositoryIsar(db);
+    final productionRepo = ProductionRecordRepositoryIsar(db);
+    final reproductionRepo = ReproductionRecordRepositoryIsar(db);
+    final movementRepo = MovementRecordRepositoryIsar(db);
+    final commercialRepo = CommercialRecordRepositoryIsar(db);
+    final costRepo = CostRecordRepositoryIsar(db);
 
-      for (var i = 0; i < 6; i++) {
-        await repository.save(
-          _buildAnimal(
-            uuid: 'stream-base-$i',
-            earTag: 'TAG-BASE-$i',
-            breed: 'Cebu',
-          ),
-        );
-      }
+    await repository.clearAll();
 
-      // watchAll() returns a single-subscription stream (it's backed by an
-      // async* generator) — this test needs to await several firstWhere()
-      // calls against the same stream over time, which requires a stream
-      // that supports being listened to more than once.
-      final stream = repository.watchAll().asBroadcastStream();
-      final initial = await stream
-          .firstWhere((items) => items.length >= 6)
-          .timeout(const Duration(seconds: 3));
-      expect(initial.length, greaterThanOrEqualTo(6));
+    final animal = _buildAnimal(
+      uuid: 'records-isar-1',
+      earTag: 'TAG-REC-001',
+      breed: 'Cebu',
+    );
+    await repository.save(animal);
 
-      final created = _buildAnimal(
-        uuid: 'stream-new',
-        earTag: 'TAG-NEW',
-        breed: 'Brahman',
-      );
-      // Subscribe before writing: a broadcast stream does not replay an
-      // update that arrives while save/update/delete is being awaited.
-      final afterSaveFuture = stream
-          .firstWhere((items) => items.any((item) => item.uuid == 'stream-new'))
-          .timeout(const Duration(seconds: 3));
-      await repository.save(created);
-      final afterSave = await afterSaveFuture;
-      expect(afterSave.any((item) => item.uuid == 'stream-new'), isTrue);
+    final now = DateTime(2025, 6, 1);
 
-      final updated = created.copyWith(earTagNumber: 'TAG-UPDATED');
-      final afterUpdateFuture = stream
-          .firstWhere(
-            (items) => items.any(
-              (item) =>
-                  item.uuid == 'stream-new' &&
-                  item.earTagNumber == 'TAG-UPDATED',
-            ),
-          )
-          .timeout(const Duration(seconds: 3));
-      await repository.update(updated);
-      final afterUpdate = await afterUpdateFuture;
-      final updatedEntity = afterUpdate.firstWhere(
-        (item) => item.uuid == 'stream-new',
-      );
-      expect(updatedEntity.earTagNumber, 'TAG-UPDATED');
+    await weightRepo.addWeightRecord(
+      animal.uuid,
+      WeightRecord(
+        date: DateTime(2025, 6, 1),
+        weight: 412.5,
+        method: WeightMethod.scale,
+        notes: 'Pesaje inicial',
+      ),
+    );
 
-      final afterDeleteFuture = stream
-          .firstWhere(
-            (items) => items.every((item) => item.uuid != 'stream-new'),
-          )
-          .timeout(const Duration(seconds: 3));
-      await repository.delete('stream-new');
-      final afterDelete = await afterDeleteFuture;
-      expect(afterDelete.any((item) => item.uuid == 'stream-new'), isFalse);
-    },
-    skip: !_canRunIsarNative(),
-  );
+    await healthRepo.addHealthRecord(
+      animal.uuid,
+      HealthRecord(
+        date: DateTime(2025, 6, 1),
+        type: HealthRecordType.vaccine,
+        product: 'Vacuna A',
+        notes: 'Dosis completa',
+      ),
+    );
 
-  test(
-    'persists and reads all supported animal record types',
-    () async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
-      final sharedPrefs = await SharedPreferences.getInstance();
+    await productionRepo.addProductionRecord(
+      animal.uuid,
+      ProductionRecord(
+        date: DateTime(2025, 6, 1),
+        type: ProductionRecordType.production,
+        value: 12.3,
+        unit: 'L',
+      ),
+    );
 
-      final db = IsarDatabase();
-      final repository = AnimalRepositoryIsar(
-        db,
-        SharedPrefsService(sharedPrefs),
-        _FakeAnimalRemoteDataSource(),
-      );
-      final weightRepo = WeightRecordRepositoryIsar(db);
-      final healthRepo = HealthRecordRepositoryIsar(db);
-      final productionRepo = ProductionRecordRepositoryIsar(db);
-      final reproductionRepo = ReproductionRecordRepositoryIsar(db);
-      final movementRepo = MovementRecordRepositoryIsar(db);
-      final commercialRepo = CommercialRecordRepositoryIsar(db);
-      final costRepo = CostRecordRepositoryIsar(db);
+    await reproductionRepo.addReproductionRecord(
+      animal.uuid,
+      ReproductionRecord(
+        serviceDate: now,
+        serviceType: ServiceType.naturalService,
+        maleSireIdentifier: 'TORO-01',
+      ),
+    );
 
-      await repository.clearAll();
+    await movementRepo.addMovementRecord(
+      animal.uuid,
+      MovementRecord(
+        fromLocation: 'Potrero 1',
+        toLocation: 'Potrero 2',
+        date: DateTime(2025, 6, 1),
+        reason: MovementReason.relocation,
+      ),
+    );
 
-      final animal = _buildAnimal(
-        uuid: 'records-isar-1',
-        earTag: 'TAG-REC-001',
-        breed: 'Cebu',
-      );
-      await repository.save(animal);
+    await commercialRepo.addCommercialRecord(
+      animal.uuid,
+      CommercialRecord(
+        date: DateTime(2025, 6, 1),
+        type: CommercialRecordType.purchase,
+        amount: 1500,
+        currency: 'USD',
+      ),
+    );
 
-      final now = DateTime(2025, 6, 1);
+    await costRepo.addCostRecord(
+      animal.uuid,
+      CostRecord(
+        date: DateTime(2025, 6, 1),
+        type: CostType.feeding,
+        amount: 280,
+        currency: 'USD',
+      ),
+    );
 
-      await weightRepo.addWeightRecord(
-        animal.uuid,
-        WeightRecord(
-          date: DateTime(2025, 6, 1),
-          weight: 412.5,
-          method: WeightMethod.scale,
-          notes: 'Pesaje inicial',
-        ),
-      );
+    final weights = await weightRepo.getWeightRecords(animal.uuid);
+    final health = await healthRepo.getHealthRecords(animal.uuid);
+    final production = await productionRepo.getProductionRecords(animal.uuid);
+    final reproduction = await reproductionRepo.getReproductionRecords(
+      animal.uuid,
+    );
+    final movements = await movementRepo.getMovementRecords(animal.uuid);
+    final commercial = await commercialRepo.getCommercialRecords(animal.uuid);
+    final costs = await costRepo.getCostRecords(animal.uuid);
 
-      await healthRepo.addHealthRecord(
-        animal.uuid,
-        HealthRecord(
-          date: DateTime(2025, 6, 1),
-          type: HealthRecordType.vaccine,
-          product: 'Vacuna A',
-          notes: 'Dosis completa',
-        ),
-      );
+    expect(weights, hasLength(1));
+    expect(weights.first.weight, 412.5);
 
-      await productionRepo.addProductionRecord(
-        animal.uuid,
-        ProductionRecord(
-          date: DateTime(2025, 6, 1),
-          type: ProductionRecordType.production,
-          value: 12.3,
-          unit: 'L',
-        ),
-      );
+    expect(health, hasLength(1));
+    expect(health.first.product, 'Vacuna A');
 
-      await reproductionRepo.addReproductionRecord(
-        animal.uuid,
-        ReproductionRecord(
-          serviceDate: now,
-          serviceType: ServiceType.naturalService,
-          maleSireIdentifier: 'TORO-01',
-        ),
-      );
+    expect(production, hasLength(1));
+    expect(production.first.value, 12.3);
 
-      await movementRepo.addMovementRecord(
-        animal.uuid,
-        MovementRecord(
-          fromLocation: 'Potrero 1',
-          toLocation: 'Potrero 2',
-          date: DateTime(2025, 6, 1),
-          reason: MovementReason.relocation,
-        ),
-      );
+    expect(reproduction, hasLength(1));
+    expect(reproduction.first.maleSireIdentifier, 'TORO-01');
 
-      await commercialRepo.addCommercialRecord(
-        animal.uuid,
-        CommercialRecord(
-          date: DateTime(2025, 6, 1),
-          type: CommercialRecordType.purchase,
-          amount: 1500,
-          currency: 'USD',
-        ),
-      );
+    expect(movements, hasLength(1));
+    expect(movements.first.toLocation, 'Potrero 2');
 
-      await costRepo.addCostRecord(
-        animal.uuid,
-        CostRecord(
-          date: DateTime(2025, 6, 1),
-          type: CostType.feeding,
-          amount: 280,
-          currency: 'USD',
-        ),
-      );
+    expect(commercial, hasLength(1));
+    expect(commercial.first.amount, 1500);
 
-      final weights = await weightRepo.getWeightRecords(animal.uuid);
-      final health = await healthRepo.getHealthRecords(animal.uuid);
-      final production = await productionRepo.getProductionRecords(animal.uuid);
-      final reproduction = await reproductionRepo.getReproductionRecords(
-        animal.uuid,
-      );
-      final movements = await movementRepo.getMovementRecords(animal.uuid);
-      final commercial = await commercialRepo.getCommercialRecords(animal.uuid);
-      final costs = await costRepo.getCostRecords(animal.uuid);
-
-      expect(weights, hasLength(1));
-      expect(weights.first.weight, 412.5);
-
-      expect(health, hasLength(1));
-      expect(health.first.product, 'Vacuna A');
-
-      expect(production, hasLength(1));
-      expect(production.first.value, 12.3);
-
-      expect(reproduction, hasLength(1));
-      expect(reproduction.first.maleSireIdentifier, 'TORO-01');
-
-      expect(movements, hasLength(1));
-      expect(movements.first.toLocation, 'Potrero 2');
-
-      expect(commercial, hasLength(1));
-      expect(commercial.first.amount, 1500);
-
-      expect(costs, hasLength(1));
-      expect(costs.first.amount, 280);
-    },
-    skip: !_canRunIsarNative(),
-  );
+    expect(costs, hasLength(1));
+    expect(costs.first.amount, 280);
+  }, skip: !_canRunIsarNative());
 
   test(
     'seeded animals and movement records reference existing seeded locations',

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
@@ -119,20 +120,13 @@ class AnimalCard extends StatelessWidget {
     final headerSecondaryTextColor = AnimalPalette.cardTextSecondary(context);
     final footerColor = AnimalPalette.cardFooter(context);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      clipBehavior: Clip.antiAlias,
+    return AppDirectoryCardFrame(
       color: cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: AnimalPalette.cardBorder(context, isSelected: isSelected),
-          width: isSelected ? 1.5 : 1,
-        ),
-      ),
-      elevation: 1.2,
+      borderColor: AnimalPalette.cardBorder(context, isSelected: isSelected),
+      borderWidth: isSelected ? 1.5 : 1,
+      margin: const EdgeInsets.only(bottom: 14),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppDirectoryCardFrame.cornerRadius),
         onTap: isPreview
             ? null
             : onTap ??

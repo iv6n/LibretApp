@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
@@ -11,6 +12,8 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:libretapp/core/platform/release_features.dart';
+import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/registro/view/registro_page.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 import 'package:libretapp/features/ubicaciones/domain/repositories/location_repository.dart';
@@ -55,9 +58,13 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Para empezar'), findsOneWidget);
+      expect(find.text('Animal'), findsOneWidget);
       expect(find.text('Añadir mascota'), findsOneWidget);
       expect(find.text('Programar tarea'), findsOneWidget);
+      expect(find.text('Plantas'), findsOneWidget);
+      expect(find.text('Ubicaciones'), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.byType(TabBarView), findsNothing);
       expect(find.text('Registro por lotes'), findsNothing);
       await tester.tap(find.text('Ver todas las funciones'));
       await tester.pumpAndSettle();
@@ -105,6 +112,95 @@ void main() {
     expect(find.text('Añadir animal'), findsOneWidget);
     expect(find.text('Lote'), findsOneWidget);
     expect(find.text('Sanitario'), findsOneWidget);
+    await tester.tap(find.text('Ver todas las funciones'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lote'), findsOneWidget);
+    expect(find.text('Sanitario'), findsOneWidget);
+    expect(find.text('Peso'), findsOneWidget);
+    expect(find.text('Animal'), findsOneWidget);
+    expect(find.text('Registro por lotes'), findsOneWidget);
+  });
+
+  testWidgets('secciones visibles en orden y desplazables sin pestañas', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const RegistroPage()),
+    );
+    await tester.pumpAndSettle();
+
+    final animal = tester.getTopLeft(find.text('Animal')).dy;
+    final plants = tester.getTopLeft(find.text('Plantas')).dy;
+    final locations = tester.getTopLeft(find.text('Ubicaciones')).dy;
+    expect(animal, lessThan(plants));
+    expect(plants, lessThan(locations));
+    for (final label in [
+      'Añadir planta o cultivo',
+      'Cosecha',
+      'Riego',
+      'Salud de cultivo',
+      'Tarea',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+      expect(tester.getTopLeft(find.text(label)).dy, greaterThan(plants));
+      expect(tester.getTopLeft(find.text(label)).dy, lessThan(locations));
+    }
+    expect(find.byType(TabBar), findsNothing);
+    expect(find.byType(TabBarView), findsNothing);
+
+    await tester.ensureVisible(find.text('Nueva ubicación'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nueva ubicación'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('alta de planta y ubicación conservan sus rutas', (tester) async {
+    locator.registerSingleton<CultivationRepository>(
+      _FakeCultivationRepository(),
+    );
+    final router = GoRouter(
+      routes: [
+        GoRoute(path: '/', builder: (context, state) => const RegistroPage()),
+        GoRoute(
+          path: '/plantas/nueva',
+          name: AppRoutes.nameCultivoNuevo,
+          builder: (context, state) => Scaffold(
+            body: Text(
+              'Alta de planta sin ubicación: '
+              '${state.uri.queryParameters.isEmpty}',
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/ubicaciones/nueva',
+          name: AppRoutes.nameUbicacionNueva,
+          builder: (context, state) =>
+              const Scaffold(body: Text('Alta de ubicación')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Añadir planta o cultivo'));
+    await tester.tap(find.text('Añadir planta o cultivo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alta de planta sin ubicación: true'), findsOneWidget);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Nueva ubicación'));
+    await tester.tap(find.text('Nueva ubicación'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alta de ubicación'), findsOneWidget);
   });
 
   testWidgets('las acciones principales y el catálogo usan el mismo tamaño', (
@@ -144,23 +240,8 @@ void main() {
     );
     expect(chevronContainers, hasLength(mainIconContainers.length));
 
-    await tester.tap(find.text('Ubicación'));
-    await tester.pumpAndSettle();
-
-    final locationIconContainers = _decoratedContainers(tester).where((
-      container,
-    ) {
-      final decoration = container.decoration! as BoxDecoration;
-      return decoration.shape == BoxShape.rectangle &&
-          decoration.borderRadius != null;
-    });
-    expect(locationIconContainers, isNotEmpty);
-    expect(
-      locationIconContainers.every(
-        (container) => _sizeOf(tester, container).width == 44,
-      ),
-      isTrue,
-    );
+    expect(find.text('Añadir planta o cultivo'), findsOneWidget);
+    expect(find.text('Nueva ubicación'), findsOneWidget);
   });
 
   for (final width in <double>[360, 390, 604, 1280]) {
@@ -204,6 +285,11 @@ class _FakeLocationRepository implements LocationRepository {
   @override
   Future<List<LocationEntity>> getAll() async => const [];
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeCultivationRepository implements CultivationRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

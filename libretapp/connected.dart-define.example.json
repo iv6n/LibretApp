@@ -1,5 +1,5 @@
 {
   "SUPABASE_URL": "",
   "SUPABASE_ANON_KEY": "",
-  "LIBRET_CAPTCHA_URL": ""
+  "LIBRET_CAPTCHA_URL": "https://libret.app/captcha/"
 }

@@ -9,13 +9,16 @@ class OnboardingStartupService {
   const OnboardingStartupService({
     required SharedPrefsService preferences,
     required AnimalRepository animalRepository,
+    Future<bool> Function()? hasAnimals,
     Future<bool> Function()? hasOtherUserData,
   }) : _preferences = preferences,
        _animalRepository = animalRepository,
+       _hasAnimals = hasAnimals,
        _hasOtherUserData = hasOtherUserData;
 
   final SharedPrefsService _preferences;
   final AnimalRepository _animalRepository;
+  final Future<bool> Function()? _hasAnimals;
   final Future<bool> Function()? _hasOtherUserData;
 
   Future<bool> shouldShowWelcome() async {
@@ -23,9 +26,14 @@ class OnboardingStartupService {
       return false;
     }
 
-    final existingAnimals = await _animalRepository.getAllIncludingInactive();
-    if (existingAnimals.isEmpty &&
-        !await (_hasOtherUserData?.call() ?? Future.value(false))) {
+    final presence = await Future.wait<bool>([
+      _hasAnimals?.call() ??
+          _animalRepository.getAllIncludingInactive().then(
+            (animals) => animals.isNotEmpty,
+          ),
+      _hasOtherUserData?.call() ?? Future<bool>.value(false),
+    ]);
+    if (!presence[0] && !presence[1]) {
       return true;
     }
 

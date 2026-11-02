@@ -249,6 +249,7 @@ class AgendaReminderSyncService {
             record.id ?? record.serviceDate!.millisecondsSinceEpoch.toString();
         final schedule = _reproductionScheduler.estimate(
           serviceDate: record.serviceDate!,
+          species: animal.species,
         );
 
         final pregCheckDate =
@@ -279,9 +280,9 @@ class AgendaReminderSyncService {
           );
         }
 
-        final expectedCalvingDate = record.expectedCalvingDate;
-        if (record.pregnancyResult == PregnancyCheckResult.positive &&
-            expectedCalvingDate != null) {
+        final expectedCalvingDate =
+            record.expectedCalvingDate ?? schedule.dueDate;
+        if (record.pregnancyResult == PregnancyCheckResult.positive) {
           final dueDate = _startOfDay(expectedCalvingDate);
           final partoId =
               'auto:repro:${animal.uuid}:parto:$sourceId:${_dateKey(dueDate)}';

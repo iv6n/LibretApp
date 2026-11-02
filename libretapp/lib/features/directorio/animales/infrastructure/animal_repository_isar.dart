@@ -1,11 +1,14 @@
 /// features \u203a directorio \u203a animales \u203a infrastructure \u203a animal_repository_isar \u2014 Isar implementation of AnimalRepository.
 library;
 
+import 'dart:async';
+
 import 'package:libretapp/core/database/isar_write_transaction.dart';
 
 import 'package:libretapp/core/utils/numeric_validation.dart';
 
 import 'animal_projection_recalculator.dart';
+import 'animal_directory_read_model.dart';
 
 import 'package:isar_community/isar.dart';
 import 'package:libretapp/core/database/isar_database.dart';
@@ -38,7 +41,10 @@ import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_entr
 import 'package:libretapp/features/milking/infrastructure/isar/isar_milking_session.dart';
 
 class AnimalRepositoryIsar
-    implements AnimalRepository, RegisteredAnimalSpeciesReader {
+    implements
+        AnimalRepository,
+        RegisteredAnimalSpeciesReader,
+        AnimalPresenceReader {
   AnimalRepositoryIsar(this._database, this._prefs, this._remoteDataSource);
 
   static const _logTag = 'AnimalRepositoryIsar';
@@ -46,6 +52,11 @@ class AnimalRepositoryIsar
   final SharedPrefsService _prefs;
   final AnimalRemoteDataSource _remoteDataSource;
   Future<void>? _activityBackfillFuture;
+  late final _directoryReadModel = AnimalDirectoryReadModelCache(
+    _loadActiveAnimals,
+  );
+  StreamSubscription<void>? _directoryInvalidationSubscription;
+  Future<void>? _directoryInvalidationWatchFuture;
 
   Future<Isar> get _isar async => _database.initialize();
 
@@ -82,6 +93,7 @@ class AnimalRepositoryIsar
     await withIsarWriteTransaction(isar, () async {
       await isar.isarAnimals.putAll(models);
     });
+    _directoryReadModel.invalidate();
 
     LoggerService.i(
       'Animales actualizados desde remoto (${models.length})',
@@ -92,20 +104,18 @@ class AnimalRepositoryIsar
 
   @override
   Stream<List<AnimalEntity>> watchAll() async* {
-    await _ensureActivityBackfill();
     final isar = await _isar;
-    yield* isar.isarAnimals.where().watch(fireImmediately: true).asyncMap((
-      records,
+    yield* isar.isarAnimals.watchLazy(fireImmediately: true).asyncMap((
+      _,
     ) async {
-      final animals = records
-          .where((record) => record.status == AnimalStatus.active.name)
-          .toList();
-      return _normalizeRecords(animals);
+      _directoryReadModel.invalidate();
+      return (await _activeDirectoryReadModel()).animals;
     });
   }
 
   @override
-  Future<List<AnimalEntity>> getAll() => _activeNormalized();
+  Future<List<AnimalEntity>> getAll() async =>
+      (await _activeDirectoryReadModel()).animals;
 
   @override
   Future<Set<Species>> getRegisteredSpecies() async {
@@ -114,14 +124,46 @@ class AnimalRepositoryIsar
     return records.map((record) => record.toEntity().species).toSet();
   }
 
-  Future<List<AnimalEntity>> _activeNormalized({bool sorted = true}) async {
+  @override
+  Future<bool> hasAnyAnimals() async {
+    final isar = await _isar;
+    return (await isar.isarAnimals.where().count()) > 0;
+  }
+
+  Future<AnimalDirectoryReadModel> _activeDirectoryReadModel() async {
+    await _ensureActivityBackfill();
+    await _ensureDirectoryInvalidationWatch();
+    return _directoryReadModel.read();
+  }
+
+  Future<void> _ensureDirectoryInvalidationWatch() async {
+    if (_directoryInvalidationSubscription != null) return;
+    final pending = _directoryInvalidationWatchFuture;
+    if (pending != null) return pending;
+
+    final future = _isar.then((isar) {
+      _directoryInvalidationSubscription ??= isar.isarAnimals
+          .watchLazy()
+          .listen((_) => _directoryReadModel.invalidate());
+    });
+    _directoryInvalidationWatchFuture = future;
+    try {
+      await future;
+    } finally {
+      if (identical(_directoryInvalidationWatchFuture, future)) {
+        _directoryInvalidationWatchFuture = null;
+      }
+    }
+  }
+
+  Future<List<AnimalEntity>> _loadActiveAnimals() async {
     await _ensureActivityBackfill();
     final isar = await _isar;
     final records = await isar.isarAnimals.where().findAll();
     final active = records
         .where((record) => record.status == AnimalStatus.active.name)
         .toList();
-    return _normalizeRecords(active, sorted: sorted);
+    return _normalizeRecords(active);
   }
 
   @override
@@ -171,8 +213,19 @@ class AnimalRepositoryIsar
 
   @override
   Future<List<AnimalEntity>> getByBatchUuid(String batchUuid) async {
-    final all = await getAll();
-    return all.where((a) => a.batchUuid == batchUuid).toList(growable: false);
+    // Batch operations must observe location and membership writes made by
+    // movement/lot repositories in the same transaction. Those writes are
+    // outside this repository's explicit cache invalidation hooks, so use the
+    // indexed batch lookup instead of a possibly warm directory snapshot.
+    final isar = await _isar;
+    final records = await isar.isarAnimals
+        .filter()
+        .batchUuidEqualTo(batchUuid)
+        .findAll();
+    final active = records
+        .where((record) => record.status == AnimalStatus.active.name)
+        .toList();
+    return _normalizeRecords(active);
   }
 
   @override
@@ -285,6 +338,7 @@ class AnimalRepositoryIsar
       await isar.isarAnimals.put(model);
       await AnimalProjectionRecalculator.refreshMonitoring(isar, model.uuid);
     });
+    _directoryReadModel.invalidate();
     LoggerService.i('Animal guardado ${entity.uuid}', tag: _logTag);
     return (await isar.isarAnimals.get(model.id))!.toEntity();
   }
@@ -325,6 +379,7 @@ class AnimalRepositoryIsar
       await isar.isarAnimals.put(model);
       await AnimalProjectionRecalculator.refreshMonitoring(isar, model.uuid);
     });
+    _directoryReadModel.invalidate();
     LoggerService.i('Animal actualizado ${updated.uuid}', tag: _logTag);
     return (await isar.isarAnimals.get(model.id))!.toEntity();
   }
@@ -345,6 +400,7 @@ class AnimalRepositoryIsar
         await isar.isarAnimals.put(record);
       }
     });
+    _directoryReadModel.invalidate();
   }
 
   @override
@@ -362,6 +418,7 @@ class AnimalRepositoryIsar
         await isar.isarAnimals.put(record);
       }
     });
+    _directoryReadModel.invalidate();
   }
 
   @override
@@ -380,6 +437,7 @@ class AnimalRepositoryIsar
         await isar.isarAnimals.put(record);
       }
     });
+    _directoryReadModel.invalidate();
     LoggerService.w('Animal archivado $uuid', tag: _logTag);
   }
 
@@ -389,6 +447,7 @@ class AnimalRepositoryIsar
     await withIsarWriteTransaction(isar, () async {
       await isar.isarAnimals.where().uuidEqualTo(uuid).deleteAll();
     });
+    _directoryReadModel.invalidate();
     LoggerService.w('Animal eliminado definitivamente $uuid', tag: _logTag);
   }
 
@@ -396,71 +455,42 @@ class AnimalRepositoryIsar
   Future<void> clearAll() async {
     final isar = await _isar;
     await withIsarWriteTransaction(isar, () => isar.isarAnimals.clear());
+    _directoryReadModel.invalidate();
     LoggerService.w('Colección animales limpiada', tag: _logTag);
   }
 
   @override
   Future<int> count() async {
-    final isar = await _isar;
-    return isar.isarAnimals
-        .filter()
-        .statusEqualTo(AnimalStatus.active.name)
-        .count();
+    return (await _activeDirectoryReadModel()).animals.length;
   }
 
   @override
   Future<Map<LifeStage, int>> getActiveStageCounts() async {
-    final counts = <LifeStage, int>{};
-    for (final animal in await _activeNormalized(sorted: false)) {
-      counts.update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
-    }
-    return counts;
+    return (await _activeDirectoryReadModel()).stageCounts;
   }
 
   @override
   Future<Map<Species, Map<LifeStage, int>>> getActiveTaxonomyCounts() async {
-    final counts = <Species, Map<LifeStage, int>>{};
-    for (final animal in await _activeNormalized(sorted: false)) {
-      counts
-          .putIfAbsent(animal.species, () => <LifeStage, int>{})
-          .update(animal.lifeStage, (value) => value + 1, ifAbsent: () => 1);
-    }
-    return counts;
+    return (await _activeDirectoryReadModel()).taxonomyCounts;
+  }
+
+  @override
+  Future<Map<LifeStage, int>> getActiveCompanionStageCounts() async {
+    return (await _activeDirectoryReadModel()).companionStageCounts;
   }
 
   @override
   Future<Map<String, dynamic>> getStatistics() async {
-    final isar = await _isar;
-    final activeName = AnimalStatus.active.name;
-
-    // These counts feed the dashboard, so they have to mean "the herd you
-    // manage". A raw collection count included archived animals — the ones
-    // already deleted from the directory — and later sold and dead ones too.
-    final total = await isar.isarAnimals
-        .filter()
-        .statusEqualTo(activeName)
-        .count();
-    final unsynced = await isar.isarAnimals
-        .filter()
-        .statusEqualTo(activeName)
-        .and()
-        .syncedEqualTo(false)
-        .count();
-    // The OR pair needs its own group, or the status condition binds to just
-    // the first branch and animals that left the herd leak back in.
-    final attention = await isar.isarAnimals
-        .filter()
-        .statusEqualTo(activeName)
-        .and()
-        .group(
-          (q) => q
-              .requiresAttentionEqualTo(true)
-              .or()
-              .underObservationEqualTo(true),
-        )
-        .count();
-
-    return {'total': total, 'unsynced': unsynced, 'attention': attention};
+    final animals = (await _activeDirectoryReadModel()).animals;
+    return {
+      'total': animals.length,
+      'unsynced': animals.where((animal) => !animal.synced).length,
+      'attention': animals
+          .where(
+            (animal) => animal.requiresAttention || animal.underObservation,
+          )
+          .length,
+    };
   }
 
   @override
@@ -474,7 +504,7 @@ class AnimalRepositoryIsar
     required int offset,
     required int limit,
   }) async {
-    final animals = await getAll();
+    final animals = (await _activeDirectoryReadModel()).animals;
     return List.unmodifiable(animals.skip(offset).take(limit));
   }
 
@@ -567,6 +597,7 @@ class AnimalRepositoryIsar
       existing,
     );
     await withIsarWriteTransaction(isar, () => isar.isarAnimals.put(model));
+    _directoryReadModel.invalidate();
     return animal;
   }
 

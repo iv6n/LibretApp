@@ -40,7 +40,9 @@ class AppEmptyState extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
+            // All illustrated Directory states share one card footprint.
+            // Longer text may still grow when accessibility text is enlarged.
+            constraints: const BoxConstraints(maxWidth: 420, minHeight: 384),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.lg),
@@ -51,6 +53,7 @@ class AppEmptyState extends StatelessWidget {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   ExcludeSemantics(
                     child: Image.asset(

@@ -10,6 +10,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_bloc.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_event.dart';
 import 'package:libretapp/features/directorio/lotes/bloc/lotes_state.dart';
@@ -185,11 +186,20 @@ class _LotesListViewState extends State<LotesListView> {
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
-            child: _buildFilterBar(context, total: 0, active: 0, closed: 0),
+            child: _buildFilterBar(
+              context,
+              total: 0,
+              active: 0,
+              closed: 0,
+              showCount: false,
+            ),
           ),
           SliverFillRemaining(
             hasScrollBody: false,
-            child: _buildEmptyState(context),
+            child: AppDirectoryEmptySlot(
+              bottomPadding: ShellInsets.bottomSafePadding(context),
+              child: _buildEmptyState(context),
+            ),
           ),
         ],
       );
@@ -210,7 +220,10 @@ class _LotesListViewState extends State<LotesListView> {
         if (visible.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: _buildFilteredEmptyState(context),
+            child: AppDirectoryEmptySlot(
+              bottomPadding: listBottomPadding,
+              child: _buildFilteredEmptyState(context),
+            ),
           ),
         if (_filter != _LoteListFilter.closed && active.isNotEmpty)
           _buildLoteSection(
@@ -249,6 +262,7 @@ class _LotesListViewState extends State<LotesListView> {
     required int total,
     required int active,
     required int closed,
+    bool showCount = true,
   }) {
     final options = [
       (_LoteListFilter.all, 'Todos', total),
@@ -265,16 +279,10 @@ class _LotesListViewState extends State<LotesListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 60,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            itemCount: options.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final option = options[index];
-              return AppDirectoryFilterChip(
+        AppDirectoryFilterRow(
+          children: [
+            for (final option in options)
+              AppDirectoryFilterChip(
                 label: option.$2,
                 count: option.$3,
                 icon: switch (option.$1) {
@@ -284,19 +292,19 @@ class _LotesListViewState extends State<LotesListView> {
                 },
                 selected: _filter == option.$1,
                 onTap: () => setState(() => _filter = option.$1),
-              );
-            },
-          ),
+              ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: Text(
-            '$visibleCount ${visibleCount == 1 ? 'lote' : 'lotes'}',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+        if (showCount)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            child: Text(
+              '$visibleCount ${visibleCount == 1 ? 'lote' : 'lotes'}',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -309,12 +317,12 @@ class _LotesListViewState extends State<LotesListView> {
     required double listBottomPadding,
   }) {
     return SliverPadding(
-      padding: EdgeInsets.fromLTRB(12, 0, 12, listBottomPadding),
+      padding: EdgeInsets.only(bottom: listBottomPadding),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate((context, index) {
           if (index == 0) {
             return _CenteredSection(
-              padding: const EdgeInsets.fromLTRB(2, 0, 2, 10),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Text(
                 '$title · ${lotes.length}',
                 style: Theme.of(
@@ -325,62 +333,59 @@ class _LotesListViewState extends State<LotesListView> {
           }
 
           final lote = lotes[index - 1];
-          return _CenteredSection(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Slidable(
-              key: ValueKey('slide_${lote.uuid}'),
-              startActionPane: lote.active
-                  ? ActionPane(
-                      motion: const DrawerMotion(),
-                      extentRatio: 0.22,
-                      children: [
-                        SlidableAction(
-                          onPressed: (_) => _openLoteDetail(lote),
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          icon: Icons.edit_outlined,
-                          label: 'Editar',
-                          borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(20),
-                          ),
+          return Slidable(
+            key: ValueKey('slide_${lote.uuid}'),
+            startActionPane: lote.active
+                ? ActionPane(
+                    motion: const DrawerMotion(),
+                    extentRatio: 0.22,
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) => _openLoteDetail(lote),
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        icon: Icons.edit_outlined,
+                        label: 'Editar',
+                        borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(20),
                         ),
-                      ],
+                      ),
+                    ],
+                  )
+                : null,
+            endActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.22,
+              children: [
+                SlidableAction(
+                  onPressed: (_) => _confirmDeleteLote(lote),
+                  backgroundColor: Colors.red.shade600,
+                  foregroundColor: Colors.white,
+                  icon: Icons.delete_outline,
+                  label: 'Eliminar',
+                  borderRadius: const BorderRadius.horizontal(
+                    right: Radius.circular(20),
+                  ),
+                ),
+              ],
+            ),
+            child: LoteCard(
+              key: ValueKey('lote_${lote.uuid}'),
+              lote: lote,
+              locationName: locationNames[lote.currentLocationId],
+              onLocationTap: locationNames.containsKey(lote.currentLocationId)
+                  ? () => context.push(
+                      AppRoutes.ubicacionDetallePath(lote.currentLocationId!),
                     )
                   : null,
-              endActionPane: ActionPane(
-                motion: const DrawerMotion(),
-                extentRatio: 0.22,
-                children: [
-                  SlidableAction(
-                    onPressed: (_) => _confirmDeleteLote(lote),
-                    backgroundColor: Colors.red.shade600,
-                    foregroundColor: Colors.white,
-                    icon: Icons.delete_outline,
-                    label: 'Eliminar',
-                    borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(20),
+              onAnimalsTap: lote.animalUuids.isEmpty
+                  ? null
+                  : () => context.push(
+                      AppRoutes.animalesPath(loteUuid: lote.uuid),
                     ),
-                  ),
-                ],
-              ),
-              child: LoteCard(
-                key: ValueKey('lote_${lote.uuid}'),
-                lote: lote,
-                locationName: locationNames[lote.currentLocationId],
-                onLocationTap: locationNames.containsKey(lote.currentLocationId)
-                    ? () => context.push(
-                        AppRoutes.ubicacionDetallePath(lote.currentLocationId!),
-                      )
-                    : null,
-                onAnimalsTap: lote.animalUuids.isEmpty
-                    ? null
-                    : () => context.push(
-                        AppRoutes.animalesPath(loteUuid: lote.uuid),
-                      ),
-                onTap: () => _openLoteDetail(lote),
-                onEdit: () => _openLoteDetail(lote),
-                onDelete: () => _confirmDeleteLote(lote),
-              ),
+              onTap: () => _openLoteDetail(lote),
+              onEdit: () => _openLoteDetail(lote),
+              onDelete: () => _confirmDeleteLote(lote),
             ),
           );
         }, childCount: lotes.length + 1),

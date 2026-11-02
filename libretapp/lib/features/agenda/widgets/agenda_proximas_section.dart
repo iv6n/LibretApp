@@ -48,11 +48,20 @@ class AgendaProximasSection extends StatefulWidget {
 
 class _AgendaProximasSectionState extends State<AgendaProximasSection> {
   final Set<String> _expandedEvents = {};
+  final Set<String> _showAllAnimalsByEvent = {};
   final Map<String, Set<String>> _selectedAnimalIdsByEvent = {};
 
   void _toggleEvent(String key) {
     setState(() {
       if (!_expandedEvents.add(key)) _expandedEvents.remove(key);
+    });
+  }
+
+  void _toggleAllAnimals(String key) {
+    setState(() {
+      if (!_showAllAnimalsByEvent.add(key)) {
+        _showAllAnimalsByEvent.remove(key);
+      }
     });
   }
 
@@ -100,11 +109,41 @@ class _AgendaProximasSectionState extends State<AgendaProximasSection> {
   @override
   Widget build(BuildContext context) {
     if (widget.groups.isEmpty) {
-      return AppEmptyState(
-        icon: Icons.task_alt_outlined,
-        title: widget.emptyTitle,
-        message: widget.emptyMessage,
-        compact: true,
+      final theme = Theme.of(context);
+      final scheme = theme.colorScheme;
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: scheme.primaryContainer.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.task_alt_outlined, color: scheme.primary),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.emptyTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    widget.emptyMessage,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -128,6 +167,8 @@ class _AgendaProximasSectionState extends State<AgendaProximasSection> {
               animalsById: widget.animalsById,
               expanded: _expandedEvents.contains(event.key),
               onToggle: () => _toggleEvent(event.key),
+              showAllAnimals: _showAllAnimalsByEvent.contains(event.key),
+              onToggleAllAnimals: () => _toggleAllAnimals(event.key),
               onOpen: () => widget.onOpenGroup(event),
               selectedAnimalIds:
                   _selectedAnimalIdsByEvent[event.key] ?? const <String>{},
@@ -189,6 +230,8 @@ class _AgendaEventCard extends StatelessWidget {
     required this.animalsById,
     required this.expanded,
     required this.onToggle,
+    required this.showAllAnimals,
+    required this.onToggleAllAnimals,
     required this.onOpen,
     required this.selectedAnimalIds,
     required this.registrationDetailsByRow,
@@ -202,6 +245,8 @@ class _AgendaEventCard extends StatelessWidget {
   final Map<String, AnimalEntity> animalsById;
   final bool expanded;
   final VoidCallback onToggle;
+  final bool showAllAnimals;
+  final VoidCallback onToggleAllAnimals;
   final VoidCallback onOpen;
   final Set<String> selectedAnimalIds;
   final Map<String, AgendaRegistrationDetail> registrationDetailsByRow;
@@ -213,10 +258,7 @@ class _AgendaEventCard extends StatelessWidget {
 
   bool get _hasAnimals => event.animalCount > 0;
 
-  bool get _canExpand => _hasAnimals && event.animalCount > 2;
-
-  bool get _isExpandedForRender =>
-      !_hasAnimals || expanded || event.animalCount <= 2;
+  bool get _isExpandedForRender => expanded;
 
   int get _selectedCount => selectedAnimalIds.length;
 
@@ -234,40 +276,59 @@ class _AgendaEventCard extends StatelessWidget {
   int get _pendingCount =>
       event.rows.where((row) => !_isRegistered(row)).length;
 
+  int get _totalAnimalCount => event.totalAnimalCount;
+
+  int get _registeredCount =>
+      _totalAnimalCount > _pendingCount ? _totalAnimalCount - _pendingCount : 0;
+
   bool get _canRegister => readOnly || _hasGeneralTask || _pendingCount == 1
       ? true
       : _selectedCount > 0;
 
-  bool get _showCheckboxes =>
-      !readOnly && _isExpandedForRender && _pendingCount > 1;
+  bool get _showCheckboxes => !readOnly && _pendingCount > 1;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final eventColor = colorForTipo(event.tipo);
+    final isExpanded = _isExpandedForRender;
     return AppCard(
+      backgroundColor: theme.colorScheme.surfaceContainerLow,
       padding: EdgeInsets.zero,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: onOpen,
-            borderRadius: BorderRadius.circular(AppRadii.md),
+            key: ValueKey('agenda-event-header-${event.key}'),
+            onTap: onToggle,
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+              ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(AppSpacing.xs),
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      color: theme.colorScheme.primaryContainer.withValues(
+                        alpha: theme.brightness == Brightness.dark
+                            ? 0.28
+                            : 0.55,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
                     ),
-                    child: AgendaAssetIcon(
-                      assetPath: assetForTipo(event.tipo),
-                      fallbackIcon: iconForTipo(event.tipo),
-                      color: eventColor,
-                      size: 32,
+                    child: Center(
+                      child: AgendaAssetIcon(
+                        assetPath: assetForTipo(event.tipo),
+                        fallbackIcon: iconForTipo(event.tipo),
+                        color: eventColor,
+                        size: 25,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -277,8 +338,6 @@ class _AgendaEventCard extends StatelessWidget {
                       children: [
                         Text(
                           event.titulo,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -291,17 +350,27 @@ class _AgendaEventCard extends StatelessWidget {
                           children: [
                             Text(
                               event.categoria.label,
-                              style: theme.textTheme.labelSmall?.copyWith(
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 color: eventColor,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            _MetadataDot(color: theme.colorScheme.outline),
+                            Text(
+                              _hasAnimals
+                                  ? '$_totalAnimalCount ${_totalAnimalCount == 1 ? 'animal' : 'animales'}'
+                                  : '${event.rows.length} ${event.rows.length == 1 ? 'tarea' : 'tareas'}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            _MetadataDot(color: theme.colorScheme.outline),
                             Text(
                               _dueLabel(event.primaryEntry.fecha, today),
-                              style: theme.textTheme.labelSmall?.copyWith(
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 color: _overdue
                                     ? theme.colorScheme.error
-                                    : theme.colorScheme.outline,
+                                    : theme.colorScheme.onSurfaceVariant,
                                 fontWeight: _overdue
                                     ? FontWeight.w700
                                     : FontWeight.normal,
@@ -309,50 +378,135 @@ class _AgendaEventCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (!isExpanded) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (_hasAnimals)
+                                _AnimalAvatarStack(
+                                  event: event,
+                                  animalsById: animalsById,
+                                )
+                              else
+                                Icon(
+                                  Icons.task_alt_outlined,
+                                  size: 20,
+                                  color: theme.colorScheme.outline,
+                                ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  _hasAnimals
+                                      ? '$_registeredCount de $_totalAnimalCount ${_totalAnimalCount == 1 ? 'registrado' : 'registrados'} · Toca para ver animales'
+                                      : readOnly
+                                      ? 'Toca para ver detalles'
+                                      : 'Toca para ver detalles y registrar',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  if (_canExpand)
-                    IconButton(
-                      key: ValueKey('agenda-event-toggle-${event.key}'),
-                      onPressed: onToggle,
-                      tooltip: expanded ? 'Ocultar animales' : 'Ver animales',
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        expanded ? Icons.expand_less : Icons.expand_more,
-                      ),
+                  SizedBox(
+                    width: AppControlMetrics.minHeight,
+                    height: AppControlMetrics.minHeight,
+                    child: Icon(
+                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
+                  ),
                 ],
               ),
             ),
           ),
-          Divider(height: 1, color: theme.colorScheme.outlineVariant),
-          _BoundedAnimalList(
-            event: event,
-            today: today,
-            animalsById: animalsById,
-            expanded: _isExpandedForRender,
-            showCheckboxes: _showCheckboxes,
-            onToggle: onToggle,
-            onOpen: onOpen,
-            selectedAnimalIds: selectedAnimalIds,
-            registrationDetailsByRow: registrationDetailsByRow,
-            readOnly: readOnly,
-            onToggleAnimalSelection: onToggleAnimalSelection,
-          ),
-          _AgendaEventFooter(
-            eventKey: event.key,
-            hasAnimals: _hasAnimals,
-            completedCount: event.completedAnimalCount,
-            totalCount: _hasAnimals
-                ? event.totalAnimalCount
-                : event.rows.length,
-            selectedCount: _selectedCount,
-            pendingCount: _pendingCount,
-            readOnly: readOnly,
-            canRegister: _canRegister,
-            onRegister: onRegister,
-          ),
+          if (isExpanded) ...[
+            Divider(height: 1, color: theme.colorScheme.outlineVariant),
+            _BoundedAnimalList(
+              event: event,
+              today: today,
+              animalsById: animalsById,
+              showAllAnimals: showAllAnimals,
+              onToggleAllAnimals: onToggleAllAnimals,
+              showCheckboxes: _showCheckboxes,
+              registeredCount: _registeredCount,
+              totalCount: _hasAnimals ? _totalAnimalCount : event.rows.length,
+              onOpen: onOpen,
+              selectedAnimalIds: selectedAnimalIds,
+              registrationDetailsByRow: registrationDetailsByRow,
+              readOnly: readOnly,
+              onToggleAnimalSelection: onToggleAnimalSelection,
+            ),
+            _AgendaEventFooter(
+              eventKey: event.key,
+              hasAnimals: _hasAnimals,
+              totalCount: _hasAnimals ? _totalAnimalCount : event.rows.length,
+              selectedCount: _selectedCount,
+              pendingCount: _pendingCount,
+              readOnly: readOnly,
+              canRegister: _canRegister,
+              onRegister: onRegister,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MetadataDot extends StatelessWidget {
+  const _MetadataDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) =>
+      Text('·', style: TextStyle(color: color));
+}
+
+class _AnimalAvatarStack extends StatelessWidget {
+  const _AnimalAvatarStack({required this.event, required this.animalsById});
+
+  final AgendaEventGroup event;
+  final Map<String, AnimalEntity> animalsById;
+
+  @override
+  Widget build(BuildContext context) {
+    final animals = event.rows
+        .where((row) => row.animalId != null)
+        .map((row) => animalsById[row.animalId])
+        .whereType<AnimalEntity>()
+        .take(3)
+        .toList(growable: false);
+    if (animals.isEmpty) {
+      return Icon(
+        Icons.pets_outlined,
+        size: 20,
+        color: Theme.of(context).colorScheme.outline,
+      );
+    }
+    const avatarSize = 22.0;
+    const overlap = 15.0;
+    return SizedBox(
+      width: avatarSize + overlap * (animals.length - 1),
+      height: avatarSize,
+      child: Stack(
+        children: [
+          for (var index = 0; index < animals.length; index++)
+            Positioned(
+              left: index * overlap,
+              child: _AgendaAnimalAvatar(
+                animal: animals[index],
+                color: AnimalPalette.categoryColor(animals[index].category),
+                size: avatarSize,
+                borderColor: Theme.of(context).colorScheme.surfaceContainerLow,
+              ),
+            ),
         ],
       ),
     );
@@ -363,7 +517,6 @@ class _AgendaEventFooter extends StatelessWidget {
   const _AgendaEventFooter({
     required this.eventKey,
     required this.hasAnimals,
-    required this.completedCount,
     required this.totalCount,
     required this.selectedCount,
     required this.pendingCount,
@@ -374,7 +527,6 @@ class _AgendaEventFooter extends StatelessWidget {
 
   final String eventKey;
   final bool hasAnimals;
-  final int completedCount;
   final int totalCount;
   final int selectedCount;
   final int pendingCount;
@@ -385,9 +537,6 @@ class _AgendaEventFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final progressText = hasAnimals
-        ? '$completedCount/$totalCount ${totalCount == 1 ? 'animal' : 'animales'}'
-        : '${totalCount - pendingCount}/$totalCount ${totalCount == 1 ? 'pendiente' : 'pendientes'}';
 
     return Column(
       children: [
@@ -397,16 +546,21 @@ class _AgendaEventFooter extends StatelessWidget {
             AppSpacing.sm,
             AppSpacing.xs,
             AppSpacing.sm,
-            AppSpacing.sm,
+            AppSpacing.xs,
           ),
-          child: Row(
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
             children: [
-              Expanded(
-                child: Text(
-                  progressText,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
+              Text(
+                hasAnimals
+                    ? '$selectedCount ${selectedCount == 1 ? 'seleccionado' : 'seleccionados'}'
+                    : '${totalCount - pendingCount}/$totalCount ${totalCount == 1 ? 'pendiente' : 'pendientes'}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               FilledButton.tonalIcon(
@@ -425,9 +579,10 @@ class _AgendaEventFooter extends StatelessWidget {
                 ),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
+                  minimumSize: const Size(0, AppControlMetrics.minHeight),
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
+                    vertical: AppSpacing.xxs,
                   ),
                 ),
               ),
@@ -444,9 +599,11 @@ class _BoundedAnimalList extends StatelessWidget {
     required this.event,
     required this.today,
     required this.animalsById,
-    required this.expanded,
+    required this.showAllAnimals,
+    required this.onToggleAllAnimals,
     required this.showCheckboxes,
-    required this.onToggle,
+    required this.registeredCount,
+    required this.totalCount,
     required this.onOpen,
     required this.selectedAnimalIds,
     required this.registrationDetailsByRow,
@@ -457,9 +614,11 @@ class _BoundedAnimalList extends StatelessWidget {
   final AgendaEventGroup event;
   final DateTime today;
   final Map<String, AnimalEntity> animalsById;
-  final bool expanded;
+  final bool showAllAnimals;
+  final VoidCallback onToggleAllAnimals;
   final bool showCheckboxes;
-  final VoidCallback onToggle;
+  final int registeredCount;
+  final int totalCount;
   final VoidCallback onOpen;
   final Set<String> selectedAnimalIds;
   final Map<String, AgendaRegistrationDetail> registrationDetailsByRow;
@@ -468,17 +627,32 @@ class _BoundedAnimalList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const rowExtent = 52.0;
-    final animalCount = event.animalCount;
-    final isAnimalList = animalCount > 0;
-    final maxVisibleRows = expanded ? 5.0 : 2.5;
-    final visibleRows = math.min(event.rows.length.toDouble(), maxVisibleRows);
-    final height = math.max(rowExtent, visibleRows * rowExtent);
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1.0, 2.0).toDouble();
+    final rowExtent = 56.0 + 24.0 * (textScale - 1);
+    final isAnimalList = event.animalCount > 0;
+    final visibleRows = showAllAnimals
+        ? event.rows.length.toDouble()
+        : math.min(event.rows.length.toDouble(), 3.0);
+    final maxHeight = rowExtent * 5 + 4;
+    final height = math
+        .max(
+          rowExtent,
+          math.min(
+            visibleRows * rowExtent + math.max(0, visibleRows.ceil() - 1),
+            maxHeight,
+          ),
+        )
+        .toDouble();
+    final itemCount = showAllAnimals || !isAnimalList
+        ? event.rows.length
+        : math.min(event.rows.length, 3).toInt();
     final list = ListView.separated(
       primary: false,
-      physics: expanded ? null : const NeverScrollableScrollPhysics(),
+      physics: showAllAnimals ? null : const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-      itemCount: event.rows.length,
+      itemCount: itemCount,
       separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final row = event.rows[index];
@@ -487,7 +661,7 @@ class _BoundedAnimalList extends StatelessWidget {
           row: row,
           animal: animal,
           today: today,
-          onOpen: expanded ? onOpen : onToggle,
+          onOpen: onOpen,
           showCheckbox: showCheckboxes,
           registered:
               registrationDetailsByRow[agendaRegistrationRowKey(
@@ -510,41 +684,11 @@ class _BoundedAnimalList extends StatelessWidget {
     );
 
     final boundedList = SizedBox(height: height, child: list);
-    final listWithScroll = expanded && event.rows.length > 5
+    final listWithScroll = showAllAnimals && event.rows.length > 5
         ? Scrollbar(child: boundedList)
         : boundedList;
-    final showFade = isAnimalList && animalCount > 2 && !expanded;
     final theme = Theme.of(context);
-    // Keep the inset list distinct from the card without using a stark white.
-    final listSurfaceColor = theme.colorScheme.surfaceContainerHighest;
-    final listWithPreview = showFade
-        ? Stack(
-            key: ValueKey('agenda-animal-preview-fade-${event.key}'),
-            children: [
-              listWithScroll,
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 26,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          listSurfaceColor.withValues(alpha: 0),
-                          listSurfaceColor.withValues(alpha: 0.96),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : listWithScroll;
+    final listSurfaceColor = theme.colorScheme.surfaceContainerLow;
 
     return ColoredBox(
       key: ValueKey('agenda-animal-list-surface-${event.key}'),
@@ -552,46 +696,53 @@ class _BoundedAnimalList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isAnimalList && animalCount > 2)
-            InkWell(
-              onTap: onToggle,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
-                  AppSpacing.xs,
-                  AppSpacing.xs,
-                  0,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.pets_outlined,
-                      size: 15,
+          if (isAnimalList)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.sm,
+                AppSpacing.xxs,
+              ),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xxs,
+                children: [
+                  Text(
+                    'ANIMALES',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  Text(
+                    '$registeredCount/$totalCount registrados',
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: AppSpacing.xxs),
-                    Text(
-                      'Animales',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      expanded ? 'Ocultar' : 'Ver todos',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          listWithScroll,
+          if (isAnimalList && event.rows.length > 3)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onToggleAllAnimals,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, AppControlMetrics.minHeight),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
+                ),
+                child: Text(
+                  showAllAnimals ? 'Ver menos animales' : 'Ver más animales',
                 ),
               ),
             ),
-          if (isAnimalList && animalCount > 2)
-            const SizedBox(height: AppSpacing.xxs),
-          listWithPreview,
         ],
       ),
     );
@@ -632,24 +783,34 @@ class _AgendaAnimalRow extends StatelessWidget {
     if (resolvedAnimal == null || animalId == null) {
       return InkWell(
         onTap: onOpen,
-        child: SizedBox(
-          height: 52,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             children: [
-              Icon(
-                Icons.task_alt_outlined,
-                size: 18,
-                color: theme.colorScheme.outline,
+              SizedBox(
+                width: AppControlMetrics.minHeight,
+                height: AppControlMetrics.minHeight,
+                child: Icon(
+                  Icons.task_alt_outlined,
+                  size: 18,
+                  color: theme.colorScheme.outline,
+                ),
               ),
               const SizedBox(width: AppSpacing.xs),
               Expanded(
-                child: Text(
-                  row.entry.titulo,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      row.entry.titulo,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    _DateLabel(date: row.entry.fecha, today: today),
+                  ],
                 ),
               ),
-              _DateLabel(date: row.entry.fecha, today: today),
             ],
           ),
         ),
@@ -662,73 +823,63 @@ class _AgendaAnimalRow extends StatelessWidget {
         detail?.summary ?? (registered ? 'Completado sin detalle' : null);
     return InkWell(
       onTap: onOpen,
-      child: SizedBox(
-        height: 52,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _AgendaAnimalAvatar(animal: resolvedAnimal, color: categoryColor),
-            const SizedBox(width: AppSpacing.xs),
+            SizedBox(
+              width: AppControlMetrics.minHeight,
+              height: AppControlMetrics.minHeight,
+              child: Center(
+                child: registered
+                    ? Icon(
+                        Icons.check_circle,
+                        size: 21,
+                        color: theme.colorScheme.primary,
+                      )
+                    : showCheckbox && canSelect
+                    ? _AgendaAnimalCheckbox(
+                        checkboxKey: ValueKey(
+                          'agenda-animal-checkbox-$animalId',
+                        ),
+                        value: selected,
+                        onChanged: (_) => onToggleSelection(row),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xxs),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          primaryAnimalLabel(resolvedAnimal),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xxs),
-                      TagChip(
-                        label: resolvedAnimal.lifeStage.displayName
-                            .toUpperCase(),
-                        accentColor: categoryColor,
-                        fontSize: 9,
-                        tintOpacity: 0.12,
-                        borderOpacity: 0.3,
-                      ),
-                    ],
+                  Text(
+                    primaryAnimalLabel(resolvedAnimal),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  const SizedBox(height: 1),
                   Text(
                     registrationSummary?.isNotEmpty == true
                         ? '${identificationDisplay(resolvedAnimal)} · $registrationSummary'
                         : identificationDisplay(resolvedAnimal),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.outline,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.xs),
-            _DateLabel(date: row.entry.fecha, today: today),
-            if (registered)
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.xxs),
-                child: Icon(
-                  Icons.check_circle,
-                  size: 19,
-                  color: theme.colorScheme.primary,
-                ),
-              )
-            else if (showCheckbox && canSelect) ...[
-              const SizedBox(width: AppSpacing.xxs),
-              _AgendaAnimalCheckbox(
-                checkboxKey: ValueKey('agenda-animal-checkbox-$animalId'),
-                value: selected,
-                onChanged: (_) => onToggleSelection(row),
-              ),
-            ],
+            TagChip(
+              label: resolvedAnimal.lifeStage.displayName.toUpperCase(),
+              accentColor: categoryColor,
+              fontSize: 10,
+              tintOpacity: 0.12,
+              borderOpacity: 0.3,
+            ),
           ],
         ),
       ),
@@ -737,10 +888,17 @@ class _AgendaAnimalRow extends StatelessWidget {
 }
 
 class _AgendaAnimalAvatar extends StatelessWidget {
-  const _AgendaAnimalAvatar({required this.animal, required this.color});
+  const _AgendaAnimalAvatar({
+    required this.animal,
+    required this.color,
+    this.size = 34,
+    this.borderColor,
+  });
 
   final AnimalEntity animal;
   final Color color;
+  final double size;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -750,19 +908,22 @@ class _AgendaAnimalAvatar extends StatelessWidget {
     );
 
     return Container(
-      width: 34,
-      height: 34,
-      padding: const EdgeInsets.all(5),
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size * 0.14),
       decoration: BoxDecoration(
         color: AnimalPalette.avatarBackgroundLight,
         shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: 0.55)),
+        border: Border.all(
+          color: borderColor ?? color.withValues(alpha: 0.55),
+          width: 1.4,
+        ),
       ),
       child: Image.asset(
         profile.asset,
         fit: BoxFit.contain,
         errorBuilder: (_, _, _) =>
-            Icon(profile.fallbackIcon, size: 19, color: profile.color),
+            Icon(profile.fallbackIcon, size: size * 0.56, color: profile.color),
       ),
     );
   }
@@ -806,8 +967,8 @@ class _AgendaAnimalCheckbox extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
     return CheckboxTheme(
       data: CheckboxThemeData(
-        visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.standard,
+        materialTapTargetSize: MaterialTapTargetSize.padded,
         side: BorderSide(color: primary, width: 1.4),
         fillColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)

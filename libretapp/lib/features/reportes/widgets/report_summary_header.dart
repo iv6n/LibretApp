@@ -14,10 +14,7 @@ class ReportSummaryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final attention =
-        summary.healthAlertsCount +
-        summary.unvaccinatedCount +
-        summary.underObservationCount;
+    final attention = summary.healthAlertsCount;
     final stable = attention == 0;
     final statusColor = stable ? AppColors.success : AppColors.warning;
     final locale = Localizations.localeOf(context).toLanguageTag();
@@ -80,8 +77,10 @@ class ReportSummaryHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   stable
-                      ? 'Operación estable'
-                      : '$attention pendientes de seguimiento',
+                      ? 'Sin pendientes sanitarios registrados'
+                      : attention == 1
+                      ? '1 animal con pendiente sanitario'
+                      : '$attention animales con pendientes sanitarios',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),

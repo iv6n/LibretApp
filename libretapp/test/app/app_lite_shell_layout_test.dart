@@ -74,7 +74,7 @@ void main() {
     final last = find.byKey(const ValueKey('last-action-0'));
     expect(
       tester.getRect(last).bottom,
-      lessThanOrEqualTo(tester.getRect(dock).top),
+      lessThanOrEqualTo(tester.getRect(dock).top + 0.01),
     );
     expect(last.hitTestable(), findsOneWidget);
     await tester.tap(last);

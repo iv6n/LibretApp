@@ -49,11 +49,12 @@ class _RegistroPageState extends State<RegistroPage> {
       locator<AnimalRepository>()
           .getAll()
           .then((animals) {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _activeAnimals = animals;
                 _animalCount = animals.length;
               });
+            }
           })
           .catchError((Object _) {
             if (mounted) setState(() => _animalCount = -1);
@@ -106,11 +107,21 @@ class _RegistroPageState extends State<RegistroPage> {
       for (final label in labels)
         if (actions[label] != null) actions[label]!,
     ];
+    final primaryLabels = <String>{
+      'Animal',
+      ...primary.map((item) => item.label),
+    };
+    final remaining = [
+      for (final section in original)
+        _RegistroSection(
+          label: section.label,
+          items: section.items
+              .where((item) => !primaryLabels.contains(item.label))
+              .toList(),
+        ),
+    ].where((section) => section.items.isNotEmpty);
     return [
-      _RegistroSection(
-        label: _animalCount == 0 ? 'Para empezar' : 'Acciones principales',
-        items: primary,
-      ),
+      _RegistroSection(label: 'Animal', items: primary, isCategory: true),
       _RegistroSection(
         label: 'Más opciones',
         items: [
@@ -128,283 +139,238 @@ class _RegistroPageState extends State<RegistroPage> {
           ),
         ],
       ),
-      if (_showAllAnimalActions) ...original,
+      if (_showAllAnimalActions) ...remaining,
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Menú de registros'),
-          elevation: 0,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Animal'),
-              Tab(text: 'Ubicación'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            _RegistroTabContent(
-              sections: _animalSections(context, [
-                _RegistroSection(
-                  label: 'Herramientas de captura',
-                  items: [
-                    if (!ReleaseFeatures.demoMode)
-                      _RegistroCardItem(
-                        icon: Icons.upload_file_outlined,
-                        label: 'Importar hato',
-                        subtitle: 'Excel o CSV con vista previa',
-                        color: AppColors.primary,
-                        onTap: (context) =>
-                            context.pushNamed(AppRoutes.nameHerdImport),
-                      ),
-                    _RegistroCardItem(
-                      icon: Icons.playlist_add_check_outlined,
-                      label: 'Registro por lotes',
-                      subtitle: 'Capturar y continuar sin señal',
-                      color: AppColors.secondary,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameBatchRecords),
-                    ),
-                  ],
-                ),
-                _RegistroSection(
-                  label: 'Nuevo',
-                  items: [
-                    if (ReleaseFeatures.hardwareIntegrationsEnabled)
-                      _RegistroCardItem(
-                        icon: Icons.sensors,
-                        label: 'RFID',
-                        subtitle: 'Escanear y asignar aretes',
-                        color: Colors.deepOrange,
-                        onTap: (context) =>
-                            context.pushNamed(AppRoutes.nameRfid),
-                      ),
-                    _RegistroCardItem(
-                      icon: Icons.pets,
-                      label: 'Animal',
-                      subtitle: 'Nuevo animal',
-                      color: AppColors.primary,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameAnimalNuevo),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.groups,
-                      label: 'Lote',
-                      subtitle: 'Nuevo lote',
-                      color: AppColors.secondary,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameLoteNuevo),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.child_care,
-                      label: 'Parición',
-                      subtitle: 'Registro de parición',
-                      color: Colors.pink,
-                      onTap: (context) => context.pushNamed(
-                        AppRoutes.nameRegistroReproduccion,
-                        queryParameters: {'preset': 'paricion'},
-                      ),
-                    ),
-                  ],
-                ),
-                _RegistroSection(
-                  label: 'Registrar',
-                  items: [
-                    _RegistroCardItem(
-                      icon: Icons.vaccines,
-                      label: 'Tratar lote',
-                      subtitle: 'Vacunar o tratar varios animales',
-                      color: Colors.teal.shade700,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroTratarLote),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.child_friendly_outlined,
-                      label: 'Destete',
-                      subtitle: 'Fecha y peso del becerro',
-                      color: Colors.brown,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroDestete),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.monitor_weight,
-                      label: 'Peso',
-                      subtitle: 'Peso del animal',
-                      color: Colors.green,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroPeso),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.medical_services,
-                      label: 'Sanitario',
-                      subtitle: 'Vacunas y tratamiento',
-                      color: Colors.teal,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroSanitario),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.payments,
-                      label: 'Costo',
-                      subtitle: 'Costos de manejo',
-                      color: Colors.brown,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroCosto),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.swap_horiz,
-                      label: 'Cambio de ubicación',
-                      subtitle: 'Movimiento interno',
-                      color: Colors.indigo,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroMovimiento),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.analytics,
-                      label: 'Producción',
-                      subtitle: 'Ganancia o condición',
-                      color: Colors.blue,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroProduccion),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.water_drop,
-                      label: 'Ordeña',
-                      subtitle: 'Leche por vaca o lote',
-                      color: Colors.lightBlue.shade700,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroOrdena),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.favorite,
-                      label: 'Reproducción',
-                      subtitle: 'Servicio o parición',
-                      color: Colors.deepOrange,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroReproduccion),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.store,
-                      label: 'Comercial',
-                      subtitle: 'Compra y venta',
-                      color: Colors.purple,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameRegistroComercial),
-                    ),
-                  ],
-                ),
-              ]),
-            ),
-            _RegistroTabContent(
-              sections: [
-                _RegistroSection(
-                  label: 'Nuevo',
-                  items: [
-                    _RegistroCardItem(
-                      icon: Icons.place,
-                      label: 'Ubicación',
-                      subtitle: 'Nueva ubicación',
-                      color: AppColors.accent,
-                      onTap: (context) =>
-                          context.pushNamed(AppRoutes.nameUbicacionNueva),
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.grass,
-                      label: 'Cultivo',
-                      subtitle: 'Nuevo cultivo',
-                      color: Colors.lightGreen,
-                      onTap: (context) {
-                        _handleNewCrop(context);
-                      },
-                    ),
-                  ],
-                ),
-                _RegistroSection(
-                  label: 'Registrar',
-                  items: [
-                    _RegistroCardItem(
-                      icon: Icons.agriculture,
-                      label: 'Cosecha',
-                      subtitle: 'Rendimiento de cultivo',
-                      color: Colors.orange,
-                      onTap: (context) {
-                        _handleCropRecord(
-                          context,
-                          _CropRecordMenuAction.harvest,
-                        );
-                      },
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.water_drop,
-                      label: 'Riego',
-                      subtitle: 'Riego de cultivo',
-                      color: Colors.blueAccent,
-                      onTap: (context) {
-                        _handleCropRecord(
-                          context,
-                          _CropRecordMenuAction.watering,
-                        );
-                      },
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.health_and_safety,
-                      label: 'Salud de cultivo',
-                      subtitle: 'Problemas y tratamiento',
-                      color: Colors.redAccent,
-                      onTap: (context) {
-                        _handleCropRecord(
-                          context,
-                          _CropRecordMenuAction.health,
-                        );
-                      },
-                    ),
-                    _RegistroCardItem(
-                      icon: Icons.task_alt,
-                      label: 'Tarea',
-                      subtitle: 'Nueva tarea de cultivo',
-                      color: Colors.amber,
-                      onTap: (context) {
-                        _handleCropRecord(context, _CropRecordMenuAction.task);
-                      },
-                    ),
-                  ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('Menú de registros'), elevation: 0),
+      body: _RegistroMenuContent(
+        sections: [
+          ..._animalSections(context, [
+            _RegistroSection(
+              label: 'Herramientas de captura',
+              items: [
+                if (!ReleaseFeatures.demoMode)
+                  _RegistroCardItem(
+                    icon: Icons.upload_file_outlined,
+                    label: 'Importar hato',
+                    subtitle: 'Excel o CSV con vista previa',
+                    color: AppColors.primary,
+                    onTap: (context) =>
+                        context.pushNamed(AppRoutes.nameHerdImport),
+                  ),
+                _RegistroCardItem(
+                  icon: Icons.playlist_add_check_outlined,
+                  label: 'Registro por lotes',
+                  subtitle: 'Capturar y continuar sin señal',
+                  color: AppColors.secondary,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameBatchRecords),
                 ),
               ],
             ),
-          ],
-        ),
+            _RegistroSection(
+              label: 'Nuevo',
+              items: [
+                if (ReleaseFeatures.hardwareIntegrationsEnabled)
+                  _RegistroCardItem(
+                    icon: Icons.sensors,
+                    label: 'RFID',
+                    subtitle: 'Escanear y asignar aretes',
+                    color: Colors.deepOrange,
+                    onTap: (context) => context.pushNamed(AppRoutes.nameRfid),
+                  ),
+                _RegistroCardItem(
+                  icon: Icons.pets,
+                  label: 'Animal',
+                  subtitle: 'Nuevo animal',
+                  color: AppColors.primary,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameAnimalNuevo),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.groups,
+                  label: 'Lote',
+                  subtitle: 'Nuevo lote',
+                  color: AppColors.secondary,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameLoteNuevo),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.child_care,
+                  label: 'Parición',
+                  subtitle: 'Registro de parición',
+                  color: Colors.pink,
+                  onTap: (context) => context.pushNamed(
+                    AppRoutes.nameRegistroReproduccion,
+                    queryParameters: {'preset': 'paricion'},
+                  ),
+                ),
+              ],
+            ),
+            _RegistroSection(
+              label: 'Registrar',
+              items: [
+                _RegistroCardItem(
+                  icon: Icons.vaccines,
+                  label: 'Tratar lote',
+                  subtitle: 'Vacunar o tratar varios animales',
+                  color: Colors.teal.shade700,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroTratarLote),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.child_friendly_outlined,
+                  label: 'Destete',
+                  subtitle: 'Fecha y peso del becerro',
+                  color: Colors.brown,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroDestete),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.monitor_weight,
+                  label: 'Peso',
+                  subtitle: 'Peso del animal',
+                  color: Colors.green,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroPeso),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.medical_services,
+                  label: 'Sanitario',
+                  subtitle: 'Vacunas y tratamiento',
+                  color: Colors.teal,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroSanitario),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.payments,
+                  label: 'Costo',
+                  subtitle: 'Costos de manejo',
+                  color: Colors.brown,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroCosto),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.swap_horiz,
+                  label: 'Cambio de ubicación',
+                  subtitle: 'Movimiento interno',
+                  color: Colors.indigo,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroMovimiento),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.analytics,
+                  label: 'Producción',
+                  subtitle: 'Ganancia o condición',
+                  color: Colors.blue,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroProduccion),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.water_drop,
+                  label: 'Ordeña',
+                  subtitle: 'Leche por vaca o lote',
+                  color: Colors.lightBlue.shade700,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroOrdena),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.favorite,
+                  label: 'Reproducción',
+                  subtitle: 'Servicio o parición',
+                  color: Colors.deepOrange,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroReproduccion),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.store,
+                  label: 'Comercial',
+                  subtitle: 'Compra y venta',
+                  color: Colors.purple,
+                  onTap: (context) =>
+                      context.pushNamed(AppRoutes.nameRegistroComercial),
+                ),
+              ],
+            ),
+          ]),
+          _RegistroSection(
+            label: 'Plantas',
+            isCategory: true,
+            items: [
+              _RegistroCardItem(
+                icon: Icons.grass,
+                label: 'Añadir planta o cultivo',
+                subtitle: 'Crear una ficha nueva',
+                color: Colors.lightGreen,
+                onTap: _handleNewCrop,
+              ),
+              _RegistroCardItem(
+                icon: Icons.agriculture,
+                label: 'Cosecha',
+                subtitle: 'Rendimiento de cultivo',
+                color: Colors.orange,
+                onTap: (context) {
+                  _handleCropRecord(context, _CropRecordMenuAction.harvest);
+                },
+              ),
+              _RegistroCardItem(
+                icon: Icons.water_drop,
+                label: 'Riego',
+                subtitle: 'Riego de cultivo',
+                color: Colors.blueAccent,
+                onTap: (context) {
+                  _handleCropRecord(context, _CropRecordMenuAction.watering);
+                },
+              ),
+              _RegistroCardItem(
+                icon: Icons.health_and_safety,
+                label: 'Salud de cultivo',
+                subtitle: 'Problemas y tratamiento',
+                color: Colors.redAccent,
+                onTap: (context) {
+                  _handleCropRecord(context, _CropRecordMenuAction.health);
+                },
+              ),
+              _RegistroCardItem(
+                icon: Icons.task_alt,
+                label: 'Tarea',
+                subtitle: 'Nueva tarea de cultivo',
+                color: Colors.amber,
+                onTap: (context) {
+                  _handleCropRecord(context, _CropRecordMenuAction.task);
+                },
+              ),
+            ],
+          ),
+          _RegistroSection(
+            label: 'Ubicaciones',
+            isCategory: true,
+            items: [
+              _RegistroCardItem(
+                icon: Icons.place,
+                label: 'Nueva ubicación',
+                subtitle: 'Crear una ubicación',
+                color: AppColors.accent,
+                onTap: (context) =>
+                    context.pushNamed(AppRoutes.nameUbicacionNueva),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _handleNewCrop(BuildContext context) async {
-    final cultivationRepository = _cultivationRepository;
-    if (cultivationRepository == null) {
+  void _handleNewCrop(BuildContext context) {
+    if (_cultivationRepository == null) {
       _showMessage('El catálogo de cultivos no está disponible.');
       return;
     }
-    final locations = await _locationRepository.getAll();
-    if (!mounted || !context.mounted) return;
-    if (locations.isEmpty) {
-      _showMessage('Primero crea una ubicacion para registrar cultivos.');
-      return;
-    }
-
-    final location = await _pickLocation(context, locations);
-    if (!mounted || !context.mounted || location == null) return;
-
-    final saved = await context.pushNamed(
-      AppRoutes.nameCultivoNuevo,
-      queryParameters: {'location': location.uuid},
-    );
-    if (!mounted || !context.mounted || saved != true) return;
-    if (!mounted) return;
-    _showMessage('Cultivo registrado en ${location.name}.');
+    context.pushNamed(AppRoutes.nameCultivoNuevo);
   }
 
   Future<void> _handleCropRecord(
@@ -518,56 +484,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
     if (!mounted || !context.mounted) return;
     _showMessage('${action.successMessage} en ${crop.name}.');
-  }
-
-  Future<LocationEntity?> _pickLocation(
-    BuildContext context,
-    List<LocationEntity> locations,
-  ) {
-    String selectedUuid = locations.first.uuid;
-    return showDialog<LocationEntity>(
-      context: context,
-      useRootNavigator: true,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (stateContext, setDialogState) => AlertDialog(
-            title: const Text('Seleccionar ubicación'),
-            content: DropdownButtonFormField<String>(
-              initialValue: selectedUuid,
-              decoration: const InputDecoration(labelText: 'Ubicación'),
-              isExpanded: true,
-              items: locations
-                  .map(
-                    (location) => DropdownMenuItem<String>(
-                      value: location.uuid,
-                      child: Text(location.name),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                setDialogState(() => selectedUuid = value);
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final selected = locations.firstWhere(
-                    (location) => location.uuid == selectedUuid,
-                  );
-                  Navigator.of(dialogContext).pop(selected);
-                },
-                child: const Text('Continuar'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Future<_LocationCropSelection?> _pickLocationAndCrop(
@@ -689,23 +605,31 @@ class _RegistroPageState extends State<RegistroPage> {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
+  const _SectionLabel({required this.label, required this.isCategory});
   final String label;
+  final bool isCategory;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurface,
-        fontWeight: FontWeight.w700,
+    return Semantics(
+      header: true,
+      child: Text(
+        label,
+        style:
+            (isCategory
+                    ? Theme.of(context).textTheme.titleLarge
+                    : Theme.of(context).textTheme.titleMedium)
+                ?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
       ),
     );
   }
 }
 
-class _RegistroTabContent extends StatelessWidget {
-  const _RegistroTabContent({required this.sections});
+class _RegistroMenuContent extends StatelessWidget {
+  const _RegistroMenuContent({required this.sections});
 
   final List<_RegistroSection> sections;
 
@@ -726,7 +650,12 @@ class _RegistroTabContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final section in sections) ...[
-                  _SectionLabel(label: section.label),
+                  if (section.isCategory && section != sections.first)
+                    const SizedBox(height: AppSpacing.sm),
+                  _SectionLabel(
+                    label: section.label,
+                    isCategory: section.isCategory,
+                  ),
                   const SizedBox(height: AppSpacing.xs),
                   _RegistroCardGrid(items: section.items),
                   const SizedBox(height: AppSpacing.md),
@@ -929,10 +858,15 @@ class _RegistroCardState extends State<_RegistroCard> {
 }
 
 class _RegistroSection {
-  const _RegistroSection({required this.label, required this.items});
+  const _RegistroSection({
+    required this.label,
+    required this.items,
+    this.isCategory = false,
+  });
 
   final String label;
   final List<_RegistroCardItem> items;
+  final bool isCategory;
 }
 
 class _RegistroCardItem {

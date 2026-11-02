@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_bloc.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_event.dart';
 import 'package:libretapp/features/ubicaciones/bloc/ubicaciones_state.dart';
@@ -42,25 +43,29 @@ class _UbicacionesFilterBarState extends State<UbicacionesFilterBar> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            if (roots.length >= 2)
-              Expanded(child: _buildRanchoRow(context, roots)),
-            if (widget.showCategoryFilter)
-              IconButton(
-                tooltip: _categoriesOpen
-                    ? 'Ocultar categorías'
-                    : 'Filtrar categorías',
-                icon: state.selectedCategoryFilters.isEmpty
-                    ? const Icon(Icons.tune_outlined)
-                    : Badge.count(
-                        count: state.selectedCategoryFilters.length,
-                        child: const Icon(Icons.tune_outlined),
-                      ),
-                onPressed: () =>
-                    setState(() => _categoriesOpen = !_categoriesOpen),
-              ),
-          ],
+        AppDirectoryFilterRow(
+          key: const ValueKey('ubicaciones-root-filter-row'),
+          trailing: widget.showCategoryFilter && state.allUbicaciones.isNotEmpty
+              ? IconButton(
+                  tooltip: _categoriesOpen
+                      ? 'Ocultar categorías'
+                      : 'Filtrar categorías',
+                  icon: state.selectedCategoryFilters.isEmpty
+                      ? const Icon(Icons.tune_outlined)
+                      : Badge.count(
+                          count: state.selectedCategoryFilters.length,
+                          child: const Icon(Icons.tune_outlined),
+                        ),
+                  onPressed: () =>
+                      setState(() => _categoriesOpen = !_categoriesOpen),
+                )
+              : null,
+          children: roots.length >= 2
+              ? [
+                  _allLocationsChip(context),
+                  for (final root in roots) _ranchoChip(context, root),
+                ]
+              : [_allLocationsChip(context)],
         ),
         if (widget.showCategoryFilter && _categoriesOpen)
           _buildCategoryRow(context),
@@ -70,103 +75,54 @@ class _UbicacionesFilterBarState extends State<UbicacionesFilterBar> {
     );
   }
 
-  Widget _buildRanchoRow(BuildContext context, List<LocationEntity> ranchos) {
-    return SizedBox(
-      key: const ValueKey('ubicaciones-root-filter-row'),
-      height: 60,
-      child: Stack(
-        children: [
-          ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            itemCount: ranchos.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                final isSelected = state.selectedRanchoUuid == null;
-                return _FilterChip(
-                  key: const ValueKey('ubicaciones-root-filter-all'),
-                  label: 'Todos',
-                  icon: Icons.home_work_outlined,
-                  selected: isSelected,
-                  onSelected: (_) => context.read<UbicacionesBloc>().add(
-                    const SelectParentFilter(null),
-                  ),
-                );
-              }
-              final rancho = ranchos[index - 1];
-              final isSelected = state.selectedRanchoUuid == rancho.uuid;
-              return _FilterChip(
-                key: ValueKey<String>('ubicaciones-root-filter-${rancho.uuid}'),
-                label: rancho.name,
-                icon: iconForLocationType(rancho.type),
-                selected: isSelected,
-                onSelected: (_) => context.read<UbicacionesBloc>().add(
-                  SelectParentFilter(isSelected ? null : rancho.uuid),
-                ),
-              );
-            },
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: Container(
-                width: 26,
-                alignment: Alignment.centerRight,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(
-                        context,
-                      ).scaffoldBackgroundColor.withValues(alpha: 0),
-                      Theme.of(context).scaffoldBackgroundColor,
-                    ],
-                  ),
-                ),
-                child: const Icon(Icons.chevron_right, size: 16),
-              ),
-            ),
-          ),
-        ],
+  Widget _allLocationsChip(BuildContext context) {
+    return _FilterChip(
+      key: const ValueKey('ubicaciones-root-filter-all'),
+      label: 'Todos',
+      count: state.allUbicaciones.length,
+      icon: Icons.home_work_outlined,
+      selected: state.selectedRanchoUuid == null,
+      onSelected: (_) =>
+          context.read<UbicacionesBloc>().add(const SelectParentFilter(null)),
+    );
+  }
+
+  Widget _ranchoChip(BuildContext context, LocationEntity rancho) {
+    final isSelected = state.selectedRanchoUuid == rancho.uuid;
+    return _FilterChip(
+      key: ValueKey<String>('ubicaciones-root-filter-${rancho.uuid}'),
+      label: rancho.name,
+      icon: iconForLocationType(rancho.type),
+      selected: isSelected,
+      onSelected: (_) => context.read<UbicacionesBloc>().add(
+        SelectParentFilter(isSelected ? null : rancho.uuid),
       ),
     );
   }
 
   Widget _buildCategoryRow(BuildContext context) {
-    return SizedBox(
+    return AppDirectoryFilterRow(
       key: const ValueKey('ubicaciones-category-filter-row'),
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        itemCount: LocationCategory.values.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            final noneSelected = state.selectedCategoryFilters.isEmpty;
-            return _FilterChip(
-              label: 'Todas',
-              icon: Icons.category_outlined,
-              selected: noneSelected,
-              onSelected: (_) => context.read<UbicacionesBloc>().add(
-                const ClearCategoryFilters(),
-              ),
-            );
-          }
-          final category = LocationCategory.values[index - 1];
-          final isSelected = state.selectedCategoryFilters.contains(category);
-          return _FilterChip(
+      children: [
+        _FilterChip(
+          label: 'Todas',
+          icon: Icons.category_outlined,
+          selected: state.selectedCategoryFilters.isEmpty,
+          onSelected: (_) =>
+              context.read<UbicacionesBloc>().add(const ClearCategoryFilters()),
+        ),
+        for (final category in LocationCategory.values)
+          _FilterChip(
             label: locationCategoryLabel(context, category),
             icon: iconForLocationCategory(category),
-            selected: isSelected,
+            selected: state.selectedCategoryFilters.contains(category),
             onSelected: (selected) {
               context.read<UbicacionesBloc>().add(
                 ToggleCategoryFilter(category: category, selected: selected),
               );
             },
-          );
-        },
-      ),
+          ),
+      ],
     );
   }
 
@@ -197,23 +153,23 @@ class _FilterChip extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onSelected,
+    this.count,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final ValueChanged<bool> onSelected;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: AppDirectoryFilterChip(
-        selected: selected,
-        label: label,
-        icon: icon,
-        onTap: () => onSelected(!selected),
-      ),
+    return AppDirectoryFilterChip(
+      selected: selected,
+      label: label,
+      count: count,
+      icon: icon,
+      onTap: () => onSelected(!selected),
     );
   }
 }

@@ -33,6 +33,9 @@ class AppDirectoryFilterChip extends StatelessWidget {
             alpha: theme.brightness == Brightness.dark ? .20 : .10,
           )
         : scheme.surface;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final tapTargetHeight = 17 * textScale + 12;
+    final chipHeight = tapTargetHeight > 48 ? tapTargetHeight : 48.0;
 
     return Semantics(
       button: true,
@@ -41,40 +44,50 @@ class AppDirectoryFilterChip extends StatelessWidget {
       excludeSemantics: true,
       onTap: onTap,
       child: Material(
-        color: background,
-        shape: StadiumBorder(side: BorderSide(color: border)),
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           customBorder: const StadiumBorder(),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 18, color: foreground),
-                    const SizedBox(width: 6),
-                  ],
-                  Text(
-                    label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: foreground,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    ),
+          child: SizedBox(
+            height: chipHeight,
+            child: Center(
+              child: Material(
+                color: background,
+                shape: StadiumBorder(side: BorderSide(color: border)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                  if (count != null) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      '$count',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.w800,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, size: 18, color: foreground),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        label,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: foreground,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ],
+                      if (count != null) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '$count',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: foreground,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),

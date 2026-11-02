@@ -168,7 +168,7 @@ class _CloudBackupSheetState extends State<CloudBackupSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text('Hasta cinco copias verificadas por cuenta, de hasta 100 MiB. Se requiere Wi-Fi.'),
+                const Text('Hasta tres copias verificadas por cuenta, de hasta 10 MiB. Se requiere Wi-Fi.'),
                 if (AutomaticBackup.supported && locator.isRegistered<LocalWorkspace>())
                   _AutomaticBackupControl(workspace: locator<LocalWorkspace>()),
                 const SizedBox(height: 12),

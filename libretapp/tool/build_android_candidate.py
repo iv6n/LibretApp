@@ -56,7 +56,7 @@ def validate_metadata(metadata):
             raise ValueError('Los dominios de prueba no son datos de tienda.')
 
 
-CONNECTED_GATES = ('sms_flow', 'sms_quotas', 'account_isolation', 'two_phone_restore',
+CONNECTED_GATES = ('sms_flow', 'verify_limits', 'account_isolation', 'two_phone_restore',
     'backup_interruptions', 'automatic_background', 'automatic_battery_network_reboot',
     'simultaneous_restore', 'account_deletion_app_web', 'deletion_recovery', 'rls_executed',
     'update_certificate', 'billing_validated')

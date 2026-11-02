@@ -159,14 +159,22 @@ class AppRoutes {
   /// pre-applying one of the list filters. There is no standalone `/animales`
   /// route: the list lives inside the directory shell branch.
   static String animalesPath({
+    bool focusSearch = false,
     bool attention = false,
     bool pendingEarTag = false,
+    String? healthFilter,
+    bool clearFilters = false,
     String? loteUuid,
     String? locationUuid,
   }) {
     final buffer = StringBuffer('/directorio?tab=animales');
+    if (focusSearch) buffer.write('&buscar=1');
+    if (clearFilters) buffer.write('&clearFilters=true');
     if (attention) buffer.write('&attention=true');
     if (pendingEarTag) buffer.write('&pendingEarTag=true');
+    if (healthFilter == 'pending' || healthFilter == 'unvaccinated') {
+      buffer.write('&health=$healthFilter');
+    }
     if (loteUuid != null && loteUuid.isNotEmpty) {
       buffer.write('&lote=${Uri.encodeQueryComponent(loteUuid)}');
     }

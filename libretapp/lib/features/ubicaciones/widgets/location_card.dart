@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/view/cultivation_usage_scope.dart';
@@ -29,6 +30,7 @@ class LocationCard extends StatelessWidget {
     this.isExpanded = false,
     this.onToggleExpanded,
     this.isNested = false,
+    this.standardizedDirectoryLayout = false,
     this.hierarchyDepth = 0,
     this.ejidoCount,
     this.ejidoTotalCapacity,
@@ -45,6 +47,7 @@ class LocationCard extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback? onToggleExpanded;
   final bool isNested;
+  final bool standardizedDirectoryLayout;
   final int hierarchyDepth;
   final VoidCallback onTap;
 
@@ -72,29 +75,33 @@ class LocationCard extends StatelessWidget {
     final hasAnimals = (totalAnimalCount ?? animalCount) > 0;
     final animalsAction = hasAnimals
         ? onAnimalsTap ??
-            (routerAvailable
-                ? () => context.push(
+              (routerAvailable
+                  ? () => context.push(
                       AppRoutes.animalesPath(locationUuid: location.uuid),
                     )
-                : null)
+                  : null)
         : null;
     final hasCultivations = activeCultivations.isNotEmpty;
     final cultivationsAction = hasCultivations
         ? onCultivationsTap ??
-            (routerAvailable
-                ? () => context.push(
+              (routerAvailable
+                  ? () => context.push(
                       AppRoutes.directorioCultivosPath(
                         locationUuid: location.uuid,
                       ),
                     )
-                : null)
+                  : null)
         : null;
     final effectiveStatus =
         location.status == LocationStatus.available &&
             (hasAnimals || activeCultivations.isNotEmpty)
         ? LocationStatus.inUse
         : location.status;
-    final radius = isNested ? 16.0 : 20.0;
+    final radius = standardizedDirectoryLayout
+        ? AppDirectoryCardFrame.cornerRadius
+        : isNested
+        ? 16.0
+        : 20.0;
 
     final headerColor = isDark
         ? Color.alphaBlend(
@@ -112,8 +119,10 @@ class LocationCard extends StatelessWidget {
           )
         : colorScheme.surfaceContainerHighest.withValues(alpha: 0.45);
 
-    return Card(
-      margin: EdgeInsets.only(bottom: isNested ? 10 : 14),
+    final card = Card(
+      margin: standardizedDirectoryLayout
+          ? EdgeInsets.zero
+          : EdgeInsets.only(bottom: isNested ? 10 : 14),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
@@ -322,6 +331,7 @@ class LocationCard extends StatelessWidget {
         ),
       ),
     );
+    return card;
   }
 
   String _locationSummary() {
@@ -721,7 +731,9 @@ class _BottomBar extends StatelessWidget {
             : total;
         return (
           Icons.eco_outlined,
-          count == 0 ? 'Sin cultivos' : '$count cultivo${count == 1 ? '' : 's'}',
+          count == 0
+              ? 'Sin cultivos'
+              : '$count cultivo${count == 1 ? '' : 's'}',
         );
       case LocationCategory.infrastructure:
         return (

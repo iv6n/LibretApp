@@ -14,6 +14,8 @@ import 'package:libretapp/app/app_shell.dart';
 import 'package:libretapp/core/core.dart';
 import 'package:libretapp/core/workspace/workspace_manager.dart';
 import 'package:libretapp/features/onboarding/phone_auth_sheet.dart';
+import 'package:libretapp/features/onboarding/profile_onboarding_page.dart';
+import 'package:libretapp/core/onboarding/profile_onboarding_service.dart';
 import 'package:libretapp/core/security/ports/phone_auth_port.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/commercial_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/cost_record_repository.dart';
@@ -27,6 +29,7 @@ import 'package:libretapp/features/directorio/animales/view/animal_cost_form_pag
 import 'package:libretapp/features/directorio/animales/view/animal_production_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_movement_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_reproduction_form_page.dart';
+import 'package:libretapp/features/registro/view/registro_reproduccion_page.dart' show ReproductionInitialStep;
 import 'package:libretapp/features/directorio/animales/view/animal_health_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_commercial_form_page.dart';
@@ -73,9 +76,6 @@ GoRouter createAppRouter({
       await preferences.remove(PrefsKeys.experienceSetupPendingV1);
       return AppRoutes.inicio;
     }
-    if (state.matchedLocation == AppRoutes.onboardingProfile) {
-      return AppRoutes.perfil;
-    }
     if (preferences.getBool(PrefsKeys.experienceSetupPendingV1) == true) {
       await preferences.remove(PrefsKeys.experienceSetupPendingV1);
     }
@@ -90,7 +90,11 @@ GoRouter createAppRouter({
     GoRoute(
       path: AppRoutes.onboardingProfile,
       name: AppRoutes.nameOnboardingProfile,
-      redirect: (context, state) => AppRoutes.perfil,
+      builder: (context, state) => ProfileOnboardingPage(
+        service: locator<ProfileOnboardingService>(),
+        registrationPreferences: AppExperienceScope.of(context).value,
+        onFinished: () => context.go(AppRoutes.inicio),
+      ),
     ),
     GoRoute(
       path: AppRoutes.onboarding,
@@ -102,25 +106,16 @@ GoRouter createAppRouter({
           initialPage: _initialOnboardingPage(locator<SharedPrefsService>()),
           initialError: onboardingError,
           onProgress: (page) => locator<SharedPrefsService>().setInt(
-            'onboarding.intro.page.v1',
+            'onboarding.intro.page.v2',
             page,
           ),
-          onCreatePhone:
+          onAccessPhone:
               locator.isRegistered<WorkspaceManager>() &&
                   locator<WorkspaceManager>().auth.available
               ? () => showPhoneAuth(
                   context,
                   locator<WorkspaceManager>(),
                   intent: PhoneAccessIntent.createAccount,
-                )
-              : null,
-          onSignInPhone:
-              locator.isRegistered<WorkspaceManager>() &&
-                  locator<WorkspaceManager>().auth.available
-              ? () => showPhoneAuth(
-                  context,
-                  locator<WorkspaceManager>(),
-                  intent: PhoneAccessIntent.signIn,
                 )
               : null,
           onStartEmpty: () => locator.isRegistered<WorkspaceManager>()
@@ -157,23 +152,13 @@ GoRouter createAppRouter({
                           ..add(const LoadAnimales()),
                   ),
                   BlocProvider(
-                    create: (_) => AnimalesTabBloc(locator<AnimalRepository>()),
-                  ),
-                  BlocProvider(
                     create: (_) => LotesBloc(locator<LotesRepository>()),
                   ),
                   BlocProvider(
-                    create: (_) => LotesTabBloc(locator<LotesRepository>()),
-                  ),
-                  BlocProvider(
-                    create: (_) =>
-                        UbicacionesTabBloc(locator<LocationRepository>()),
-                  ),
-                  BlocProvider(
-                    create: (context) => DirectorioBloc(
-                      animalesTabBloc: context.read<AnimalesTabBloc>(),
-                      lotesTabBloc: context.read<LotesTabBloc>(),
-                      ubicacionesTabBloc: context.read<UbicacionesTabBloc>(),
+                    create: (_) => DirectorioBloc(
+                      animalRepository: locator<AnimalRepository>(),
+                      lotesRepository: locator<LotesRepository>(),
+                      locationRepository: locator<LocationRepository>(),
                       cultivationRepository: locator<CultivationRepository>(),
                       configRepository: DirectorioConfigRepository(
                         locator<SharedPrefsService>(),
@@ -318,6 +303,12 @@ GoRouter createAppRouter({
                       child: AnimalReproductionFormPage(
                         animalUuid: uuid,
                         recordId: state.uri.queryParameters['recordId'],
+                        initialStep: switch (state.uri.queryParameters['step']) {
+                          'service' => ReproductionInitialStep.service,
+                          'diagnosis' => ReproductionInitialStep.diagnosis,
+                          'calving' => ReproductionInitialStep.calving,
+                          _ => null,
+                        },
                       ),
                     );
                   },
@@ -854,13 +845,16 @@ CustomTransitionPage<void> _onboardingFadePage(
 );
 
 int _initialOnboardingPage(SharedPrefsService preferences) {
-  if (preferences.getBool(PrefsKeys.onboardingCompletedV1) == true) return 1;
+  if (preferences.getBool(PrefsKeys.onboardingCompletedV1) == true) return 2;
 
-  final currentProgress = preferences.getInt('onboarding.intro.page.v1');
-  if (currentProgress != null) return currentProgress.clamp(0, 1);
+  final currentProgress = preferences.getInt('onboarding.intro.page.v2');
+  if (currentProgress != null) return currentProgress.clamp(0, 2);
+
+  final previousProgress = preferences.getInt('onboarding.intro.page.v1');
+  if (previousProgress != null) return previousProgress <= 0 ? 0 : 2;
 
   final legacyProgress = preferences.getInt('onboarding.page.v2');
-  return legacyProgress == null || legacyProgress <= 0 ? 0 : 1;
+  return legacyProgress == null || legacyProgress <= 0 ? 0 : 2;
 }
 
 CustomTransitionPage<void> _buildOverlayDetailPage({

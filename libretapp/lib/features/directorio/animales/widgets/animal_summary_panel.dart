@@ -87,7 +87,9 @@ class AnimalSummaryPanel extends StatelessWidget {
                   label: const Text('Definir propósito'),
                 ),
               const SizedBox(height: AppSpacing.sm),
-              Text('Nacimiento: ${animal.hasKnownAge ? formatDate(animal.birthDate) : 'Sin dato'}'),
+              Text(
+                'Nacimiento: ${animal.hasKnownAge ? formatDate(animal.birthDate) : 'Sin dato'}',
+              ),
               if (animal.species == Species.cattle &&
                   ({Category.calf, Category.weaned}.contains(animal.category) ||
                       animal.productionPurpose == ProductionPurpose.meat)) ...[
@@ -122,7 +124,12 @@ class AnimalSummaryPanel extends StatelessWidget {
                   Text(
                     'Último parto: ${formatDate(snapshot!.reproductiveKpis!.lastCalvingDate!)}',
                   ),
-                if (animal.expectedCalvingDate != null)
+                if (animal.expectedCalvingDate != null &&
+                    !{
+                      Species.cattle,
+                      Species.sheep,
+                      Species.goat,
+                    }.contains(animal.species))
                   Text(
                     'Parto esperado (estimado): ${formatDate(animal.expectedCalvingDate!)}',
                   ),

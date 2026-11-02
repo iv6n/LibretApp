@@ -75,6 +75,63 @@ class IsarBackupStore implements BackupStore, TransactionalLegacyBackupStore {
   final IsarDatabase _database;
   final PerfilRepository _perfilRepository;
 
+  /// Checks whether the workspace contains user data without serializing the
+  /// backup envelope or visiting every record payload.
+  Future<bool> hasUserData() async {
+    final isar = await _database.initialize();
+    final regularCounts = await Future.wait<int>([
+      isar.isarAnimals.where().count(),
+      isar.isarWeightRecords.where().count(),
+      isar.isarWeaningRecords.where().count(),
+      isar.isarReproductionRecords.where().count(),
+      isar.isarProductionRecords.where().count(),
+      isar.isarHealthRecords.where().count(),
+      isar.isarCostRecords.where().count(),
+      isar.isarCommercialRecords.where().count(),
+      isar.isarMovementRecords.where().count(),
+      isar.isarLotes.where().count(),
+      isar.isarCultivations.where().count(),
+      isar.isarLocations.where().count(),
+      isar.isarIncomeRecords.where().count(),
+      isar.isarGeneralExpenseRecords.where().count(),
+      isar.isarMilkingSessions.where().count(),
+      isar.isarMilkingEntrys.where().count(),
+      isar.isarAgendaEntrys.where().count(),
+      isar.isarAgendaRegistrations.where().count(),
+      isar.isarWorkerProfiles.where().count(),
+      isar.isarWorkTeams.where().count(),
+      isar.isarCareRecords.where().count(),
+      isar.isarScheduledCares.where().count(),
+      isar.isarRfidBindings.where().count(),
+      isar.isarRfidScanSessions.where().count(),
+    ]);
+    if (regularCounts.any((count) => count > 0)) return true;
+
+    final featureCounts = await Future.wait<int>([
+      isar.isarFeatureRecords.where().count(),
+      isar.isarFeatureRecords.filter().kindEqualTo('core.farm').count(),
+      isar.isarFeatureRecords
+          .filter()
+          .kindEqualTo('core.farm_membership')
+          .count(),
+      isar.isarFeatureRecords.filter().kindEqualTo('core.farm_context').count(),
+      isar.isarFeatureRecords.filter().kindEqualTo('core.migration').count(),
+    ]);
+    final coreFeatureCount = featureCounts
+        .skip(1)
+        .fold<int>(0, (a, b) => a + b);
+    if (featureCounts.first > coreFeatureCount) return true;
+
+    final profile = await PerfilIsarRepository.readWithinTransaction(isar);
+    return profile.toJson().entries.any(
+      (entry) =>
+          entry.value is String &&
+          (entry.value as String).trim().isNotEmpty &&
+          !(const {'region_state', 'production_setting'}.contains(entry.key) &&
+              entry.value == 'general'),
+    );
+  }
+
   @override
   Future<BackupEnvelope> capture() async {
     final isar = await _database.initialize();

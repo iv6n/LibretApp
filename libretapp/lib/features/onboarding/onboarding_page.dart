@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,8 +13,7 @@ class OnboardingPage extends StatefulWidget {
     super.key,
     required this.onStartEmpty,
     required this.onInstallDemo,
-    this.onCreatePhone,
-    this.onSignInPhone,
+    this.onAccessPhone,
     this.onProgress,
     this.initialPage = 0,
     this.initialError,
@@ -21,11 +21,10 @@ class OnboardingPage extends StatefulWidget {
 
   final Future<void> Function() onStartEmpty;
   final Future<void> Function(AppExperience experience) onInstallDemo;
-  final Future<void> Function()? onCreatePhone;
-  final Future<void> Function()? onSignInPhone;
+  final Future<void> Function()? onAccessPhone;
   final Future<void> Function(int page)? onProgress;
 
-  /// The two welcome screens use indexes 0 and 1.
+  /// The three welcome screens use indexes 0, 1, and 2.
   final int initialPage;
   final String? initialError;
 
@@ -37,34 +36,63 @@ class _OnboardingPageState extends State<OnboardingPage> {
   static const _green = AppColors.primary;
   static const _sage = AppColors.sage;
   static const _warmBorder = LightColors.border;
+  static const _pageCount = 3;
 
-  late int _page = widget.initialPage.clamp(0, 1);
+  late int _page = widget.initialPage.clamp(0, _pageCount - 1);
+  late final PageController _pageController = PageController(
+    initialPage: _page,
+  );
   late String? _error = widget.initialError;
+  Future<void> _progressWrites = Future<void>.value();
   bool _working = false;
+  int? _skipDestination;
 
-  bool get _hasPhoneAccess =>
-      widget.onCreatePhone != null || widget.onSignInPhone != null;
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
-  Future<void> _goTo(int page) async {
-    if (_working) return;
-    final destination = page.clamp(0, 1);
-    if (destination == _page) return;
+  void _onPageChanged(int page) {
+    if (!mounted || page == _page) return;
+    final isSkippedIntermediate =
+        _skipDestination != null && page != _skipDestination;
+    if (page == _skipDestination) _skipDestination = null;
     setState(() {
-      _working = true;
+      _page = page;
       _error = null;
     });
+    if (isSkippedIntermediate) return;
+    _progressWrites = _saveProgressAfter(_progressWrites, page);
+  }
+
+  Future<void> _saveProgressAfter(Future<void> previous, int page) async {
     try {
-      await widget.onProgress?.call(destination);
-      if (mounted) setState(() => _page = destination);
+      await previous;
+      await widget.onProgress?.call(page);
     } catch (_) {
       if (mounted) {
         setState(
           () => _error = 'No se pudo guardar tu avance. Intenta de nuevo.',
         );
       }
-    } finally {
-      if (mounted) setState(() => _working = false);
     }
+  }
+
+  Future<void> _goTo(int page, {bool skip = false}) async {
+    if (_working || !_pageController.hasClients) return;
+    final destination = page.clamp(0, _pageCount - 1);
+    if (destination == _page) return;
+    if (skip) _skipDestination = destination;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pageController.jumpToPage(destination);
+      return;
+    }
+    await _pageController.animateToPage(
+      destination,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeInOutCubic,
+    );
   }
 
   Future<void> _choose(
@@ -94,142 +122,102 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _openPhoneAccess() async {
-    if (_working || !_hasPhoneAccess) return;
-    final choice = await showModalBottomSheet<_PhoneAccess>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Accede con tu teléfono',
-                style: Theme.of(
-                  sheetContext,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 8),
-              if (widget.onCreatePhone != null)
-                ListTile(
-                  leading: const Icon(Icons.person_add_alt_1_outlined),
-                  title: const Text('Crear cuenta'),
-                  onTap: () => Navigator.pop(sheetContext, _PhoneAccess.create),
-                ),
-              if (widget.onSignInPhone != null)
-                ListTile(
-                  leading: const Icon(Icons.login_outlined),
-                  title: const Text('Ya tengo cuenta'),
-                  onTap: () => Navigator.pop(sheetContext, _PhoneAccess.signIn),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (!mounted || choice == null) return;
-    final action = choice == _PhoneAccess.create
-        ? widget.onCreatePhone
-        : widget.onSignInPhone;
-    if (action != null) await _choose(action, navigate: false);
+    final action = widget.onAccessPhone;
+    if (_working || action == null) return;
+    await _choose(action, navigate: false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final baseTheme = Theme.of(context);
-    final theme = baseTheme;
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
-
-    return Theme(
-      data: theme,
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop && _page == 1) _goTo(0);
-        },
-        child: Scaffold(
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, viewport) => Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: math.max(0, viewport.maxHeight - 22),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _header(context),
-                              SizedBox(height: _page == 0 ? 22 : 12),
-                              AnimatedSwitcher(
-                                duration: Duration(
-                                  milliseconds: reducedMotion ? 0 : 240,
-                                ),
-                                switchInCurve: Curves.easeOut,
-                                switchOutCurve: Curves.easeIn,
-                                transitionBuilder: (child, animation) =>
-                                    FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                child: KeyedSubtree(
-                                  key: ValueKey('onboarding-page-$_page'),
-                                  child: _page == 0
-                                      ? _welcome(context)
-                                      : _preview(context),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: _page == 0 ? 14 : 8),
-                            child: _actions(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
+    return Scaffold(
+      body: SafeArea(
+        child: PageView(
+          controller: _pageController,
+          physics: _working
+              ? const NeverScrollableScrollPhysics()
+              : const PageScrollPhysics(),
+          onPageChanged: _onPageChanged,
+          children: [
+            _slide(context, page: 0, content: _welcome(context)),
+            _slide(context, page: 1, content: _preview(context)),
+            _slide(context, page: 2, content: _accessIntro(context)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _header(BuildContext context) => Row(
-    children: [
-      const Expanded(
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: AppBrand(height: 34),
+  Widget _slide(
+    BuildContext context, {
+    required int page,
+    required Widget content,
+  }) => LayoutBuilder(
+    builder: (context, viewport) => Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: math.max(0, viewport.maxHeight - 22),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _header(context, page),
+                    SizedBox(height: page == 0 ? 20 : 12),
+                    content,
+                  ],
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: page == 0 ? 14 : 10),
+                  child: _actions(context, page),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      if (_page == 0)
-        TextButton(
-          onPressed: _working ? null : () => _goTo(1),
-          child: const Text('Omitir'),
-        )
-      else
-        TextButton.icon(
-          onPressed: _working ? null : () => _goTo(0),
-          icon: const Icon(Icons.arrow_back, size: 18),
-          label: const Text('Volver'),
-        ),
-    ],
+    ),
   );
+
+  Widget _header(BuildContext context, int page) {
+    final compactBrand =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(16) >= 24;
+    return Row(
+      children: [
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppBrand(
+              variant: compactBrand
+                  ? AppBrandVariant.symbol
+                  : AppBrandVariant.logo,
+              height: 34,
+            ),
+          ),
+        ),
+        if (page < 2)
+          TextButton(
+            onPressed: _working ? null : () => _goTo(2, skip: true),
+            child: const Text('Omitir'),
+          )
+        else
+          TextButton.icon(
+            onPressed: _working ? null : () => _goTo(1),
+            icon: const Icon(Icons.arrow_back, size: 18),
+            label: const Text('Volver'),
+          ),
+      ],
+    );
+  }
 
   Widget _welcome(BuildContext context) {
     final theme = Theme.of(context);
@@ -237,51 +225,49 @@ class _OnboardingPageState extends State<OnboardingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Todo lo que cuidas,\nen un lugar.',
+          'De la casa al campo,\ntodo lo que cuidas\nen un lugar.',
           style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 32,
             fontWeight: FontWeight.w800,
-            height: 1.12,
+            height: 1.1,
           ),
         ),
         const SizedBox(height: 10),
         Text(
-          'Organiza tus animales, plantas\ny actividades con claridad.',
+          'Registra animales, mascotas, siembras y plantas. Organiza sus cuidados y próximas tareas en un solo lugar.',
           style: theme.textTheme.bodyLarge?.copyWith(
-            height: 1.4,
+            height: 1.38,
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.xl),
           child: AspectRatio(
-            aspectRatio: 1.5,
+            aspectRatio: 1.55,
             child: Image.asset(
-              'assets/images/onboarding_welcome_group.png',
+              'assets/images/onboarding_welcome_group_v2.jpg',
               fit: BoxFit.cover,
               filterQuality: FilterQuality.high,
-              semanticLabel: 'Vaca, perro, gato y planta juntos',
+              semanticLabel:
+                  'Vaca, perro, gato y planta frente a una siembra, con un caballo y una cabra al fondo',
             ),
           ),
         ),
-        const SizedBox(height: 18),
-        const Row(
+        const SizedBox(height: 15),
+        const Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: _FeatureLabel(icon: Icons.badge_outlined, label: 'Fichas'),
+            _FeatureChip(icon: Icons.history, label: 'Guarda su historia'),
+            _FeatureChip(
+              icon: Icons.event_note_outlined,
+              label: 'Planea cuidados',
             ),
-            Expanded(
-              child: _FeatureLabel(
-                icon: Icons.event_note_outlined,
-                label: 'Actividades',
-              ),
-            ),
-            Expanded(
-              child: _FeatureLabel(
-                icon: Icons.notifications_none_outlined,
-                label: 'Avisos',
-              ),
+            _FeatureChip(
+              icon: Icons.notifications_none_outlined,
+              label: 'Recibe avisos',
             ),
           ],
         ),
@@ -299,7 +285,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Cada cuidado,\nbien organizado.',
+          'Tus cuidados, de un vistazo.',
           style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 30,
             fontWeight: FontWeight.w800,
@@ -308,13 +294,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
         const SizedBox(height: 7),
         Text(
-          'Sus fichas, actividades y avisos,\nsiempre a la mano.',
+          'Consulta fichas y próximos cuidados en un solo lugar.',
           style: theme.textTheme.bodyLarge?.copyWith(
             height: 1.38,
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerLeft,
           child: Container(
@@ -335,7 +321,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 9),
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
@@ -346,149 +332,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
           child: Column(
             children: [
-              _ExampleCard(
+              _PreviewRecord(
                 color: cardColor,
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.asset(
-                        'assets/images/vaca.webp',
-                        width: 70,
-                        height: 72,
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Vaca bovina llamada Luna',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Luna',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            'Bovino · MZQ-0001',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '4 años',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF345746)
-                                  : const Color(0xFFE2F0E6),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Buen estado',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: isDark
-                                    ? const Color(0xFFD3EDDC)
-                                    : const Color(0xFF315D46),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                image: 'assets/images/vaca.webp',
+                imageLabel: 'Vaca Prieta',
+                title: 'Prieta',
+                detail: 'Vaca · Salud al día',
               ),
               const SizedBox(height: 6),
-              _ExampleCard(
+              _PreviewRecord(
                 color: cardColor,
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        'assets/images/onboarding_monstera_illustration.png',
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.contain,
-                        semanticLabel: 'Planta monstera en maceta',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Mi monstera',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            'Planta de interior',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                image: 'assets/images/canino.webp',
+                imageLabel: 'Perro Capitán',
+                title: 'Capitán',
+                detail: 'Perro · Próxima revisión',
               ),
               const SizedBox(height: 6),
-              _ExampleCard(
+              _PreviewRecord(
                 color: cardColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                      color: isDark ? const Color(0xFFB7DBC5) : _green,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Próxima actividad',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          Text(
-                            'Riego · Mañana',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                image: 'assets/images/crop_field.webp',
+                imageLabel: 'Siembra de maíz',
+                title: 'Maíz blanco',
+                detail: 'Siembra · En crecimiento',
+              ),
+              const SizedBox(height: 6),
+              _PreviewRecord(
+                color: cardColor,
+                image: 'assets/images/onboarding_monstera_illustration.png',
+                imageLabel: 'Planta monstera en maceta',
+                title: 'Mi monstera',
+                detail: 'Planta · Riego mañana',
               ),
             ],
           ),
@@ -497,7 +370,53 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _actions(BuildContext context) {
+  Widget _accessIntro(BuildContext context) {
+    final theme = Theme.of(context);
+    final compactArtwork =
+        MediaQuery.sizeOf(context).height < 650 ||
+        MediaQuery.textScalerOf(context).scale(16) >= 24;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Empieza a tu manera.',
+          style: theme.textTheme.headlineLarge?.copyWith(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          widget.onAccessPhone == null
+              ? 'Empieza como invitado o explora la app con ejemplos.'
+              : 'Accede con tu teléfono, empieza como invitado o explora la app con ejemplos.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.4,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 14),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          child: Container(
+            height: compactArtwork ? 120 : 170,
+            color: theme.colorScheme.surfaceContainerHighest,
+            child: Image.asset(
+              'assets/images/onboarding_start_options.jpg',
+              fit: compactArtwork ? BoxFit.contain : BoxFit.cover,
+              alignment: Alignment.topCenter,
+              filterQuality: FilterQuality.high,
+              semanticLabel:
+                  'Persona organizando cuidados desde su teléfono junto a un perro y una siembra',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _actions(BuildContext context, int page) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     return Column(
@@ -530,31 +449,75 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
         _ProgressDots(
           page: _page,
-          selectedColor: theme.brightness == Brightness.dark
-              ? const Color(0xFF9ACBB1)
-              : _green,
+          selectedColor: isDark ? const Color(0xFF9ACBB1) : _green,
         ),
         const SizedBox(height: 9),
-        if (_page == 0)
+        if (page == 0)
           FilledButton(
             onPressed: _working ? null : () => _goTo(1),
             style: _primaryButtonStyle(context),
             child: const Text('Continuar'),
           )
+        else if (page == 1 &&
+            (MediaQuery.sizeOf(context).width < 360 ||
+                MediaQuery.textScalerOf(context).scale(16) >= 24))
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _working ? null : () => _goTo(0),
+                  child: const Text('Volver'),
+                ),
+              ),
+              FilledButton(
+                onPressed: _working ? null : () => _goTo(2),
+                style: _primaryButtonStyle(context),
+                child: const Text('Continuar'),
+              ),
+            ],
+          )
+        else if (page == 1)
+          Row(
+            children: [
+              TextButton(
+                onPressed: _working ? null : () => _goTo(0),
+                child: const Text('Volver'),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _working ? null : () => _goTo(2),
+                  style: _primaryButtonStyle(context),
+                  child: const Text('Continuar'),
+                ),
+              ),
+            ],
+          )
         else ...[
-          FilledButton(
-            onPressed: _working ? null : () => _choose(widget.onStartEmpty),
+          FilledButton.icon(
+            onPressed: _working || widget.onAccessPhone == null
+                ? null
+                : _openPhoneAccess,
             style: _primaryButtonStyle(context),
-            child: const Text('Empezar sin cuenta'),
+            icon: const Icon(Icons.phone_android_outlined),
+            label: const Text('Acceder con teléfono'),
           ),
+          if (widget.onAccessPhone == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'El acceso por teléfono no está disponible en esta versión.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           const SizedBox(height: 7),
           OutlinedButton(
-            onPressed: _working
-                ? null
-                : () => _choose(
-                    () => widget.onInstallDemo(AppExperience.complete),
-                    demo: true,
-                  ),
+            onPressed: _working ? null : () => _choose(widget.onStartEmpty),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(48),
               foregroundColor: isDark ? const Color(0xFFC3E1D0) : _green,
@@ -565,21 +528,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text('Probar con ejemplos'),
+            child: const Text('Continuar como invitado'),
           ),
-          if (_hasPhoneAccess) ...[
-            const SizedBox(height: 2),
-            TextButton(
-              onPressed: _working ? null : _openPhoneAccess,
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(42),
-              ),
-              child: const Text('Acceder con teléfono'),
-            ),
-          ],
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
+          _demoSection(context),
+          const SizedBox(height: 8),
           Text(
-            'Tus registros se guardan aquí. Haz copias periódicas fuera del teléfono.',
+            'Tus registros se guardan en este dispositivo. Haz copias de seguridad periódicas.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -588,6 +543,78 @@ class _OnboardingPageState extends State<OnboardingPage> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _demoSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final compact =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(16) >= 24;
+    final details = Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Explorar con ejemplos',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            'Prueba fichas y actividades ficticias en un espacio separado.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+    final action = TextButton(
+      onPressed: _working
+          ? null
+          : () => _choose(
+              () => widget.onInstallDemo(AppExperience.complete),
+              demo: true,
+            ),
+      child: const Text('Ver demo'),
+    );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF203C33) : _sage.withValues(alpha: .55),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _warmBorder.withValues(alpha: .8)),
+      ),
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    details,
+                  ],
+                ),
+                Align(alignment: Alignment.centerRight, child: action),
+              ],
+            )
+          : Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                details,
+                action,
+              ],
+            ),
     );
   }
 
@@ -602,8 +629,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       );
 }
 
-enum _PhoneAccess { create, signIn }
-
 class _ProgressDots extends StatelessWidget {
   const _ProgressDots({required this.page, required this.selectedColor});
 
@@ -612,7 +637,7 @@ class _ProgressDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Pantalla ${page + 1} de 2',
+    label: 'Pantalla ${page + 1} de 3',
     child: ExcludeSemantics(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -620,6 +645,8 @@ class _ProgressDots extends StatelessWidget {
           _dot(context, selected: page == 0),
           const SizedBox(width: 7),
           _dot(context, selected: page == 1),
+          const SizedBox(width: 7),
+          _dot(context, selected: page == 2),
         ],
       ),
     ),
@@ -639,8 +666,8 @@ class _ProgressDots extends StatelessWidget {
       );
 }
 
-class _FeatureLabel extends StatelessWidget {
-  const _FeatureLabel({required this.icon, required this.label});
+class _FeatureChip extends StatelessWidget {
+  const _FeatureChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -649,44 +676,107 @@ class _FeatureLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 24,
-          color: isDark ? const Color(0xFFB7DBC5) : _OnboardingPageState._green,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF25463B) : _OnboardingPageState._sage,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isDark
+                ? const Color(0xFFB7DBC5)
+                : _OnboardingPageState._green,
           ),
-        ),
-      ],
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              softWrap: true,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewRecord extends StatelessWidget {
+  const _PreviewRecord({
+    required this.color,
+    required this.image,
+    required this.imageLabel,
+    required this.title,
+    required this.detail,
+  });
+
+  final Color color;
+  final String image;
+  final String imageLabel;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return _ExampleCard(
+      color: color,
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              image,
+              width: 52,
+              height: 56,
+              fit: BoxFit.contain,
+              semanticLabel: imageLabel,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ExampleCard extends StatelessWidget {
-  const _ExampleCard({
-    required this.color,
-    required this.child,
-    this.padding = const EdgeInsets.all(9),
-  });
+  const _ExampleCard({required this.color, required this.child});
 
   final Color color;
   final Widget child;
-  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: padding,
+    padding: const EdgeInsets.all(8),
     decoration: BoxDecoration(
       color: color,
       border: Border.all(

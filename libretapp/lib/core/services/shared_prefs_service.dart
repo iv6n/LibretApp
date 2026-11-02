@@ -29,6 +29,7 @@ class SharedPrefsService {
         'onboarding.completed.v1',
         'onboarding.page.v2',
         'onboarding.intro.page.v1',
+        'onboarding.intro.page.v2',
         'onboarding.experience.pending.v1',
         'workspaces.registry.v1',
       }.contains(key)

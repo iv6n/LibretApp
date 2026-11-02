@@ -13,6 +13,10 @@ class Perfil extends Equatable {
     required this.finca,
     required this.direccion,
     this.upp = '',
+    this.showUpp = true,
+    this.showEmail = true,
+    this.showTelefono = true,
+    this.showDireccion = false,
     this.regionState = 'general',
     this.productionSetting = 'general',
   });
@@ -24,6 +28,10 @@ class Perfil extends Equatable {
   final String finca;
   final String direccion;
   final String upp;
+  final bool showUpp;
+  final bool showEmail;
+  final bool showTelefono;
+  final bool showDireccion;
 
   /// State id from the shared region catalog (regions/mexico-regions.json
   /// in the content repo, bundled at assets/library/mexico-regions.json).
@@ -47,6 +55,10 @@ class Perfil extends Equatable {
     String? finca,
     String? direccion,
     String? upp,
+    bool? showUpp,
+    bool? showEmail,
+    bool? showTelefono,
+    bool? showDireccion,
     String? regionState,
     String? productionSetting,
   }) {
@@ -59,6 +71,10 @@ class Perfil extends Equatable {
       finca: finca ?? this.finca,
       direccion: direccion ?? this.direccion,
       upp: upp ?? this.upp,
+      showUpp: showUpp ?? this.showUpp,
+      showEmail: showEmail ?? this.showEmail,
+      showTelefono: showTelefono ?? this.showTelefono,
+      showDireccion: showDireccion ?? this.showDireccion,
       regionState: regionState ?? this.regionState,
       productionSetting: productionSetting ?? this.productionSetting,
     );
@@ -73,6 +89,10 @@ class Perfil extends Equatable {
     'finca': finca,
     'direccion': direccion,
     'upp': upp,
+    'show_upp': showUpp,
+    'show_email': showEmail,
+    'show_telefono': showTelefono,
+    'show_direccion': showDireccion,
     'region_state': regionState,
     'production_setting': productionSetting,
   };
@@ -86,6 +106,10 @@ class Perfil extends Equatable {
     finca: json['finca'] as String? ?? '',
     direccion: json['direccion'] as String? ?? '',
     upp: json['upp'] as String? ?? '',
+    showUpp: json['show_upp'] as bool? ?? true,
+    showEmail: json['show_email'] as bool? ?? true,
+    showTelefono: json['show_telefono'] as bool? ?? true,
+    showDireccion: json['show_direccion'] as bool? ?? false,
     regionState: json['region_state'] as String? ?? 'general',
     productionSetting: json['production_setting'] as String? ?? 'general',
   );
@@ -100,6 +124,10 @@ class Perfil extends Equatable {
     finca,
     direccion,
     upp,
+    showUpp,
+    showEmail,
+    showTelefono,
+    showDireccion,
     regionState,
     productionSetting,
   ];

@@ -91,10 +91,17 @@ void main() {
   final today = DateTime(2026, 8, 2);
   const grouper = AgendaTaskGrouper();
 
-  Widget wrap(Widget child) => MaterialApp(
-    theme: AppTheme.lightTheme,
-    home: Scaffold(body: SingleChildScrollView(child: child)),
-  );
+  Widget wrap(Widget child, {ThemeData? theme, double textScale = 1}) =>
+      MaterialApp(
+        theme: theme ?? AppTheme.lightTheme,
+        builder: (context, appChild) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: appChild!,
+        ),
+        home: Scaffold(body: SingleChildScrollView(child: child)),
+      );
 
   testWidgets('una campaña de dos vacas se muestra como una sola tarjeta', (
     tester,
@@ -127,13 +134,27 @@ void main() {
     expect(find.text('Sanidad'), findsNothing);
     expect(find.text('Vacunación'), findsOneWidget);
     expect(find.text('Sanitario'), findsOneWidget);
-    expect(find.text('2 animales'), findsNothing);
-    expect(find.text('0/2 animales'), findsOneWidget);
+    expect(find.text('2 animales'), findsOneWidget);
+    expect(
+      find.text('0 de 2 registrados · Toca para ver animales'),
+      findsOneWidget,
+    );
     expect(find.byType(Card), findsOneWidget);
+    expect(find.textContaining('Vaca T-12'), findsNothing);
+    expect(find.byType(Checkbox), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ANIMALES'), findsOneWidget);
+    expect(find.text('0/2 registrados'), findsOneWidget);
     expect(find.textContaining('Vaca T-12'), findsOneWidget);
     expect(find.text('VACA'), findsNWidgets(2));
-    expect(find.text('03/08/2026'), findsNWidgets(2));
     expect(find.byType(Checkbox), findsNWidgets(2));
+    expect(
+      tester.getSize(find.byType(Checkbox).first).height,
+      greaterThanOrEqualTo(48),
+    );
     expect(
       find.byKey(
         const ValueKey('agenda-animal-list-surface-animals:vacunacion'),
@@ -141,8 +162,8 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('agenda-event-toggle-animals:vacunacion')),
-      findsNothing,
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+      findsOneWidget,
     );
     final completeButton = find.byKey(
       const ValueKey('agenda-event-register-animals:vacunacion'),
@@ -173,7 +194,7 @@ void main() {
     expect(find.textContaining('Vaca T-12'), findsOneWidget);
     expect(find.textContaining('Vaca T-45'), findsOneWidget);
 
-    await tester.tap(find.text('Vacunación').first);
+    await tester.tap(find.textContaining('Vaca T-12').first);
     await tester.pump();
     expect(opened?.animalCount, 2);
   });
@@ -200,11 +221,16 @@ void main() {
       ),
     );
 
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+
     final theme = AppTheme.lightTheme;
     final taskIcon = tester.widget<AgendaAssetIcon>(
       find.byType(AgendaAssetIcon),
     );
-    expect(taskIcon.size, 32);
+    expect(taskIcon.size, 25);
 
     final iconContainer = tester.widget<Container>(
       find
@@ -215,13 +241,15 @@ void main() {
           .first,
     );
     final decoration = iconContainer.decoration! as BoxDecoration;
-    expect(decoration.color, theme.colorScheme.surfaceContainerHighest);
+    expect(
+      decoration.color,
+      theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+    );
 
-    final animalsLabel = tester.widget<Text>(find.text('Animales'));
+    final animalsLabel = tester.widget<Text>(find.text('ANIMALES'));
     expect(animalsLabel.style?.color, theme.colorScheme.onSurfaceVariant);
 
-    final viewAllLabel = tester.widget<Text>(find.text('Ver todos'));
-    expect(viewAllLabel.style?.color, theme.colorScheme.primary);
+    expect(find.text('Ver más animales'), findsNothing);
   });
 
   testWidgets('el mismo tipo con distinta fecha permanece en una tarjeta', (
@@ -244,8 +272,16 @@ void main() {
     );
 
     expect(find.byType(Card), findsOneWidget);
-    expect(find.text('2 animales'), findsNothing);
-    expect(find.text('0/2 animales'), findsOneWidget);
+    expect(find.text('2 animales'), findsOneWidget);
+    expect(
+      find.text('0 de 2 registrados · Toca para ver animales'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('ANIMALES'), findsOneWidget);
   });
 
   testWidgets('una categoría sin pendientes no se renderiza', (tester) async {
@@ -286,15 +322,21 @@ void main() {
       ),
     );
 
-    expect(find.text('Mantenimiento general'), findsNWidgets(2));
+    expect(find.text('Mantenimiento general'), findsOneWidget);
     expect(find.byType(Checkbox), findsNothing);
     expect(find.text('Administración'), findsNWidgets(2));
-    expect(find.text('0/1 pendiente'), findsOneWidget);
+    expect(find.text('Toca para ver detalles y registrar'), findsOneWidget);
     final completeButton = find.byKey(
       const ValueKey('agenda-event-register-entry:ranch-task-1'),
     );
+    expect(completeButton, findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-entry:ranch-task-1')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Mantenimiento general'), findsNWidgets(2));
+    expect(find.text('0/1 pendiente'), findsOneWidget);
     expect(tester.widget<FilledButton>(completeButton).onPressed, isNotNull);
-    expect(find.byIcon(Icons.task_alt_outlined), findsOneWidget);
     expect(find.byIcon(Icons.expand_more), findsNothing);
 
     await tester.tap(completeButton);
@@ -325,45 +367,62 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(find.byType(ListView)).height, 130);
-    expect(
-      find.byKey(
-        const ValueKey('agenda-animal-preview-fade-animals:vacunacion'),
-      ),
-      findsOneWidget,
-    );
+    expect(find.byType(ListView), findsNothing);
     expect(find.byType(Checkbox), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(ListView)).height, 170);
+    expect(find.byType(Checkbox), findsNWidgets(3));
+    expect(find.text('Ver más animales'), findsOneWidget);
     final completeButton = find.byKey(
       const ValueKey('agenda-event-register-animals:vacunacion'),
     );
     expect(completeButton, findsOneWidget);
     expect(tester.widget<FilledButton>(completeButton).onPressed, isNull);
-    await tester.tap(find.textContaining('Vaca T-1').first);
-    await tester.pumpAndSettle();
 
-    expect(opened, isNull);
-    expect(find.byType(Scrollbar), findsOneWidget);
+    expect(find.byType(Scrollbar), findsNothing);
     expect(find.byType(ListView), findsOneWidget);
-    expect(tester.getSize(find.byType(ListView)).height, 260);
-    expect(
-      find.byKey(
-        const ValueKey('agenda-animal-preview-fade-animals:vacunacion'),
-      ),
-      findsNothing,
-    );
-    expect(find.byType(Checkbox), findsNWidgets(5));
+    expect(tester.getSize(find.byType(ListView)).height, 170);
+    expect(find.byType(Checkbox), findsNWidgets(3));
     expect(find.textContaining('Vaca T-8'), findsNothing);
+
+    await tester.tap(find.text('Ver más animales'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Scrollbar), findsOneWidget);
+    expect(tester.getSize(find.byType(ListView)).height, 284);
+    expect(find.byType(Checkbox), findsNWidgets(5));
 
     await tester.tap(find.byKey(const ValueKey('agenda-animal-checkbox-1')));
     await tester.pump();
     expect(find.text('Registrar (1)'), findsOneWidget);
 
-    await tester.tap(find.text('Ocultar'));
+    final eventHeader = find.byKey(
+      const ValueKey('agenda-event-header-animals:vacunacion'),
+    );
+    await tester.tap(eventHeader);
     await tester.pumpAndSettle();
+    expect(find.byType(ListView), findsNothing);
     expect(find.byType(Checkbox), findsNothing);
+    await tester.tap(eventHeader);
+    await tester.pumpAndSettle();
+    expect(find.text('Registrar (1)'), findsOneWidget);
+    expect(
+      tester
+          .widget<Checkbox>(
+            find.byKey(const ValueKey('agenda-animal-checkbox-1')),
+          )
+          .value,
+      isTrue,
+    );
+
+    await tester.tap(find.text('Ver menos animales'));
+    await tester.pumpAndSettle();
+    expect(find.byType(Checkbox), findsNWidgets(3));
     expect(find.text('Registrar (1)'), findsOneWidget);
 
-    await tester.tap(find.text('Ver todos'));
+    await tester.tap(find.text('Ver más animales'));
     await tester.pumpAndSettle();
     expect(find.byType(Checkbox), findsNWidgets(5));
     expect(
@@ -411,8 +470,15 @@ void main() {
       ),
     );
 
-    expect(find.text('1/2 animales'), findsOneWidget);
+    expect(
+      find.text('1 de 2 registrados · Toca para ver animales'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Vaca T-12'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
     expect(find.textContaining('Vaca T-45'), findsOneWidget);
   });
 
@@ -432,6 +498,11 @@ void main() {
         ),
       ),
     );
+
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('CABRA'), findsOneWidget);
     expect(find.text('LECHERÍA'), findsNothing);
@@ -457,16 +528,98 @@ void main() {
     );
 
     expect(find.byType(Checkbox), findsNothing);
+    expect(
+      find.text('0 de 1 registrado · Toca para ver animales'),
+      findsOneWidget,
+    );
     final completeButton = find.byKey(
       const ValueKey('agenda-event-register-animals:vacunacion'),
     );
+    expect(completeButton, findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+    final expandedCompleteButton = find.byKey(
+      const ValueKey('agenda-event-register-animals:vacunacion'),
+    );
     expect(find.text('Registrar'), findsOneWidget);
-    expect(tester.widget<FilledButton>(completeButton).onPressed, isNotNull);
+    expect(
+      tester.widget<FilledButton>(expandedCompleteButton).onPressed,
+      isNotNull,
+    );
 
-    await tester.tap(completeButton);
+    await tester.tap(expandedCompleteButton);
     await tester.pump();
 
     expect(completedRows, hasLength(1));
     expect(completedRows.single.animalId, '12');
+  });
+
+  testWidgets('la tarjeta conserva legibilidad y acciones con texto al 200%', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final due = today.add(const Duration(days: 1));
+    final entries = [for (var i = 1; i <= 4; i++) _campaignEntry('$i', due)];
+    final animals = {for (var i = 1; i <= 4; i++) '$i': _cow('$i', 'T-$i')};
+    const headerKey = ValueKey('agenda-event-header-animals:vacunacion');
+
+    await tester.pumpWidget(
+      wrap(
+        AgendaProximasSection(
+          groups: grouper.group(entries, today: today),
+          animalsById: animals,
+          today: today,
+          onOpenGroup: (_) {},
+        ),
+        textScale: 2,
+      ),
+    );
+    await tester.tap(find.byKey(headerKey));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(find.byKey(headerKey)).height,
+      greaterThanOrEqualTo(48),
+    );
+    final moreButton = find.ancestor(
+      of: find.text('Ver más animales'),
+      matching: find.byType(TextButton),
+    );
+    expect(tester.getSize(moreButton).height, greaterThanOrEqualTo(48));
+  });
+
+  testWidgets('la tarjeta expandida respeta el tema oscuro', (tester) async {
+    final due = today.add(const Duration(days: 1));
+    final entries = [_campaignEntry('1', due), _campaignEntry('2', due)];
+    final group = grouper.group(entries, today: today);
+
+    await tester.pumpWidget(
+      wrap(
+        AgendaProximasSection(
+          groups: group,
+          animalsById: {'1': _cow('1', 'T-1'), '2': _cow('2', 'T-2')},
+          today: today,
+          onOpenGroup: (_) {},
+        ),
+        theme: AppTheme.darkTheme,
+      ),
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('agenda-event-header-animals:vacunacion')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ANIMALES'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.widget<Card>(find.byType(Card)).color,
+      AppTheme.darkTheme.colorScheme.surfaceContainerLow,
+    );
   });
 }

@@ -10,6 +10,7 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_empty_state.dart';
 import 'package:libretapp/core/widgets/app_directory_filter_chip.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/directorio/cultivos/view/cultivation_card.dart';
@@ -363,32 +364,39 @@ class _CultivationListBody extends StatelessWidget {
         ShellInsets.fabContentClearance;
 
     if (scopedCultivations.isEmpty) {
-      return Column(
-        children: [
-          _CultivationFilterBar(
-            filter: filter,
-            total: 0,
-            active: 0,
-            history: 0,
-            onChanged: onFilterChanged,
+      return CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          SliverToBoxAdapter(
+            child: _CultivationFilterBar(
+              filter: filter,
+              total: 0,
+              active: 0,
+              history: 0,
+              onChanged: onFilterChanged,
+            ),
           ),
-          Expanded(
-            child: AppEmptyState(
-              illustrationAsset: 'assets/images/location_garden.webp',
-              title: locationUuid == null
-                  ? 'Empieza a cuidar tus plantas y cultivos'
-                  : 'Sin cultivos en esta ubicación',
-              message: locationUuid == null
-                  ? 'Organiza una planta, un huerto o una siembra en un solo lugar.'
-                  : 'Puedes vincular una planta, huerto o siembra desde esta ubicación.',
-              action: locationUuid == null
-                  ? FilledButton.icon(
-                      onPressed: () =>
-                          context.pushNamed(AppRoutes.nameCultivoNuevo),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Agregar planta o cultivo'),
-                    )
-                  : null,
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: AppDirectoryEmptySlot(
+              bottomPadding: ShellInsets.bottomSafePadding(context),
+              child: AppEmptyState(
+                illustrationAsset: 'assets/images/location_garden.webp',
+                title: locationUuid == null
+                    ? 'Empieza a cuidar tus plantas y cultivos'
+                    : 'Sin cultivos en esta ubicación',
+                message: locationUuid == null
+                    ? 'Organiza una planta, un huerto o una siembra en un solo lugar.'
+                    : 'Puedes vincular una planta, huerto o siembra desde esta ubicación.',
+                action: locationUuid == null
+                    ? FilledButton.icon(
+                        onPressed: () =>
+                            context.pushNamed(AppRoutes.nameCultivoNuevo),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Agregar planta o cultivo'),
+                      )
+                    : null,
+              ),
             ),
           ),
         ],
@@ -422,20 +430,24 @@ class _CultivationListBody extends StatelessWidget {
         if (visibleActive.isEmpty && visiblePrevious.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
-            child: AppEmptyState(
-              icon: Icons.search_off_outlined,
-              title: filter == _CultivationFilter.active
-                  ? 'No hay cultivos activos'
-                  : 'No hay cultivos en el historial',
-              message: 'Prueba con otro filtro para ver tus cultivos.',
-              action: OutlinedButton.icon(
-                onPressed: () => onFilterChanged(_CultivationFilter.all),
-                icon: const Icon(Icons.filter_alt_off_outlined),
-                label: const Text('Limpiar filtros'),
+            child: AppDirectoryEmptySlot(
+              bottomPadding: bottom,
+              child: AppEmptyState(
+                icon: Icons.search_off_outlined,
+                title: filter == _CultivationFilter.active
+                    ? 'No hay cultivos activos'
+                    : 'No hay cultivos en el historial',
+                message: 'Prueba con otro filtro para ver tus cultivos.',
+                action: OutlinedButton.icon(
+                  onPressed: () => onFilterChanged(_CultivationFilter.all),
+                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  label: const Text('Limpiar filtros'),
+                ),
               ),
             ),
           ),
-        SliverToBoxAdapter(child: SizedBox(height: bottom)),
+        if (visibleActive.isNotEmpty || visiblePrevious.isNotEmpty)
+          SliverToBoxAdapter(child: SizedBox(height: bottom)),
       ],
     );
   }
@@ -468,26 +480,18 @@ class _CultivationFilterBar extends StatelessWidget {
         Icons.history_outlined,
       ),
     ];
-    return SizedBox(
-      height: 60,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-        children: [
-          for (final (value, label, count, icon) in options)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: AppDirectoryFilterChip(
-                key: ValueKey<String>('cultivos-filter-${value.name}'),
-                label: label,
-                count: count,
-                icon: icon,
-                selected: filter == value,
-                onTap: () => onChanged(value),
-              ),
-            ),
-        ],
-      ),
+    return AppDirectoryFilterRow(
+      children: [
+        for (final (value, label, count, icon) in options)
+          AppDirectoryFilterChip(
+            key: ValueKey<String>('cultivos-filter-${value.name}'),
+            label: label,
+            count: count,
+            icon: icon,
+            selected: filter == value,
+            onTap: () => onChanged(value),
+          ),
+      ],
     );
   }
 }
@@ -506,33 +510,36 @@ class _CultivationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.zero,
       sliver: SliverList(
         delegate: SliverChildListDelegate([
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
-            child: Text(
-              '$title · ${items.length}',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          Align(
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                child: Text(
+                  '$title · ${items.length}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
             ),
           ),
           for (final item in items)
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: CultivationCard(
-                cultivation: item,
-                locationName: locationNames[item.locationUuid],
-                onLocationTap: locationNames.containsKey(item.locationUuid)
-                    ? () => context.push(
-                        AppRoutes.ubicacionDetallePath(item.locationUuid!),
-                      )
-                    : null,
-                onTap: () => context.pushNamed(
-                  AppRoutes.nameCultivoDetalle,
-                  pathParameters: {'uuid': item.uuid},
-                ),
+            CultivationCard(
+              cultivation: item,
+              locationName: locationNames[item.locationUuid],
+              onLocationTap: locationNames.containsKey(item.locationUuid)
+                  ? () => context.push(
+                      AppRoutes.ubicacionDetallePath(item.locationUuid!),
+                    )
+                  : null,
+              onTap: () => context.pushNamed(
+                AppRoutes.nameCultivoDetalle,
+                pathParameters: {'uuid': item.uuid},
               ),
             ),
         ]),
