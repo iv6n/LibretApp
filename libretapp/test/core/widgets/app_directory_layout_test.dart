@@ -122,4 +122,40 @@ void main() {
     final top = tester.getTopLeft(find.byType(SizedBox).last).dy;
     expect(top, closeTo(146, 2));
   });
+
+  group('AppDirectoryMetrics', () {
+    test('scales every card token from the phone to the widest column', () {
+      final phone = AppDirectoryMetrics.forCardWidth(
+        AppDirectoryMetrics.minCardWidth,
+      );
+      final wide = AppDirectoryMetrics.forCardWidth(
+        AppDirectoryMetrics.maxCardWidth,
+      );
+
+      expect(phone.progress, 0);
+      expect(wide.progress, 1);
+      expect(phone.avatarSize, 56);
+      expect(wide.avatarSize, 68);
+      expect(phone.cardPaddingH, 14);
+      expect(wide.cardPaddingH, 18);
+      expect(wide.cardPaddingV, greaterThan(phone.cardPaddingV));
+      expect(wide.cardBadgeSize, greaterThan(phone.cardBadgeSize));
+      expect(wide.cardGap, greaterThan(phone.cardGap));
+      expect(wide.cardChipGap, greaterThan(phone.cardChipGap));
+      expect(wide.cardInlineIconSize, greaterThan(phone.cardInlineIconSize));
+      expect(phone.leadingAvatarRadius, 28);
+      expect(wide.leadingAvatarRadius, 34);
+      expect(wide.compactAvatarRadius, lessThan(wide.leadingAvatarRadius));
+    });
+
+    test('clamps the progress outside the supported widths', () {
+      expect(AppDirectoryMetrics.forCardWidth(240).progress, 0);
+      expect(AppDirectoryMetrics.forCardWidth(1200).progress, 1);
+    });
+
+    test('chipsIndent keeps secondary content aligned with the avatar', () {
+      final metrics = AppDirectoryMetrics.forCardWidth(520);
+      expect(metrics.chipsIndent, metrics.avatarSize + metrics.headerGap);
+    });
+  });
 }

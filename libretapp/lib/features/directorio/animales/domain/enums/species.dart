@@ -10,6 +10,9 @@ enum Species {
   feline,
   other;
 
+  /// Companion species are identified by species rather than by production stage.
+  bool get isCompanion => this == Species.canine || this == Species.feline;
+
   String get displayName {
     switch (this) {
       case Species.cattle:

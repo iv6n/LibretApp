@@ -238,7 +238,7 @@ void main() {
       },
     );
 
-    test('loads the full herd before applying stage and sex filters', () async {
+    test('loads the full herd before applying sex filters', () async {
       final target = _animal(
         uuid: 'bull-male-after-first-page',
         lifeStage: LifeStage.bull,
@@ -257,7 +257,7 @@ void main() {
       bloc.add(const LoadAnimales());
       await _flush();
       bloc.add(
-        const SetSearchFilters(stages: {LifeStage.bull}, sexes: {Sex.male}),
+        const SetSearchFilters(sexes: {Sex.male}),
       );
       await _flush();
 

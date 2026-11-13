@@ -1,4 +1,4 @@
-/// Illustrated, themed empty states for the agenda.
+/// One clear action for an empty agenda.
 library;
 
 import 'package:flutter/material.dart';
@@ -9,128 +9,67 @@ class AgendaEmptyPanel extends StatelessWidget {
   const AgendaEmptyPanel({
     required this.firstUse,
     required this.onPrimary,
-    required this.onSecondary,
     super.key,
   });
 
   final bool firstUse;
   final VoidCallback onPrimary;
-  final VoidCallback onSecondary;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final title = firstUse
-        ? 'Tu agenda empieza aquí'
-        : 'Hoy no hay actividades';
-    final message = firstUse
-        ? 'Agrega un animal o una planta para organizar sus cuidados.'
-        : 'Programa el próximo cuidado para tus animales o plantas.';
-
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer.withValues(alpha: 0.62),
-                borderRadius: BorderRadius.circular(AppRadii.lg),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    firstUse
-                        ? Icons.calendar_month_outlined
-                        : Icons.check_circle_outline,
-                    size: 28,
-                    color: scheme.primary,
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          firstUse
-                              ? 'Tu agenda está lista'
-                              : 'Un día libre de pendientes',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: scheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          firstUse
-                              ? 'Cuando agregues tus animales o plantas, verás aquí sus cuidados.'
-                              : 'No hay actividades programadas por ahora.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ExcludeSemantics(
+                child: Center(
+                  child: SizedBox(
+                    key: const ValueKey('agenda-empty-illustration'),
+                    width: 206,
+                    height: 126,
+                    child: CustomPaint(
+                      painter: _AgendaIllustrationPainter(
+                        firstUse: firstUse,
+                        main: scheme.primary,
+                        pale: scheme.primaryContainer,
+                        muted: scheme.onSurfaceVariant,
+                        paper: scheme.surface,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            ExcludeSemantics(
-              child: SizedBox(
-                width: 206,
-                height: 126,
-                child: CustomPaint(
-                  painter: _AgendaIllustrationPainter(
-                    firstUse: firstUse,
-                    main: scheme.primary,
-                    pale: scheme.primaryContainer,
-                    muted: scheme.onSurfaceVariant,
-                    paper: scheme.surface,
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              key: const ValueKey('agenda-empty-title'),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: scheme.onSurface,
+              const SizedBox(height: AppSpacing.lg),
+              Semantics(
+                header: true,
+                child: Text(
+                  firstUse
+                      ? 'Tu agenda empieza aquí'
+                      : 'Hoy no hay actividades',
+                  key: const ValueKey('agenda-empty-title'),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                key: const ValueKey('agenda-empty-primary'),
+                label: firstUse ? 'Agregar' : 'Programar actividad',
+                icon: Icons.add,
+                expanded: true,
+                onPressed: onPrimary,
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              key: const ValueKey('agenda-empty-primary'),
-              label: firstUse ? 'Agregar' : 'Programar actividad',
-              icon: Icons.add,
-              expanded: true,
-              onPressed: onPrimary,
-            ),
-            const SizedBox(height: AppSpacing.xxs),
-            TextButton(
-              key: const ValueKey('agenda-empty-secondary'),
-              onPressed: onSecondary,
-              child: Text(
-                firstUse ? '¿Cómo funciona?' : 'Ver mis registros',
-                style: const TextStyle(decoration: TextDecoration.underline),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

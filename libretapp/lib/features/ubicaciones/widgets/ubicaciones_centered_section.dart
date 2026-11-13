@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 
 class UbicacionesCenteredSection extends StatelessWidget {
   const UbicacionesCenteredSection({
@@ -18,7 +19,9 @@ class UbicacionesCenteredSection extends StatelessWidget {
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
+        constraints: const BoxConstraints(
+          maxWidth: AppDirectoryCardFrame.maxWidth,
+        ),
         child: SizedBox(
           width: double.infinity,
           child: Padding(padding: padding, child: child),

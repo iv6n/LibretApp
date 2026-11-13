@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/platform/release_features.dart';
@@ -90,7 +89,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
             content: Text(AppLocalizations.of(context).recordEditNotFound),
           ),
         );
-        context.pop(false);
+        AppFormExitGuard.complete(context, false);
         return;
       }
 
@@ -180,7 +179,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
           ),
         ),
       );
-      context.pop(true);
+      AppFormExitGuard.complete(context, true);
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
@@ -195,6 +194,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
       if (devices.isNotEmpty) await adapter.connect(devices.first);
       final reading = await adapter.readStable();
       if (!mounted) return;
+      AppFormExitGuard.markChanged(context);
       _weightController.text = reading.valueKg.toStringAsFixed(1);
       setState(() => _method = WeightMethod.scale);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -222,6 +222,7 @@ class _AnimalWeightFormPageState extends State<AnimalWeightFormPage> {
       contextLabel: animalRecordContextLabel(_animal),
       contextIcon: Icons.pets_outlined,
       saving: _saving,
+      protectUnsavedChanges: true,
       loading: _loading,
       formKey: _formKey,
       onSave: _save,

@@ -1,0 +1,1206 @@
+p
+localeNameofdelegatelocalizationsDelegatessupportedLocalesappTitlenavDirectorynavHome
+navAnimals	navAgendanavLocations
+navReports
+navProfilenavAddanimalsTitleanimalsEmptyTitleanimalsEmptySubtitleanimalsFirstTitleanimalsFirstSubtitleanimalsFirstActionanimalsSearchHintanimalsAdvancedSearchanimalsRecentSearchesanimalsRecentActivityanimalsClearHistoryanimalsFiltersanimalsNoResultsanimalsStageFilterLabelanimalsOnlyAttentionanimalsOnlyPendingTaganimalsCountanimalsSelectionHintanimalsSelectedCountanimalsSelectVisibleanimalsSelectVisibleSimpleanimalsDeselectVisibleanimalsSelectionCancelanimalsSelectionHiddenCount animalsSelectionAllHiddenWarninganimalsBulkMaintenanceActionanimalsBulkMaintenanceError"animalsBulkMaintenanceConfirmTitle!animalsBulkMaintenanceConfirmBody#animalsBulkMaintenanceConfirmActionstageFilterAllstageFilterCalfstageFilterHeiferstageFilterYoungBullstageFilterSteerstageFilterCowstageFilterBullstageFilterColtstageFilterHorsestageFilterMarestageFilterDonkeystageFilterMuleanimalRequiresAttentionanimalUnderObservationanimalPendingTaganimalAddTaganimalPendingTagHelpanimalVaccinated
+animalRiskanimalHealth	animalAgeanimalBreedanimalDetailTitletabInformation
+tabHistorysectionIdentificationsectionProductiveProfilesectionHealthsectionLocationsectionReproductiondetailNotFounddetailReloaddetailRetrydetailCreateddetailUpdateddetailLastMovementdetailHealth
+detailRiskdetailVaccinateddetailSynceddetailSyncedValue
+booleanYes	booleanNolocationChangePlaceholderlabelEarTaglabelVisualId
+labelBrand	labelRfid
+labelBatchlabelSpecieslabelCategorylabelLifeStagelabelSexlabelAge
+labelBreedlabelPurposelabelFeedTypelabelDailyGainlabelHealthStatuslabelBodyCondition	labelRisklabelVaccinatedlabelDewormedlabelVitaminslabelChronicConditionlabelChronicNoteslabelPaddocklabelLastMovementlabelObservationlabelReproductiveStatuslabelFirstServicelabelLastServicelabelExpectedCalvinglabelSyncedvalueYesvalueNovalueNotAssignedvalueNoData
+tabRecordsactionSelect
+actionSaveactionCancelactionConfirmactionRetryactionRemoveactionDeleteuiSearchuiFilteruiClearuiClose	uiLoading	fieldDateactionClearDatefinanceRegisterIncomefinanceRegisterExpensefinanceIncomeTypefinanceExpenseTypefinanceAmountfinanceCurrencyfinanceOptionalAnimalfinanceDescriptionHintfinanceAmountInvalidfinanceAmountPositivefinanceIncomeSavedfinanceExpenseSaveduiQuickActionsuiCustomizeerrorGenericSave
+fieldNotesfieldNotesOptionaldetailActionWeightdetailActionReproductiondetailActionProductiondetailActionHealthdetailActionCommercialdetailActionMovementdetailActionCostdetailRecordsWeightsdetailRecordsProductiondetailRecordsHealthdetailRecordsReproductiondetailRecordsCommercialdetailRecordsMovementsdetailRecordsCostsdetailRecordsValuedetailRecordsScoredetailRecordsDosedetailRecordsCausedetailRecordsAmountdetailRecordsFromdetailRecordsTodetailFormWeightTitledetailFormWeightValuedetailFormWeightMethoddetailFormWeightMethodScaledetailFormWeightMethodEstimateddetailFormAnimalRequireddetailFormNumberInvaliddetailFormAmountPositivedetailFormWeightErrorInvaliddetailFormWeightSaveddetailFormProductionTitledetailFormProductionTypedetailFormProductionValuedetailFormProductionUnitdetailFormProductionScore!detailFormProductionValueRequired!detailFormProductionScoreRequired detailFormProductionScoreInvaliddetailFormProductionScoreRange detailFormProductionDataRequireddetailFormProductionSaveddetailFormHealthTitledetailFormHealthTypedetailFormHealthProductdetailFormHealthDosedetailFormHealthAppliedBydetailFormHealthNextdetailFormHealthCausedetailFormHealthProductRequireddetailFormHealthNextAfterDatedetailFormHealthSaveddetailFormHealthMedicineBatchdetailFormHealthWithdrawalDays detailFormHealthWithdrawalHelperdetailFormCommercialTitledetailFormCommercialTypedetailFormCommercialAmountdetailFormCommercialCurrency detailFormCommercialCounterparty"detailFormCommercialAmountRequireddetailFormCommercialSaveddetailFormMovementTitledetailFormMovementReasondetailFormMovementFromdetailFormMovementTodetailFormMovementMovedBydetailFormMovementToRequired$detailFormMovementDifferentLocationsdetailFormMovementSaveddetailFormCostTitledetailFormCostTypedetailFormCostAmountdetailFormCostCurrencydetailFormCostAmountRequireddetailFormCostSaveddetailFormReproductionTitle#detailFormReproductionParicionTitle!detailFormReproductionServiceType$detailFormReproductionServiceNaturaldetailFormReproductionServiceAi detailFormReproductionServiceIvf%detailFormReproductionExpectedCalvingdetailFormReproductionSiredetailFormReproductionNotes'detailFormReproductionExpectedAfterDatedetailFormReproductionSaveddetailFormMilkingTitledetailFormMilkingIndividualModedetailFormMilkingGroupModedetailFormMilkingShiftdetailFormMilkingRegisterCowdetailFormMilkingSelectAnimaldetailFormMilkingLitersLabeldetailFormMilkingLitersShortdetailFormMilkingAddContinuedetailFormMilkingGroupLabel detailFormMilkingExcludedAnimals!detailFormMilkingSelectLotePromptdetailFormMilkingEmptyLotedetailFormMilkingAddOutsideLotedetailFormMilkingRegisteredCows!detailFormMilkingRemoveEntryTitle#detailFormMilkingRemoveEntryMessagedetailFormMilkingSavingdetailFormMilkingFinalizedetailFormMilkingSaveddetailFormMilkingReviewAgain#detailFormMilkingUnusualAmountTitle%detailFormMilkingUnusualAmountMessagedetailFormMilkingInvalidVolume"detailFormMilkingSelectAnimalFirst"detailFormMilkingCheckAnimalVolume%detailFormMilkingReviewBeforeContinuedetailFormMilkingFutureDateTimedetailFormMilkingSearchHintdetailFormMilkingNoResultsdetailFormMilkingCowCountregistroReproSubtitleFemaleregistroReproSubtitleMaleregistroReproAgeWarningregistroReproSireMaleregistroReproPartialErroranimalFormLoadErroranimalFormCategoryAdjustedanimalFormSpeciesAdjustedanimalFormNoSelectionanimalFormNoTagTitleanimalFormNoTagMessageanimalFormDuplicateEarTaganimalFormUnsupportedActionanimalFormRecordSaveErroranimalFormSaveFirstForRecordsanimalFormInvalidPurchasePriceanimalFormNoAutoMotherFoundanimalFormEditTitleanimalFormCreateTitleanimalFormNameOrVisualIdanimalFormBreedOptionalanimalFormCrossBreedOptionalanimalFormAgeMonthsOptionalanimalFormUnknownBreedanimalFormStatusanimalFormSectionOriginanimalFormMotherOptionalanimalFormFatherOptionalanimalFormSelectMotheranimalFormSelectFatheranimalFormNoLocationanimalFormNoBatchanimalFormSectionWeightHealthanimalFormWeightOptionalanimalFormSectionNotesPhotoanimalFormOwnerOptionalanimalFormPurchasePriceOptional#animalFormRecordsAvailableAfterSaveanimalFormRegisterAsCalfanimalFormSavinganimalFormSaveAnimaldetailQuickActionsTitledetailNoRecordsYetdetailNoRecordsHintrecordEditTitlerecordEditSavedrecordEditNotFoundrecordDeleteTitlerecordDeleteConfirmrecordDeletedrecordDeletedSyncWarningrecordDeleteUndonerecordRestoredSyncWarning
+actionUndo
+actionEditmediaTakePhotomediaChooseGallerymediaSaveErroranimalPhotoTitleanimalPhotoAddanimalPhotoReplaceanimalPhotoRemoveloteWeightTitleloteWeightCapturedloteWeightDateloteWeightKgloteWeightPreviousloteWeightGainloteWeightAdgloteWeightSaveloteWeightSavingloteWeightNoActiveAnimalsloteWeightLoadErrorloteWeightAtLeastOneloteWeightInvalidlotePerformanceTitlelotePerformanceEmptylotePerformanceLoadErrorlotePerformanceTotallotePerformanceAveragelotePerformanceAdgAveragelotePerformanceGainlotePerformancePreviouslotePerformanceGoodlotePerformanceBelowlotePerformanceNoGainlotePerformanceNoReferencelotePerformanceUnmeasuredlotePerformanceSessionslotePerformanceEconomicslotePerformanceFeedPerDaylotePerformanceCostPerKglotePerformanceMarginloadisSupportedshouldReloadAppLocalizations_AppLocalizationsDelegatelookupAppLocalizationsStringIntlcanonicalizedLocaletoStringBuildContextLocalizationsofLocalizationsDelegateListdynamicGlobalMaterialLocalizationsdelegateGlobalCupertinoLocalizationsGlobalWidgetsLocalizationsLocalenumObjectintoverrideFutureSynchronousFutureboolcontainslanguageCodeAppLocalizationsEnAppLocalizationsEsFlutterErrorLocalizationsDelegate
+´Yá!QulWqúeÙ       
+dart:async     package:flutter/foundation.dart  D   package:flutter/widgets.dart  l   8package:flutter_localizations/flutter_localizations.dart  €°   €Ï€Òintl€Òpackage:intl/intl.dart  €Ü   app_localizations_en.dart     app_localizations_es.dartÀ ü ÀÑˆ÷ Ck€¯€Ù€Û %'FH—ÈÍ‚‚i‚”‚™‚¦‚Ñ‚Ö‚ïƒ7ƒsƒ•ƒƒ¦ƒ«ƒÇƒÌ„„&„+„8„K„r„„¦„ë„ğ…………5…:………Ô†"†-†2††Î†ì†ñ‡@‡‚‡‡‡ÒˆˆmˆÃˆÒˆõ‰‰^‰`‰|‰~‰´Š ŠŠŠJŠnŠpŠÂŠÔŠÛ‹0‹„‹´‹»ŒŒPŒ~ŒÌŒõ7g•Ÿ¡ã0CIKy€ªÔìî 'Qi…‡´»åùBIs‰£¥ÔÛ‘‘‘2‘4‘f‘m‘—‘°‘Ì‘Î‘ş’’/’E’_’a’‘’˜’Â’Ö’ğ’ò““%“O“f“|“~“°“·“á“÷”””L”S”}”¥”Æ”È••	•3•a•…•‡•¾•Å•ï––1–3–m–t––å—	——C—J—t—’—´—¶—í—ô˜˜K˜l˜n˜©˜°˜Ú˜ù™™ ™[™b™Œ™­™Ò™Ôššš@š`š…š‡šÀšÇšñ››3›5›i›p›š›¯›Í›Ïœœœ6œRœrœtœ±œ¸œâ(*dk•°ÔÖB_„†¸¿éŸ5ŸXŸZŸ”Ÿ›ŸÅŸ÷   W ^ ˆ ß¡
+¡¡F¡M¡w¡®¡í¡ï¢/¢6¢`¢‚¢¬¢®¢ê¢ñ££8£^£`£œ£££Í£ã¤	¤¤L¤S¤}¥¥8¥:¥€¥‡¥±¥ù¦)¦+¦m¦t¦¦Ë§§§D§K§u§§Ó§Õ¨¨$¨N¨s¨¥¨§¨î¨õ©©c©© ©é©ğªª1ªdªfªšª¡ªËªŞªüªş«3«:«d«¡«Ç«É¬ ¬¬1¬p¬˜¬š¬Ô¬Û­­@­k­m­£­ª­Ô®®8®:®n®u®Ÿ®Ö®û®ı¯2¯9¯c¯š¯À¯Â¯÷¯ş°(°t°š°œ°Ò°Ù±±@±g±i±±¥±Ï²².²0²g²n²˜²Ş³³³=³D³n³¥³Ë³Í´
+´´;´Z´´ƒ´¿´Æ´ğµµ2µ4µjµqµ›µ¸µØµÚ¶¶¶=¶X¶t¶v¶°¶·¶á·!·E·G·}·„·®·Ä·ä·æ¸¸¸G¸c¸‡¸‰¸»¸Â¸ì¸ÿ¹¹¹L¹S¹}¹¹¨¹ª¹Û¹âººº9º;ºrºyº£ºÃºäºæ»»!»K»d»‚»„»´»»»å»ü¼¼¼S¼Z¼„¼ ¼Å¼Ç½½½6½U½}½½²½¹½ã½ø¾¾¾L¾S¾}¾¡¾À¾Â¾û¿¿,¿F¿i¿k¿Ÿ¿¦¿ĞÀ @À @"À @$À @VÀ @]À @‡À @À @¹À @»À @ìÀ @óÀ AÀ A5À APÀ ARÀ A…À AŒÀ A¶À AÊÀ AçÀ AéÀ BÀ B#À BMÀ BoÀ BŒÀ BÀ BÆÀ BÍÀ B÷À CÀ C8À C:À ClÀ CsÀ CÀ CºÀ CÖÀ CØÀ DÀ DÀ D9À DMÀ DgÀ DiÀ DŸÀ D¦À DĞÀ DæÀ EÀ EÀ E:À EAÀ EkÀ E‡À E£À E¥À EÜÀ EãÀ FÀ FTÀ F‚À F„À F´À F»À FåÀ FõÀ GÀ GÀ G@À GGÀ GqÀ GÀ GšÀ GœÀ GÛÀ GâÀ HÀ H4À H]À H_À HÀ H—À HÁÀ HÔÀ HïÀ HñÀ I$À I+À IUÀ IlÀ I‰À I‹À I»À IÂÀ IìÀ IÿÀ JÀ JÀ JJÀ JQÀ J{À JÀ J¦À J¨À JØÀ JßÀ K	À KÀ K5À K7À KiÀ KpÀ KšÀ K¯À KËÀ KÍÀ L À LÀ L1À LHÀ LeÀ LgÀ L›À L¢À LÌÀ LßÀ LıÀ LÿÀ M-À M4À M^À MpÀ MˆÀ MŠÀ M¸À M¿À MéÀ MûÀ NÀ NÀ NEÀ NLÀ NvÀ NˆÀ N¢À N¤À NÖÀ NİÀ OÀ OÀ O:À O<À OoÀ OvÀ O À OºÀ O×À OÙÀ PÀ PÀ P>À PdÀ P‚À P„À P»À PÂÀ PìÀ Q	À Q*À Q,À QdÀ QkÀ Q•À QµÀ Q×À QÙÀ RÀ RÀ R9À RMÀ RfÀ RhÀ RÀ R¤À RÎÀ RäÀ SÀ SÀ S8À S?À SiÀ S„À S¡À S£À SÖÀ SİÀ TÀ TÀ T;À T=À TxÀ TÀ T©À TÈÀ TíÀ TïÀ U&À U-À UWÀ UsÀ U”À U–À UÈÀ UÏÀ UùÀ VÀ V3À V5À VlÀ VsÀ VÀ V¼À VİÀ VßÀ WÀ WÀ WFÀ W_À WÀ WÀ W¾À WÅÀ WïÀ XÀ X7À X9À XpÀ XwÀ X¡À X»À XÜÀ XŞÀ YÀ YÀ YEÀ YbÀ Y‚À Y„À Y¾À YÅÀ YïÀ ZÀ Z8À Z:À ZkÀ ZrÀ ZœÀ Z¸À ZÓÀ ZÕÀ [À [
+À [4À [DÀ [\À [^À [‹À [’À [¼À [ÌÀ [ãÀ [åÀ \À \"À \LÀ \eÀ \…À \‡À \¸À \¿À \éÀ \ÿÀ ]À ]À ]LÀ ]SÀ ]}À ]”À ]®À ]°À ]âÀ ]éÀ ^À ^,À ^HÀ ^JÀ ^zÀ ^À ^«À ^ÀÀ ^ÚÀ ^ÜÀ _À _À _?À _UÀ _qÀ _sÀ _¦À _­À _×À _îÀ `À `À `>À `EÀ `oÀ `‡À `¢À `¤À `ÖÀ `İÀ aÀ aÀ a7À a9À akÀ arÀ aœÀ a²À aÎÀ aĞÀ aşÀ bÀ b/À bCÀ b[À b]À b‹À b’À b¼À bÑÀ béÀ bëÀ cÀ cÀ cIÀ c^À cuÀ cwÀ c¤À c«À cÕÀ céÀ d À dÀ d1À d8À dbÀ dxÀ d‘À d“À dÂÀ dÉÀ dóÀ eÀ eÀ e!À eVÀ e]À e‡À e¡À eÀÀ eÂÀ eıÀ fÀ f.À fMÀ frÀ ftÀ f°À f·À fáÀ gÀ g,À g.À geÀ glÀ g–À g³À gÔÀ gÖÀ hÀ hÀ h?À hZÀ h|À h~À h±À h¸À hâÀ hõÀ iÀ iÀ iIÀ iPÀ izÀ iÀ i­À i¯À iêÀ iñÀ jÀ j:À j_À jaÀ jÀ j¤À jÎÀ jôÀ kÀ kÀ kVÀ k]À k‡À k­À kÑÀ kÓÀ lÀ lÀ l?À llÀ l‘À l“À lËÀ lÒÀ lüÀ mÀ m=À m?À mxÀ mÀ m©À mÆÀ méÀ mëÀ nÀ n&À nPÀ nmÀ n‹À nÀ n¾À nÅÀ nïÀ oÀ o4À o6À olÀ osÀ oÀ oÆÀ oæÀ oèÀ pÀ pÀ pIÀ p\À pvÀ pxÀ p°À p·À páÀ pÿÀ q!À q#À q[À qbÀ qŒÀ qÀ qÀÀ qÂÀ r À rÀ r1À rKÀ rsÀ ruÀ r±À r¸À râÀ rúÀ s À s"À sZÀ saÀ s‹À s¢À sÄÀ sÆÀ tÀ t	À t3À tJÀ tpÀ trÀ t¬À t³À tİÀ tõÀ uÀ uÀ uQÀ uXÀ u‚À u•À uµÀ u·À uñÀ uøÀ v"À v6À vZÀ v\À v™À v À vÊÀ vãÀ w
+À wÀ wEÀ wLÀ wvÀ wÀ w±À w³À wòÀ wùÀ x#À x=À xfÀ xhÀ x¥À x¬À xÖÀ xïÀ yÀ yÀ yTÀ y[À y…À yÀ yÄÀ yÆÀ yşÀ zÀ z/À zCÀ zeÀ zgÀ zŸÀ z¦À zĞÀ zãÀ {À {À {?À {FÀ {pÀ {…À {§À {©À {àÀ {çÀ |À |$À |EÀ |GÀ |À |†À |°À |ÃÀ |åÀ |çÀ } À }'À }QÀ }dÀ }‡À }‰À }ÀÀ }ÇÀ }ñÀ ~À ~"À ~$À ~YÀ ~`À ~ŠÀ ~™À ~¸À ~ºÀ ~õÀ ~üÀ &À BÀ gÀ iÀ ¤À «À ÕÀ ìÀ €À €À €OÀ €VÀ €€À €”À €ºÀ €¼À €ıÀ À .À CÀ nÀ pÀ µÀ ¼À æÀ üÀ ‚+À ‚-À ‚kÀ ‚rÀ ‚œÀ ‚ÆÀ ‚îÀ ‚ğÀ ƒ-À ƒ4À ƒ^À ƒ„À ƒ«À ƒ­À ƒëÀ ƒòÀ „À „JÀ „rÀ „tÀ „¶À „½À „çÀ …À …7À …9À …tÀ …{À …¥À …ÂÀ …çÀ …éÀ †(À †/À †YÀ †zÀ †£À †¥À †ãÀ †êÀ ‡À ‡&À ‡NÀ ‡PÀ ‡À ‡–À ‡ÀÀ ‡ŞÀ ˆÀ ˆ	À ˆGÀ ˆNÀ ˆxÀ ˆŒÀ ˆ´À ˆ¶À ˆõÀ ˆüÀ ‰&À ‰?À ‰hÀ ‰jÀ ‰±À ‰¸À ‰âÀ ŠÀ ŠLÀ ŠNÀ Š•À ŠœÀ ŠÆÀ ŠşÀ ‹/À ‹1À ‹wÀ ‹~À ‹¨À ‹ÏÀ ‹ÿÀ ŒÀ ŒEÀ ŒLÀ ŒvÀ Œ¥À ŒÓÀ ŒÕÀ À "À LÀ ŠÀ ºÀ ¼À ûÀ À ,À VÀ À À ¼À ÃÀ íÀ À 2À 4À nÀ uÀ ŸÀ ±À ÕÀ ×À À À EÀ iÀ À ’À ÌÀ ÓÀ ıÀ ‘À ‘4À ‘6À ‘uÀ ‘|À ‘¦À ‘ÀÀ ‘éÀ ‘ëÀ ’%À ’,À ’VÀ ’vÀ ’šÀ ’œÀ ’×À ’ŞÀ “À “/À “TÀ “VÀ “›À “¢À “ÌÀ “ìÀ ”À ”À ”`À ”gÀ ”‘À ”İÀ •
+À •À •GÀ •NÀ •xÀ •¡À •ÆÀ •ÈÀ –À –À –<À –^À –‹À –À –ÑÀ –ØÀ —À —À —KÀ —MÀ —“À —šÀ —ÄÀ —İÀ ˜À ˜À ˜NÀ ˜UÀ ˜À ˜ŸÀ ˜ÈÀ ˜ÊÀ ™À ™À ™9À ™KÀ ™sÀ ™uÀ ™µÀ ™¼À ™æÀ ™ùÀ š#À š%À šgÀ šnÀ š˜À š¬À šØÀ šÚÀ › À ›'À ›QÀ ›jÀ ›šÀ ›œÀ ›äÀ ›ëÀ œÀ œMÀ œÀ œÀ œÀÀ œÇÀ œñÀ À CÀ EÀ ‚À ‰À ³À ËÀ òÀ ôÀ 2À 9À cÀ wÀ ŸÀ ¡À İÀ äÀ ŸÀ Ÿ,À ŸRÀ ŸTÀ ŸÀ Ÿ•À Ÿ¿À ŸÒÀ ŸöÀ ŸøÀ  7À  >À  hÀ  €À  ©À  «À  íÀ  ôÀ ¡À ¡=À ¡iÀ ¡kÀ ¡µÀ ¡¼À ¡æÀ ¢*À ¢^À ¢`À ¢À ¢¤À ¢ÎÀ ¢ïÀ £À £À £QÀ £XÀ £‚À £•À £¸À £ºÀ £òÀ £ùÀ ¤#À ¤5À ¤WÀ ¤YÀ ¤“À ¤šÀ ¤ÄÀ ¤×À ¤ûÀ ¤ıÀ ¥9À ¥@À ¥jÀ ¥~À ¥¤À ¥¦À ¥èÀ ¥ïÀ ¦À ¦6À ¦bÀ ¦dÀ ¦À ¦¤À ¦ÎÀ ¦êÀ §À §À §PÀ §WÀ §À §¬À §×À §ÙÀ ¨"À ¨)À ¨SÀ ¨uÀ ¨¨À ¨ªÀ ¨ñÀ ¨øÀ ©"À ©@À ©qÀ ©sÀ ©½À ©ÄÀ ©îÀ ª	À ª=À ª?À ª„À ª‹À ªµÀ ªÒÀ «À «À «IÀ «PÀ «zÀ «‹À «»À «½À ¬À ¬À ¬9À ¬XÀ ¬À ¬À ¬ÏÀ ¬ÖÀ ­ À ­%À ­OÀ ­QÀ ­’À ­™À ­ÃÀ ­áÀ ®À ®À ®[À ®bÀ ®ŒÀ ®áÀ ¯À ¯À ¯[À ¯bÀ ¯ŒÀ ¯¶À ¯áÀ ¯ãÀ °À °&À °PÀ °pÀ °–À °˜À °İÀ °äÀ ±À ±'À ±VÀ ±XÀ ±˜À ±ŸÀ ±ÉÀ ±ßÀ ²	À ²À ²GÀ ²NÀ ²xÀ ²‹À ²±À ²³À ²õÀ ²üÀ ³&À ³BÀ ³nÀ ³pÀ ³³À ³ºÀ ³äÀ ´À ´/À ´1À ´sÀ ´zÀ ´¤À ´ÁÀ ´íÀ ´ïÀ µ1À µ8À µbÀ µvÀ µ¢À µ¤À µæÀ µíÀ ¶À ¶8À ¶dÀ ¶fÀ ¶§À ¶®À ¶ØÀ ¶ûÀ ·&À ·(À ·nÀ ·uÀ ·ŸÀ ·òÀ ¸)À ¸+À ¸rÀ ¸yÀ ¸£À ¸ÚÀ ¹À ¹À ¹MÀ ¹TÀ ¹~À ¹°À ¹ÚÀ ¹ÜÀ º!À º(À ºRÀ ºÀ º®À º°À ºõÀ ºüÀ »&À »EÀ »tÀ »vÀ »½À »ÄÀ »îÀ ¼À ¼<À ¼>À ¼‡À ¼À ¼¸À ¼åÀ ½À ½À ½WÀ ½^À ½ˆÀ ½¢À ½ÉÀ ½ËÀ ¾
+À ¾À ¾;À ¾YÀ ¾‚À ¾„À ¾ÀÀ ¾ÇÀ ¾ñÀ ¿À ¿DÀ ¿FÀ ¿ˆÀ ¿À ¿¹À ¿ÎÀ ¿úÀ ¿üÀ ÀEÀ ÀLÀ ÀvÀ À”À ÀÇÀ ÀÉÀ ÁÀ ÁÀ ÁEÀ Á•À ÁÕÀ Á×À ÂÀ Â"À ÂLÀ ÂÀ Â­À Â¯À Â÷À ÂşÀ Ã(À ÃQÀ ÃƒÀ Ã…À ÃÍÀ ÃÔÀ ÃşÀ Ä)À ÄfÀ ÄhÀ Ä³À ÄºÀ ÄäÀ ÅÀ ÅLÀ ÅNÀ Å“À ÅšÀ ÅÄÀ Å÷À Æ&À Æ(À ÆiÀ ÆpÀ ÆšÀ ÆÅÀ ÆğÀ ÆòÀ Ç2À Ç9À ÇcÀ ÇˆÀ Ç²À Ç´À ÇóÀ ÇúÀ È$À ÈKÀ È{À È}À È¾À ÈÅÀ ÈïÀ É&À ÉQÀ ÉSÀ É’À É™À ÉÃÀ ÉöÀ ÊÀ Ê!À Ê^À ÊeÀ ÊÀ Ë5À ËvÀ ËxÀ Ë³À ËºÀ ËäÀ ÌÀ Ì:À Ì<À Ì{À Ì‚À Ì¬À ÍÀ Í4À Í6À ÍoÀ ÍvÀ Í À Í×À ÍúÀ ÍüÀ Î<À ÎCÀ ÎmÀ Î²À ÎÜÀ ÎŞÀ ÏÀ Ï$À ÏNÀ ÏˆÀ Ï±À Ï³À ÏîÀ ÏõÀ ĞÀ Ğ:À Ğ_À ĞaÀ Ğ›À Ğ¢À ĞÌÀ ĞêÀ ÑÀ ÑÀ ÑLÀ ÑSÀ Ñ}À ÑõÀ ÒÀ ÒÀ Ò\À ÒcÀ ÒÀ Ò¼À ÒåÀ ÒçÀ Ó(À Ó/À ÓYÀ ÓÀ Ó»À Ó½À ÓüÀ ÔÀ Ô-À ÔbÀ Ô•À Ô—À ÔÚÀ ÔáÀ ÕÀ ÕHÀ ÕuÀ ÕwÀ Õ»À ÕÂÀ ÕìÀ Ö'À ÖUÀ ÖWÀ Ö˜À ÖŸÀ ÖÉÀ ×+À ×VÀ ×XÀ ×‘À ×˜À ×ÂÀ ×İÀ Ø À ØÀ Ø=À ØDÀ ØnÀ ØŠÀ Ø¯À Ø±À ØïÀ ØöÀ Ù À Ù@À ÙhÀ ÙjÀ Ù§À Ù®À ÙØÀ ÙõÀ ÚÀ ÚÀ Ú`À ÚgÀ Ú‘À Ú¸À ÚäÀ ÚæÀ Û'À Û.À ÛXÀ ÛyÀ Û¤À Û¦À ÛâÀ ÛéÀ ÜÀ Ü,À ÜRÀ ÜTÀ ÜŠÀ Ü‘À Ü»À ÜÏÀ ÜïÀ ÜñÀ İ.À İ5À İ_À İsÀ İšÀ İœÀ İÚÀ İáÀ ŞÀ Ş)À ŞQÀ ŞSÀ Ş‘À Ş˜À ŞÂÀ ŞàÀ ßÀ ß
+À ßFÀ ßMÀ ßwÀ ß–À ß¼À ß¾À ßúÀ àÀ à+À àJÀ àpÀ àrÀ à¬À à³À àİÀ àøÀ áÀ áÀ áUÀ á\À á†À áœÀ á½À á¿À âÀ â	À â3À âMÀ âzÀ â|À âºÀ âÁÀ âëÀ ãÀ ã3À ã5À ãvÀ ã}À ã§À ãÁÀ ãìÀ ãîÀ ä+À ä2À ä\À ä€À ä§À ä©À äîÀ äõÀ åÀ åHÀ åwÀ åyÀ åÂÀ åÉÀ åóÀ æCÀ ævÀ æxÀ æ¶À æ½À æçÀ ç(À çPÀ çRÀ çˆÀ çÀ ç¹À çÓÀ çóÀ çõÀ è/À è6À è`À è|À è À è¢À èßÀ èæÀ éÀ é.À éUÀ éWÀ éÀ é–À éÀÀ éßÀ êÀ êÀ ê<À êCÀ êmÀ ê¹À êÜÀ êŞÀ ëÀ ëÀ ëDÀ ëcÀ ë‚À ë„À ë¹À ëÀÀ ëêÀ ì
+À ì)À ì+À ìcÀ ìjÀ ì”À ìÒÀ ìôÀ ìöÀ í-À í4À í^À í}À íÀ í À íÙÀ íàÀ î
+À îMÀ îpÀ îrÀ î¥À î¬À îÖÀ îöÀ ïÀ ïÀ ïSÀ ïZÀ ï„À ïÃÀ ïëÀ ïíÀ ğ%À ğ,À ğVÀ ğwÀ ğ™À ğ›À ğÚÀ ğáÀ ñÀ ñKÀ ñtÀ ñvÀ ñ¦À ñ­À ñ×À ñíÀ òÀ ò	À ò9À ò@À òjÀ ò€À òšÀ òœÀ òĞÀ ò×À óÀ óÀ ó7À ó9À óqÀ óxÀ ó¢À óÁÀ óãÀ óåÀ ôÀ ô À ôJÀ ôtÀ ô’À ô”À ôÊÀ ôÑÀ ôûÀ õÀ õ>À õ@À õtÀ õ{À õ¥À õ¿À õİÀ õßÀ öÀ öÀ öHÀ öeÀ ö‡À ö‰À öÀÀ öÇÀ öñÀ ÷
+À ÷+À ÷-À ÷bÀ ÷iÀ ÷“À ÷±À ÷ĞÀ ÷ÒÀ ø
+À øÀ ø;À øiÀ ø À ø¢À øÖÀ øİÀ ùÀ ù%À ùCÀ ùEÀ ùwÀ ù~À ù¨À ù½À ùÙÀ ùÛÀ úÀ úÀ úDÀ úZÀ ú|À ú~À ú²À ú¹À úãÀ úûÀ ûÀ ûÀ ûNÀ ûUÀ ûÀ ûÀ û­À û¯À ûãÀ ûêÀ üÀ ü9À üWÀ üYÀ üÀ ü–À üÀÀ üÚÀ üúÀ üüÀ ı;À ıBÀ ılÀ ıÀ ıÇÀ ıÉÀ şÀ ş	À ş3À ş[À ş~À ş€À şºÀ şÁÀ şëÀ ÿÀ ÿ6À ÿ8À ÿoÀ ÿvÀ ÿ À ÿ»À ÿÜÀ ÿŞÀ À À IÀ bÀ †À ˆÀ ÂÀ ÉÀ óÀ5ÀYÀ[À™À ÀÊÀùÀ!À#À]ÀdÀÀ¦ÀÊÀÌÀÀÀ9ÀOÀuÀwÀ¶À½ÀçÀÀ*À,ÀeÀlÀ–À±ÀÔÀÖÀÀÀDÀeÀŒÀÀÇÀÎÀøÀÀ9À;ÀuÀ|À¦ÀÃÀçÀéÀ$À+ÀUÀoÀ”À–ÀÖÀİÀÀ#ÀMÀOÀÀ•À¿ÀşÀ	.À	0À	mÀ	tÀ	À	ÀÀ	çÀ	éÀ
+'À
+.À
+XÀ
+wÀ
+ŸÀ
+¡À
+àÀ
+çÀÀ+ÀTÀVÀ”À›ÀÅÀâÀ
+ÀÀGÀNÀxÀ™À¾ÀÁÀÃÀäÀÀAÀCÀPÀ‚ÀÓÀØÀÚÀçÀÀHÀJÀWÀ•À˜ÀšÀÔÀÀ/À?ÀcÀsÀ—ÀœÀÀµÀÀaÀ±ÀÈÀÎÀÑ         C  k  €¯€Ò €Û         ˆ÷ ‰    ‰‰‰ ‰)‰‰+‰/‰0‰4‰5‰H‰Z‰I‰O‰P‰X‰Yˆ÷ˆ÷e    ‰o‰b‰o ŠPŠiŠjŠ>Š	bŠ> Œò›ŒÒŒñŒÓŒèŒğŒéŒı+,?[\o‰ŠŒ²Šrƒ*Œ²ï/// A list of this localizations delegate along with the default localizations
+/// delegates.
+///
+/// Returns a list of localizations delegates containing this delegate along with
+/// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+/// and GlobalWidgetsLocalizations.delegate.
+///
+/// Additional delegates can be added by appending to this list in
+/// MaterialApp. This list does not have to be used at all if a custom list
+/// of delegates is preferred or required.E!',(4:?;ÿ£€£ÿ>/// A list of this localizations delegate's supported locales.K   MM€á|/// No description provided for @appTitle.
+///
+/// In es, this message translates to:
+/// **'LibretApp - Control Ganadero'**   ğğ€“vn/// No description provided for @navDirectory.
+///
+/// In es, this message translates to:
+/// **'Directorio'**   ‰‰€…e/// No description provided for @navHome.
+///
+/// In es, this message translates to:
+/// **'Inicio'**   €–j/// No description provided for @navAnimals.
+///
+/// In es, this message translates to:
+/// **'Animales'**   §§€‰‘&g/// No description provided for @navAgenda.
+///
+/// In es, this message translates to:
+/// **'Agenda'**   ‘6‘6€”‘½o/// No description provided for @navLocations.
+///
+/// In es, this message translates to:
+/// **'Ubicaciones'**   ‘Ğ‘Ğ€’Rj/// No description provided for @navReports.
+///
+/// In es, this message translates to:
+/// **'Reportes'**   ’c’c€‹’ãh/// No description provided for @navProfile.
+///
+/// In es, this message translates to:
+/// **'Perfil'**   ’ô’ô€†“sg/// No description provided for @navAdd.
+///
+/// In es, this message translates to:
+/// **'Registrar'**   “€“€€‘”l/// No description provided for @animalsTitle.
+///
+/// In es, this message translates to:
+/// **'Animales'**   ””€­”²€ƒ/// No description provided for @animalsEmptyTitle.
+///
+/// In es, this message translates to:
+/// **'No se encontraron animales'**   ”Ê”Ê€¹•n€/// No description provided for @animalsEmptySubtitle.
+///
+/// In es, this message translates to:
+/// **'Ajusta los filtros o la bÃºsqueda'**   •‰•‰€¦–}/// No description provided for @animalsFirstTitle.
+///
+/// In es, this message translates to:
+/// **'AÃºn no hay animales'**   –5–5€Ò–ò€¥/// No description provided for @animalsFirstSubtitle.
+///
+/// In es, this message translates to:
+/// **'Registra el primero para empezar a llevar su seguimiento.'**   ——€¥—Ÿz/// No description provided for @animalsFirstAction.
+///
+/// In es, this message translates to:
+/// **'Registrar animal'**   —¸—¸€²˜X€ˆ/// No description provided for @animalsSearchHint.
+///
+/// In es, this message translates to:
+/// **'Buscar por arete, nombre o raza'**   ˜p˜p€¬™/// No description provided for @animalsAdvancedSearch.
+///
+/// In es, this message translates to:
+/// **'BÃºsqueda avanzada'**   ™"™"€®™º€/// No description provided for @animalsRecentSearches.
+///
+/// In es, this message translates to:
+/// **'BÃºsquedas recientes'**   ™Ö™Ö€­šm/// No description provided for @animalsRecentActivity.
+///
+/// In es, this message translates to:
+/// **'Actividad reciente'**   š‰š‰€¨›|/// No description provided for @animalsClearHistory.
+///
+/// In es, this message translates to:
+/// **'Limpiar historial'**   ›7›7€”›¼m/// No description provided for @animalsFilters.
+///
+/// In es, this message translates to:
+/// **'Filtros'**   ›Ñ›Ñ€Ÿœ_v/// No description provided for @animalsNoResults.
+///
+/// In es, this message translates to:
+/// **'Sin resultados'**   œvœv€°€€/// No description provided for @animalsStageFilterLabel.
+///
+/// In es, this message translates to:
+/// **'Filtros por etapa'**   ,,€¦½z/// No description provided for @animalsOnlyAttention.
+///
+/// In es, this message translates to:
+/// **'Solo atenciÃ³n'**   ØØ€ªl|/// No description provided for @animalsOnlyPendingTag.
+///
+/// In es, this message translates to:
+/// **'Arete pendiente'**   Ÿ\Ÿ\€½ €/// No description provided for @animalsSelectionHint.
+///
+/// In es, this message translates to:
+/// **'Mantener presionado para seleccionar'**   ¡ñ¡ñ€¹¢€†/// No description provided for @animalsSelectVisibleSimple.
+///
+/// In es, this message translates to:
+/// **'Seleccionar visibles'**   ¢°¢°€¬£E}/// No description provided for @animalsDeselectVisible.
+///
+/// In es, this message translates to:
+/// **'Quitar visibles'**   £b£b€¥£ğv/// No description provided for @animalsSelectionCancel.
+///
+/// In es, this message translates to:
+/// **'Cancelar'**   ¥<¥<€ë¦€³/// No description provided for @animalsSelectionAllHiddenWarning.
+///
+/// In es, this message translates to:
+/// **'Todos los seleccionados estÃ¡n ocultos por filtros activos.'**   §×§×€Ì¨€€‘/// No description provided for @animalsBulkMaintenanceConfirmTitle.
+///
+/// In es, this message translates to:
+/// **'Confirmar mantenimiento'**   ©¢©¢€Àª>€„/// No description provided for @animalsBulkMaintenanceConfirmAction.
+///
+/// In es, this message translates to:
+/// **'Continuar'**   ªhªh€’ªëk/// No description provided for @stageFilterAll.
+///
+/// In es, this message translates to:
+/// **'Todos'**   ³Ï³Ï€°´g€/// No description provided for @animalRequiresAttention.
+///
+/// In es, this message translates to:
+/// **'Requiere atenciÃ³n'**   ´…´…€«µ}/// No description provided for @animalUnderObservation.
+///
+/// In es, this message translates to:
+/// **'En observaciÃ³n'**   µ6µ6€ µÅw/// No description provided for @animalPendingTag.
+///
+/// In es, this message translates to:
+/// **'Arete pendiente'**   µÜµÜ€–¶eq/// No description provided for @animalAddTag.
+///
+/// In es, this message translates to:
+/// **'Agregar arete'**   ¶x¶x€Ë·.€ /// No description provided for @animalPendingTagHelp.
+///
+/// In es, this message translates to:
+/// **'Agrega el nÃºmero para completar la identificaciÃ³n.'**   ·I·I€™·Ñp/// No description provided for @animalVaccinated.
+///
+/// In es, this message translates to:
+/// **'Vacunado'**   ¸‹¸‹€¹i/// No description provided for @animalHealth.
+///
+/// In es, this message translates to:
+/// **'Salud'**   ¹¹€‡¹œe/// No description provided for @animalAge.
+///
+/// In es, this message translates to:
+/// **'Edad'**   ¹¬¹¬€‹º+g/// No description provided for @animalBreed.
+///
+/// In es, this message translates to:
+/// **'Raza'**   º=º=€¥ºĞ{/// No description provided for @animalDetailTitle.
+///
+/// In es, this message translates to:
+/// **'Detalle del animal'**   ºèºè€˜»qr/// No description provided for @tabInformation.
+///
+/// In es, this message translates to:
+/// **'InformaciÃ³n'**   »†»†€¼	k/// No description provided for @tabHistory.
+///
+/// In es, this message translates to:
+/// **'Historial'**   ¼¼€©¼­|/// No description provided for @sectionIdentification.
+///
+/// In es, this message translates to:
+/// **'IdentificaciÃ³n'**   ¼É¼É€²½b€/// No description provided for @sectionProductiveProfile.
+///
+/// In es, this message translates to:
+/// **'Perfil productivo'**   ½½€’¾l/// No description provided for @sectionHealth.
+///
+/// In es, this message translates to:
+/// **'Sanidad'**   ¾¾€¥¾®~/// No description provided for @sectionLocation.
+///
+/// In es, this message translates to:
+/// **'UbicaciÃ³n y movimiento'**   ¾Ä¾Ä€£¿Sx/// No description provided for @sectionReproduction.
+///
+/// In es, this message translates to:
+/// **'ReproducciÃ³n'**   ¿m¿m€³À @€/// No description provided for @detailNotFound.
+///
+/// In es, this message translates to:
+/// **'No se encontrÃ³ informaciÃ³n del animal.'**   À @&À @&€‘À @ªl/// No description provided for @detailReload.
+///
+/// In es, this message translates to:
+/// **'Recargar'**   À @½À @½€‘À ABm/// No description provided for @detailRetry.
+///
+/// In es, this message translates to:
+/// **'Reintentar'**   À ATÀ AT€‘À A×k/// No description provided for @detailCreated.
+///
+/// In es, this message translates to:
+/// **'Creado'**   À AëÀ Aë€ŸÀ B|{/// No description provided for @detailUpdated.
+///
+/// In es, this message translates to:
+/// **'Ãšltima actualizaciÃ³n'**   À BÀ B€¦À C#|/// No description provided for @detailLastMovement.
+///
+/// In es, this message translates to:
+/// **'Ãšltimo movimiento'**   À C<À C<€˜À CÇs/// No description provided for @detailHealth.
+///
+/// In es, this message translates to:
+/// **'Estado de salud'**   À CÚÀ CÚ€‹À DZh/// No description provided for @detailRisk.
+///
+/// In es, this message translates to:
+/// **'Riesgo'**   À DkÀ Dk€™À Dóp/// No description provided for @detailVaccinated.
+///
+/// In es, this message translates to:
+/// **'Vacunado'**   À E
+À E
+€—À E”s/// No description provided for @detailSynced.
+///
+/// In es, this message translates to:
+/// **'SincronizaciÃ³n'**   À F†À F†€‡À Ge/// No description provided for @booleanYes.
+///
+/// In es, this message translates to:
+/// **'SÃ­'**   À GÀ G€…À Gc/// No description provided for @booleanNo.
+///
+/// In es, this message translates to:
+/// **'No'**   À GÀ G€½À HA€Œ/// No description provided for @locationChangePlaceholder.
+///
+/// In es, this message translates to:
+/// **'Cambiar ubicaciÃ³n - FASE 3'**   À HaÀ Ha€ŒÀ Háh/// No description provided for @labelEarTag.
+///
+/// In es, this message translates to:
+/// **'Arete'**   À HóÀ Hó€”À Iyn/// No description provided for @labelVisualId.
+///
+/// In es, this message translates to:
+/// **'ID visual'**   À IÀ I€ŠÀ Jg/// No description provided for @labelBrand.
+///
+/// In es, this message translates to:
+/// **'Marca'**   À JÀ J€‡À Jše/// No description provided for @labelRfid.
+///
+/// In es, this message translates to:
+/// **'RFID'**   À JªÀ Jª€‰À K(f/// No description provided for @labelBatch.
+///
+/// In es, this message translates to:
+/// **'Lote'**   À K9À K9€À K¼k/// No description provided for @labelSpecies.
+///
+/// In es, this message translates to:
+/// **'Especie'**   À KÏÀ KÏ€”À LUo/// No description provided for @labelCategory.
+///
+/// In es, this message translates to:
+/// **'CategorÃ­a'**   À LiÀ Li€’À Lìk/// No description provided for @labelLifeStage.
+///
+/// In es, this message translates to:
+/// **'Etapa'**   À MÀ M€…À M}d/// No description provided for @labelSex.
+///
+/// In es, this message translates to:
+/// **'Sexo'**   À MŒÀ MŒ€…À Nd/// No description provided for @labelAge.
+///
+/// In es, this message translates to:
+/// **'Edad'**   À NÀ N€‰À N•f/// No description provided for @labelBreed.
+///
+/// In es, this message translates to:
+/// **'Raza'**   À N¦À N¦€’À O+n/// No description provided for @labelPurpose.
+///
+/// In es, this message translates to:
+/// **'PropÃ³sito'**   À O>À O>€—À OÇr/// No description provided for @labelFeedType.
+///
+/// In es, this message translates to:
+/// **'AlimentaciÃ³n'**   À OÛÀ OÛ€¥À Pq~/// No description provided for @labelDailyGain.
+///
+/// In es, this message translates to:
+/// **'Ganancia diaria estimada'**   À P†À P†€¢À Qx/// No description provided for @labelHealthStatus.
+///
+/// In es, this message translates to:
+/// **'Estado de salud'**   À Q.À Q.€§À QÂ}/// No description provided for @labelBodyCondition.
+///
+/// In es, this message translates to:
+/// **'CondiciÃ³n corporal'**   À QÛÀ QÛ€‰À RZg/// No description provided for @labelRisk.
+///
+/// In es, this message translates to:
+/// **'Riesgo'**   À RjÀ Rj€—À Rño/// No description provided for @labelVaccinated.
+///
+/// In es, this message translates to:
+/// **'Vacunado'**   À SÀ S€˜À S‘r/// No description provided for @labelDewormed.
+///
+/// In es, this message translates to:
+/// **'Desparasitado'**   À S¥À S¥€”À T+n/// No description provided for @labelVitamins.
+///
+/// In es, this message translates to:
+/// **'Vitaminas'**   À T?À T?€¬À TÕ€€/// No description provided for @labelChronicCondition.
+///
+/// In es, this message translates to:
+/// **'CondiciÃ³n crÃ³nica'**   À TñÀ Tñ€¡À U€x/// No description provided for @labelChronicNotes.
+///
+/// In es, this message translates to:
+/// **'Notas crÃ³nicas'**   À U˜À U˜€™À V$u/// No description provided for @labelPaddock.
+///
+/// In es, this message translates to:
+/// **'PadrÃ³n / Potrero'**   À V7À V7€¤À VÉ{/// No description provided for @labelLastMovement.
+///
+/// In es, this message translates to:
+/// **'Ãšltimo movimiento'**   À VáÀ Vá€œÀ Wlt/// No description provided for @labelObservation.
+///
+/// In es, this message translates to:
+/// **'ObservaciÃ³n'**   À WƒÀ Wƒ€²À X€‚/// No description provided for @labelReproductiveStatus.
+///
+/// In es, this message translates to:
+/// **'Estado reproductivo'**   À X;À X;€ŸÀ XÈu/// No description provided for @labelFirstService.
+///
+/// In es, this message translates to:
+/// **'1er servicio'**   À XàÀ Xà€ À Yox/// No description provided for @labelLastService.
+///
+/// In es, this message translates to:
+/// **'Ãšltimo servicio'**   À Y†À Y†€°À Z!€ƒ/// No description provided for @labelExpectedCalving.
+///
+/// In es, this message translates to:
+/// **'Fecha probable de parto'**   À Z<À Z<€•À ZÅr/// No description provided for @labelSynced.
+///
+/// In es, this message translates to:
+/// **'SincronizaciÃ³n'**   À Z×À Z×€ƒÀ [Qc/// No description provided for @valueYes.
+///
+/// In es, this message translates to:
+/// **'SÃ­'**   À [`À [`€À [Ùa/// No description provided for @valueNo.
+///
+/// In es, this message translates to:
+/// **'No'**   À [çÀ [ç€œÀ \rs/// No description provided for @valueNotAssigned.
+///
+/// In es, this message translates to:
+/// **'Sin asignar'**   À \‰À \‰€À ]k/// No description provided for @valueNoData.
+///
+/// In es, this message translates to:
+/// **'Sin dato'**   À ]À ]€À ]¡k/// No description provided for @tabRecords.
+///
+/// In es, this message translates to:
+/// **'Registros'**   À ]²À ]²€”À ^9o/// No description provided for @actionSelect.
+///
+/// In es, this message translates to:
+/// **'Seleccionar'**   À ^LÀ ^L€ŒÀ ^Íi/// No description provided for @actionSave.
+///
+/// In es, this message translates to:
+/// **'Guardar'**   À ^ŞÀ ^Ş€‘À _bl/// No description provided for @actionCancel.
+///
+/// In es, this message translates to:
+/// **'Cancelar'**   À _uÀ _u€”À _ûn/// No description provided for @actionConfirm.
+///
+/// In es, this message translates to:
+/// **'Confirmar'**   À `À `€‘À `”m/// No description provided for @actionRetry.
+///
+/// In es, this message translates to:
+/// **'Reintentar'**   À `¦À `¦€À a(j/// No description provided for @actionRemove.
+///
+/// In es, this message translates to:
+/// **'Quitar'**   À a;À a;€‘À a¿l/// No description provided for @actionDelete.
+///
+/// In es, this message translates to:
+/// **'Eliminar'**   À aÒÀ aÒ€‡À bPf/// No description provided for @uiSearch.
+///
+/// In es, this message translates to:
+/// **'Buscar'**   À b_À b_€ˆÀ bŞg/// No description provided for @uiFilter.
+///
+/// In es, this message translates to:
+/// **'Filtrar'**   À bíÀ bí€†À ckf/// No description provided for @uiClear.
+///
+/// In es, this message translates to:
+/// **'Limpiar'**   À cyÀ cy€…À cöe/// No description provided for @uiClose.
+///
+/// In es, this message translates to:
+/// **'Cerrar'**   À dÀ d€‹À d…i/// No description provided for @uiLoading.
+///
+/// In es, this message translates to:
+/// **'Cargando'**   À d•À d•€ˆÀ ef/// No description provided for @fieldDate.
+///
+/// In es, this message translates to:
+/// **'Fecha'**   À e#À e#€›À e®s/// No description provided for @actionClearDate.
+///
+/// In es, this message translates to:
+/// **'Borrar fecha'**   À eÄÀ eÄ€¬À fZ~/// No description provided for @financeRegisterIncome.
+///
+/// In es, this message translates to:
+/// **'Registrar ingreso'**   À fvÀ fv€´À g€…/// No description provided for @financeRegisterExpense.
+///
+/// In es, this message translates to:
+/// **'Registrar gasto general'**   À g0À g0€¢À gÀx/// No description provided for @financeIncomeType.
+///
+/// In es, this message translates to:
+/// **'Tipo de ingreso'**   À gØÀ gØ€¢À hgw/// No description provided for @financeExpenseType.
+///
+/// In es, this message translates to:
+/// **'Tipo de gasto'**   À h€À h€€À ij/// No description provided for @financeAmount.
+///
+/// In es, this message translates to:
+/// **'Monto'**   À iÀ i€•À i›m/// No description provided for @financeCurrency.
+///
+/// In es, this message translates to:
+/// **'Moneda'**   À i±À i±€¬À jG~/// No description provided for @financeOptionalAnimal.
+///
+/// In es, this message translates to:
+/// **'Animal (opcional)'**   À jcÀ jc€µÀ k€‡/// No description provided for @financeDescriptionHint.
+///
+/// In es, this message translates to:
+/// **'DescripciÃ³n adicional...'**   À kÀ k€±À kº€…/// No description provided for @financeAmountInvalid.
+///
+/// In es, this message translates to:
+/// **'Ingresa un monto vÃ¡lido.'**   À kÕÀ kÕ€ºÀ ly€Œ/// No description provided for @financeAmountPositive.
+///
+/// In es, this message translates to:
+/// **'El monto debe ser mayor a cero.'**   À l•À l•€¦À m({/// No description provided for @financeIncomeSaved.
+///
+/// In es, this message translates to:
+/// **'Ingreso guardado.'**   À mAÀ mA€¦À mÓz/// No description provided for @financeExpenseSaved.
+///
+/// In es, this message translates to:
+/// **'Gasto guardado.'**   À míÀ mí€œÀ nzv/// No description provided for @uiQuickActions.
+///
+/// In es, this message translates to:
+/// **'Accesos rÃ¡pidos'**   À nÀ n€£À o&€€/// No description provided for @uiCustomize.
+///
+/// In es, this message translates to:
+/// **'Personalizar accesos rÃ¡pidos'**   À o8À o8€¬À oÓ€„/// No description provided for @errorGenericSave.
+///
+/// In es, this message translates to:
+/// **'OcurriÃ³ un error al guardar'**   À oêÀ oê€ŠÀ pig/// No description provided for @fieldNotes.
+///
+/// In es, this message translates to:
+/// **'Notas'**   À pzÀ pz€¥À qz/// No description provided for @fieldNotesOptional.
+///
+/// In es, this message translates to:
+/// **'Notas (opcional)'**   À q%À q%€™À q«n/// No description provided for @detailActionWeight.
+///
+/// In es, this message translates to:
+/// **'Peso'**   À qÄÀ qÄ€­À rX}/// No description provided for @detailActionReproduction.
+///
+/// In es, this message translates to:
+/// **'ReproducciÃ³n'**   À rwÀ rw€§À sx/// No description provided for @detailActionProduction.
+///
+/// In es, this message translates to:
+/// **'Productivo'**   À s$À s$€À s¯s/// No description provided for @detailActionHealth.
+///
+/// In es, this message translates to:
+/// **'Sanitario'**   À sÈÀ sÈ€¦À tWw/// No description provided for @detailActionCommercial.
+///
+/// In es, this message translates to:
+/// **'Comercial'**   À ttÀ tt€£À uv/// No description provided for @detailActionMovement.
+///
+/// In es, this message translates to:
+/// **'Movimiento'**   À uÀ u€–À u¢m/// No description provided for @detailActionCost.
+///
+/// In es, this message translates to:
+/// **'Costo'**   À u¹À u¹€ŸÀ vCr/// No description provided for @detailRecordsWeights.
+///
+/// In es, this message translates to:
+/// **'Pesaje'**   À v^À v^€ªÀ vğz/// No description provided for @detailRecordsProduction.
+///
+/// In es, this message translates to:
+/// **'Productivos'**   À wÀ w€¡À w›u/// No description provided for @detailRecordsHealth.
+///
+/// In es, this message translates to:
+/// **'Sanitarios'**   À wµÀ wµ€¯À xJ~/// No description provided for @detailRecordsReproduction.
+///
+/// In es, this message translates to:
+/// **'ReproducciÃ³n'**   À xjÀ xj€ªÀ xüz/// No description provided for @detailRecordsCommercial.
+///
+/// In es, this message translates to:
+/// **'Comerciales'**   À yÀ y€¨À y«y/// No description provided for @detailRecordsMovements.
+///
+/// In es, this message translates to:
+/// **'Movimientos'**   À yÈÀ yÈ€›À zPp/// No description provided for @detailRecordsCosts.
+///
+/// In es, this message translates to:
+/// **'Costos'**   À ziÀ zi€šÀ zğo/// No description provided for @detailRecordsValue.
+///
+/// In es, this message translates to:
+/// **'Valor'**   À {	À {	€œÀ {’q/// No description provided for @detailRecordsScore.
+///
+/// In es, this message translates to:
+/// **'Puntaje'**   À {«À {«€˜À |1n/// No description provided for @detailRecordsDose.
+///
+/// In es, this message translates to:
+/// **'Dosis'**   À |IÀ |I€šÀ |Ğo/// No description provided for @detailRecordsCause.
+///
+/// In es, this message translates to:
+/// **'Causa'**   À |éÀ |é€œÀ }qp/// No description provided for @detailRecordsAmount.
+///
+/// In es, this message translates to:
+/// **'Monto'**   À }‹À }‹€•À ~k/// No description provided for @detailRecordsFrom.
+///
+/// In es, this message translates to:
+/// **'De'**   À ~&À ~&€À ~¦h/// No description provided for @detailRecordsTo.
+///
+/// In es, this message translates to:
+/// **'A'**   À ~¼À ~¼€©À O{/// No description provided for @detailFormWeightTitle.
+///
+/// In es, this message translates to:
+/// **'Registrar peso'**   À kÀ k€¤À ùv/// No description provided for @detailFormWeightValue.
+///
+/// In es, this message translates to:
+/// **'Peso (kg)'**   À €À €€£À €¡u/// No description provided for @detailFormWeightMethod.
+///
+/// In es, this message translates to:
+/// **'MÃ©todo'**   À €¾À €¾€®À P{/// No description provided for @detailFormWeightMethodScale.
+///
+/// In es, this message translates to:
+/// **'BÃ¡scula'**   À rÀ r€·À ‚	/// No description provided for @detailFormWeightMethodEstimated.
+///
+/// In es, this message translates to:
+/// **'Estimado'**   À ‚/À ‚/€½À ‚Ó€Œ/// No description provided for @detailFormAnimalRequired.
+///
+/// In es, this message translates to:
+/// **'Selecciona un animal primero'**   À ‚òÀ ‚ò€·À ƒ‘€‰/// No description provided for @detailFormNumberInvalid.
+///
+/// In es, this message translates to:
+/// **'Ingresa un nÃºmero vÃ¡lido'**   À ƒ¯À ƒ¯€ÁÀ „W€/// No description provided for @detailFormAmountPositive.
+///
+/// In es, this message translates to:
+/// **'El valor debe ser mayor que cero'**   À „vÀ „v€¿À …€‹/// No description provided for @detailFormWeightErrorInvalid.
+///
+/// In es, this message translates to:
+/// **'Ingresa un peso vÃ¡lido'**   À …;À …;€ªÀ …Ï|/// No description provided for @detailFormWeightSaved.
+///
+/// In es, this message translates to:
+/// **'Peso registrado'**   À …ëÀ …ë€¶À †‡€„/// No description provided for @detailFormProductionTitle.
+///
+/// In es, this message translates to:
+/// **'Registro productivo'**   À †§À †§€¥À ‡3t/// No description provided for @detailFormProductionType.
+///
+/// In es, this message translates to:
+/// **'Tipo'**   À ‡RÀ ‡R€³À ‡ë€/// No description provided for @detailFormProductionValue.
+///
+/// In es, this message translates to:
+/// **'Valor (opcional)'**   À ˆÀ ˆ€§À ˆ™v/// No description provided for @detailFormProductionUnit.
+///
+/// In es, this message translates to:
+/// **'Unidad'**   À ˆ¸À ˆ¸€®À ‰L|/// No description provided for @detailFormProductionScore.
+///
+/// In es, this message translates to:
+/// **'Puntaje/BCS'**   À ‰lÀ ‰l€ŞÀ Š(€¤/// No description provided for @detailFormProductionValueRequired.
+///
+/// In es, this message translates to:
+/// **'Ingresa un valor para este tipo de registro'**   À ŠPÀ ŠP€İÀ ‹€¤/// No description provided for @detailFormProductionScoreRequired.
+///
+/// In es, this message translates to:
+/// **'Ingresa un puntaje para condiciÃ³n corporal'**   À ‹3À ‹3€ÊÀ ‹Ü€’/// No description provided for @detailFormProductionScoreInvalid.
+///
+/// In es, this message translates to:
+/// **'Ingresa un puntaje vÃ¡lido'**   À ŒÀ Œ€ÎÀ Œ²€—/// No description provided for @detailFormProductionScoreRange.
+///
+/// In es, this message translates to:
+/// **'El puntaje debe estar entre 0 y 9'**   À Œ×À Œ×€áÀ —€¨/// No description provided for @detailFormProductionDataRequired.
+///
+/// In es, this message translates to:
+/// **'Agrega al menos un dato para guardar el registro'**   À ¾À ¾€¿À c€/// No description provided for @detailFormProductionSaved.
+///
+/// In es, this message translates to:
+/// **'Registro productivo guardado'**   À ƒÀ ƒ€­À /// No description provided for @detailFormHealthTitle.
+///
+/// In es, this message translates to:
+/// **'Registro sanitario'**   À 6À 6€À ¾p/// No description provided for @detailFormHealthType.
+///
+/// In es, this message translates to:
+/// **'Tipo'**   À ÙÀ Ù€µÀ v€…/// No description provided for @detailFormHealthProduct.
+///
+/// In es, this message translates to:
+/// **'Producto/procedimiento'**   À ”À ”€À ‘q/// No description provided for @detailFormHealthDose.
+///
+/// In es, this message translates to:
+/// **'Dosis'**   À ‘8À ‘8€¯À ‘Í}/// No description provided for @detailFormHealthAppliedBy.
+///
+/// In es, this message translates to:
+/// **'Aplicado por'**   À ‘íÀ ‘í€«À ’ƒ/// No description provided for @detailFormHealthNext.
+///
+/// In es, this message translates to:
+/// **'PrÃ³ximo (opcional)'**   À ’À ’€´À “<€†/// No description provided for @detailFormHealthCause.
+///
+/// In es, this message translates to:
+/// **'Causa (enfermedad/muerte)'**   À “XÀ “X€ÁÀ “ù€‰/// No description provided for @detailFormHealthProductRequired.
+///
+/// In es, this message translates to:
+/// **'Producto requerido'**   À ”À ”€éÀ ”ê€´/// No description provided for @detailFormHealthNextAfterDate.
+///
+/// In es, this message translates to:
+/// **'La prÃ³xima fecha no puede ser anterior a la fecha del registro'**   À •À •€¶À •®€ˆ/// No description provided for @detailFormHealthSaved.
+///
+/// In es, this message translates to:
+/// **'Registro sanitario guardado'**   À •ÊÀ •Ê€¿À –k€‰/// No description provided for @detailFormHealthMedicineBatch.
+///
+/// In es, this message translates to:
+/// **'Lote del medicamento'**   À –À –€ºÀ —*€„/// No description provided for @detailFormHealthWithdrawalDays.
+///
+/// In es, this message translates to:
+/// **'Retiro (dÃ­as)'**   À —OÀ —O€¼À —ê€ƒ/// No description provided for @detailFormHealthWithdrawalHelper.
+///
+/// In es, this message translates to:
+/// **'Carne/leche'**   À ˜À ˜€µÀ ˜¬€ƒ/// No description provided for @detailFormCommercialTitle.
+///
+/// In es, this message translates to:
+/// **'Registro comercial'**   À ˜ÌÀ ˜Ì€¥À ™Xt/// No description provided for @detailFormCommercialType.
+///
+/// In es, this message translates to:
+/// **'Tipo'**   À ™wÀ ™w€ªÀ šw/// No description provided for @detailFormCommercialAmount.
+///
+/// In es, this message translates to:
+/// **'Monto'**   À š'À š'€¯À š¹z/// No description provided for @detailFormCommercialCurrency.
+///
+/// In es, this message translates to:
+/// **'Moneda'**   À šÜÀ šÜ€¼À ›w€ƒ/// No description provided for @detailFormCommercialCounterparty.
+///
+/// In es, this message translates to:
+/// **'Contraparte'**   À ›À ›€ßÀ œZ€¤/// No description provided for @detailFormCommercialAmountRequired.
+///
+/// In es, this message translates to:
+/// **'Monto requerido para este tipo de registro'**   À œƒÀ œƒ€¾À '€Œ/// No description provided for @detailFormCommercialSaved.
+///
+/// In es, this message translates to:
+/// **'Registro comercial guardado'**   À GÀ G€©À Øy/// No description provided for @detailFormMovementTitle.
+///
+/// In es, this message translates to:
+/// **'Movimiento'**   À öÀ ö€§À „v/// No description provided for @detailFormMovementReason.
+///
+/// In es, this message translates to:
+/// **'Motivo'**   À £À £€­À Ÿ9~/// No description provided for @detailFormMovementFrom.
+///
+/// In es, this message translates to:
+/// **'Desde (opcional)'**   À ŸVÀ ŸV€À Ÿßq/// No description provided for @detailFormMovementTo.
+///
+/// In es, this message translates to:
+/// **'Hacia'**   À ŸúÀ Ÿú€­À  {/// No description provided for @detailFormMovementMovedBy.
+///
+/// In es, this message translates to:
+/// **'Movido por'**   À  ­À  ­€ºÀ ¡J€…/// No description provided for @detailFormMovementToRequired.
+///
+/// In es, this message translates to:
+/// **'Destino requerido'**   À ¡mÀ ¡m€ïÀ ¢7€³/// No description provided for @detailFormMovementDifferentLocations.
+///
+/// In es, this message translates to:
+/// **'La ubicaciÃ³n de origen y destino no pueden ser iguales'**   À ¢bÀ ¢b€²À ¢ü€‚/// No description provided for @detailFormMovementSaved.
+///
+/// In es, this message translates to:
+/// **'Movimiento guardado'**   À £À £€œÀ £¢p/// No description provided for @detailFormCostTitle.
+///
+/// In es, this message translates to:
+/// **'Costo'**   À £¼À £¼€™À ¤Bn/// No description provided for @detailFormCostType.
+///
+/// In es, this message translates to:
+/// **'Tipo'**   À ¤[À ¤[€À ¤äq/// No description provided for @detailFormCostAmount.
+///
+/// In es, this message translates to:
+/// **'Monto'**   À ¤ÿÀ ¤ÿ€£À ¥‹t/// No description provided for @detailFormCostCurrency.
+///
+/// In es, this message translates to:
+/// **'Moneda'**   À ¥¨À ¥¨€¸À ¦C€ƒ/// No description provided for @detailFormCostAmountRequired.
+///
+/// In es, this message translates to:
+/// **'Monto requerido'**   À ¦fÀ ¦f€¥À ¦÷y/// No description provided for @detailFormCostSaved.
+///
+/// In es, this message translates to:
+/// **'Costo guardado'**   À §À §€ÄÀ §¹€/// No description provided for @detailFormReproductionTitle.
+///
+/// In es, this message translates to:
+/// **'Registrar evento reproductivo'**   À §ÛÀ §Û€ËÀ ¨‚€/// No description provided for @detailFormReproductionParicionTitle.
+///
+/// In es, this message translates to:
+/// **'Registro de pariciÃ³n'**   À ¨¬À ¨¬€ÃÀ ©M€‰/// No description provided for @detailFormReproductionServiceType.
+///
+/// In es, this message translates to:
+/// **'Tipo de servicio'**   À ©uÀ ©u€ÆÀ ª€‰/// No description provided for @detailFormReproductionServiceNatural.
+///
+/// In es, this message translates to:
+/// **'Monta natural'**   À ªAÀ ªA€¾À ªß€‡/// No description provided for @detailFormReproductionServiceAi.
+///
+/// In es, this message translates to:
+/// **'InseminaciÃ³n AI'**   À «À «€´À «˜{/// No description provided for @detailFormReproductionServiceIvf.
+///
+/// In es, this message translates to:
+/// **'FIV'**   À «¿À «¿€ÌÀ ¬e€/// No description provided for @detailFormReproductionExpectedCalving.
+///
+/// In es, this message translates to:
+/// **'F. probable parto'**   À ¬‘À ¬‘€¼À ­2€‰/// No description provided for @detailFormReproductionSire.
+///
+/// In es, this message translates to:
+/// **'Toro / padre (opcional)'**   À ­SÀ ­S€·À ­î€ƒ/// No description provided for @detailFormReproductionNotes.
+///
+/// In es, this message translates to:
+/// **'Notas (opcional)'**   À ®À ®À ®î€Æ/// No description provided for @detailFormReproductionExpectedAfterDate.
+///
+/// In es, this message translates to:
+/// **'La fecha probable de parto no puede ser anterior a la fecha de servicio'**   À ¯À ¯€ÃÀ ¯Ã€/// No description provided for @detailFormReproductionSaved.
+///
+/// In es, this message translates to:
+/// **'Evento reproductivo guardado'**   À ¯åÀ ¯å€¯À °}€/// No description provided for @detailFormMilkingTitle.
+///
+/// In es, this message translates to:
+/// **'Registro de ordeÃ±a'**   À °šÀ °š€ºÀ ±4€‚/// No description provided for @detailFormMilkingIndividualMode.
+///
+/// In es, this message translates to:
+/// **'Una por una'**   À ±ZÀ ±Z€­À ±ìz/// No description provided for @detailFormMilkingGroupMode.
+///
+/// In es, this message translates to:
+/// **'Por lote'**   À ²À ²€¢À ²˜s/// No description provided for @detailFormMilkingShift.
+///
+/// In es, this message translates to:
+/// **'Turno'**   À ²µÀ ²µ€·À ³O€‚/// No description provided for @detailFormMilkingRegisterCow.
+///
+/// In es, this message translates to:
+/// **'Registrar vaca'**   À ³rÀ ³r€»À ´€…/// No description provided for @detailFormMilkingSelectAnimal.
+///
+/// In es, this message translates to:
+/// **'Seleccionar vaca'**   À ´3À ´3€¸À ´Î€ƒ/// No description provided for @detailFormMilkingLitersLabel.
+///
+/// In es, this message translates to:
+/// **'Litros de leche'**   À ´ñÀ ´ñ€¯À µƒz/// No description provided for @detailFormMilkingLitersShort.
+///
+/// In es, this message translates to:
+/// **'Litros'**   À µ¦À µ¦€¼À ¶E€‡/// No description provided for @detailFormMilkingAddContinue.
+///
+/// In es, this message translates to:
+/// **'Agregar y continuar'**   À ¶hÀ ¶h€¼À ·€ˆ/// No description provided for @detailFormMilkingGroupLabel.
+///
+/// In es, this message translates to:
+/// **'Grupo o lote de vacas'**   À ¸-À ¸-€ÜÀ ¸ç€¢/// No description provided for @detailFormMilkingSelectLotePrompt.
+///
+/// In es, this message translates to:
+/// **'Selecciona un lote para cargar sus vacas.'**   À ¹À ¹€ÉÀ ¹½€–/// No description provided for @detailFormMilkingEmptyLote.
+///
+/// In es, this message translates to:
+/// **'Este lote no contiene vacas activas.'**   À ¹ŞÀ ¹Ş€ÎÀ ºŒ€–/// No description provided for @detailFormMilkingAddOutsideLote.
+///
+/// In es, this message translates to:
+/// **'Agregar una vaca fuera del lote'**   À º²À º²€ÀÀ »R€ˆ/// No description provided for @detailFormMilkingRegisteredCows.
+///
+/// In es, this message translates to:
+/// **'Vacas registradas'**   À »xÀ »x€ÂÀ ¼€ˆ/// No description provided for @detailFormMilkingRemoveEntryTitle.
+///
+/// In es, this message translates to:
+/// **'Quitar registro'**   À ¼@À ¼@€ÖÀ ¼ò€œ/// No description provided for @detailFormMilkingRemoveEntryMessage.
+///
+/// In es, this message translates to:
+/// **'Â¿Quitar esta vaca de la ordeÃ±a?'**   À ½À ½€«À ½¯{/// No description provided for @detailFormMilkingSaving.
+///
+/// In es, this message translates to:
+/// **'Guardando...'**   À ½ÍÀ ½Í€³À ¾f€‚/// No description provided for @detailFormMilkingFinalize.
+///
+/// In es, this message translates to:
+/// **'Finalizar ordeÃ±a'**   À ¾†À ¾†€¼À ¿+€/// No description provided for @detailFormMilkingSaved.
+///
+/// In es, this message translates to:
+/// **'OrdeÃ±a registrada correctamente'**   À ¿HÀ ¿H€°À ¿Û{/// No description provided for @detailFormMilkingReviewAgain.
+///
+/// In es, this message translates to:
+/// **'Revisar'**   À ¿şÀ ¿ş€ÇÀ À¡€‹/// No description provided for @detailFormMilkingUnusualAmountTitle.
+///
+/// In es, this message translates to:
+/// **'Cantidad inusual'**   À ÁÙÀ ÁÙ€ÒÀ ÂŒ€œ/// No description provided for @detailFormMilkingInvalidVolume.
+///
+/// In es, this message translates to:
+/// **'Ingresa una cantidad vÃ¡lida de litros'**   À Â±À Â±€ĞÀ Ã^€•/// No description provided for @detailFormMilkingSelectAnimalFirst.
+///
+/// In es, this message translates to:
+/// **'Selecciona una vaca primero'**   À ÄjÀ Äj€àÀ Å$€¢/// No description provided for @detailFormMilkingReviewBeforeContinue.
+///
+/// In es, this message translates to:
+/// **'Revisa la cantidad antes de continuar'**   À ÅPÀ ÅP€ÔÀ Æ€œ/// No description provided for @detailFormMilkingFutureDateTime.
+///
+/// In es, this message translates to:
+/// **'La fecha y hora no pueden ser futuras'**   À Æ*À Æ*€ÄÀ ÆÒ€/// No description provided for @detailFormMilkingSearchHint.
+///
+/// In es, this message translates to:
+/// **'Buscar por arete, nombre o ID'**   À ÆôÀ Æô€¼À Ç•€‰/// No description provided for @detailFormMilkingNoResults.
+///
+/// In es, this message translates to:
+/// **'No se encontraron vacas'**   À ÈÀ È€ĞÀ É3€œ/// No description provided for @registroReproSubtitleFemale.
+///
+/// In es, this message translates to:
+/// **'Hembra: formulario reproductivo completo.'**   À ÉUÀ ÉU€ÈÀ Ê€—/// No description provided for @registroReproSubtitleMale.
+///
+/// In es, this message translates to:
+/// **'Macho: ajustes reproductivos bÃ¡sicos.'**   À ËzÀ Ëz€¾À Ì"€‘/// No description provided for @registroReproSireMale.
+///
+/// In es, this message translates to:
+/// **'IdentificaciÃ³n del macho (opcional)'**   À Í8À Í8€ÀÀ Íä€”/// No description provided for @animalFormLoadError.
+///
+/// In es, this message translates to:
+/// **'No se pudo cargar el formulario de animal'**   À ÍşÀ Íş€ÜÀ Î¿€ª/// No description provided for @animalFormCategoryAdjusted.
+///
+/// In es, this message translates to:
+/// **'CategorÃ­a ajustada a Otro para coincidir con la especie'**   À ÎàÀ Îà€ÏÀ Ï•€/// No description provided for @animalFormSpeciesAdjusted.
+///
+/// In es, this message translates to:
+/// **'Especie ajustada a Bovino para esa categorÃ­a'**   À ÏµÀ Ïµ€¨À ĞG{/// No description provided for @animalFormNoSelection.
+///
+/// In es, this message translates to:
+/// **'Sin selecciÃ³n'**   À ĞcÀ Ğc€©À Ğ÷|/// No description provided for @animalFormNoTagTitle.
+///
+/// In es, this message translates to:
+/// **'Animal sin arete'**   À ÑÀ ÑÀ Ò€Ù/// No description provided for @animalFormNoTagMessage.
+///
+/// In es, this message translates to:
+/// **'Este animal no tiene arete. Se recomienda etiquetarlo para su seguimiento. Â¿Deseas guardar de todos modos?'**   À ÒÀ Ò€ÄÀ ÒÉ€’/// No description provided for @animalFormDuplicateEarTag.
+///
+/// In es, this message translates to:
+/// **'Ya existe un animal con ese arete'**   À ÒéÀ Òé€ĞÀ Ó€/// No description provided for @animalFormUnsupportedAction.
+///
+/// In es, this message translates to:
+/// **'AcciÃ³n no soportada desde este formulario'**   À Ô™À Ô™€ÚÀ ÕU€¤/// No description provided for @animalFormSaveFirstForRecords.
+///
+/// In es, this message translates to:
+/// **'Guarda el animal primero para agregar registros'**   À ÕyÀ Õy€ÚÀ Ö4€¥/// No description provided for @animalFormInvalidPurchasePrice.
+///
+/// In es, this message translates to:
+/// **'El precio de compra debe ser un nÃºmero vÃ¡lido'**   À ÖYÀ ÖY€ûÀ ×8€É/// No description provided for @animalFormNoAutoMotherFound.
+///
+/// In es, this message translates to:
+/// **'No se encontrÃ³ madre automÃ¡tica; puedes guardar o seleccionar una madre manualmente.'**   À ×ZÀ ×Z€¤À ×êx/// No description provided for @animalFormEditTitle.
+///
+/// In es, this message translates to:
+/// **'Editar animal'**   À ØÀ Ø€©À Ø—{/// No description provided for @animalFormCreateTitle.
+///
+/// In es, this message translates to:
+/// **'Agregar animal'**   À Ø³À Ø³€³À ÙM€‚/// No description provided for @animalFormNameOrVisualId.
+///
+/// In es, this message translates to:
+/// **'Nombre o ID visual'**   À ÙlÀ Ùl€®À Ú~/// No description provided for @animalFormBreedOptional.
+///
+/// In es, this message translates to:
+/// **'Raza (opcional)'**   À Ú À Ú €ÂÀ ÚÅ€/// No description provided for @animalFormCrossBreedOptional.
+///
+/// In es, this message translates to:
+/// **'Raza 2 / Cruce (opcional)'**   À ÚèÀ Úè€ºÀ Û†€†/// No description provided for @animalFormAgeMonthsOptional.
+///
+/// In es, this message translates to:
+/// **'Edad aprox. (meses)'**   À Û¨À Û¨€¨À Ü9y/// No description provided for @animalFormUnknownBreed.
+///
+/// In es, this message translates to:
+/// **'Desconocido'**   À ÜVÀ ÜV€—À ÜÜn/// No description provided for @animalFormStatus.
+///
+/// In es, this message translates to:
+/// **'Estado'**   À ÜóÀ Üó€¥À İ€u/// No description provided for @animalFormSectionOrigin.
+///
+/// In es, this message translates to:
+/// **'Origen'**   À İÀ İ€±À Ş6€€/// No description provided for @animalFormMotherOptional.
+///
+/// In es, this message translates to:
+/// **'Madre (opcional)'**   À ŞUÀ ŞU€±À Şí€€/// No description provided for @animalFormFatherOptional.
+///
+/// In es, this message translates to:
+/// **'Padre (opcional)'**   À ßÀ ß€®À ß£/// No description provided for @animalFormSelectMother.
+///
+/// In es, this message translates to:
+/// **'Seleccionar madre'**   À ßÀÀ ßÀ€®À àW/// No description provided for @animalFormSelectFather.
+///
+/// In es, this message translates to:
+/// **'Seleccionar padre'**   À àtÀ àt€¦À áz/// No description provided for @animalFormNoLocation.
+///
+/// In es, this message translates to:
+/// **'Sin ubicaciÃ³n'**   À á À á €›À á©q/// No description provided for @animalFormNoBatch.
+///
+/// In es, this message translates to:
+/// **'Sin lote'**   À áÁÀ áÁ€·À âZ€/// No description provided for @animalFormSectionWeightHealth.
+///
+/// In es, this message translates to:
+/// **'Peso y salud'**   À â~À â~€³À ã€‚/// No description provided for @animalFormWeightOptional.
+///
+/// In es, this message translates to:
+/// **'Peso (kg) opcional'**   À ã7À ã7€³À ãÎ/// No description provided for @animalFormSectionNotesPhoto.
+///
+/// In es, this message translates to:
+/// **'Notas y foto'**   À ãğÀ ãğ€µÀ ä€…/// No description provided for @animalFormOwnerOptional.
+///
+/// In es, this message translates to:
+/// **'Propietario (opcional)'**   À ä«À ä«€ÊÀ åU€’/// No description provided for @animalFormPurchasePriceOptional.
+///
+/// In es, this message translates to:
+/// **'Precio de compra (opcional)'**   À å{À å{€ùÀ æP€¾/// No description provided for @animalFormRecordsAvailableAfterSave.
+///
+/// In es, this message translates to:
+/// **'Los accesos de registros estarÃ¡n disponibles al guardar el animal.'**   À æzÀ æz€ÔÀ ç5€¥/// No description provided for @animalFormRegisterAsCalf.
+///
+/// In es, this message translates to:
+/// **'Registrar como crÃ­a (agregar madre automÃ¡ticamente)'**   À çTÀ çT€À çàt/// No description provided for @animalFormSaving.
+///
+/// In es, this message translates to:
+/// **'Guardando...'**   À ç÷À ç÷€§À è‰z/// No description provided for @animalFormSaveAnimal.
+///
+/// In es, this message translates to:
+/// **'Guardar animal'**   À è¤À è¤€¯À é;/// No description provided for @detailQuickActionsTitle.
+///
+/// In es, this message translates to:
+/// **'Agregar registro'**   À éYÀ éY€¦À éì|/// No description provided for @detailNoRecordsYet.
+///
+/// In es, this message translates to:
+/// **'Sin registros aÃºn'**   À êÀ ê€ÕÀ êÆ€ª/// No description provided for @detailNoRecordsHint.
+///
+/// In es, this message translates to:
+/// **'Usa el botÃ³n + para agregar el primer registro de este animal.'**   À êàÀ êà€ À ëpx/// No description provided for @recordEditTitle.
+///
+/// In es, this message translates to:
+/// **'Corregir registro'**   À ë†À ë†€¡À ìy/// No description provided for @recordEditSaved.
+///
+/// In es, this message translates to:
+/// **'Registro corregido'**   À ì-À ì-€ÅÀ ìß€œ/// No description provided for @recordEditNotFound.
+///
+/// In es, this message translates to:
+/// **'No se encontrÃ³ el registro que querÃ­as corregir.'**   À ìøÀ ìø€¤À íŠz/// No description provided for @recordDeleteTitle.
+///
+/// In es, this message translates to:
+/// **'Eliminar registro'**   À í¢À í¢€ÌÀ îZ€¢/// No description provided for @recordDeleteConfirm.
+///
+/// In es, this message translates to:
+/// **'Â¿Eliminar este registro? PodrÃ¡s deshacerlo enseguida.'**   À îtÀ ît€À ïw/// No description provided for @recordDeleted.
+///
+/// In es, this message translates to:
+/// **'Registro eliminado'**   À ïÀ ï€ÒÀ ïĞ€¡/// No description provided for @recordDeletedSyncWarning.
+///
+/// In es, this message translates to:
+/// **'Registro eliminado; no se pudo sincronizar Agenda'**   À ïïÀ ïï€¨À ğ„}/// No description provided for @recordDeleteUndone.
+///
+/// In es, this message translates to:
+/// **'Registro restaurado'**   À ğÀ ğ€ÕÀ ñX€£/// No description provided for @recordRestoredSyncWarning.
+///
+/// In es, this message translates to:
+/// **'Registro restaurado; no se pudo sincronizar Agenda'**   À ñxÀ ñx€À ñúj/// No description provided for @actionUndo.
+///
+/// In es, this message translates to:
+/// **'Deshacer'**   À òÀ ò€À òj/// No description provided for @actionEdit.
+///
+/// In es, this message translates to:
+/// **'Corregir'**   À òÀ ò€—À ó&p/// No description provided for @mediaTakePhoto.
+///
+/// In es, this message translates to:
+/// **'Tomar foto'**   À ó;À ó;€¦À óÎ|/// No description provided for @mediaChooseGallery.
+///
+/// In es, this message translates to:
+/// **'Elegir de galerÃ­a'**   À óçÀ óç€©À ô€‚/// No description provided for @mediaSaveError.
+///
+/// In es, this message translates to:
+/// **'No se pudo guardar la imagen'**   À ô–À ô–€¦À õ+~/// No description provided for @animalPhotoTitle.
+///
+/// In es, this message translates to:
+/// **'FotografÃ­a del animal'**   À õBÀ õB€™À õÌr/// No description provided for @animalPhotoAdd.
+///
+/// In es, this message translates to:
+/// **'Agregar foto'**   À õáÀ õá€¤À öry/// No description provided for @animalPhotoReplace.
+///
+/// In es, this message translates to:
+/// **'Reemplazar foto'**   À ö‹À ö‹€À ÷t/// No description provided for @animalPhotoRemove.
+///
+/// In es, this message translates to:
+/// **'Quitar foto'**   À ÷/À ÷/€ŸÀ ÷¾w/// No description provided for @loteWeightTitle.
+///
+/// In es, this message translates to:
+/// **'Registrar pesaje'**   À ø¤À ø¤€À ù2v/// No description provided for @loteWeightDate.
+///
+/// In es, this message translates to:
+/// **'Fecha del pesaje'**   À ùGÀ ùG€À ùÊk/// No description provided for @loteWeightKg.
+///
+/// In es, this message translates to:
+/// **'Peso kg'**   À ùİÀ ùİ€À úgr/// No description provided for @loteWeightPrevious.
+///
+/// In es, this message translates to:
+/// **'Anterior'**   À ú€À ú€€—À ûp/// No description provided for @loteWeightGain.
+///
+/// In es, this message translates to:
+/// **'Diferencia'**   À ûÀ û€À ûh/// No description provided for @loteWeightAdg.
+///
+/// In es, this message translates to:
+/// **'ADG'**   À û±À û±€¤À üF}/// No description provided for @loteWeightSave.
+///
+/// In es, this message translates to:
+/// **'Guardar pesaje del lote'**   À ü[À ü[€À üçt/// No description provided for @loteWeightSaving.
+///
+/// In es, this message translates to:
+/// **'Guardando...'**   À üşÀ üş€ÇÀ ı«€•/// No description provided for @loteWeightNoActiveAnimals.
+///
+/// In es, this message translates to:
+/// **'Este lote no tiene animales activos.'**   À ıËÀ ıË€±À şh€…/// No description provided for @loteWeightLoadError.
+///
+/// In es, this message translates to:
+/// **'No se pudo cargar el lote.'**   À ş‚À ş‚€²À ÿ€…/// No description provided for @loteWeightAtLeastOne.
+///
+/// In es, this message translates to:
+/// **'Captura al menos un peso.'**   À ÿ:À ÿ:€ À ÿÈw/// No description provided for @loteWeightInvalid.
+///
+/// In es, this message translates to:
+/// **'Peso invÃ¡lido'**   À ÿàÀ ÿà€¤À ow/// No description provided for @lotePerformanceTitle.
+///
+/// In es, this message translates to:
+/// **'Rendimiento'**   À ŠÀ Š€ÍÀB€ /// No description provided for @lotePerformanceEmpty.
+///
+/// In es, this message translates to:
+/// **'Registra un pesaje para ver el rendimiento del lote.'**   À]À]€ÂÀ€‘/// No description provided for @lotePerformanceLoadError.
+///
+/// In es, this message translates to:
+/// **'No se pudo cargar el rendimiento.'**   À%À%€£À³v/// No description provided for @lotePerformanceTotal.
+///
+/// In es, this message translates to:
+/// **'Peso total'**   ÀÎÀÎ€¥À\v/// No description provided for @lotePerformanceAverage.
+///
+/// In es, this message translates to:
+/// **'Promedio'**   ÀyÀy€¯À}/// No description provided for @lotePerformanceAdgAverage.
+///
+/// In es, this message translates to:
+/// **'ADG promedio'**   À.À.€¤À¾x/// No description provided for @lotePerformanceGain.
+///
+/// In es, this message translates to:
+/// **'Ganancia lote'**   ÀØÀØ€²Àr€‚/// No description provided for @lotePerformancePrevious.
+///
+/// In es, this message translates to:
+/// **'Vs. pesaje anterior'**   ÀÀ€§À#{/// No description provided for @lotePerformanceGood.
+///
+/// In es, this message translates to:
+/// **'Buen rendimiento'**   À=À=€¨ÀĞ{/// No description provided for @lotePerformanceBelow.
+///
+/// In es, this message translates to:
+/// **'Debajo promedio'**   ÀëÀë€§À|y/// No description provided for @lotePerformanceNoGain.
+///
+/// In es, this message translates to:
+/// **'Sin ganancia'**   À˜À˜€³À0€€/// No description provided for @lotePerformanceNoReference.
+///
+/// In es, this message translates to:
+/// **'Sin referencia'**   À	2À	2€³À	Í€ƒ/// No description provided for @lotePerformanceSessions.
+///
+/// In es, this message translates to:
+/// **'Historial de pesajes'**   À	ëÀ	ë€²À
+„€‚/// No description provided for @lotePerformanceEconomics.
+///
+/// In es, this message translates to:
+/// **'EconomÃ­a estimada'**   À
+£À
+£€¯À8~/// No description provided for @lotePerformanceFeedPerDay.
+///
+/// In es, this message translates to:
+/// **'Alimento/dÃ­a'**   ÀXÀX€°Àï/// No description provided for @lotePerformanceCostPerKg.
+///
+/// In es, this message translates to:
+/// **'Costo/kg ganado'**   ÀÀ€®À¦€/// No description provided for @lotePerformanceMargin.
+///
+/// In es, this message translates to:
+/// **'Margen alimentaciÃ³n'**    ‰›‰›‰¨  ‰€‰€€ƒ‰˜    ŸKŸK	ŸO  ˆˆ€ÎŸ>€¢/// No description provided for @animalsCount.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {{count} animal} other {{count} animales}}'**    ı ı	¡    €é è€µ/// No description provided for @animalsSelectedCount.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {{count} seleccionado} other {{count} seleccionados}}'**   ¡Ì¡Ì¡Ó   ¡İ¡İ¡ä  ¡¡€İ¡·€•/// No description provided for @animalsSelectVisible.
+///
+/// In es, this message translates to:
+/// **'Seleccionar visibles ({selected}/{total})'**   ¥+¥+	¥/  ¤¤)¥€ğ/// No description provided for @animalsSelectionHiddenCount.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {{count} seleccionado estÃ¡ oculto por filtros} other {{count} seleccionados estÃ¡n ocultos por filtros}}'**   ¦ñ¦ñ¦ø  ¦-¦-€Ò¦Ô€“/// No description provided for @animalsBulkMaintenanceAction.
+///
+/// In es, this message translates to:
+/// **'Agregar mantenimiento ({count})'**   §Ã§Ã§Ê  §§€Ì§§€/// No description provided for @animalsBulkMaintenanceError.
+///
+/// In es, this message translates to:
+/// **'No se pudo guardar: {error}'**   ©©©•  ¨©¨©€ó©l€°/// No description provided for @animalsBulkMaintenanceConfirmBody.
+///
+/// In es, this message translates to:
+/// **'Se aplicarÃ¡ el mismo mantenimiento a {count} animales.'**   «º«º	«¾  « « €Å«ª€–/// No description provided for @stageFilterCalf.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Becerro} other {Becerros}}'**   ¬‹¬‹	¬  «Ë«Ë€Ë¬y€š/// No description provided for @stageFilterHeifer.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Vaquilla} other {Vaquillas}}'**   ­^­^	­b  ¬œ¬œ€Í­I€™/// No description provided for @stageFilterYoungBull.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Torete} other {Toretes}}'**   ®+®+	®/  ­o­o€Ç®€—/// No description provided for @stageFilterSteer.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Novillo} other {Novillos}}'**   ®î®î	®ò  ®<®<€½®ß€/// No description provided for @stageFilterCow.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Vaca} other {Vacas}}'**   ¯³¯³	¯·  ®ÿ®ÿ€¿¯£€/// No description provided for @stageFilterBull.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Toro} other {Toros}}'**   °°	°‘  ¯Ä¯Ä€Ô°}€¥/// No description provided for @stageFilterColt.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Potro/Potranca} other {Potros/Potrancas}}'**   ±Z±Z	±^  °°€Ç±I€—/// No description provided for @stageFilterHorse.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Caballo} other {Caballos}}'**   ²!²!	²%  ±k±k€Á²€’/// No description provided for @stageFilterMare.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Yegua} other {Yeguas}}'**   ²ù²ù	²ı  ²2²2€Ò²ç€¡/// No description provided for @stageFilterDonkey.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Burro/Burra} other {Burros/Burras}}'**   ³¾³¾	³Â  ³
+³
+€¿³®€/// No description provided for @stageFilterMule.
+///
+/// In es, this message translates to:
+/// **'{count, plural, one {Mula} other {Mulas}}'**   ¸w¸w¸~  ·è·è€¸lp/// No description provided for @animalRisk.
+///
+/// In es, this message translates to:
+/// **'Riesgo {level}'**   À FoÀ FoÀ Fv  À E§À E§€ÙÀ F]€¢/// No description provided for @detailSyncedValue.
+///
+/// In es, this message translates to:
+/// **'{isSynced, select, true {Sincronizado} other {Pendiente}}'**   À ¸À ¸	À ¸   À ·*À ·*€ıÀ ·û€½/// No description provided for @detailFormMilkingExcludedAnimals.
+///
+/// In es, this message translates to:
+/// **'{count} animales del lote no se muestran porque no son vacas activas.'**   À ÁÄÀ ÁÄÀ ÁË  À ÀËÀ ÀËÀ Á€Á/// No description provided for @detailFormMilkingUnusualAmountMessage.
+///
+/// In es, this message translates to:
+/// **'Se registrarÃ¡n {liters} L para una vaca. Â¿La cantidad es correcta?'**   À ÄUÀ ÄUÀ Ä\  À Ã‡À Ã‡€İÀ Ä2€—/// No description provided for @detailFormMilkingCheckAnimalVolume.
+///
+/// In es, this message translates to:
+/// **'Revisa los litros de {animal}'**   À ÈnÀ Èn	À Èr  À Ç¶À Ç¶€ÃÀ ÈT€Š/// No description provided for @detailFormMilkingCowCount.
+///
+/// In es, this message translates to:
+/// **'{count} vacas registradas'**   À ËVÀ ËVÀ ËZ   À ËeÀ ËeÀ Ëi  À Ê#À Ê#QÀ Ë>/// No description provided for @registroReproAgeWarning.
+///
+/// In es, this message translates to:
+/// **'Aviso: este animal tiene {ageMonths} meses. Se recomienda esperar al menos {minMonths} meses para servicio, pero este formulario no bloquea el registro.'**   À Í$À Í$À Í+  À Ì>À Ì>€ôÀ Í
+€¹/// No description provided for @registroReproPartialError.
+///
+/// In es, this message translates to:
+/// **'Registro sanitario guardado, pero fallÃ³ el evento reproductivo: {error}'**   À Ô…À Ô…À ÔŒ  À Ó¿À Ó¿€ÔÀ Ôk€˜/// No description provided for @animalFormRecordSaveError.
+///
+/// In es, this message translates to:
+/// **'No se pudo guardar el registro: {error}'**   À ø…À ø…À ø‰   À ø“À ø“	À ø—  À ÷ÔÀ ÷Ô€ÊÀ ør€Š/// No description provided for @loteWeightCaptured.
+///
+/// In es, this message translates to:
+/// **'{captured} de {total} capturados'**   À	!À	!	À	%  ÀQÀQ€ÛÀ	€¤/// No description provided for @lotePerformanceUnmeasured.
+///
+/// In es, this message translates to:
+/// **'{count} animal(es) aÃºn sin pesaje en esta sesiÃ³n.'** HHÀwˆá‡\/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, youâ€™ll need to edit this
+/// file.
+///
+/// First, open your projectâ€™s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// projectâ€™s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.  À# À<    ÀÀ"         ÀpÀpÀw ÀEÀFÀEÀE€‘Àk    ÀúÀúÀ ÀÜÀİÀÜÀÜjÀî    ÀkÀkÀ… ÀLÀMÀLÀLGÀ^  ÀÃÀÃÓÀÉ         ÀÂÀÂÀÉ  ÀšÀš‚5À«       ˆ÷ Ck€¯€Ù€Û %'FH—ÈÍ‚‚i‚”‚™‚¦‚Ñ‚Ö‚ïƒ7ƒsƒ•ƒƒ¦ƒ«ƒÇƒÌ„„&„+„8„K„r„„¦„ë„ğ…………5…:………Ô†"†-†2††Î†ì†ñ‡@‡‚‡‡‡ÒˆˆmˆÃˆÒˆõ‰‰^‰`‰|‰~‰´Š ŠŠŠJŠnŠpŠÂŠÔŠÛ‹0‹„‹´‹»ŒŒPŒ~ŒÌŒõ7g•Ÿ¡ã0CIKy€ªÔìî 'Qi…‡´»åùBIs‰£¥ÔÛ‘‘‘2‘4‘f‘m‘—‘°‘Ì‘Î‘ş’’/’E’_’a’‘’˜’Â’Ö’ğ’ò““%“O“f“|“~“°“·“á“÷”””L”S”}”¥”Æ”È••	•3•a•…•‡•¾•Å•ï––1–3–m–t––å—	——C—J—t—’—´—¶—í—ô˜˜K˜l˜n˜©˜°˜Ú˜ù™™ ™[™b™Œ™­™Ò™Ôššš@š`š…š‡šÀšÇšñ››3›5›i›p›š›¯›Í›Ïœœœ6œRœrœtœ±œ¸œâ(*dk•°ÔÖB_„†¸¿éŸ5ŸXŸZŸ”Ÿ›ŸÅŸ÷   W ^ ˆ ß¡
+¡¡F¡M¡w¡®¡í¡ï¢/¢6¢`¢‚¢¬¢®¢ê¢ñ££8£^£`£œ£££Í£ã¤	¤¤L¤S¤}¥¥8¥:¥€¥‡¥±¥ù¦)¦+¦m¦t¦¦Ë§§§D§K§u§§Ó§Õ¨¨$¨N¨s¨¥¨§¨î¨õ©©c©© ©é©ğªª1ªdªfªšª¡ªËªŞªüªş«3«:«d«¡«Ç«É¬ ¬¬1¬p¬˜¬š¬Ô¬Û­­@­k­m­£­ª­Ô®®8®:®n®u®Ÿ®Ö®û®ı¯2¯9¯c¯š¯À¯Â¯÷¯ş°(°t°š°œ°Ò°Ù±±@±g±i±±¥±Ï²².²0²g²n²˜²Ş³³³=³D³n³¥³Ë³Í´
+´´;´Z´´ƒ´¿´Æ´ğµµ2µ4µjµqµ›µ¸µØµÚ¶¶¶=¶X¶t¶v¶°¶·¶á·!·E·G·}·„·®·Ä·ä·æ¸¸¸G¸c¸‡¸‰¸»¸Â¸ì¸ÿ¹¹¹L¹S¹}¹¹¨¹ª¹Û¹âººº9º;ºrºyº£ºÃºäºæ»»!»K»d»‚»„»´»»»å»ü¼¼¼S¼Z¼„¼ ¼Å¼Ç½½½6½U½}½½²½¹½ã½ø¾¾¾L¾S¾}¾¡¾À¾Â¾û¿¿,¿F¿i¿k¿Ÿ¿¦¿ĞÀ @À @"À @$À @VÀ @]À @‡À @À @¹À @»À @ìÀ @óÀ AÀ A5À APÀ ARÀ A…À AŒÀ A¶À AÊÀ AçÀ AéÀ BÀ B#À BMÀ BoÀ BŒÀ BÀ BÆÀ BÍÀ B÷À CÀ C8À C:À ClÀ CsÀ CÀ CºÀ CÖÀ CØÀ DÀ DÀ D9À DMÀ DgÀ DiÀ DŸÀ D¦À DĞÀ DæÀ EÀ EÀ E:À EAÀ EkÀ E‡À E£À E¥À EÜÀ EãÀ FÀ FTÀ F‚À F„À F´À F»À FåÀ FõÀ GÀ GÀ G@À GGÀ GqÀ GÀ GšÀ GœÀ GÛÀ GâÀ HÀ H4À H]À H_À HÀ H—À HÁÀ HÔÀ HïÀ HñÀ I$À I+À IUÀ IlÀ I‰À I‹À I»À IÂÀ IìÀ IÿÀ JÀ JÀ JJÀ JQÀ J{À JÀ J¦À J¨À JØÀ JßÀ K	À KÀ K5À K7À KiÀ KpÀ KšÀ K¯À KËÀ KÍÀ L À LÀ L1À LHÀ LeÀ LgÀ L›À L¢À LÌÀ LßÀ LıÀ LÿÀ M-À M4À M^À MpÀ MˆÀ MŠÀ M¸À M¿À MéÀ MûÀ NÀ NÀ NEÀ NLÀ NvÀ NˆÀ N¢À N¤À NÖÀ NİÀ OÀ OÀ O:À O<À OoÀ OvÀ O À OºÀ O×À OÙÀ PÀ PÀ P>À PdÀ P‚À P„À P»À PÂÀ PìÀ Q	À Q*À Q,À QdÀ QkÀ Q•À QµÀ Q×À QÙÀ RÀ RÀ R9À RMÀ RfÀ RhÀ RÀ R¤À RÎÀ RäÀ SÀ SÀ S8À S?À SiÀ S„À S¡À S£À SÖÀ SİÀ TÀ TÀ T;À T=À TxÀ TÀ T©À TÈÀ TíÀ TïÀ U&À U-À UWÀ UsÀ U”À U–À UÈÀ UÏÀ UùÀ VÀ V3À V5À VlÀ VsÀ VÀ V¼À VİÀ VßÀ WÀ WÀ WFÀ W_À WÀ WÀ W¾À WÅÀ WïÀ XÀ X7À X9À XpÀ XwÀ X¡À X»À XÜÀ XŞÀ YÀ YÀ YEÀ YbÀ Y‚À Y„À Y¾À YÅÀ YïÀ ZÀ Z8À Z:À ZkÀ ZrÀ ZœÀ Z¸À ZÓÀ ZÕÀ [À [
+À [4À [DÀ [\À [^À [‹À [’À [¼À [ÌÀ [ãÀ [åÀ \À \"À \LÀ \eÀ \…À \‡À \¸À \¿À \éÀ \ÿÀ ]À ]À ]LÀ ]SÀ ]}À ]”À ]®À ]°À ]âÀ ]éÀ ^À ^,À ^HÀ ^JÀ ^zÀ ^À ^«À ^ÀÀ ^ÚÀ ^ÜÀ _À _À _?À _UÀ _qÀ _sÀ _¦À _­À _×À _îÀ `À `À `>À `EÀ `oÀ `‡À `¢À `¤À `ÖÀ `İÀ aÀ aÀ a7À a9À akÀ arÀ aœÀ a²À aÎÀ aĞÀ aşÀ bÀ b/À bCÀ b[À b]À b‹À b’À b¼À bÑÀ béÀ bëÀ cÀ cÀ cIÀ c^À cuÀ cwÀ c¤À c«À cÕÀ céÀ d À dÀ d1À d8À dbÀ dxÀ d‘À d“À dÂÀ dÉÀ dóÀ eÀ eÀ e!À eVÀ e]À e‡À e¡À eÀÀ eÂÀ eıÀ fÀ f.À fMÀ frÀ ftÀ f°À f·À fáÀ gÀ g,À g.À geÀ glÀ g–À g³À gÔÀ gÖÀ hÀ hÀ h?À hZÀ h|À h~À h±À h¸À hâÀ hõÀ iÀ iÀ iIÀ iPÀ izÀ iÀ i­À i¯À iêÀ iñÀ jÀ j:À j_À jaÀ jÀ j¤À jÎÀ jôÀ kÀ kÀ kVÀ k]À k‡À k­À kÑÀ kÓÀ lÀ lÀ l?À llÀ l‘À l“À lËÀ lÒÀ lüÀ mÀ m=À m?À mxÀ mÀ m©À mÆÀ méÀ mëÀ nÀ n&À nPÀ nmÀ n‹À nÀ n¾À nÅÀ nïÀ oÀ o4À o6À olÀ osÀ oÀ oÆÀ oæÀ oèÀ pÀ pÀ pIÀ p\À pvÀ pxÀ p°À p·À páÀ pÿÀ q!À q#À q[À qbÀ qŒÀ qÀ qÀÀ qÂÀ r À rÀ r1À rKÀ rsÀ ruÀ r±À r¸À râÀ rúÀ s À s"À sZÀ saÀ s‹À s¢À sÄÀ sÆÀ tÀ t	À t3À tJÀ tpÀ trÀ t¬À t³À tİÀ tõÀ uÀ uÀ uQÀ uXÀ u‚À u•À uµÀ u·À uñÀ uøÀ v"À v6À vZÀ v\À v™À v À vÊÀ vãÀ w
+À wÀ wEÀ wLÀ wvÀ wÀ w±À w³À wòÀ wùÀ x#À x=À xfÀ xhÀ x¥À x¬À xÖÀ xïÀ yÀ yÀ yTÀ y[À y…À yÀ yÄÀ yÆÀ yşÀ zÀ z/À zCÀ zeÀ zgÀ zŸÀ z¦À zĞÀ zãÀ {À {À {?À {FÀ {pÀ {…À {§À {©À {àÀ {çÀ |À |$À |EÀ |GÀ |À |†À |°À |ÃÀ |åÀ |çÀ } À }'À }QÀ }dÀ }‡À }‰À }ÀÀ }ÇÀ }ñÀ ~À ~"À ~$À ~YÀ ~`À ~ŠÀ ~™À ~¸À ~ºÀ ~õÀ ~üÀ &À BÀ gÀ iÀ ¤À «À ÕÀ ìÀ €À €À €OÀ €VÀ €€À €”À €ºÀ €¼À €ıÀ À .À CÀ nÀ pÀ µÀ ¼À æÀ üÀ ‚+À ‚-À ‚kÀ ‚rÀ ‚œÀ ‚ÆÀ ‚îÀ ‚ğÀ ƒ-À ƒ4À ƒ^À ƒ„À ƒ«À ƒ­À ƒëÀ ƒòÀ „À „JÀ „rÀ „tÀ „¶À „½À „çÀ …À …7À …9À …tÀ …{À …¥À …ÂÀ …çÀ …éÀ †(À †/À †YÀ †zÀ †£À †¥À †ãÀ †êÀ ‡À ‡&À ‡NÀ ‡PÀ ‡À ‡–À ‡ÀÀ ‡ŞÀ ˆÀ ˆ	À ˆGÀ ˆNÀ ˆxÀ ˆŒÀ ˆ´À ˆ¶À ˆõÀ ˆüÀ ‰&À ‰?À ‰hÀ ‰jÀ ‰±À ‰¸À ‰âÀ ŠÀ ŠLÀ ŠNÀ Š•À ŠœÀ ŠÆÀ ŠşÀ ‹/À ‹1À ‹wÀ ‹~À ‹¨À ‹ÏÀ ‹ÿÀ ŒÀ ŒEÀ ŒLÀ ŒvÀ Œ¥À ŒÓÀ ŒÕÀ À "À LÀ ŠÀ ºÀ ¼À ûÀ À ,À VÀ À À ¼À ÃÀ íÀ À 2À 4À nÀ uÀ ŸÀ ±À ÕÀ ×À À À EÀ iÀ À ’À ÌÀ ÓÀ ıÀ ‘À ‘4À ‘6À ‘uÀ ‘|À ‘¦À ‘ÀÀ ‘éÀ ‘ëÀ ’%À ’,À ’VÀ ’vÀ ’šÀ ’œÀ ’×À ’ŞÀ “À “/À “TÀ “VÀ “›À “¢À “ÌÀ “ìÀ ”À ”À ”`À ”gÀ ”‘À ”İÀ •
+À •À •GÀ •NÀ •xÀ •¡À •ÆÀ •ÈÀ –À –À –<À –^À –‹À –À –ÑÀ –ØÀ —À —À —KÀ —MÀ —“À —šÀ —ÄÀ —İÀ ˜À ˜À ˜NÀ ˜UÀ ˜À ˜ŸÀ ˜ÈÀ ˜ÊÀ ™À ™À ™9À ™KÀ ™sÀ ™uÀ ™µÀ ™¼À ™æÀ ™ùÀ š#À š%À šgÀ šnÀ š˜À š¬À šØÀ šÚÀ › À ›'À ›QÀ ›jÀ ›šÀ ›œÀ ›äÀ ›ëÀ œÀ œMÀ œÀ œÀ œÀÀ œÇÀ œñÀ À CÀ EÀ ‚À ‰À ³À ËÀ òÀ ôÀ 2À 9À cÀ wÀ ŸÀ ¡À İÀ äÀ ŸÀ Ÿ,À ŸRÀ ŸTÀ ŸÀ Ÿ•À Ÿ¿À ŸÒÀ ŸöÀ ŸøÀ  7À  >À  hÀ  €À  ©À  «À  íÀ  ôÀ ¡À ¡=À ¡iÀ ¡kÀ ¡µÀ ¡¼À ¡æÀ ¢*À ¢^À ¢`À ¢À ¢¤À ¢ÎÀ ¢ïÀ £À £À £QÀ £XÀ £‚À £•À £¸À £ºÀ £òÀ £ùÀ ¤#À ¤5À ¤WÀ ¤YÀ ¤“À ¤šÀ ¤ÄÀ ¤×À ¤ûÀ ¤ıÀ ¥9À ¥@À ¥jÀ ¥~À ¥¤À ¥¦À ¥èÀ ¥ïÀ ¦À ¦6À ¦bÀ ¦dÀ ¦À ¦¤À ¦ÎÀ ¦êÀ §À §À §PÀ §WÀ §À §¬À §×À §ÙÀ ¨"À ¨)À ¨SÀ ¨uÀ ¨¨À ¨ªÀ ¨ñÀ ¨øÀ ©"À ©@À ©qÀ ©sÀ ©½À ©ÄÀ ©îÀ ª	À ª=À ª?À ª„À ª‹À ªµÀ ªÒÀ «À «À «IÀ «PÀ «zÀ «‹À «»À «½À ¬À ¬À ¬9À ¬XÀ ¬À ¬À ¬ÏÀ ¬ÖÀ ­ À ­%À ­OÀ ­QÀ ­’À ­™À ­ÃÀ ­áÀ ®À ®À ®[À ®bÀ ®ŒÀ ®áÀ ¯À ¯À ¯[À ¯bÀ ¯ŒÀ ¯¶À ¯áÀ ¯ãÀ °À °&À °PÀ °pÀ °–À °˜À °İÀ °äÀ ±À ±'À ±VÀ ±XÀ ±˜À ±ŸÀ ±ÉÀ ±ßÀ ²	À ²À ²GÀ ²NÀ ²xÀ ²‹À ²±À ²³À ²õÀ ²üÀ ³&À ³BÀ ³nÀ ³pÀ ³³À ³ºÀ ³äÀ ´À ´/À ´1À ´sÀ ´zÀ ´¤À ´ÁÀ ´íÀ ´ïÀ µ1À µ8À µbÀ µvÀ µ¢À µ¤À µæÀ µíÀ ¶À ¶8À ¶dÀ ¶fÀ ¶§À ¶®À ¶ØÀ ¶ûÀ ·&À ·(À ·nÀ ·uÀ ·ŸÀ ·òÀ ¸)À ¸+À ¸rÀ ¸yÀ ¸£À ¸ÚÀ ¹À ¹À ¹MÀ ¹TÀ ¹~À ¹°À ¹ÚÀ ¹ÜÀ º!À º(À ºRÀ ºÀ º®À º°À ºõÀ ºüÀ »&À »EÀ »tÀ »vÀ »½À »ÄÀ »îÀ ¼À ¼<À ¼>À ¼‡À ¼À ¼¸À ¼åÀ ½À ½À ½WÀ ½^À ½ˆÀ ½¢À ½ÉÀ ½ËÀ ¾
+À ¾À ¾;À ¾YÀ ¾‚À ¾„À ¾ÀÀ ¾ÇÀ ¾ñÀ ¿À ¿DÀ ¿FÀ ¿ˆÀ ¿À ¿¹À ¿ÎÀ ¿úÀ ¿üÀ ÀEÀ ÀLÀ ÀvÀ À”À ÀÇÀ ÀÉÀ ÁÀ ÁÀ ÁEÀ Á•À ÁÕÀ Á×À ÂÀ Â"À ÂLÀ ÂÀ Â­À Â¯À Â÷À ÂşÀ Ã(À ÃQÀ ÃƒÀ Ã…À ÃÍÀ ÃÔÀ ÃşÀ Ä)À ÄfÀ ÄhÀ Ä³À ÄºÀ ÄäÀ ÅÀ ÅLÀ ÅNÀ Å“À ÅšÀ ÅÄÀ Å÷À Æ&À Æ(À ÆiÀ ÆpÀ ÆšÀ ÆÅÀ ÆğÀ ÆòÀ Ç2À Ç9À ÇcÀ ÇˆÀ Ç²À Ç´À ÇóÀ ÇúÀ È$À ÈKÀ È{À È}À È¾À ÈÅÀ ÈïÀ É&À ÉQÀ ÉSÀ É’À É™À ÉÃÀ ÉöÀ ÊÀ Ê!À Ê^À ÊeÀ ÊÀ Ë5À ËvÀ ËxÀ Ë³À ËºÀ ËäÀ ÌÀ Ì:À Ì<À Ì{À Ì‚À Ì¬À ÍÀ Í4À Í6À ÍoÀ ÍvÀ Í À Í×À ÍúÀ ÍüÀ Î<À ÎCÀ ÎmÀ Î²À ÎÜÀ ÎŞÀ ÏÀ Ï$À ÏNÀ ÏˆÀ Ï±À Ï³À ÏîÀ ÏõÀ ĞÀ Ğ:À Ğ_À ĞaÀ Ğ›À Ğ¢À ĞÌÀ ĞêÀ ÑÀ ÑÀ ÑLÀ ÑSÀ Ñ}À ÑõÀ ÒÀ ÒÀ Ò\À ÒcÀ ÒÀ Ò¼À ÒåÀ ÒçÀ Ó(À Ó/À ÓYÀ ÓÀ Ó»À Ó½À ÓüÀ ÔÀ Ô-À ÔbÀ Ô•À Ô—À ÔÚÀ ÔáÀ ÕÀ ÕHÀ ÕuÀ ÕwÀ Õ»À ÕÂÀ ÕìÀ Ö'À ÖUÀ ÖWÀ Ö˜À ÖŸÀ ÖÉÀ ×+À ×VÀ ×XÀ ×‘À ×˜À ×ÂÀ ×İÀ Ø À ØÀ Ø=À ØDÀ ØnÀ ØŠÀ Ø¯À Ø±À ØïÀ ØöÀ Ù À Ù@À ÙhÀ ÙjÀ Ù§À Ù®À ÙØÀ ÙõÀ ÚÀ ÚÀ Ú`À ÚgÀ Ú‘À Ú¸À ÚäÀ ÚæÀ Û'À Û.À ÛXÀ ÛyÀ Û¤À Û¦À ÛâÀ ÛéÀ ÜÀ Ü,À ÜRÀ ÜTÀ ÜŠÀ Ü‘À Ü»À ÜÏÀ ÜïÀ ÜñÀ İ.À İ5À İ_À İsÀ İšÀ İœÀ İÚÀ İáÀ ŞÀ Ş)À ŞQÀ ŞSÀ Ş‘À Ş˜À ŞÂÀ ŞàÀ ßÀ ß
+À ßFÀ ßMÀ ßwÀ ß–À ß¼À ß¾À ßúÀ àÀ à+À àJÀ àpÀ àrÀ à¬À à³À àİÀ àøÀ áÀ áÀ áUÀ á\À á†À áœÀ á½À á¿À âÀ â	À â3À âMÀ âzÀ â|À âºÀ âÁÀ âëÀ ãÀ ã3À ã5À ãvÀ ã}À ã§À ãÁÀ ãìÀ ãîÀ ä+À ä2À ä\À ä€À ä§À ä©À äîÀ äõÀ åÀ åHÀ åwÀ åyÀ åÂÀ åÉÀ åóÀ æCÀ ævÀ æxÀ æ¶À æ½À æçÀ ç(À çPÀ çRÀ çˆÀ çÀ ç¹À çÓÀ çóÀ çõÀ è/À è6À è`À è|À è À è¢À èßÀ èæÀ éÀ é.À éUÀ éWÀ éÀ é–À éÀÀ éßÀ êÀ êÀ ê<À êCÀ êmÀ ê¹À êÜÀ êŞÀ ëÀ ëÀ ëDÀ ëcÀ ë‚À ë„À ë¹À ëÀÀ ëêÀ ì
+À ì)À ì+À ìcÀ ìjÀ ì”À ìÒÀ ìôÀ ìöÀ í-À í4À í^À í}À íÀ í À íÙÀ íàÀ î
+À îMÀ îpÀ îrÀ î¥À î¬À îÖÀ îöÀ ïÀ ïÀ ïSÀ ïZÀ ï„À ïÃÀ ïëÀ ïíÀ ğ%À ğ,À ğVÀ ğwÀ ğ™À ğ›À ğÚÀ ğáÀ ñÀ ñKÀ ñtÀ ñvÀ ñ¦À ñ­À ñ×À ñíÀ òÀ ò	À ò9À ò@À òjÀ ò€À òšÀ òœÀ òĞÀ ò×À óÀ óÀ ó7À ó9À óqÀ óxÀ ó¢À óÁÀ óãÀ óåÀ ôÀ ô À ôJÀ ôtÀ ô’À ô”À ôÊÀ ôÑÀ ôûÀ õÀ õ>À õ@À õtÀ õ{À õ¥À õ¿À õİÀ õßÀ öÀ öÀ öHÀ öeÀ ö‡À ö‰À öÀÀ öÇÀ öñÀ ÷
+À ÷+À ÷-À ÷bÀ ÷iÀ ÷“À ÷±À ÷ĞÀ ÷ÒÀ ø
+À øÀ ø;À øiÀ ø À ø¢À øÖÀ øİÀ ùÀ ù%À ùCÀ ùEÀ ùwÀ ù~À ù¨À ù½À ùÙÀ ùÛÀ úÀ úÀ úDÀ úZÀ ú|À ú~À ú²À ú¹À úãÀ úûÀ ûÀ ûÀ ûNÀ ûUÀ ûÀ ûÀ û­À û¯À ûãÀ ûêÀ üÀ ü9À üWÀ üYÀ üÀ ü–À üÀÀ üÚÀ üúÀ üüÀ ı;À ıBÀ ılÀ ıÀ ıÇÀ ıÉÀ şÀ ş	À ş3À ş[À ş~À ş€À şºÀ şÁÀ şëÀ ÿÀ ÿ6À ÿ8À ÿoÀ ÿvÀ ÿ À ÿ»À ÿÜÀ ÿŞÀ À À IÀ bÀ †À ˆÀ ÂÀ ÉÀ óÀ5ÀYÀ[À™À ÀÊÀùÀ!À#À]ÀdÀÀ¦ÀÊÀÌÀÀÀ9ÀOÀuÀwÀ¶À½ÀçÀÀ*À,ÀeÀlÀ–À±ÀÔÀÖÀÀÀDÀeÀŒÀÀÇÀÎÀøÀÀ9À;ÀuÀ|À¦ÀÃÀçÀéÀ$À+ÀUÀoÀ”À–ÀÖÀİÀÀ#ÀMÀOÀÀ•À¿ÀşÀ	.À	0À	mÀ	tÀ	À	ÀÀ	çÀ	éÀ
+'À
+.À
+XÀ
+wÀ
+ŸÀ
+¡À
+àÀ
+çÀÀ+ÀTÀVÀ”À›ÀÅÀâÀ
+ÀÀGÀNÀxÀ™À¾ÀÁÀÃÀäÀÀAÀCÀPÀ‚ÀÓÀØÀÚÀçÀÀHÀJÀWÀ•À˜ÀšÀÔÀÀ/À?ÀcÀsÀ—ÀœÀÀµÀÀaÀ±ÀÈÀÎÀÑ   AppLocalizations_AppLocalizationsDelegatelookupAppLocalizations  `\

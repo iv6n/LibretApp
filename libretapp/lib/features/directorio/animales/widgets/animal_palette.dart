@@ -13,7 +13,7 @@ class AnimalPalette {
   static const Color sheep = Color(0xFFC89452);
   static const Color pig = Color(0xFFD66B73);
   static const Color poultry = Color(0xFFE18B2D);
-  static const Color canine = Color(0xFF59616B);
+  static const Color canine = Color(0xFF607D91);
 
   static const Color calf = AppColors.amber;
   static const Color heifer = AppColors.earth;
@@ -91,67 +91,38 @@ class AnimalPalette {
   /// Unified forest-sage chrome for animal cards and filter chips.
   static const uiAccent = AppColors.primary;
   static const uiAccentDark = Color(0xFF1F3A32);
-  static Color get cardHeaderLight => LightColors.cardSurface;
-  static Color get cardFooterLight => LightColors.background;
-  static Color get avatarBackgroundLight => Color.alphaBlend(
-    AppColors.primary.withValues(alpha: 0.05),
-    LightColors.background,
-  );
-  static const cardBorderLight = Color(0xFFE4D8C9);
-  static const cardDividerLight = Color(0xFFEDE2D3);
-  static const cardTextPrimaryLight = Color(0xFF1F3A32);
-  static const cardTextSecondaryLight = Color(0xFF4A6359);
+  static const Color cardSurface = Color(0xFFFFFAF4);
+  static const Color cardHeaderLight = Color(0xFFFFF9F2);
+  static const Color cardFooterLight = Color(0xFFFFFCF7);
+  static Color get avatarBackgroundLight =>
+      Color.alphaBlend(AppColors.primary.withValues(alpha: 0.035), cardSurface);
+  static const cardBorderLight = Color(0xFFE6DCCF);
+  static const cardDividerLight = Color(0xFFE5DCCF);
+  static const cardTextPrimaryLight = Color(0xFF073D32);
+  static const cardTextSecondaryLight = Color(0xFF476A5F);
 
   static Color cardHeader(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Color.alphaBlend(
-        Colors.white.withValues(alpha: 0.04),
-        Theme.of(context).colorScheme.surface,
-      );
-    }
     return cardHeaderLight;
   }
 
   static Color cardFooter(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Color.alphaBlend(
-        Colors.white.withValues(alpha: 0.025),
-        Theme.of(context).colorScheme.surface,
-      );
-    }
     return cardFooterLight;
   }
 
   static Color cardTextPrimary(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Theme.of(context).colorScheme.onSurface;
-    }
     return cardTextPrimaryLight;
   }
 
   static Color cardTextSecondary(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.76);
-    }
     return cardTextSecondaryLight;
   }
 
   static Color cardDivider(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Theme.of(context).colorScheme.outlineVariant.withValues(
-        alpha: 0.42,
-      );
-    }
     return cardDividerLight;
   }
 
   static Color cardBorder(BuildContext context, {required bool isSelected}) {
     if (isSelected) return uiAccent.withValues(alpha: 0.95);
-    if (Theme.of(context).brightness == Brightness.dark) {
-      return Theme.of(context).colorScheme.outlineVariant.withValues(
-        alpha: 0.38,
-      );
-    }
     return cardBorderLight.withValues(alpha: 0.85);
   }
 
@@ -219,11 +190,7 @@ class AnimalPalette {
 
   /// Purpose label tint — recognizable but quieter than full purpose colors.
   static Color purposeSummaryTextColor(ProductionPurpose purpose) {
-    return Color.lerp(
-          purposeTextColor(purpose),
-          summaryChipText,
-          0.52,
-        ) ??
+    return Color.lerp(purposeTextColor(purpose), summaryChipText, 0.52) ??
         summaryChipText;
   }
 }

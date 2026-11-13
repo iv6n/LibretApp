@@ -400,7 +400,7 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
         // 1. Collapsible animal header (photo, name, etc.)
         SliverAppBar(
           pinned: true,
-          expandedHeight: animalHeaderHeight(context),
+          expandedHeight: animalHeaderHeight(context, data.animal),
           backgroundColor: Colors.transparent,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           elevation: 0,
@@ -445,20 +445,15 @@ class _AnimalDetailPageState extends State<AnimalDetailPage>
             child: Card(
               margin: const EdgeInsets.all(12),
               child: ListTile(
-                title: const Text('Ficha por completar'),
-                subtitle: const Text(
-                  'Los datos no registrados se muestran como Sin dato.',
-                ),
-                trailing: TextButton(
-                  onPressed: () async {
-                    await context.pushNamed(
-                      AppRoutes.nameAnimalCompletar,
-                      pathParameters: {'uuid': widget.animalUuid},
-                    );
-                    if (mounted) _reload();
-                  },
-                  child: const Text('Completar ficha'),
-                ),
+                title: const Text('Completar ficha'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  await context.pushNamed(
+                    AppRoutes.nameAnimalCompletar,
+                    pathParameters: {'uuid': widget.animalUuid},
+                  );
+                  if (mounted) _reload();
+                },
               ),
             ),
           ),

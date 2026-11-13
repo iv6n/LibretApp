@@ -136,7 +136,7 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
     return BlocListener<RegistroBloc, RegistroState>(
       listener: (context, state) {
         if (state.status == RegistroStatus.success) {
-          Navigator.of(context).pop();
+          AppFormExitGuard.complete(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.detailFormCommercialSaved)),
           );
@@ -161,6 +161,8 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
             fallbackIcon: Icons.sell_outlined,
             formKey: _formKey,
             saving: isSaving,
+            protectUnsavedChanges: true,
+            currentSignature: () => _selectedAnimal?.uuid ?? '',
             onSave: _save,
             saveLabel: l10n.actionSave,
             onCancel: () => Navigator.of(context).pop(),
@@ -168,7 +170,10 @@ class _RegistroComercialViewState extends State<_RegistroComercialView> {
             fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
-                onSelected: (a) => setState(() => _selectedAnimal = a),
+                onSelected: (a) {
+                  AppFormExitGuard.markChanged(context);
+                  setState(() => _selectedAnimal = a);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
               AppSelectField<CommercialRecordType>(

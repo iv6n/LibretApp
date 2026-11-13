@@ -4,41 +4,39 @@ import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
 import 'package:libretapp/features/directorio/view/directorio_view.dart';
 
 void main() {
-  testWidgets('animal view menu changes and marks the selected mode', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const MaterialApp(home: _ViewModeMenuHost()));
+  testWidgets('animal view toggles directly from the app bar', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: _ViewModeHost()));
 
-    await tester.tap(find.byKey(const Key('open_animal_view_menu')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Vista de animales'), findsOneWidget);
-    expect(find.text('Tarjetas'), findsOneWidget);
-    expect(find.text('Lista compacta'), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('animal_view_mode_compact')));
-    await tester.pumpAndSettle();
-
-    final host = tester.state<_ViewModeMenuHostState>(
-      find.byType(_ViewModeMenuHost),
+    expect(
+      find.byKey(const Key('directorio-animal-view-toggle')),
+      findsOneWidget,
     );
-    expect(host.mode, AnimalDirectoryViewMode.compact);
+    expect(find.text('Vista de animales'), findsNothing);
+    expect(find.text('Tarjetas'), findsNothing);
+    expect(find.text('Lista compacta'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('open_animal_view_menu')));
+    await tester.tap(find.byKey(const Key('directorio-animal-view-toggle')));
     await tester.pumpAndSettle();
-    expect(find.byIcon(Icons.check), findsOneWidget);
+
+    final host = tester.state<_ViewModeHostState>(find.byType(_ViewModeHost));
+    expect(host.mode, AnimalDirectoryViewMode.compact);
+    expect(find.byTooltip('Cambiar a tarjetas'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('directorio-animal-view-toggle')));
+    await tester.pumpAndSettle();
+    expect(host.mode, AnimalDirectoryViewMode.cards);
     expect(tester.takeException(), isNull);
   });
 }
 
-class _ViewModeMenuHost extends StatefulWidget {
-  const _ViewModeMenuHost();
+class _ViewModeHost extends StatefulWidget {
+  const _ViewModeHost();
 
   @override
-  State<_ViewModeMenuHost> createState() => _ViewModeMenuHostState();
+  State<_ViewModeHost> createState() => _ViewModeHostState();
 }
 
-class _ViewModeMenuHostState extends State<_ViewModeMenuHost> {
+class _ViewModeHostState extends State<_ViewModeHost> {
   AnimalDirectoryViewMode mode = AnimalDirectoryViewMode.cards;
 
   @override
@@ -46,18 +44,9 @@ class _ViewModeMenuHostState extends State<_ViewModeMenuHost> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          MenuAnchor(
-            menuChildren: [
-              AnimalDirectoryViewMenuContent(
-                viewMode: mode,
-                onChanged: (value) => setState(() => mode = value),
-              ),
-            ],
-            builder: (context, controller, child) => IconButton(
-              key: const Key('open_animal_view_menu'),
-              onPressed: controller.open,
-              icon: const Icon(Icons.more_vert),
-            ),
+          AnimalDirectoryViewToggleButton(
+            viewMode: mode,
+            onChanged: (value) => setState(() => mode = value),
           ),
         ],
       ),

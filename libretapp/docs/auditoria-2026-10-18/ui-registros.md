@@ -30,14 +30,10 @@ Referencias precisas:
 
 El contrato de Finanzas permite guardar mediante `addIncome`/`addExpense`, y su implementación puede reutilizar un ID existente; lo que falta es la acción de edición accesible al usuario. No se afirma que el modelo de datos sea incapaz de actualizarse.
 
-## Verificación visual nueva
+## Verificación visual histórica
 
-Se generaron y se inspeccionaron:
-
-- `artifacts/auditoria-2026-10-18/visual/profile-cattle-light.png`.
-- `artifacts/auditoria-2026-10-18/visual/profile-cattle-dark.png`.
-- `artifacts/auditoria-2026-10-18/visual/onboarding/bienvenida.png`.
-- `artifacts/auditoria-2026-10-18/visual/onboarding/opciones.png`.
+Se inspeccionaron el perfil claro y oscuro y la bienvenida. Las capturas
+antiguas se retiraron; los hallazgos siguientes se conservan en texto.
 
 Son renders Flutter de datos ficticios, no capturas de una instalación del AAB final. Las dos variantes del perfil a 360 dp pasan las aserciones de layout; el texto seleccionado en oscuro sigue siendo difícil de leer. El contraste de los colores declarados `#2F5D50` sobre `#0F1B1F` es aproximadamente **2.34:1**. Como referencia, [WCAG 2.2 describe 4.5:1 para texto normal y 3:1 para texto grande](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html). No se certificó conformidad WCAG de toda la app.
 

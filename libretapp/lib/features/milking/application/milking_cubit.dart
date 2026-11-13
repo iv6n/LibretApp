@@ -12,7 +12,15 @@ import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_reposit
 import 'package:libretapp/features/milking/domain/milking_models.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
 
-enum MilkingLoadStatus { initial, loading, ready, saving, completed, failure }
+enum MilkingLoadStatus {
+  initial,
+  loading,
+  choosingDraft,
+  ready,
+  saving,
+  completed,
+  failure,
+}
 
 enum MilkingCaptureMode { individual, group }
 
@@ -24,6 +32,7 @@ class MilkingState extends Equatable {
     this.animals = const [],
     this.lotes = const [],
     this.entries = const [],
+    this.draftSessions = const [],
     this.presetAnimalUuid,
     this.errorMessage,
     this.withdrawnAnimals = const [],
@@ -35,6 +44,7 @@ class MilkingState extends Equatable {
   final List<AnimalEntity> animals;
   final List<LoteEntity> lotes;
   final List<MilkingEntry> entries;
+  final List<MilkingSession> draftSessions;
   final String? presetAnimalUuid;
   final String? errorMessage;
 
@@ -86,6 +96,7 @@ class MilkingState extends Equatable {
     List<AnimalEntity>? animals,
     List<LoteEntity>? lotes,
     List<MilkingEntry>? entries,
+    List<MilkingSession>? draftSessions,
     Object? presetAnimalUuid = _unset,
     Object? errorMessage = _unset,
     List<AnimalEntity>? withdrawnAnimals,
@@ -97,6 +108,7 @@ class MilkingState extends Equatable {
       animals: animals ?? this.animals,
       lotes: lotes ?? this.lotes,
       entries: entries ?? this.entries,
+      draftSessions: draftSessions ?? this.draftSessions,
       presetAnimalUuid: presetAnimalUuid == _unset
           ? this.presetAnimalUuid
           : presetAnimalUuid as String?,
@@ -115,6 +127,7 @@ class MilkingState extends Equatable {
     animals,
     lotes,
     entries,
+    draftSessions,
     presetAnimalUuid,
     errorMessage,
     withdrawnAnimals,
@@ -145,6 +158,8 @@ class MilkingCubit extends Cubit<MilkingState> {
         _animalRepository.getAll(),
         _lotesRepository.getActiveLotes(),
         _repository.getOpenDraft(),
+        _repository.getAllSessions(),
+        _repository.getAllEntries(),
       ]);
       final allAnimals = results[0] as List<AnimalEntity>;
       final candidates = allAnimals.where(_isEligibleCow).toList();
@@ -167,18 +182,36 @@ class MilkingCubit extends Cubit<MilkingState> {
 
       final lotes = results[1] as List<LoteEntity>;
       var session = results[2] as MilkingSession?;
-      if (session == null) {
-        final now = DateTime.now();
-        session = MilkingSession(
-          uuid: generateId(),
-          occurredAt: now,
-          shift: MilkingShift.fromTime(now),
-          status: MilkingStatus.draft,
-          createdAt: now,
-          updatedAt: now,
+      final sessions = results[3] as List<MilkingSession>;
+      final allEntries = results[4] as List<MilkingEntry>;
+      final availableDrafts =
+          sessions
+              .where(
+                (candidate) =>
+                    candidate.status == MilkingStatus.draft &&
+                    candidate.uuid != session?.uuid &&
+                    allEntries.any(
+                      (entry) => entry.sessionUuid == candidate.uuid,
+                    ),
+              )
+              .toList()
+            ..sort((a, b) => b.occurredAt.compareTo(a.occurredAt));
+
+      if (session == null && availableDrafts.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: MilkingLoadStatus.choosingDraft,
+            animals: eligible,
+            lotes: lotes,
+            draftSessions: availableDrafts,
+            presetAnimalUuid: presetAnimalUuid,
+            errorMessage: null,
+            withdrawnAnimals: withdrawn,
+          ),
         );
-        await _repository.upsertSession(session);
+        return;
       }
+      session ??= await _createDraftSession();
       final entries = await _repository.getEntries(session.uuid);
       emit(
         state.copyWith(
@@ -187,12 +220,110 @@ class MilkingCubit extends Cubit<MilkingState> {
           animals: eligible,
           lotes: lotes,
           entries: entries,
+          draftSessions: availableDrafts,
           presetAnimalUuid: presetAnimalUuid,
           captureMode: session.sourceLoteUuid == null
               ? MilkingCaptureMode.individual
               : MilkingCaptureMode.group,
           errorMessage: null,
           withdrawnAnimals: withdrawn,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: MilkingLoadStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<MilkingSession> _createDraftSession() async {
+    final now = DateTime.now();
+    final session = MilkingSession(
+      uuid: generateId(),
+      occurredAt: now,
+      shift: MilkingShift.fromTime(now),
+      status: MilkingStatus.draft,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _repository.upsertSession(session);
+    return session;
+  }
+
+  Future<void> resumeDraft(String sessionUuid) async {
+    if (state.status == MilkingLoadStatus.loading ||
+        state.status == MilkingLoadStatus.saving) {
+      return;
+    }
+    final previousSession = state.session;
+    emit(state.copyWith(status: MilkingLoadStatus.loading, errorMessage: null));
+    try {
+      final candidate = await _repository.getSession(sessionUuid);
+      if (candidate == null || candidate.status != MilkingStatus.draft) {
+        emit(
+          state.copyWith(
+            status: MilkingLoadStatus.failure,
+            errorMessage: 'La ordeña ya no está disponible para reanudar.',
+          ),
+        );
+        return;
+      }
+      final drafts = [
+        ...state.draftSessions.where((draft) => draft.uuid != candidate.uuid),
+        if (previousSession != null &&
+            previousSession.status == MilkingStatus.draft &&
+            previousSession.uuid != candidate.uuid)
+          previousSession,
+      ];
+      final entries = await _repository.getEntries(candidate.uuid);
+      emit(
+        state.copyWith(
+          status: MilkingLoadStatus.ready,
+          session: candidate,
+          entries: entries,
+          draftSessions: drafts,
+          captureMode: candidate.sourceLoteUuid == null
+              ? MilkingCaptureMode.individual
+              : MilkingCaptureMode.group,
+          errorMessage: null,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: MilkingLoadStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> startNewSession() async {
+    if (state.status == MilkingLoadStatus.saving ||
+        state.status == MilkingLoadStatus.loading) {
+      return;
+    }
+    emit(state.copyWith(status: MilkingLoadStatus.loading, errorMessage: null));
+    try {
+      final previousSession = state.session;
+      final drafts = [
+        ...state.draftSessions,
+        if (previousSession != null &&
+            previousSession.status == MilkingStatus.draft)
+          previousSession,
+      ];
+      final session = await _createDraftSession();
+      emit(
+        state.copyWith(
+          status: MilkingLoadStatus.ready,
+          session: session,
+          entries: const [],
+          draftSessions: drafts,
+          captureMode: MilkingCaptureMode.individual,
+          errorMessage: null,
         ),
       );
     } catch (error) {

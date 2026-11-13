@@ -16,6 +16,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_initial_weight_policy.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
@@ -116,7 +117,8 @@ class AnimalExcelImportService {
       final breed = _text(row, 5) ?? '';
       final birthDate = _parseDate(_text(row, 6), rowNumber, warnings);
       final ageMonths = int.tryParse(_text(row, 7) ?? '') ?? 0;
-      final weight = parseFormDouble(_text(row, 8) ?? '');
+      final rawWeight = _text(row, 8)?.trim() ?? '';
+      final parsedWeight = parseFormDouble(rawWeight);
       final status = _parseEnum(
         AnimalStatus.values,
         _text(row, 9),
@@ -136,6 +138,18 @@ class AnimalExcelImportService {
       final owner = _text(row, 11);
 
       final current = byEarTag[earTag];
+      var weight = current?.weight;
+      if (rawWeight.isNotEmpty) {
+        if (parsedWeight != null &&
+            AnimalInitialWeightPolicy.allows(
+              proposed: parsedWeight,
+              persisted: current?.weight,
+            )) {
+          weight = parsedWeight;
+        } else {
+          warnings.add('Fila $rowNumber: peso inválido, se ignoró ese campo.');
+        }
+      }
       final now = DateTime.now();
 
       if (current != null) {

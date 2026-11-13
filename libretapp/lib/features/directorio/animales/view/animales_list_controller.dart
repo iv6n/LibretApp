@@ -24,9 +24,9 @@ enum AnimalHealthFilter { pending, unvaccinated }
 class AnimalesListState {
   const AnimalesListState({
     required this.locations,
-    required this.selectedStages,
     required this.onlyAttention,
     required this.onlyPendingEarTag,
+    this.selectedStages = const <LifeStage>{},
     this.healthFilter,
     this.selectedSpecies,
     this.selectedCompanion = false,
@@ -40,15 +40,15 @@ class AnimalesListState {
 
   factory AnimalesListState.initial() => const AnimalesListState(
     locations: <LocationEntity>[],
-    selectedStages: <LifeStage>{},
     onlyAttention: false,
     onlyPendingEarTag: false,
+    selectedStages: <LifeStage>{},
   );
 
   final List<LocationEntity> locations;
-  final Set<LifeStage> selectedStages;
   final bool onlyAttention;
   final bool onlyPendingEarTag;
+  final Set<LifeStage> selectedStages;
   final AnimalHealthFilter? healthFilter;
   final Species? selectedSpecies;
   final bool selectedCompanion;
@@ -67,9 +67,9 @@ class AnimalesListState {
 
   AnimalesListState copyWith({
     List<LocationEntity>? locations,
-    Set<LifeStage>? selectedStages,
     bool? onlyAttention,
     bool? onlyPendingEarTag,
+    Set<LifeStage>? selectedStages,
     Object? healthFilter = _selectedHealthFilterUnset,
     Object? selectedSpecies = _selectedSpeciesUnset,
     bool? selectedCompanion,
@@ -82,9 +82,9 @@ class AnimalesListState {
   }) {
     return AnimalesListState(
       locations: locations ?? this.locations,
-      selectedStages: selectedStages ?? this.selectedStages,
       onlyAttention: onlyAttention ?? this.onlyAttention,
       onlyPendingEarTag: onlyPendingEarTag ?? this.onlyPendingEarTag,
+      selectedStages: selectedStages ?? this.selectedStages,
       healthFilter: identical(healthFilter, _selectedHealthFilterUnset)
           ? this.healthFilter
           : healthFilter as AnimalHealthFilter?,
@@ -107,9 +107,9 @@ class AnimalesListState {
   }
 
   bool get hasFilters =>
-      selectedStages.isNotEmpty ||
       selectedSpecies != null ||
       selectedCompanion ||
+      selectedStages.isNotEmpty ||
       onlyAttention ||
       onlyPendingEarTag ||
       healthFilter != null ||
@@ -165,8 +165,8 @@ class AnimalesListController extends ChangeNotifier {
     _setState(_state.copyWith(locations: locations));
   }
 
-  /// Loads whole-herd species/stage availability so filter chips never depend
-  /// on which animal page happens to be visible.
+  /// Loads whole-herd species counts so category chips stay accurate while
+  /// the animal list is paginated.
   Future<void> loadTaxonomy([Iterable<AnimalEntity>? fallbackAnimals]) async {
     final Map<Species, Map<LifeStage, int>> counts;
     final Map<LifeStage, int> companionCounts;
@@ -188,36 +188,27 @@ class AnimalesListController extends ChangeNotifier {
     final nextSelected = selected != null && counts.containsKey(selected)
         ? selected
         : null;
+    final availableStages = _state.selectedCompanion
+        ? companionCounts.keys.toSet()
+        : nextSelected == null
+        ? const <LifeStage>{}
+        : counts[nextSelected]!.keys.toSet();
     _setState(
       _state.copyWith(
         taxonomyCounts: counts,
         companionStageCounts: companionCounts,
         selectedSpecies: nextSelected,
-        selectedStages: _stagesForSpecies(
-          _state.selectedStages,
-          nextSelected,
-          counts,
-        ),
+        selectedStages: _state.selectedStages
+            .where(availableStages.contains)
+            .toSet(),
       ),
     );
   }
-
-  Set<Species> get availableSpecies => _state.taxonomyCounts.keys.toSet();
 
   int get taxonomyTotal => _state.taxonomyCounts.values.fold<int>(
     0,
     (sum, stages) => sum + stages.values.fold<int>(0, (a, b) => a + b),
   );
-
-  Map<LifeStage, int> get selectedSpeciesStageCounts {
-    var species = _state.selectedSpecies;
-    if (species == null && availableSpecies.length == 1) {
-      species = availableSpecies.first;
-    }
-    return species == null
-        ? const <LifeStage, int>{}
-        : _state.taxonomyCounts[species] ?? const <LifeStage, int>{};
-  }
 
   Map<Species, Map<LifeStage, int>> _taxonomyFromAnimals(
     Iterable<AnimalEntity> animals,
@@ -240,16 +231,6 @@ class AnimalesListController extends ChangeNotifier {
       counts.update(animal.lifeStage, (count) => count + 1, ifAbsent: () => 1);
     }
     return counts;
-  }
-
-  Set<LifeStage> _stagesForSpecies(
-    Set<LifeStage> stages,
-    Species? species,
-    Map<Species, Map<LifeStage, int>> counts,
-  ) {
-    if (species == null) return const <LifeStage>{};
-    final available = counts[species]?.keys.toSet() ?? const <LifeStage>{};
-    return stages.where(available.contains).toSet();
   }
 
   /// Builds card indicators for [animals] in one batch query.
@@ -375,10 +356,6 @@ class AnimalesListController extends ChangeNotifier {
     _setState(_state.copyWith(locations: locations));
   }
 
-  void setStages(Set<LifeStage> stages) {
-    _setState(_state.copyWith(selectedStages: Set<LifeStage>.from(stages)));
-  }
-
   void setSpecies(Species? species) {
     _setState(
       _state.copyWith(
@@ -396,6 +373,12 @@ class AnimalesListController extends ChangeNotifier {
         selectedSpecies: null,
         selectedStages: const <LifeStage>{},
       ),
+    );
+  }
+
+  void setStages(Set<LifeStage> stages) {
+    _setState(
+      _state.copyWith(selectedStages: Set<LifeStage>.unmodifiable(stages)),
     );
   }
 
@@ -513,9 +496,9 @@ class AnimalesListController extends ChangeNotifier {
       final matchesHerd =
           _state.includeInactive || animal.status.isInActiveHerd;
 
-      return matchesSpecies &&
+      return matchesStage &&
+          matchesSpecies &&
           matchesCompanion &&
-          matchesStage &&
           matchesAttention &&
           matchesPendingEarTag &&
           matchesHealthFilter &&

@@ -1,0 +1,1 @@
+window.LIBRET_CAPTCHA_SITE_KEY = '0x4AAAAAAFuyRqbQu9nWR-t6';

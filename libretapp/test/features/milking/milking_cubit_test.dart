@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
@@ -61,6 +62,98 @@ void main() {
       expect(cubit.state.totalMilliliters, 13000);
       expect(cubit.state.totalLiters, 13);
       await cubit.close();
+    });
+
+    test(
+      'offers a previous draft and resumes its readings with original date',
+      () async {
+        final occurredAt = DateTime.now().subtract(const Duration(days: 1));
+        final oldSession = _session('yesterday', occurredAt);
+        final oldEntry = _entry('yesterday-entry', oldSession, 'cow-1');
+        final repository = _FakeMilkingRepository(
+          sessions: [oldSession],
+          entries: [oldEntry],
+        );
+        final cubit = MilkingCubit(
+          repository: repository,
+          animalRepository: _FakeAnimalRepository([_animal(uuid: 'cow-1')]),
+          lotesRepository: _FakeLotesRepository(const []),
+        );
+
+        await cubit.load();
+
+        expect(cubit.state.status, MilkingLoadStatus.choosingDraft);
+        expect(cubit.state.session, isNull);
+        expect(cubit.state.draftSessions.single.occurredAt, occurredAt);
+
+        await cubit.resumeDraft(oldSession.uuid);
+
+        expect(cubit.state.session?.uuid, oldSession.uuid);
+        expect(cubit.state.session?.occurredAt, occurredAt);
+        expect(cubit.state.entries, [oldEntry]);
+        await cubit.close();
+      },
+    );
+
+    test(
+      'new session keeps prior drafts available and does not overwrite them',
+      () async {
+        final oldSession = _session(
+          'old-session',
+          DateTime.now().subtract(const Duration(days: 1)),
+        );
+        final oldEntry = _entry('old-entry', oldSession, 'cow-1');
+        final repository = _FakeMilkingRepository(
+          sessions: [oldSession],
+          entries: [oldEntry],
+        );
+        final cubit = MilkingCubit(
+          repository: repository,
+          animalRepository: _FakeAnimalRepository([_animal(uuid: 'cow-1')]),
+          lotesRepository: _FakeLotesRepository(const []),
+        );
+
+        await cubit.load();
+        await cubit.startNewSession();
+
+        expect(cubit.state.session?.uuid, isNot(oldSession.uuid));
+        expect(cubit.state.draftSessions, contains(oldSession));
+        expect(await repository.getEntries(oldSession.uuid), [oldEntry]);
+
+        await cubit.close();
+      },
+    );
+
+    test('a new cubit can recover a prior draft after reopening', () async {
+      final oldSession = _session(
+        'reopen-session',
+        DateTime.now().subtract(const Duration(days: 1)),
+      );
+      final oldEntry = _entry('reopen-entry', oldSession, 'cow-1');
+      final repository = _FakeMilkingRepository(
+        sessions: [oldSession],
+        entries: [oldEntry],
+      );
+
+      final first = MilkingCubit(
+        repository: repository,
+        animalRepository: _FakeAnimalRepository([_animal(uuid: 'cow-1')]),
+        lotesRepository: _FakeLotesRepository(const []),
+      );
+      await first.load();
+      await first.resumeDraft(oldSession.uuid);
+      await first.close();
+
+      final reopened = MilkingCubit(
+        repository: repository,
+        animalRepository: _FakeAnimalRepository([_animal(uuid: 'cow-1')]),
+        lotesRepository: _FakeLotesRepository(const []),
+      );
+      await reopened.load();
+      await reopened.resumeDraft(oldSession.uuid);
+
+      expect(reopened.state.entries, [oldEntry]);
+      await reopened.close();
     });
 
     test(
@@ -181,6 +274,53 @@ void main() {
     expect(find.text('cow-widget'), findsOneWidget);
     expect(find.text('Litros'), findsOneWidget);
   });
+
+  testWidgets('keeps an older draft accessible after starting a new session', (
+    tester,
+  ) async {
+    final cow = _animal(uuid: 'cow-old-draft');
+    final oldSession = _session(
+      'old-widget-session',
+      DateTime.now().subtract(const Duration(days: 1)),
+    );
+    final oldEntry = _entry('old-widget-entry', oldSession, cow.uuid);
+    locator
+      ..registerSingleton<AnimalRepository>(_FakeAnimalRepository([cow]))
+      ..registerSingleton<LotesRepository>(_FakeLotesRepository(const []))
+      ..registerSingleton<MilkingRepository>(
+        _FakeMilkingRepository(sessions: [oldSession], entries: [oldEntry]),
+      )
+      ..registerSingleton<HealthRecordRepository>(
+        _FakeHealthRecordRepository(const {}),
+      );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('es'),
+        home: RegistroOrdenaPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hay ordeñas anteriores sin finalizar'), findsOneWidget);
+    await tester.tap(find.text('Nueva sesión'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Ordeñas guardadas (1)'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Ordeñas guardadas (1)'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(DateFormat('dd/MM/yyyy · HH:mm').format(oldSession.occurredAt)),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Reanudar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('cow-old-draft'), findsOneWidget);
+    expect(find.text('12.5 L'), findsWidgets);
+  });
 }
 
 AnimalEntity _animal({
@@ -276,11 +416,44 @@ class _FakeHealthRecordRepository implements HealthRecordRepository {
 }
 
 class _FakeMilkingRepository implements MilkingRepository {
-  MilkingSession? draft;
-  final List<MilkingEntry> entries = [];
+  _FakeMilkingRepository({
+    List<MilkingSession> sessions = const [],
+    List<MilkingEntry> entries = const [],
+  }) : sessions = List.of(sessions),
+       entries = List.of(entries);
+
+  final List<MilkingSession> sessions;
+  final List<MilkingEntry> entries;
+
+  MilkingSession? get draft {
+    final now = DateTime.now();
+    for (final session in sessions.reversed) {
+      if (session.status == MilkingStatus.draft &&
+          session.occurredAt.year == now.year &&
+          session.occurredAt.month == now.month &&
+          session.occurredAt.day == now.day) {
+        return session;
+      }
+    }
+    return null;
+  }
 
   @override
   Future<MilkingSession?> getOpenDraft() async => draft;
+
+  @override
+  Future<MilkingSession?> getSession(String uuid) async {
+    for (final session in sessions) {
+      if (session.uuid == uuid) return session;
+    }
+    return null;
+  }
+
+  @override
+  Future<List<MilkingSession>> getAllSessions() async => List.of(sessions);
+
+  @override
+  Future<List<MilkingEntry>> getAllEntries() async => List.of(entries);
 
   @override
   Future<List<MilkingEntry>> getEntries(String sessionUuid) async => entries
@@ -289,7 +462,8 @@ class _FakeMilkingRepository implements MilkingRepository {
 
   @override
   Future<void> upsertSession(MilkingSession session) async {
-    draft = session;
+    sessions.removeWhere((item) => item.uuid == session.uuid);
+    sessions.add(session);
   }
 
   @override
@@ -311,11 +485,33 @@ class _FakeMilkingRepository implements MilkingRepository {
 
   @override
   Future<void> finalizeSession(String sessionUuid) async {
-    if (draft?.uuid == sessionUuid) {
-      draft = draft!.copyWith(status: MilkingStatus.completed);
+    final index = sessions.indexWhere((session) => session.uuid == sessionUuid);
+    if (index >= 0) {
+      sessions[index] = sessions[index].copyWith(
+        status: MilkingStatus.completed,
+      );
     }
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+MilkingSession _session(String uuid, DateTime occurredAt) => MilkingSession(
+  uuid: uuid,
+  occurredAt: occurredAt,
+  shift: MilkingShift.morning,
+  status: MilkingStatus.draft,
+  createdAt: occurredAt,
+  updatedAt: occurredAt,
+);
+
+MilkingEntry _entry(String uuid, MilkingSession session, String animalUuid) =>
+    MilkingEntry(
+      uuid: uuid,
+      sessionUuid: session.uuid,
+      animalUuid: animalUuid,
+      volumeMilliliters: 12500,
+      createdAt: session.occurredAt,
+      updatedAt: session.occurredAt,
+    );

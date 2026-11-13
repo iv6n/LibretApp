@@ -31,7 +31,7 @@ void main() {
     );
 
     expect(find.text('Mi perfil'), findsOneWidget);
-    expect(find.text('Ganado y campo'), findsOneWidget);
+    expect(find.text('Ganado y campo'), findsNothing);
     expect(find.text('Sin nombre'), findsNothing);
     await tester.tap(find.text('Añadir datos opcionales'));
     expect(opened, isTrue);

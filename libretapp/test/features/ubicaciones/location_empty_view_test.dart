@@ -23,7 +23,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Da un lugar a cada registro'), findsOneWidget);
+      expect(find.text('Sin ubicaciones'), findsOneWidget);
       expect(find.text('Crear ubicación'), findsOneWidget);
       expect(find.text('Recargar'), findsNothing);
       expect(find.byType(Image), findsOneWidget);

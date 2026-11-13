@@ -1,12 +1,16 @@
 /// features › directorio › animales › view › animal_edit_page — Direct animal edit form.
 library;
 
+import 'dart:convert';
+
 import 'package:libretapp/core/utils/number_parsing.dart';
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/widgets/app_form_exit_guard.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_initial_weight_policy.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 
@@ -52,6 +56,30 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
 
   AnimalRegistrationPolicy get _policy =>
       AnimalRegistrationPolicy.forSpecies(_species);
+
+  String _captureExitSignature() => jsonEncode([
+    _earTagCtrl.text,
+    _nameCtrl.text,
+    _visualIdCtrl.text,
+    _breedCtrl.text,
+    _crossBreedCtrl.text,
+    _weightCtrl.text,
+    _coatColorCtrl.text,
+    _notesCtrl.text,
+    _crossBreedTypeCtrl.text,
+    _sireBreedCtrl.text,
+    _damBreedCtrl.text,
+    _bloodPercentageCtrl.text,
+    _species.name,
+    _category.name,
+    _sex.name,
+    _status.name,
+    _healthStatus.name,
+    _riskLevel.name,
+    _underObservation,
+    _requiresAttention,
+    _profilePhoto,
+  ]);
 
   @override
   void initState() {
@@ -132,21 +160,14 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final earTag = _earTagCtrl.text.trim();
-    if (_policy.tracksPendingEarTag && earTag.isEmpty) {
-      final confirmed = await _confirmMissingEarTag();
-      if (!mounted || !confirmed) return;
-    } else {
-      final duplicated = await _isEarTagDuplicated(earTag);
-      if (!mounted) return;
-      if (duplicated) {
-        _showMessage('El arete ya existe en otro registro.');
-        return;
-      }
-    }
-
     final weight = _parseOptionalDouble(_weightCtrl.text);
-    if (_weightCtrl.text.trim().isNotEmpty && weight == null) {
-      _showMessage('Ingresa un peso valido.');
+    if (_weightCtrl.text.trim().isNotEmpty &&
+        (weight == null ||
+            !AnimalInitialWeightPolicy.allows(
+              proposed: weight,
+              persisted: animal.weight,
+            ))) {
+      _showMessage(AnimalInitialWeightPolicy.errorMessage);
       return;
     }
 
@@ -159,6 +180,18 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
 
     setState(() => _saving = true);
     try {
+      if (_policy.tracksPendingEarTag && earTag.isEmpty) {
+        final confirmed = await _confirmMissingEarTag();
+        if (!mounted || !confirmed) return;
+      } else {
+        final duplicated = await _isEarTagDuplicated(earTag);
+        if (!mounted) return;
+        if (duplicated) {
+          _showMessage('El arete ya existe en otro registro.');
+          return;
+        }
+      }
+
       final updated = AnimalRegistrationNormalizer.normalizeEntity(
         animal.copyWith(
           earTagNumber: earTag,
@@ -191,7 +224,7 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
 
       await _animalEditService.applyEdit(original: animal, draft: updated);
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      AppFormExitGuard.complete(context, true);
     } catch (e) {
       if (!mounted) return;
       final message = e is AnimalEditValidationException
@@ -218,237 +251,268 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
         ? 'Editar animal'
         : 'Editar ${primaryAnimalLabel(_animal!)}';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          TextButton(
-            onPressed: _saving || _loading ? null : _save,
-            child: _saving
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Guardar'),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _animal == null
-          ? const Center(child: Text('Animal no encontrado.'))
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-                children: [
-                  const _SectionHeader(
-                    title: 'Identificacion',
-                    icon: Icons.badge_outlined,
-                  ),
-                  AnimalPhotoField(
-                    photoPath: _profilePhoto,
-                    species: _species,
-                    enabled: !_saving,
-                    onChanged: (path) => setState(() => _profilePhoto = path),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _earTagCtrl,
-                    decoration: InputDecoration(
-                      labelText: _policy.identificationLabel,
-                      helperText: _policy.tracksPendingEarTag
-                          ? 'Recomendado. Puede quedar pendiente.'
-                          : 'Opcional',
-                      prefixIcon: const Icon(Icons.sell_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _nameCtrl,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre o alias',
-                      prefixIcon: Icon(Icons.drive_file_rename_outline),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _visualIdCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Numero arete visual / ID visible',
-                      prefixIcon: Icon(Icons.remove_red_eye_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const _SectionHeader(
-                    title: 'Perfil productivo',
-                    icon: Icons.insights_outlined,
-                  ),
-                  _EnumField<Species>(
-                    label: 'Especie',
-                    value: _species,
-                    values: Species.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _species = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _EnumField<Category>(
-                    label: 'Categoria',
-                    value: _category,
-                    values: Category.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _category = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _EnumField<Sex>(
-                    label: 'Sexo',
-                    value: _sex,
-                    values: Sex.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _sex = value),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _breedCtrl,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Raza — opcional',
-                      prefixIcon: Icon(Icons.biotech_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _crossBreedCtrl,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Cruza / segunda raza',
-                      prefixIcon: Icon(Icons.merge_type_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _weightCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Peso actual (kg)',
-                      prefixIcon: Icon(Icons.monitor_weight_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const _SectionHeader(
-                    title: 'Genética y observaciones',
-                    icon: Icons.hub_outlined,
-                  ),
-                  TextFormField(
-                    controller: _crossBreedTypeCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Tipo de cruza',
-                      prefixIcon: Icon(Icons.account_tree_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _sireBreedCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Raza padre',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _damBreedCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Raza madre',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _bloodPercentageCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Porcentaje de sangre',
-                      prefixIcon: Icon(Icons.percent_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _coatColorCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Color / pelaje',
-                      prefixIcon: Icon(Icons.palette_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _notesCtrl,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: 'Notas',
-                      prefixIcon: Icon(Icons.notes_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const _SectionHeader(
-                    title: 'Estado',
-                    icon: Icons.health_and_safety_outlined,
-                  ),
-                  _EnumField<AnimalStatus>(
-                    label: 'Estado',
-                    value: _status,
-                    values: AnimalStatus.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _status = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _EnumField<HealthStatus>(
-                    label: 'Salud',
-                    value: _healthStatus,
-                    values: HealthStatus.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _healthStatus = value),
-                  ),
-                  const SizedBox(height: 12),
-                  _EnumField<RiskLevel>(
-                    label: 'Riesgo',
-                    value: _riskLevel,
-                    values: RiskLevel.values,
-                    labelFor: (value) => value.displayName,
-                    onChanged: (value) => setState(() => _riskLevel = value),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('En observacion'),
-                    value: _underObservation,
-                    onChanged: (value) =>
-                        setState(() => _underObservation = value),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Requiere atencion'),
-                    value: _requiresAttention,
-                    onChanged: (value) =>
-                        setState(() => _requiresAttention = value),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: _saving ? null : _save,
-                    icon: const Icon(Icons.save_outlined),
-                    label: const Text('Guardar cambios'),
-                  ),
-                ],
-              ),
+    return AppFormExitGuard(
+      enabled: true,
+      saving: _saving || _loading,
+      currentSignature: _loading ? null : _captureExitSignature,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          actions: [
+            TextButton(
+              onPressed: _saving || _loading ? null : _save,
+              child: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Guardar'),
             ),
+          ],
+        ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _animal == null
+            ? const Center(child: Text('Animal no encontrado.'))
+            : Form(
+                key: _formKey,
+                onChanged: () => AppFormExitGuard.refreshFromForm(context),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                  children: [
+                    const _SectionHeader(
+                      title: 'Identificacion',
+                      icon: Icons.badge_outlined,
+                    ),
+                    AnimalPhotoField(
+                      photoPath: _profilePhoto,
+                      species: _species,
+                      enabled: !_saving,
+                      onChanged: (path) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _profilePhoto = path);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _earTagCtrl,
+                      decoration: InputDecoration(
+                        labelText: _policy.identificationLabel,
+                        helperText: _policy.tracksPendingEarTag
+                            ? 'Recomendado. Puede quedar pendiente.'
+                            : 'Opcional',
+                        prefixIcon: const Icon(Icons.sell_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nameCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre o alias',
+                        prefixIcon: Icon(Icons.drive_file_rename_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _visualIdCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Numero arete visual / ID visible',
+                        prefixIcon: Icon(Icons.remove_red_eye_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionHeader(
+                      title: 'Perfil productivo',
+                      icon: Icons.insights_outlined,
+                    ),
+                    _EnumField<Species>(
+                      label: 'Especie',
+                      value: _species,
+                      values: Species.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _species = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _EnumField<Category>(
+                      label: 'Categoria',
+                      value: _category,
+                      values: Category.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _category = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _EnumField<Sex>(
+                      label: 'Sexo',
+                      value: _sex,
+                      values: Sex.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _sex = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _breedCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Raza — opcional',
+                        prefixIcon: Icon(Icons.biotech_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _crossBreedCtrl,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'Cruza / segunda raza',
+                        prefixIcon: Icon(Icons.merge_type_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _weightCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Peso actual (kg)',
+                        prefixIcon: Icon(Icons.monitor_weight_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionHeader(
+                      title: 'Genética y observaciones',
+                      icon: Icons.hub_outlined,
+                    ),
+                    TextFormField(
+                      controller: _crossBreedTypeCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de cruza',
+                        prefixIcon: Icon(Icons.account_tree_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _sireBreedCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Raza padre',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _damBreedCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Raza madre',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _bloodPercentageCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Porcentaje de sangre',
+                        prefixIcon: Icon(Icons.percent_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _coatColorCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Color / pelaje',
+                        prefixIcon: Icon(Icons.palette_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _notesCtrl,
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Notas',
+                        prefixIcon: Icon(Icons.notes_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionHeader(
+                      title: 'Estado',
+                      icon: Icons.health_and_safety_outlined,
+                    ),
+                    _EnumField<AnimalStatus>(
+                      label: 'Estado',
+                      value: _status,
+                      values: AnimalStatus.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _status = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _EnumField<HealthStatus>(
+                      label: 'Salud',
+                      value: _healthStatus,
+                      values: HealthStatus.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _healthStatus = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _EnumField<RiskLevel>(
+                      label: 'Riesgo',
+                      value: _riskLevel,
+                      values: RiskLevel.values,
+                      labelFor: (value) => value.displayName,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _riskLevel = value);
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('En observacion'),
+                      value: _underObservation,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _underObservation = value);
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Requiere atencion'),
+                      value: _requiresAttention,
+                      onChanged: (value) {
+                        AppFormExitGuard.markChanged(context);
+                        setState(() => _requiresAttention = value);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('Guardar cambios'),
+                    ),
+                  ],
+                ),
+              ),
+      ),
     );
   }
 

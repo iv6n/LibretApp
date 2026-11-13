@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/utils/number_parsing.dart';
@@ -91,7 +90,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
             content: Text(AppLocalizations.of(context).recordEditNotFound),
           ),
         );
-        context.pop(false);
+        AppFormExitGuard.complete(context, false);
         return;
       }
 
@@ -209,7 +208,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
           ),
         ),
       );
-      context.pop(true);
+      AppFormExitGuard.complete(context, true);
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
@@ -231,6 +230,7 @@ class _AnimalProductionFormPageState extends State<AnimalProductionFormPage> {
       contextLabel: animalRecordContextLabel(_animal),
       contextIcon: Icons.pets_outlined,
       saving: _saving,
+      protectUnsavedChanges: true,
       loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,

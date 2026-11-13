@@ -39,7 +39,10 @@ class _FakeAnimalRepository implements AnimalRepository {
 /// Builds Animales-sheet xlsx bytes with the exact column order
 /// ExportService writes: caravana, nombre, especie, categoría, sexo, raza,
 /// fecha nac., edad, peso, estado, estado salud, propietario.
-List<int> _buildAnimalesXlsx(List<List<Object?>> rows, {String sheetName = 'Animales'}) {
+List<int> _buildAnimalesXlsx(
+  List<List<Object?>> rows, {
+  String sheetName = 'Animales',
+}) {
   final workbook = xlsx.Excel.createExcel();
   workbook.delete('Sheet1');
   final sheet = workbook[sheetName];
@@ -60,7 +63,9 @@ List<int> _buildAnimalesXlsx(List<List<Object?>> rows, {String sheetName = 'Anim
   for (var col = 0; col < headers.length; col++) {
     sheet
         .cell(xlsx.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0))
-        .value = xlsx.TextCellValue(headers[col]);
+        .value = xlsx.TextCellValue(
+      headers[col],
+    );
   }
   for (var r = 0; r < rows.length; r++) {
     final row = rows[r];
@@ -172,18 +177,193 @@ void main() {
       expect(saved.owner, isNull);
     });
 
-    test('updates an existing animal matched by ear tag, preserving untouched fields', () async {
-      final existing = _buildAnimal(
-        uuid: 'ani-existing-1',
-        earTagNumber: '002659025593',
-        customName: 'Old Name',
-        weight: 300,
-        currentLocationId: 'loc-1',
-      );
-      final repository = _FakeAnimalRepository([existing]);
+    test(
+      'updates an existing animal matched by ear tag, preserving untouched fields',
+      () async {
+        final existing = _buildAnimal(
+          uuid: 'ani-existing-1',
+          earTagNumber: '002659025593',
+          customName: 'Old Name',
+          weight: 300,
+          currentLocationId: 'loc-1',
+        );
+        final repository = _FakeAnimalRepository([existing]);
+        final service = AnimalExcelImportService(animalRepository: repository);
+
+        final bytes = _buildAnimalesXlsx([
+          [
+            '002659025593',
+            'Gorda',
+            'cattle',
+            'cow',
+            'female',
+            'Criollo',
+            '01/04/2022',
+            50,
+            '320.5',
+            'active',
+            'poor',
+            'Juan Perez',
+          ],
+        ]);
+
+        final summary = await service.importFromBytes(bytes);
+
+        expect(summary.created, 0);
+        expect(summary.updated, 1);
+
+        final saved = (await repository.getAll()).single;
+        expect(
+          saved.uuid,
+          'ani-existing-1',
+          reason: 'must update in place, not duplicate',
+        );
+        expect(saved.customName, 'Gorda');
+        expect(saved.ageMonths, 50);
+        expect(saved.weight, 320.5);
+        expect(saved.healthStatus, HealthStatus.poor);
+        expect(saved.owner, 'Juan Perez');
+        expect(
+          saved.currentLocationId,
+          'loc-1',
+          reason:
+              'location is not one of the Excel columns, must survive the merge',
+        );
+      },
+    );
+
+    test(
+      'keeps blank weights and warns per invalid weight cell without skipping rows',
+      () async {
+        final historicalZero = _buildAnimal(
+          uuid: 'ani-zero',
+          earTagNumber: 'ZERO',
+          weight: 0,
+        );
+        final existing = _buildAnimal(
+          uuid: 'ani-existing',
+          earTagNumber: 'EXISTING',
+          weight: 300,
+        );
+        final repository = _FakeAnimalRepository([historicalZero, existing]);
+        final service = AnimalExcelImportService(animalRepository: repository);
+
+        final summary = await service.importFromBytes(
+          _buildAnimalesXlsx([
+            [
+              'ZERO',
+              'Legacy',
+              'cattle',
+              'cow',
+              'female',
+              'Criollo',
+              '01/04/2022',
+              50,
+              '',
+              'active',
+              'good',
+              '',
+            ],
+            [
+              'EXISTING',
+              'Updated',
+              'cattle',
+              'cow',
+              'female',
+              'Criollo',
+              '01/04/2022',
+              50,
+              '-2',
+              'active',
+              'good',
+              '',
+            ],
+            [
+              'NEW-ZERO',
+              'New',
+              'cattle',
+              'cow',
+              'female',
+              'Criollo',
+              '01/04/2022',
+              50,
+              '0',
+              'active',
+              'good',
+              '',
+            ],
+            [
+              'NEW-INFINITY',
+              'New 2',
+              'cattle',
+              'cow',
+              'female',
+              'Criollo',
+              '01/04/2022',
+              50,
+              'Infinity',
+              'active',
+              'good',
+              '',
+            ],
+          ]),
+        );
+
+        final animals = await repository.getAll();
+        expect(summary.updated, 2);
+        expect(summary.created, 2);
+        expect(summary.warnings, hasLength(3));
+        expect(
+          summary.warnings,
+          contains('Fila 3: peso inválido, se ignoró ese campo.'),
+        );
+        expect(
+          summary.warnings,
+          contains('Fila 4: peso inválido, se ignoró ese campo.'),
+        );
+        expect(
+          summary.warnings,
+          contains('Fila 5: peso inválido, se ignoró ese campo.'),
+        );
+        expect(animals.singleWhere((a) => a.uuid == 'ani-zero').weight, 0);
+        expect(
+          animals.singleWhere((a) => a.uuid == 'ani-existing').weight,
+          300,
+        );
+        expect(
+          animals.singleWhere((a) => a.earTagNumber == 'NEW-ZERO').weight,
+          isNull,
+        );
+        expect(
+          animals.singleWhere((a) => a.earTagNumber == 'NEW-INFINITY').weight,
+          isNull,
+        );
+        expect(
+          animals.singleWhere((a) => a.uuid == 'ani-existing').customName,
+          'Updated',
+        );
+      },
+    );
+
+    test('skips a row with no ear tag and reports a warning', () async {
+      final repository = _FakeAnimalRepository();
       final service = AnimalExcelImportService(animalRepository: repository);
 
       final bytes = _buildAnimalesXlsx([
+        [
+          '',
+          'Sin caravana',
+          'cattle',
+          'cow',
+          'female',
+          'Criollo',
+          '01/04/2022',
+          48,
+          '',
+          'active',
+          'good',
+          '',
+        ],
         [
           '002659025593',
           'Gorda',
@@ -192,40 +372,12 @@ void main() {
           'female',
           'Criollo',
           '01/04/2022',
-          50,
-          '320.5',
+          48,
+          '',
           'active',
-          'poor',
-          'Juan Perez',
+          'good',
+          '',
         ],
-      ]);
-
-      final summary = await service.importFromBytes(bytes);
-
-      expect(summary.created, 0);
-      expect(summary.updated, 1);
-
-      final saved = (await repository.getAll()).single;
-      expect(saved.uuid, 'ani-existing-1', reason: 'must update in place, not duplicate');
-      expect(saved.customName, 'Gorda');
-      expect(saved.ageMonths, 50);
-      expect(saved.weight, 320.5);
-      expect(saved.healthStatus, HealthStatus.poor);
-      expect(saved.owner, 'Juan Perez');
-      expect(
-        saved.currentLocationId,
-        'loc-1',
-        reason: 'location is not one of the Excel columns, must survive the merge',
-      );
-    });
-
-    test('skips a row with no ear tag and reports a warning', () async {
-      final repository = _FakeAnimalRepository();
-      final service = AnimalExcelImportService(animalRepository: repository);
-
-      final bytes = _buildAnimalesXlsx([
-        ['', 'Sin caravana', 'cattle', 'cow', 'female', 'Criollo', '01/04/2022', 48, '', 'active', 'good', ''],
-        ['002659025593', 'Gorda', 'cattle', 'cow', 'female', 'Criollo', '01/04/2022', 48, '', 'active', 'good', ''],
       ]);
 
       final summary = await service.importFromBytes(bytes);
@@ -235,61 +387,71 @@ void main() {
       expect(summary.warnings.single, contains('sin N° de caravana'));
     });
 
-    test('falls back to a default and warns on an unrecognized enum value', () async {
-      final repository = _FakeAnimalRepository();
-      final service = AnimalExcelImportService(animalRepository: repository);
+    test(
+      'falls back to a default and warns on an unrecognized enum value',
+      () async {
+        final repository = _FakeAnimalRepository();
+        final service = AnimalExcelImportService(animalRepository: repository);
 
-      final bytes = _buildAnimalesXlsx([
-        [
-          '002659025593',
-          'Gorda',
-          'unicornio',
-          'cow',
-          'female',
-          'Criollo',
-          '01/04/2022',
-          48,
-          '',
-          'active',
-          'good',
-          '',
-        ],
-      ]);
+        final bytes = _buildAnimalesXlsx([
+          [
+            '002659025593',
+            'Gorda',
+            'unicornio',
+            'cow',
+            'female',
+            'Criollo',
+            '01/04/2022',
+            48,
+            '',
+            'active',
+            'good',
+            '',
+          ],
+        ]);
 
-      final summary = await service.importFromBytes(bytes);
+        final summary = await service.importFromBytes(bytes);
 
-      expect(summary.warnings, hasLength(1));
-      expect(summary.warnings.single, contains('especie'));
-      final saved = (await repository.getAll()).single;
-      expect(saved.species, Species.cattle, reason: 'unrecognized value falls back to the default');
-    });
+        expect(summary.warnings, hasLength(1));
+        expect(summary.warnings.single, contains('especie'));
+        final saved = (await repository.getAll()).single;
+        expect(
+          saved.species,
+          Species.cattle,
+          reason: 'unrecognized value falls back to the default',
+        );
+      },
+    );
 
-    test('warns and leaves the birth date unset when it cannot be parsed', () async {
-      final repository = _FakeAnimalRepository();
-      final service = AnimalExcelImportService(animalRepository: repository);
+    test(
+      'warns and leaves the birth date unset when it cannot be parsed',
+      () async {
+        final repository = _FakeAnimalRepository();
+        final service = AnimalExcelImportService(animalRepository: repository);
 
-      final bytes = _buildAnimalesXlsx([
-        [
-          '002659025593',
-          'Gorda',
-          'cattle',
-          'cow',
-          'female',
-          'Criollo',
-          'no es una fecha',
-          48,
-          '',
-          'active',
-          'good',
-          '',
-        ],
-      ]);
+        final bytes = _buildAnimalesXlsx([
+          [
+            '002659025593',
+            'Gorda',
+            'cattle',
+            'cow',
+            'female',
+            'Criollo',
+            'no es una fecha',
+            48,
+            '',
+            'active',
+            'good',
+            '',
+          ],
+        ]);
 
-      final summary = await service.importFromBytes(bytes);
+        final summary = await service.importFromBytes(bytes);
 
-      expect(summary.warnings, hasLength(1));
-      expect(summary.warnings.single, contains('fecha de nacimiento'));
-    });
+        expect(summary.warnings, hasLength(1));
+        expect(summary.warnings.single, contains('fecha de nacimiento'));
+      },
+    );
 
     test('throws a FormatException when there is no Animales sheet', () async {
       final repository = _FakeAnimalRepository();

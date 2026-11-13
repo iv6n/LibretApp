@@ -47,7 +47,6 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   List<AnimalEntity> _latest = const [];
   String _searchQuery = '';
   bool _isSearching = false;
-  Set<LifeStage> _searchFilterStages = const {};
   Set<Sex> _searchFilterSexes = const {};
   Set<String> _selectedAnimalUuids = const <String>{};
   int _currentOffset = 0;
@@ -232,9 +231,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     _searchQuery = event.query.trim();
     _isSearching = true;
     try {
-      if (_searchQuery.isNotEmpty ||
-          _searchFilterStages.isNotEmpty ||
-          _searchFilterSexes.isNotEmpty) {
+      if (_searchQuery.isNotEmpty || _searchFilterSexes.isNotEmpty) {
         await _ensureAllAnimalesLoaded();
       }
       if (!isClosed) emit(_buildLoadedState());
@@ -246,7 +243,6 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
   void _onClearSearch(ClearSearch event, Emitter<AnimalesState> emit) {
     _searchQuery = '';
     _isSearching = false;
-    _searchFilterStages = const {};
     _searchFilterSexes = const {};
     emit(_buildLoadedState());
   }
@@ -255,12 +251,9 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
     SetSearchFilters event,
     Emitter<AnimalesState> emit,
   ) async {
-    _searchFilterStages = Set<LifeStage>.unmodifiable(event.stages);
     _searchFilterSexes = Set<Sex>.unmodifiable(event.sexes);
     try {
-      if (_searchFilterStages.isNotEmpty ||
-          _searchFilterSexes.isNotEmpty ||
-          _searchQuery.isNotEmpty) {
+      if (_searchFilterSexes.isNotEmpty || _searchQuery.isNotEmpty) {
         await _ensureAllAnimalesLoaded();
       }
       if (!isClosed) emit(_buildLoadedState());
@@ -408,10 +401,7 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       });
     }
 
-    // Search-specific filters (active while isSearching)
-    if (_searchFilterStages.isNotEmpty) {
-      result = result.where((a) => _searchFilterStages.contains(a.lifeStage));
-    }
+    // Search-specific sex filters (active while isSearching).
     if (_searchFilterSexes.isNotEmpty) {
       result = result.where((a) => _searchFilterSexes.contains(a.sex));
     }
@@ -448,7 +438,6 @@ class AnimalesBloc extends Bloc<AnimalesEvent, AnimalesState> {
       visibleAnimals: filtered,
       isSearching: _isSearching,
       searchQuery: _searchQuery,
-      searchFilterStages: _searchFilterStages,
       searchFilterSexes: _searchFilterSexes,
       selectedAnimalUuids: _selectedAnimalUuids,
       hasMore: _hasMore,

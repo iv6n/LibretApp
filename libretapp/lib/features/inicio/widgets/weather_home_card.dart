@@ -8,7 +8,9 @@ import 'package:libretapp/features/inicio/data/weather_alerts_service.dart';
 import 'package:libretapp/features/inicio/data/weather_preferences_service.dart';
 
 class WeatherHomeCard extends StatefulWidget {
-  const WeatherHomeCard({super.key});
+  const WeatherHomeCard({this.compact = false, super.key});
+
+  final bool compact;
 
   @override
   State<WeatherHomeCard> createState() => _WeatherHomeCardState();
@@ -90,6 +92,72 @@ class _WeatherHomeCardState extends State<WeatherHomeCard> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final location = _service.location;
+    if (widget.compact) {
+      final weather = _snapshot?.weather;
+      return Card(
+        key: const ValueKey('weather-home-card'),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              Icon(Icons.wb_sunny_outlined, color: colors.primary, size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      location?.label ?? 'Clima del rancho',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      weather == null
+                          ? _demo
+                                ? 'Configura el clima fuera de la demo'
+                                : location == null
+                                ? 'Configurar ubicación para ver el pronóstico'
+                                : _loading
+                                ? 'Consultando el clima…'
+                                : _error ?? 'Pronóstico no disponible'
+                          : '${weather.temperature}° · ${weather.condition} · Máx. ${weather.maxTemperature}°',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (_snapshot?.isStale == true)
+                      Text('Dato anterior', style: theme.textTheme.labelSmall),
+                  ],
+                ),
+              ),
+              if (location != null && !_demo)
+                IconButton(
+                  onPressed: _loading ? null : _refresh,
+                  tooltip: 'Actualizar clima',
+                  icon: const Icon(Icons.refresh),
+                ),
+              if (!_demo)
+                IconButton(
+                  onPressed: _configure,
+                  tooltip: 'Ubicación y avisos del clima',
+                  icon: Icon(
+                    location == null
+                        ? Icons.add_location_alt_outlined
+                        : Icons.settings_outlined,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
     return Card(
       key: const ValueKey('weather-home-card'),
       clipBehavior: Clip.antiAlias,

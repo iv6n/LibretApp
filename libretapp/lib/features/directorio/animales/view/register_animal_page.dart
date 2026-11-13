@@ -18,9 +18,11 @@ import 'package:libretapp/core/services/shared_prefs_service.dart';
 import 'package:libretapp/core/utils/id_generator.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/models/animal_batch_draft.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_edit_service.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_initial_weight_policy.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/widgets/registration_widgets.dart';
@@ -41,6 +43,8 @@ class RegisterAnimalPage extends StatefulWidget {
     this.initialSeed,
     this.initialSpecies,
     this.preferredSpecies = const [],
+    this.batchAnimalUuid,
+    this.initialBatchDraft,
     super.key,
   });
 
@@ -48,6 +52,9 @@ class RegisterAnimalPage extends StatefulWidget {
   final AnimalRegistrationSeed? initialSeed;
   final Species? initialSpecies;
   final List<Species> preferredSpecies;
+  final String? batchAnimalUuid;
+  final AnimalBatchDraft? initialBatchDraft;
+  bool get isBatchDraft => batchAnimalUuid != null;
 
   bool get isEdit => animalUuid != null;
 
@@ -237,7 +244,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         if (editingAnimal == null) {
           _showMessage('No se encontró el animal para editar.');
         }
-      } else if (widget.initialSeed == null) {
+      } else if (widget.initialBatchDraft?.fullForm != null) {
+        _applyDraft(widget.initialBatchDraft!.fullForm!);
+      } else if (widget.initialSeed == null && !widget.isBatchDraft) {
         await _promptRestoreDraft();
       }
     } catch (_) {
@@ -386,7 +395,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   void _scheduleDraftSave() {
-    if (widget.isEdit || _loading) return;
+    if (widget.isEdit || widget.isBatchDraft || _loading) return;
     _draftDebounce?.cancel();
     _draftDebounce = Timer(const Duration(milliseconds: 500), () {
       _persistDraft();
@@ -409,7 +418,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               icon: const Icon(Icons.arrow_back),
               onPressed: _onAttemptExit,
             ),
-            title: Text(widget.isEdit ? 'Editar animal' : 'Nuevo animal'),
+            title: Text(
+              widget.isBatchDraft
+                  ? 'Ficha para la lista'
+                  : widget.isEdit
+                  ? 'Editar animal'
+                  : 'Nuevo animal',
+            ),
             titleSpacing: 0,
             actions: [
               IconButton(
@@ -1044,23 +1059,24 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             },
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedBatchUuid,
-            decoration: const InputDecoration(labelText: 'Lote o grupo'),
-            items: _lotes
-                .map(
-                  (lote) => DropdownMenuItem(
-                    value: lote.uuid,
-                    child: Text(lote.name),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedBatchUuid = value;
-              });
-            },
-          ),
+          if (!widget.isBatchDraft)
+            DropdownButtonFormField<String>(
+              initialValue: _selectedBatchUuid,
+              decoration: const InputDecoration(labelText: 'Lote o grupo'),
+              items: _lotes
+                  .map(
+                    (lote) => DropdownMenuItem(
+                      value: lote.uuid,
+                      child: Text(lote.name),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedBatchUuid = value;
+                });
+              },
+            ),
           const SizedBox(height: 12),
           DropdownButtonFormField<ProductionPurpose>(
             initialValue: _productionPurpose,
@@ -1550,9 +1566,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
             child: isFirstStep
                 ? AppButton(
                     key: const ValueKey('animal-complete-draft-save'),
-                    onPressed: _onSaveForLater,
+                    onPressed: widget.isBatchDraft
+                        ? () => Navigator.of(context).pop()
+                        : _onSaveForLater,
                     icon: Icons.save_alt_outlined,
-                    label: 'Guardar borrador',
+                    label: widget.isBatchDraft
+                        ? 'Volver a la lista'
+                        : 'Guardar borrador',
                     variant: AppButtonVariant.secondary,
                     isLoading: _saving,
                   )
@@ -1571,7 +1591,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               ),
               onPressed: nextOnPressed,
               icon: isLastStep ? Icons.save_outlined : Icons.arrow_forward,
-              label: isLastStep ? 'Guardar animal' : 'Siguiente',
+              label: isLastStep
+                  ? (widget.isBatchDraft
+                        ? 'Guardar en lista'
+                        : 'Guardar animal')
+                  : 'Siguiente',
               isLoading: _saving,
               loadingLabel: 'Guardando...',
             ),
@@ -2325,6 +2349,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   Future<void> _onAttemptExit() async {
     if (_saving) return;
 
+    if (widget.isBatchDraft) {
+      Navigator.of(context).pop();
+      return;
+    }
+
     final discard = await _confirmDiscardDialog(
       title: 'Salir del registro',
       message:
@@ -2413,6 +2442,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   };
 
   Future<bool> _persistDraft() async {
+    if (widget.isBatchDraft) return true;
     try {
       final json = jsonEncode(_buildDraftMap());
       await _sharedPrefsService.setString(PrefsKeys.animalWizardDraft, json);
@@ -2423,6 +2453,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   Future<void> _clearDraft() async {
+    if (widget.isBatchDraft) return;
     try {
       await _sharedPrefsService.remove(PrefsKeys.animalWizardDraft);
     } catch (_) {}
@@ -2725,8 +2756,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         : _approximateAge.estimatedBirthDate();
 
     final weight = _parseOptionalDouble(_weightCtrl.text);
-    if (_weightCtrl.text.trim().isNotEmpty && weight == null) {
-      _showMessage('El peso inicial no es valido.');
+    if (_weightCtrl.text.trim().isNotEmpty &&
+        (weight == null ||
+            !AnimalInitialWeightPolicy.allows(
+              proposed: weight,
+              persisted: widget.isEdit ? _editingAnimal?.weight : null,
+            ))) {
+      _showMessage(AnimalInitialWeightPolicy.errorMessage);
       return;
     }
 
@@ -2793,7 +2829,9 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     }();
 
     final now = DateTime.now();
-    final uuid = widget.isEdit ? _editingAnimal!.uuid : 'ani-${generateId()}';
+    final uuid = widget.isEdit
+        ? _editingAnimal!.uuid
+        : widget.batchAnimalUuid ?? 'ani-${generateId()}';
     final healthTuple = _resolveHealthFlags();
     final normalizedName = _nullableText(_nameCtrl.text);
     final normalizedVisualId =
@@ -2805,7 +2843,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               earTagNumber: _earTagCtrl.text.trim(),
               customName: normalizedName,
               visualId: normalizedVisualId,
-              batchUuid: _selectedBatchUuid,
+              batchUuid: widget.isBatchDraft ? null : _selectedBatchUuid,
               species: _species,
               category: _category,
               lifeStage: resolvedLifeStage,
@@ -2897,7 +2935,7 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               visualId: normalizedVisualId,
               brand: null,
               rfidTag: null,
-              batchUuid: _selectedBatchUuid,
+              batchUuid: widget.isBatchDraft ? null : _selectedBatchUuid,
               species: _species,
               category: _category,
               lifeStage: resolvedLifeStage,
@@ -2987,6 +3025,24 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
               lastUpdateDate: now,
             ),
     );
+
+    if (widget.isBatchDraft) {
+      Navigator.of(context).pop(
+        AnimalBatchDraft(
+          animal: animal,
+          fullForm: _buildDraftMap(),
+          healthRecords: [
+            ..._treatments,
+            ..._vaccinations,
+            ..._exams,
+          ].map((record) => record.toMap()).toList(),
+          reproductionRecords: _reproductions
+              .map((record) => record.toMap())
+              .toList(),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _saving = true;

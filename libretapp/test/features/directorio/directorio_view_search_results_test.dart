@@ -9,7 +9,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('DirectorioSearchResultsPanel', () {
-    testWidgets('shows directory guidance before a query is entered', (
+    testWidgets('starts without filler before a query is entered', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -18,13 +18,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Busca en todo tu directorio'), findsOneWidget);
-      expect(
-        find.text(
-          'Encuentra animales, lotes, plantas y ubicaciones desde aquí.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Busca en todo tu directorio'), findsNothing);
+      expect(find.byType(ListTile), findsNothing);
     });
 
     testWidgets('shows correct icon and label by type', (tester) async {
@@ -54,13 +49,19 @@ void main() {
         ),
       );
 
-      expect(find.text('animales'), findsOneWidget);
-      expect(find.text('lotes'), findsOneWidget);
-      expect(find.text('ubicaciones'), findsOneWidget);
+      final semantics = tester.ensureSemantics();
+      expect(find.bySemanticsLabel('Animal Match, animales'), findsOneWidget);
+      expect(find.bySemanticsLabel('Lote Match, lotes'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Ubicacion Match, ubicaciones'),
+        findsOneWidget,
+      );
+      expect(find.text('animales'), findsNothing);
 
       expect(find.byIcon(Icons.pets), findsOneWidget);
       expect(find.byIcon(Icons.agriculture), findsOneWidget);
       expect(find.byIcon(Icons.location_on), findsOneWidget);
+      semantics.dispose();
     });
 
     testWidgets('shows partial source failure and offers retry', (

@@ -125,7 +125,7 @@ El acceso se considera operativo únicamente después de recepción y verificaci
 
 ### Resultado de la prueba física
 
-Tras la actualización mediante ADB, el propietario completó el acceso del número terminado en **4477**. Antes de ejecutar el nuevo envío autorizado, se encontró la cuenta ya verificada en **Perfil → Ajustes → Cuenta**, por lo que el agente no solicitó otro SMS. Se conservó evidencia en `artifacts/onboarding/adb-phone-check/account-confirmed.png`.
+Tras la actualización mediante ADB, el propietario completó el acceso del número terminado en **4477**. Antes de ejecutar el nuevo envío autorizado, se encontró la cuenta ya verificada en **Perfil → Ajustes → Cuenta**, por lo que el agente no solicitó otro SMS. La captura antigua se retiró.
 
 La lista **Authentication → Users** todavía mostraba un estado vacío. Para resolver la discrepancia, se ejecutó únicamente esta consulta de lectura en SQL Editor, sin guardar el fragmento ni modificar usuarios:
 
@@ -137,7 +137,7 @@ from auth.users
 where right(phone, 4) = '4477';
 ```
 
-Resultado: **1 cuenta, 1 teléfono confirmado**, con último acceso registrado el 19 de octubre en la zona horaria de México. La captura del resultado está en `artifacts/onboarding/adb-phone-check/supabase-account-confirmed.jpg`. No se consultaron tokens ni códigos. Un reinicio del proceso con `am force-stop` y apertura posterior llevó a Inicio sin pedir acceso. No se cerró sesión; esa prueba y la comprobación del trabajo sin red permanecen pendientes. Los siguientes párrafos describen las etapas anteriores de preparación, no pendientes adicionales de la primera verificación.
+Resultado: **1 cuenta, 1 teléfono confirmado**, con último acceso registrado el 19 de octubre en la zona horaria de México. No se consultaron tokens ni códigos. Un reinicio del proceso con `am force-stop` y apertura posterior llevó a Inicio sin pedir acceso. No se cerró sesión; esa prueba y la comprobación del trabajo sin red permanecen pendientes. Los siguientes párrafos describen las etapas anteriores de preparación, no pendientes adicionales de la primera verificación.
 
 El diagnóstico pasó 13 comprobaciones con archivos ficticios y respuestas simuladas: claves públicas actuales y heredadas, rechazo de `service_role` y secretos adicionales, URL insegura, banderas incompatibles, proveedor deshabilitado, altas deshabilitadas, confirmación automática, errores de red sin divulgar la respuesta y campos pendientes del ejemplo. No se consultó un proyecto real ni se enviaron mensajes durante esas comprobaciones.
 

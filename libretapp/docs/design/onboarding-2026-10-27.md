@@ -57,20 +57,16 @@ autenticación telefónica conservan su funcionamiento.
   OPPO CPH2123 por ADB con `install -r`, comprobando antes la coincidencia de
   certificados. Se conservaron los datos de la instalación.
 
-Capturas reproducibles con
-`flutter test --no-pub tool/preview_onboarding_test.dart`:
-
-- `artifacts/onboarding/bienvenida.png`
-- `artifacts/onboarding/mascotas.png`
-- `artifacts/onboarding/ganado.png`
-- Las tres variantes de tema oscuro usan el sufijo `-oscuro`.
+La prueba `flutter test --no-pub tool/preview_onboarding_test.dart` revisa
+la interfaz. Para exportar imágenes temporales debe indicarse
+`LIBRET_CAPTURE_DIR` fuera del proyecto; se eliminan tras anotar los hallazgos.
 
 La prueba de interfaz cubre pantalla de 320 × 568 con texto al 200 %, ambos
 temas, objetivos táctiles, etiquetas accesibles y movimiento reducido.
 
-La herramienta de captura Android acepta `--package app.libret` para verificar
-que la app siga en primer plano antes de leer o interactuar. Las capturas del
-OPPO se guardan en `artifacts/onboarding/oppo/`.
+La herramienta de revisión Android acepta `--package app.libret` para verificar
+que la app siga en primer plano antes de leer o interactuar. Requiere un
+directorio temporal explícito con `--out`.
 
 ## Comprobaciones físicas
 
@@ -90,9 +86,8 @@ Inicio correspondiente en el mismo espacio real, vacío y sin los ejemplos de
 las demos. El aviso de respaldo se leyó completo en la pantalla del OPPO. La
 consulta de errores de ejecución del proceso final no detectó errores.
 
-Capturas finales: `oppo/bienvenida-final.png`, `oppo/mascotas-acceso-final.png`,
-`oppo/ganado-acceso-final.png`, `oppo/mascotas-invitado.png` y
-`oppo/ganado-invitado.png`, dentro de `artifacts/onboarding/`.
+La evidencia visual de esta revisión histórica se retiró; el resultado de las
+comprobaciones físicas permanece descrito arriba.
 
 SHA-256 del APK final:
 `E523B582460C0C75CB8CDDD14E804415F6FD7E89B39E7B307BB88AEAF5CA38CD`.

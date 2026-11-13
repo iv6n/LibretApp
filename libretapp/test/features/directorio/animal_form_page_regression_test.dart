@@ -10,6 +10,7 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:libretapp/features/agenda/data/agenda_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/models/animal_batch_draft.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_record.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/care_rule.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/scheduled_care.dart';
@@ -84,6 +85,50 @@ void main() {
   });
 
   group('RegisterAnimalPage regressions', () {
+    testWidgets('batch form returns a complete draft without writing', (
+      tester,
+    ) async {
+      final animalRepo = _FakeAnimalRepository(allAnimals: const []);
+      locator
+        ..registerSingleton<AnimalRepository>(animalRepo)
+        ..registerSingleton<LotesRepository>(
+          _FakeLotesRepository(activeLotes: const []),
+        )
+        ..registerSingleton<LocationRepository>(
+          _FakeLocationRepository(allLocations: const []),
+        );
+      AnimalBatchDraft? result;
+      await tester.pumpWidget(
+        _testApp(
+          Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () async {
+                  result = await Navigator.of(context).push<AnimalBatchDraft>(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const RegisterAnimalPage(batchAnimalUuid: 'draft-a'),
+                    ),
+                  );
+                },
+                child: const Text('Abrir'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Abrir'));
+      await tester.pumpAndSettle();
+      await _fillStep1RequiredFields(tester, earTag: 'B-11');
+      await _navigateToLastStep(tester);
+      await _tapFilledButtonByLabel(tester, 'Guardar en lista');
+      await tester.pumpAndSettle();
+      expect(result?.animal.uuid, 'draft-a');
+      expect(result?.animal.earTagNumber, 'B-11');
+      expect(result?.fullForm, isNotNull);
+      expect(animalRepo.saveCallCount, 0);
+    });
+
     testWidgets('builds create form without duplicate key errors', (
       tester,
     ) async {

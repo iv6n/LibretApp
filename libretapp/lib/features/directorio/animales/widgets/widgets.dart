@@ -2,7 +2,6 @@
 library;
 
 export 'animal_card.dart';
-export 'animal_filter_bar.dart';
 export 'detail_error.dart';
 export 'detail_header.dart';
 export 'detail_helpers.dart';
@@ -14,3 +13,4 @@ export 'quick_actions_fab.dart';
 export 'registration_widgets.dart';
 export 'records_tab.dart';
 export 'care_tab.dart';
+export 'animal_stage_filter_row.dart';

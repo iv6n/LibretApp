@@ -16,17 +16,11 @@ class DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final hour = now.hour;
-    final greeting = hour < 12
-        ? 'Buenos días'
-        : hour < 18
-        ? 'Buenas tardes'
-        : 'Buenas noches';
     final theme = Theme.of(context);
     final tt = theme.textTheme;
 
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.xs),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
@@ -39,32 +33,37 @@ class DashboardHeader extends StatelessWidget {
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.xxs,
                 children: [
-                  const AppBrand(height: 24),
+                  const AppBrand(height: 20),
                   _InlineMeta(
                     icon: Icons.calendar_today_outlined,
                     label: DateFormat('EEE d MMM', 'es').format(now),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                data.profileName.isEmpty
-                    ? greeting
-                    : '$greeting, ${data.profileName}',
-                softWrap: true,
-                style: tt.headlineSmall?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                  fontWeight: FontWeight.w800,
-                  height: 1.08,
-                ),
-              ),
-              if (data.farmName.isNotEmpty) ...[
+              if (data.profileName.isNotEmpty || data.farmName.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xxs),
-                _InlineMeta(
-                  icon: Icons.location_on_outlined,
-                  label: data.farmName,
-                  maxWidth: constraints.maxWidth - 24,
-                  maxLines: 2,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xxs,
+                  children: [
+                    if (data.profileName.isNotEmpty)
+                      Text(
+                        data.profileName,
+                        softWrap: true,
+                        style: tt.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    if (data.farmName.isNotEmpty)
+                      _InlineMeta(
+                        icon: Icons.location_on_outlined,
+                        label: data.farmName,
+                        maxWidth: constraints.maxWidth - 24,
+                        maxLines: textScale >= 1.5 ? null : 2,
+                      ),
+                  ],
                 ),
               ],
             ],
@@ -115,7 +114,7 @@ class _InlineMeta extends StatelessWidget {
   final IconData icon;
   final String label;
   final double maxWidth;
-  final int maxLines;
+  final int? maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +132,7 @@ class _InlineMeta extends StatelessWidget {
           child: Text(
             label,
             maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
+            overflow: maxLines == null ? null : TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,

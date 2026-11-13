@@ -185,15 +185,6 @@ class _LotesListViewState extends State<LotesListView> {
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: _buildFilterBar(
-              context,
-              total: 0,
-              active: 0,
-              closed: 0,
-              showCount: false,
-            ),
-          ),
           SliverFillRemaining(
             hasScrollBody: false,
             child: AppDirectoryEmptySlot(
@@ -262,7 +253,6 @@ class _LotesListViewState extends State<LotesListView> {
     required int total,
     required int active,
     required int closed,
-    bool showCount = true,
   }) {
     final options = [
       (_LoteListFilter.all, 'Todos', total),
@@ -295,16 +285,15 @@ class _LotesListViewState extends State<LotesListView> {
               ),
           ],
         ),
-        if (showCount)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-            child: Text(
-              '$visibleCount ${visibleCount == 1 ? 'lote' : 'lotes'}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+          child: Text(
+            '$visibleCount ${visibleCount == 1 ? 'lote' : 'lotes'}',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
+        ),
       ],
     );
   }
@@ -398,7 +387,6 @@ class _LotesListViewState extends State<LotesListView> {
     return AppEmptyState(
       icon: Icons.search_off_outlined,
       title: 'No hay lotes $label',
-      message: 'Prueba con otro filtro para ver tus lotes.',
       action: OutlinedButton.icon(
         onPressed: () => setState(() => _filter = _LoteListFilter.all),
         icon: const Icon(Icons.filter_alt_off_outlined),
@@ -410,8 +398,7 @@ class _LotesListViewState extends State<LotesListView> {
   Widget _buildEmptyState(BuildContext context) {
     return AppEmptyState(
       illustrationAsset: 'assets/images/location_pasture.webp',
-      title: 'Organiza tus animales en lotes',
-      message: 'Crea tu primer lote para llevar su seguimiento en grupo.',
+      title: 'Sin lotes',
       action: FilledButton.icon(
         onPressed: _openCreateLotePage,
         icon: const Icon(Icons.add),
@@ -430,7 +417,9 @@ class _CenteredSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 720),
+      constraints: const BoxConstraints(
+        maxWidth: AppDirectoryCardFrame.maxWidth,
+      ),
       child: Padding(padding: padding, child: child),
     );
   }

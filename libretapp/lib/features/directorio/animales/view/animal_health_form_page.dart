@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
@@ -113,6 +112,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
   void _applyLastRecord() {
     final last = _lastRecord;
     if (last == null) return;
+    AppFormExitGuard.markChanged(context);
     setState(() {
       _type = last.type;
       _productController.text = last.product;
@@ -234,7 +234,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
           ),
         ),
       );
-      context.pop(true);
+      AppFormExitGuard.complete(context, true);
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
@@ -255,6 +255,7 @@ class _AnimalHealthFormPageState extends State<AnimalHealthFormPage> {
       contextLabel: animalRecordContextLabel(_animal),
       contextIcon: Icons.pets_outlined,
       saving: _saving,
+      protectUnsavedChanges: true,
       loading: _loading,
       formKey: _formKey,
       onSave: _save,

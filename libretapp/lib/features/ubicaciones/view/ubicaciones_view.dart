@@ -103,7 +103,10 @@ class UbicacionesView extends StatelessWidget {
 
     // Filter rows remain part of the normal scrollable content. Search keeps
     // its existing compact presentation and temporarily hides them.
-    final showFilterBar = !state.isSearching && state.searchQuery.isEmpty;
+    final showFilterBar =
+        state.allUbicaciones.isNotEmpty &&
+        !state.isSearching &&
+        state.searchQuery.isEmpty;
 
     final roots = state.treeSnapshot.roots;
 

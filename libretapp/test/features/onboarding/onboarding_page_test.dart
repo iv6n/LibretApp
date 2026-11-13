@@ -72,13 +72,18 @@ void main() {
     final progress = <int>[];
     await tester.pumpWidget(_app(progress: (page) async => progress.add(page)));
 
+    expect(find.text('Animales, plantas y tareas'), findsOneWidget);
     expect(
-      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
+      find.text(
+        'Organiza lo que cuidas y descubre qué necesita atención cada día.',
+      ),
       findsOneWidget,
     );
-    expect(find.text('Guarda su historia'), findsOneWidget);
-    expect(find.text('Planea cuidados'), findsOneWidget);
-    expect(find.text('Recibe avisos'), findsOneWidget);
+    expect(find.text('Fichas de animales'), findsOneWidget);
+    expect(find.text('Agenda de cuidados'), findsOneWidget);
+    expect(find.text('Plantas y siembras'), findsOneWidget);
+    expect(find.text('Ver un ejemplo'), findsOneWidget);
+    expect(find.text('Guarda su historia'), findsNothing);
     expect(
       find.bySemanticsLabel(
         'Vaca, perro, gato y planta frente a una siembra, con un caballo y una cabra al fondo',
@@ -89,33 +94,35 @@ void main() {
 
     await tester.drag(find.byType(PageView), const Offset(-480, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
+    expect(find.text('Fichas y próximos cuidados'), findsOneWidget);
     expect(find.text('VISTA PREVIA · DATOS FICTICIOS'), findsOneWidget);
     expect(find.text('Prieta'), findsOneWidget);
     expect(find.text('Capitán'), findsOneWidget);
     expect(find.text('Maíz blanco'), findsOneWidget);
     expect(find.text('Mi monstera'), findsOneWidget);
+    expect(find.text('Mañana en tu agenda'), findsOneWidget);
+    expect(find.text('Revisión de Capitán'), findsOneWidget);
     expect(find.bySemanticsLabel('Pantalla 2 de 3'), findsOneWidget);
     expect(progress, [1]);
 
     await tester.drag(find.byType(PageView), const Offset(-480, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    expect(find.text('Elige cómo empezar'), findsOneWidget);
+    expect(
+      find.text(
+        'Empieza con tus registros o explora la demo con datos ficticios.',
+      ),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(
         'Persona organizando cuidados desde su teléfono junto a un perro y una siembra',
       ),
       findsOneWidget,
     );
-    expect(find.text('Acceder con teléfono'), findsOneWidget);
+    expect(find.text('Acceder con teléfono'), findsNothing);
     expect(find.text('Continuar como invitado'), findsOneWidget);
     expect(find.text('Ver demo'), findsOneWidget);
-    expect(
-      find.text(
-        'Prueba fichas y actividades ficticias en un espacio separado.',
-      ),
-      findsOneWidget,
-    );
     expect(find.bySemanticsLabel('Pantalla 3 de 3'), findsOneWidget);
     expect(progress, [1, 2]);
   });
@@ -126,25 +133,22 @@ void main() {
     final progress = <int>[];
     await tester.pumpWidget(_app(progress: (page) async => progress.add(page)));
 
-    await _tap(tester, 'Continuar');
-    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
+    await _tap(tester, 'Ver un ejemplo');
+    expect(find.text('Fichas y próximos cuidados'), findsOneWidget);
     await _tap(tester, 'Volver');
-    expect(
-      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
-      findsOneWidget,
-    );
+    expect(find.text('Animales, plantas y tareas'), findsOneWidget);
 
     await _tap(tester, 'Omitir');
-    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    expect(find.text('Elige cómo empezar'), findsOneWidget);
     await _tap(tester, 'Volver');
-    expect(find.text('Tus cuidados, de un vistazo.'), findsOneWidget);
+    expect(find.text('Fichas y próximos cuidados'), findsOneWidget);
     expect(progress, [1, 0, 2, 1]);
   });
 
   testWidgets('omitir desde la segunda pantalla va al acceso', (tester) async {
     await tester.pumpWidget(_app(page: 1));
     await _tap(tester, 'Omitir');
-    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    expect(find.text('Elige cómo empezar'), findsOneWidget);
   });
 
   testWidgets('entrar como invitado abre Inicio', (tester) async {
@@ -174,35 +178,18 @@ void main() {
     await _tap(tester, 'Acceder con teléfono');
 
     expect(accesses, 1);
-    expect(
-      find.text(
-        'Accede con tu teléfono, empieza como invitado o explora la app con ejemplos.',
-      ),
-      findsOneWidget,
-    );
     expect(find.text('Crear cuenta'), findsNothing);
     expect(find.text('Ya tengo cuenta'), findsNothing);
-    expect(find.text('Empieza a tu manera.'), findsOneWidget);
+    expect(find.text('Elige cómo empezar'), findsOneWidget);
   });
 
-  testWidgets('explica si el acceso telefónico no está disponible', (
+  testWidgets('oculta el acceso telefónico cuando no está disponible', (
     tester,
   ) async {
     await tester.pumpWidget(_app());
     await _goToAccess(tester);
 
-    final button = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Acceder con teléfono'),
-    );
-    expect(button.onPressed, isNull);
-    expect(
-      find.text('El acceso por teléfono no está disponible en esta versión.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Empieza como invitado o explora la app con ejemplos.'),
-      findsOneWidget,
-    );
+    expect(find.text('Acceder con teléfono'), findsNothing);
     expect(find.text('Continuar como invitado'), findsOneWidget);
     expect(find.text('Ver demo'), findsOneWidget);
   });
@@ -236,7 +223,7 @@ void main() {
 
         await tester.pumpWidget(_app(scale: 2, mode: mode));
         expect(tester.takeException(), isNull);
-        await _tap(tester, 'Continuar');
+        await _tap(tester, 'Ver un ejemplo');
         expect(tester.takeException(), isNull);
         await tester.ensureVisible(find.text('Continuar'));
         await _tap(tester, 'Continuar');
@@ -245,7 +232,7 @@ void main() {
         expect(find.text('Continuar como invitado'), findsOneWidget);
         expect(
           find.text(
-            'Tus registros se guardan en este dispositivo. Haz copias de seguridad periódicas.',
+            'Tus datos están en este teléfono. Crea una copia de seguridad.',
           ),
           findsOneWidget,
         );

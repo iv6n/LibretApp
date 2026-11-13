@@ -88,12 +88,14 @@ void main() {
       expect(find.text('Ahora no').hitTestable(), findsOneWidget);
 
       Future<void> capture(String suffix) async {
+        final captureDir = Platform.environment['LIBRET_CAPTURE_DIR'];
+        if (captureDir == null) return;
         final boundary =
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
         await tester.runAsync(() async {
           final image = await boundary.toImage(pixelRatio: 2);
           final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-          final folder = Directory('artifacts/onboarding-profile');
+          final folder = Directory(captureDir);
           await folder.create(recursive: true);
           await File(
             '${folder.path}/unificada${dark ? '-oscuro' : ''}$suffix.png',

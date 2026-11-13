@@ -176,6 +176,37 @@ class _InfoTabState extends State<InfoTab> {
         : (_batchName ?? l10n.valueNoData);
     final geneticsLabel = breedSummary(widget.animal);
     final shortGeneticsLabel = breedSummary(widget.animal, abbreviated: true);
+    final breed = widget.animal.breed.trim();
+    final showBreed =
+        breed.isNotEmpty &&
+        breed != 'Sin dato' &&
+        breed != widget.animal.species.displayName;
+    final feedType = widget.animal.feedType?.trim();
+    final showFeedType =
+        feedType != null && feedType.isNotEmpty && feedType != l10n.valueNoData;
+    final hasPetProfileDetails =
+        showBreed ||
+        widget.animal.sex != Sex.unknown ||
+        widget.animal.hasKnownAge ||
+        showFeedType ||
+        (widget.animal.crossBreed?.trim().isNotEmpty ?? false);
+    final identification = earTagDisplay(widget.animal);
+    final showIdentification =
+        identification != 'Sin identificación' &&
+        !hasPendingEarTag(widget.animal);
+    final visualId = widget.animal.visualId?.trim();
+    final showVisualId =
+        visualId != null &&
+        visualId.isNotEmpty &&
+        visualId != primaryAnimalLabel(widget.animal);
+    final brand = widget.animal.brand?.trim();
+    final rfid = widget.animal.rfidTag?.trim();
+    final showIdentitySection =
+        showIdentification ||
+        showVisualId ||
+        (brand?.isNotEmpty ?? false) ||
+        (rfid?.isNotEmpty ?? false) ||
+        widget.animal.batchUuid != null;
     final locationId =
         widget.animal.currentLocationId ?? widget.animal.initialLocationId;
     final locationDisplay = _loadingBatchName
@@ -292,152 +323,163 @@ class _InfoTabState extends State<InfoTab> {
                 ),
               ),
             ),
-          InfoSection(
-            title: l10n.sectionIdentification,
-            icon: Icons.badge_outlined,
-            accent: stageColor,
-            children: [
-              InfoRow(
-                label: AnimalRegistrationPolicy.forSpecies(
-                  widget.animal.species,
-                ).identificationLabel,
-                value: earTagDisplay(widget.animal),
-                icon: Icons.sell_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelVisualId,
-                value: widget.animal.visualId ?? l10n.valueNotAssigned,
-                icon: Icons.remove_red_eye_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelBrand,
-                value: widget.animal.brand ?? l10n.valueNoData,
-                icon: Icons.local_offer_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelRfid,
-                value: widget.animal.rfidTag ?? l10n.valueNoData,
-                icon: Icons.sensors_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelBatch,
-                value: batchDisplay,
-                icon: Icons.inventory_2_outlined,
-              ),
-            ],
-          ),
-          InfoSection(
-            title: isPet ? 'Perfil de mascota' : l10n.sectionProductiveProfile,
-            icon: Icons.insights_outlined,
-            accent: stageColor,
-            children: [
-              InfoRow(
-                label: l10n.labelSpecies,
-                value: widget.animal.species.displayName,
-                icon: Icons.pets_outlined,
-              ),
-              if (isPet)
-                const InfoRow(
-                  label: 'Tipo',
-                  value: 'Mascota',
-                  icon: Icons.pets_outlined,
-                )
-              else ...[
-                InfoRow(
-                  label: l10n.labelCategory,
-                  value: widget.animal.category.displayName,
-                  icon: Icons.star_outline,
-                ),
-                InfoRow(
-                  label: l10n.labelLifeStage,
-                  value: widget.animal.lifeStage.displayName,
-                  accent: stageColor,
-                  icon: Icons.eco_outlined,
-                ),
+          if (showIdentitySection)
+            InfoSection(
+              title: l10n.sectionIdentification,
+              icon: Icons.badge_outlined,
+              accent: stageColor,
+              children: [
+                if (showIdentification)
+                  InfoRow(
+                    label: AnimalRegistrationPolicy.forSpecies(
+                      widget.animal.species,
+                    ).identificationLabel,
+                    value: identification,
+                    icon: Icons.sell_outlined,
+                  ),
+                if (showVisualId)
+                  InfoRow(
+                    label: l10n.labelVisualId,
+                    value: visualId,
+                    icon: Icons.remove_red_eye_outlined,
+                  ),
+                if (brand?.isNotEmpty ?? false)
+                  InfoRow(
+                    label: l10n.labelBrand,
+                    value: brand!,
+                    icon: Icons.local_offer_outlined,
+                  ),
+                if (rfid?.isNotEmpty ?? false)
+                  InfoRow(
+                    label: l10n.labelRfid,
+                    value: rfid!,
+                    icon: Icons.sensors_outlined,
+                  ),
+                if (widget.animal.batchUuid != null)
+                  InfoRow(
+                    label: l10n.labelBatch,
+                    value: batchDisplay,
+                    icon: Icons.inventory_2_outlined,
+                  ),
               ],
-              InfoRow(
-                label: l10n.labelBreed,
-                value: widget.animal.breed,
-                icon: Icons.biotech_outlined,
-              ),
-              InfoRow(
-                label: 'Genética',
-                value: geneticsLabel,
-                icon: Icons.hub_outlined,
-              ),
-              if ((widget.animal.crossBreed ?? '').trim().isNotEmpty)
-                InfoRow(
-                  label: 'Cruza resumida',
-                  value: shortGeneticsLabel,
-                  icon: Icons.merge_type_outlined,
-                ),
-              if ((widget.animal.crossBreedType ?? '').trim().isNotEmpty)
-                InfoRow(
-                  label: 'Tipo de cruza',
-                  value: widget.animal.crossBreedType!.trim(),
-                  icon: Icons.account_tree_outlined,
-                ),
-              if ((widget.animal.sireBreed ?? '').trim().isNotEmpty)
-                InfoRow(
-                  label: 'Raza padre',
-                  value: widget.animal.sireBreed!.trim(),
-                  icon: Icons.male_outlined,
-                ),
-              if ((widget.animal.damBreed ?? '').trim().isNotEmpty)
-                InfoRow(
-                  label: 'Raza madre',
-                  value: widget.animal.damBreed!.trim(),
-                  icon: Icons.female_outlined,
-                ),
-              if (widget.animal.bloodPercentage != null)
-                InfoRow(
-                  label: 'Porcentaje de sangre',
-                  value: '${widget.animal.bloodPercentage}%',
-                  icon: Icons.percent_outlined,
-                ),
-              InfoRow(
-                label: l10n.labelSex,
-                value: widget.animal.sex.displayName,
-                icon: Icons.female_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelAge,
-                value: widget.animal.hasKnownAge
-                    ? formatAge(widget.animal.ageMonths)
-                    : 'Sin dato',
-                icon: Icons.schedule_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelPurpose,
-                value: widget.animal.productionPurpose.displayName,
-                icon: Icons.flag_outlined,
-              ),
-              if (!isPet) ...[
-                InfoRow(
-                  label: 'Etapa de Producción',
-                  value: widget.animal.productionStage.displayName,
-                  icon: Icons.timeline_outlined,
-                ),
-                InfoRow(
-                  label: 'Sistema de Producción',
-                  value: widget.animal.productionSystem.displayName,
-                  icon: Icons.account_tree_outlined,
-                ),
+            ),
+          if (!isPet || hasPetProfileDetails)
+            InfoSection(
+              title: isPet
+                  ? 'Perfil de mascota'
+                  : l10n.sectionProductiveProfile,
+              icon: Icons.insights_outlined,
+              accent: stageColor,
+              children: [
+                if (!isPet)
+                  InfoRow(
+                    label: l10n.labelSpecies,
+                    value: widget.animal.species.displayName,
+                    icon: Icons.pets_outlined,
+                  ),
+                if (!isPet) ...[
+                  InfoRow(
+                    label: l10n.labelCategory,
+                    value: widget.animal.category.displayName,
+                    icon: Icons.star_outline,
+                  ),
+                  InfoRow(
+                    label: l10n.labelLifeStage,
+                    value: widget.animal.lifeStage.displayName,
+                    accent: stageColor,
+                    icon: Icons.eco_outlined,
+                  ),
+                ],
+                if (showBreed)
+                  InfoRow(
+                    label: l10n.labelBreed,
+                    value: breed,
+                    icon: Icons.biotech_outlined,
+                  ),
+                if (!isPet &&
+                    geneticsLabel != breed &&
+                    geneticsLabel != widget.animal.species.displayName &&
+                    geneticsLabel != l10n.valueNoData)
+                  InfoRow(
+                    label: 'Genética',
+                    value: geneticsLabel,
+                    icon: Icons.hub_outlined,
+                  ),
+                if ((widget.animal.crossBreed ?? '').trim().isNotEmpty)
+                  InfoRow(
+                    label: 'Cruza resumida',
+                    value: shortGeneticsLabel,
+                    icon: Icons.merge_type_outlined,
+                  ),
+                if ((widget.animal.crossBreedType ?? '').trim().isNotEmpty)
+                  InfoRow(
+                    label: 'Tipo de cruza',
+                    value: widget.animal.crossBreedType!.trim(),
+                    icon: Icons.account_tree_outlined,
+                  ),
+                if ((widget.animal.sireBreed ?? '').trim().isNotEmpty)
+                  InfoRow(
+                    label: 'Raza padre',
+                    value: widget.animal.sireBreed!.trim(),
+                    icon: Icons.male_outlined,
+                  ),
+                if ((widget.animal.damBreed ?? '').trim().isNotEmpty)
+                  InfoRow(
+                    label: 'Raza madre',
+                    value: widget.animal.damBreed!.trim(),
+                    icon: Icons.female_outlined,
+                  ),
+                if (widget.animal.bloodPercentage != null)
+                  InfoRow(
+                    label: 'Porcentaje de sangre',
+                    value: '${widget.animal.bloodPercentage}%',
+                    icon: Icons.percent_outlined,
+                  ),
+                if (widget.animal.sex != Sex.unknown)
+                  InfoRow(
+                    label: l10n.labelSex,
+                    value: widget.animal.sex.displayName,
+                    icon: Icons.female_outlined,
+                  ),
+                if (widget.animal.hasKnownAge)
+                  InfoRow(
+                    label: l10n.labelAge,
+                    value: formatAge(widget.animal.ageMonths),
+                    icon: Icons.schedule_outlined,
+                  ),
+                if (!isPet)
+                  InfoRow(
+                    label: l10n.labelPurpose,
+                    value: widget.animal.productionPurpose.displayName,
+                    icon: Icons.flag_outlined,
+                  ),
+                if (!isPet) ...[
+                  InfoRow(
+                    label: 'Etapa de Producción',
+                    value: widget.animal.productionStage.displayName,
+                    icon: Icons.timeline_outlined,
+                  ),
+                  InfoRow(
+                    label: 'Sistema de Producción',
+                    value: widget.animal.productionSystem.displayName,
+                    icon: Icons.account_tree_outlined,
+                  ),
+                ],
+                if (showFeedType)
+                  InfoRow(
+                    label: l10n.labelFeedType,
+                    value: feedType,
+                    icon: Icons.grass_outlined,
+                  ),
+                if (!isPet && widget.animal.dailyGainEstimate != null)
+                  InfoRow(
+                    label: l10n.labelDailyGain,
+                    value:
+                        '${widget.animal.dailyGainEstimate!.toStringAsFixed(2)} kg/día',
+                    icon: Icons.trending_up_outlined,
+                  ),
               ],
-              InfoRow(
-                label: l10n.labelFeedType,
-                value: widget.animal.feedType ?? l10n.valueNoData,
-                icon: Icons.grass_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelDailyGain,
-                value: widget.animal.dailyGainEstimate != null
-                    ? '${widget.animal.dailyGainEstimate!.toStringAsFixed(2)} kg/día'
-                    : l10n.valueNoData,
-                icon: Icons.trending_up_outlined,
-              ),
-            ],
-          ),
+            ),
           InfoSection(
             title: l10n.sectionHealth,
             icon: Icons.health_and_safety_outlined,
@@ -463,19 +505,23 @@ class _InfoTabState extends State<InfoTab> {
                 accent: healthColor,
                 icon: Icons.favorite_outline,
               ),
-              InfoRow(
-                label: l10n.labelBodyCondition,
-                value: widget.animal.bodyConditionScore != null
-                    ? '${widget.animal.bodyConditionScore}/9'
-                    : l10n.valueNoData,
-                icon: Icons.monitor_weight_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelRisk,
-                value: widget.animal.riskLevel.displayName,
-                accent: riskColor,
-                icon: Icons.shield_outlined,
-              ),
+              if (widget.animal.bodyConditionScore != null)
+                InfoRow(
+                  label: l10n.labelBodyCondition,
+                  value: '${widget.animal.bodyConditionScore}/9',
+                  icon: Icons.monitor_weight_outlined,
+                ),
+              if ({
+                RiskLevel.medium,
+                RiskLevel.high,
+                RiskLevel.critical,
+              }.contains(widget.animal.riskLevel))
+                InfoRow(
+                  label: l10n.labelRisk,
+                  value: widget.animal.riskLevel.displayName,
+                  accent: riskColor,
+                  icon: Icons.shield_outlined,
+                ),
               BoolRow(
                 label: l10n.labelVaccinated,
                 value: widget.animal.vaccinated,
@@ -509,28 +555,35 @@ class _InfoTabState extends State<InfoTab> {
             icon: Icons.location_on_outlined,
             accent: stageColor,
             children: [
-              InfoRow(
-                label: l10n.labelPaddock,
-                value: _locationName ?? l10n.valueNoData,
-                icon: Icons.map_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelLastMovement,
-                value: formatDate(widget.animal.lastMovementDate),
-                icon: Icons.route_outlined,
-              ),
-              InfoRow(
-                label: l10n.labelObservation,
-                value: widget.animal.underObservation
-                    ? l10n.animalUnderObservation
-                    : l10n.valueNo,
-                icon: Icons.visibility_outlined,
-              ),
+              if (_locationName != null)
+                InfoRow(
+                  label: l10n.labelPaddock,
+                  value: _locationName!,
+                  icon: Icons.map_outlined,
+                ),
+              if (widget.animal.lastMovementDate != null &&
+                  (locationId != null ||
+                      (widget.data?.movements.isNotEmpty ?? false)))
+                InfoRow(
+                  label: l10n.labelLastMovement,
+                  value: formatDate(widget.animal.lastMovementDate),
+                  icon: Icons.route_outlined,
+                ),
+              if (widget.animal.underObservation)
+                InfoRow(
+                  label: l10n.labelObservation,
+                  value: l10n.animalUnderObservation,
+                  icon: Icons.visibility_outlined,
+                ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   icon: const Icon(Icons.edit_location_alt_outlined, size: 18),
-                  label: const Text('Cambiar ubicación'),
+                  label: Text(
+                    locationId == null
+                        ? 'Asignar ubicación'
+                        : 'Cambiar ubicación',
+                  ),
                   onPressed: widget.animal.status.isInActiveHerd
                       ? () => _changeLocation(context)
                       : null,
@@ -606,7 +659,7 @@ class InfoSection extends StatelessWidget {
             for (var index = 0; index < children.length; index++) ...[
               children[index],
               if (index != children.length - 1)
-                const Divider(height: AppSpacing.xl),
+                const Divider(height: AppSpacing.md),
             ],
           ],
         ),

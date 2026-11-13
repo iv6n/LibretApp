@@ -364,11 +364,6 @@ class _AgendaViewState extends State<AgendaView> {
                               onPrimary: firstUse
                                   ? () => _showAddSelector(context)
                                   : () => _openForm(context),
-                              onSecondary: firstUse
-                                  ? () => _showAgendaGuide(context)
-                                  : () => context.goNamed(
-                                      AppRoutes.nameDirectorio,
-                                    ),
                             ),
                           ),
                         ),
@@ -846,40 +841,6 @@ class _AgendaViewState extends State<AgendaView> {
           ),
         ),
       );
-
-  Future<void> _showAgendaGuide(
-    BuildContext context,
-  ) => showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    builder: (sheetContext) => SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.xs,
-          AppSpacing.lg,
-          AppSpacing.xl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Cómo funciona la agenda',
-              style: Theme.of(sheetContext).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            const Text('1. Agrega tus animales o cultivos en el Directorio.'),
-            const SizedBox(height: AppSpacing.sm),
-            const Text('2. Programa los cuidados y elige una fecha.'),
-            const SizedBox(height: AppSpacing.sm),
-            const Text('3. Revisa y registra las actividades desde la agenda.'),
-          ],
-        ),
-      ),
-    ),
-  );
 
   Future<void> _openReminderForm(BuildContext context) {
     final initialDate = _selectedDay ?? DateTime.now();

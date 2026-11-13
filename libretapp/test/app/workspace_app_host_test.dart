@@ -67,10 +67,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(
-      find.text('De la casa al campo,\ntodo lo que cuidas\nen un lugar.'),
-      findsOneWidget,
-    );
+    expect(find.text('Animales, plantas y tareas'), findsOneWidget);
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 150));
       expect(

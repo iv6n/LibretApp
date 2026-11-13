@@ -236,9 +236,9 @@ class _BackupStatusCard extends StatelessWidget {
         : local != null
         ? 'Copia local creada'
         : 'Datos solo en este teléfono';
-    final subtitle = hasRecords && local == null && uploaded == null
+    final actionLabel = hasRecords && local == null && uploaded == null
         ? 'Crear copia de seguridad'
-        : 'Revisar y exportar respaldos';
+        : null;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
@@ -271,12 +271,13 @@ class _BackupStatusCard extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        Text(
-                          subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurfaceVariant,
+                        if (actionLabel != null)
+                          Text(
+                            actionLabel,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

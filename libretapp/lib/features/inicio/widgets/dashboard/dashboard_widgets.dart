@@ -28,6 +28,7 @@ class DashboardWidgetHost extends StatelessWidget {
     this.libraryLoading = false,
     this.libraryErrorMessage,
     this.onRetrySupplements,
+    this.recentActivityOffset = 0,
     super.key,
   });
 
@@ -40,6 +41,7 @@ class DashboardWidgetHost extends StatelessWidget {
   final bool libraryLoading;
   final String? libraryErrorMessage;
   final VoidCallback? onRetrySupplements;
+  final int recentActivityOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +74,10 @@ class DashboardWidgetHost extends StatelessWidget {
         data: data,
         showSectionAction: showSectionAction,
       ),
-      DashboardWidgetType.recentActivity => _RecentActivityWidget(data: data),
+      DashboardWidgetType.recentActivity => _RecentActivityWidget(
+        data: data,
+        skipCount: recentActivityOffset,
+      ),
       DashboardWidgetType.pendingTasks => _PendingTasksWidget(data: data),
       DashboardWidgetType.weather => _WeatherWidget(data: data),
       DashboardWidgetType.inventory => const _InventoryWidget(),
@@ -325,7 +330,7 @@ class _FinanceWidget extends StatelessWidget {
         errorMessage: errorMessage,
         onRetry: onRetry,
         emptyTitle: 'Sin movimientos financieros',
-        child: SizedBox.shrink(),
+        child: const SizedBox.shrink(),
       );
     }
 
@@ -367,14 +372,14 @@ class _FinanceWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '+${fmt.format(s.totalRevenue)}',
+                'Ingresos +${fmt.format(s.totalRevenue)}',
                 style: const TextStyle(
                   color: AppColors.success,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
-                '-${fmt.format(s.totalExpenses)}',
+                'Gastos -${fmt.format(s.totalExpenses)}',
                 style: const TextStyle(
                   color: AppColors.error,
                   fontWeight: FontWeight.w600,
@@ -420,7 +425,10 @@ class _LocationStatusWidget extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.location_on_outlined, size: 20),
             title: Text(l.name),
-            subtitle: Text('${l.animalCount} animales · ${l.typeLabel}'),
+            subtitle: Text(
+              '${l.animalCount} animales · '
+              '${l.typeLabel == 'Pasture' ? 'Potrero' : l.typeLabel}',
+            ),
             trailing: l.waterEvents > 0 || l.pastureEvents > 0
                 ? Icon(
                     l.waterEvents > 0 ? Icons.water_drop_outlined : Icons.grass,
@@ -437,14 +445,15 @@ class _LocationStatusWidget extends StatelessWidget {
 }
 
 class _RecentActivityWidget extends StatelessWidget {
-  const _RecentActivityWidget({required this.data});
+  const _RecentActivityWidget({required this.data, required this.skipCount});
   final InicioDashboardData data;
+  final int skipCount;
 
   @override
   Widget build(BuildContext context) {
-    final items = data.recentActivity;
+    final items = data.recentActivity.skip(skipCount).toList(growable: false);
     return DashboardWidgetCard(
-      title: 'Registros recientes',
+      title: 'Animales actualizados',
       status: items.isEmpty
           ? DashboardWidgetStatus.empty
           : DashboardWidgetStatus.data,

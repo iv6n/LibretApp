@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/location/gps_capture_service.dart';
+import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
@@ -30,6 +32,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _FakeAnimalRepository animalRepo;
+  late _FakeMovementRecordRepository movementRepo;
 
   setUp(() {
     animalRepo = _FakeAnimalRepository(
@@ -42,6 +45,7 @@ void main() {
       ],
     );
 
+    movementRepo = _FakeMovementRecordRepository();
     locator
       ..registerSingleton<AnimalRepository>(animalRepo)
       ..registerSingleton<LotesRepository>(_FakeLotesRepository())
@@ -56,9 +60,7 @@ void main() {
       ..registerSingleton<CommercialRecordRepository>(
         _FakeCommercialRecordRepository(),
       )
-      ..registerSingleton<MovementRecordRepository>(
-        _FakeMovementRecordRepository(),
-      )
+      ..registerSingleton<MovementRecordRepository>(movementRepo)
       ..registerSingleton<CostRecordRepository>(_FakeCostRecordRepository());
   });
 
@@ -154,6 +156,58 @@ void main() {
 
       expect(find.textContaining('origen y destino'), findsOneWidget);
     });
+
+    testWidgets(
+      'registro movimiento ignores a second save tap while GPS is pending',
+      (tester) async {
+        final gps = _DelayedGpsCaptureService();
+        locator.registerSingleton<GpsCaptureService>(gps);
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('es'),
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RegistroMovimientoPage(),
+                      ),
+                    ),
+                    child: const Text('Iniciar movimiento'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('Iniciar movimiento'));
+        await tester.pumpAndSettle();
+        await _selectAnimal(tester);
+        await tester.enterText(find.byType(TextFormField).at(1), 'Potrero B');
+        await tester.tap(find.text('Capturar ubicación GPS'));
+        await tester.pumpAndSettle();
+
+        final save = find.text('Guardar');
+        await tester.ensureVisible(save);
+        await tester.tap(save, warnIfMissed: false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 20));
+        expect(gps.calls, 1);
+        expect(movementRepo.saveCalls, 0);
+
+        await tester.tap(save, warnIfMissed: false);
+        await tester.pump();
+        expect(gps.calls, 1);
+
+        gps.complete();
+        await tester.pumpAndSettle();
+        expect(movementRepo.saveCalls, 1);
+      },
+      skip: !ReleaseFeatures.gpsCaptureEnabled,
+    );
 
     testWidgets('registro comercial requires amount for purchase type', (
       tester,
@@ -397,9 +451,14 @@ class _FakeLotesRepository implements LotesRepository {
 
 class _FakeWeightRecordRepository implements WeightRecordRepository {
   @override
-  Future<List<WeightRecord>> addWeightRecordsAtomically(List<WeightBatchEntry> entries) async {
-    throw UnsupportedError('El pesaje atómico no está disponible en este adaptador.');
+  Future<List<WeightRecord>> addWeightRecordsAtomically(
+    List<WeightBatchEntry> entries,
+  ) async {
+    throw UnsupportedError(
+      'El pesaje atómico no está disponible en este adaptador.',
+    );
   }
+
   @override
   Future<List<WeightRecord>> getWeightRecords(String animalUuid) async =>
       const [];
@@ -495,6 +554,8 @@ class _FakeCommercialRecordRepository implements CommercialRecordRepository {
 }
 
 class _FakeMovementRecordRepository implements MovementRecordRepository {
+  var saveCalls = 0;
+
   @override
   Future<List<MovementRecord>> getMovementRecords(String animalUuid) async =>
       const [];
@@ -502,9 +563,33 @@ class _FakeMovementRecordRepository implements MovementRecordRepository {
   Future<MovementRecord> addMovementRecord(
     String animalUuid,
     MovementRecord record,
-  ) async => record;
+  ) async {
+    saveCalls++;
+    return record;
+  }
+
   @override
   Future<void> deleteMovementRecord(String recordId) async {}
+}
+
+class _DelayedGpsCaptureService extends GpsCaptureService {
+  final Completer<GeoCapture?> _completer = Completer<GeoCapture?>();
+  var calls = 0;
+
+  @override
+  Future<GeoCapture?> tryCapture() {
+    calls++;
+    return _completer.future;
+  }
+
+  void complete() => _completer.complete(
+    GeoCapture(
+      latitude: 29.0,
+      longitude: -110.0,
+      accuracyMeters: 5,
+      capturedAt: DateTime.now(),
+    ),
+  );
 }
 
 class _FakeCostRecordRepository implements CostRecordRepository {

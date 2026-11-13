@@ -26,6 +26,7 @@ enum PurposeIndicatorKind {
   lastShearing,
   layingState,
   healthState,
+  careDue,
   milkWithdrawal,
   overdueCalving,
   definePurpose,
@@ -131,7 +132,10 @@ List<PurposeIndicator> indicatorsFor(
     case ProductionPurpose.dairy:
       indicators.addAll(_dairyIndicators(animal, data, reference));
     case ProductionPurpose.breeding:
+      indicators.addAll(_breedingIndicators(animal, data, reference));
     case ProductionPurpose.dual:
+      indicators.addAll(_dairyIndicators(animal, data, reference));
+      indicators.addAll(_meatIndicators(animal, data));
       indicators.addAll(_breedingIndicators(animal, data, reference));
     case ProductionPurpose.eggs:
       indicators.addAll(_eggIndicators(animal, data));
@@ -156,8 +160,24 @@ List<PurposeIndicator> indicatorsFor(
       break;
   }
 
-  indicators.sort((a, b) => b.severity.index.compareTo(a.severity.index));
-  return List<PurposeIndicator>.unmodifiable(indicators.take(maxIndicators));
+  final distinct = <PurposeIndicatorKind, PurposeIndicator>{};
+  for (final indicator in indicators) {
+    distinct.putIfAbsent(indicator.kind, () => indicator);
+  }
+  final ordered = distinct.values.toList();
+  ordered.sort((a, b) {
+    final severity = b.severity.index.compareTo(a.severity.index);
+    if (severity != 0) return severity;
+    if (animal.productionPurpose != ProductionPurpose.dual) return 0;
+    const dualPriority = <PurposeIndicatorKind, int>{
+      PurposeIndicatorKind.milkPerDay: 0,
+      PurposeIndicatorKind.daysPregnant: 1,
+      PurposeIndicatorKind.weight: 2,
+      PurposeIndicatorKind.dailyGain: 3,
+    };
+    return (dualPriority[a.kind] ?? 9).compareTo(dualPriority[b.kind] ?? 9);
+  });
+  return List<PurposeIndicator>.unmodifiable(ordered.take(maxIndicators));
 }
 
 PurposeIndicator? _withdrawalIndicator(
@@ -228,16 +248,6 @@ List<PurposeIndicator> _dairyIndicators(
     );
   }
 
-  final daysInMilk = data.daysInMilk;
-  if (daysInMilk != null && daysInMilk >= 0) {
-    indicators.add(
-      PurposeIndicator(
-        kind: PurposeIndicatorKind.daysInMilk,
-        label: '$daysInMilk d. lactancia',
-      ),
-    );
-  }
-
   final pregnancy = _pregnancyIndicator(animal, data, now);
   if (pregnancy != null) {
     indicators.add(pregnancy);
@@ -246,6 +256,16 @@ List<PurposeIndicator> _dairyIndicators(
     // dry or lactating cow still says something.
     final state = _reproductiveStateIndicator(animal);
     if (state != null) indicators.add(state);
+  }
+
+  final daysInMilk = data.daysInMilk;
+  if (daysInMilk != null && daysInMilk >= 0) {
+    indicators.add(
+      PurposeIndicator(
+        kind: PurposeIndicatorKind.daysInMilk,
+        label: '$daysInMilk d. lactancia',
+      ),
+    );
   }
 
   return indicators;
@@ -386,7 +406,7 @@ List<PurposeIndicator> _companionIndicators(
     final days = due.difference(now).inDays;
     indicators.add(
       PurposeIndicator(
-        kind: PurposeIndicatorKind.healthState,
+        kind: PurposeIndicatorKind.careDue,
         label: days < 0
             ? 'Cuidado vencido'
             : 'Cuidado en $days ${days == 1 ? 'día' : 'días'}',

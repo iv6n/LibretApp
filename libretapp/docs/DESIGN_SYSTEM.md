@@ -80,6 +80,26 @@ compartido solo cuando aparece una variante real reutilizable.
 - Usar términos apropiados para mascotas, ganado y cultivos. En mascotas,
   mostrar la etiqueta «Mascota» y evitar vocabulario de etapas ganaderas.
 
+## Jerarquía y texto de interfaz
+
+- Una vista vacía presenta un estado y una acción principal. Los filtros y
+  resúmenes aparecen cuando hay datos para filtrar o resumir.
+- El título nombra la tarea o el contenido. No repetirlo en una tarjeta,
+  subtítulo o mensaje contiguo.
+- Quitar lemas y explicaciones que solo describen lo que ya muestra el control.
+  Si una acción necesita un párrafo para entenderse, aclarar su nombre o posición.
+- Conservar fechas, cantidades, estado de guardado, límites, errores y pasos de
+  recuperación. La información necesaria para decidir no se oculta por estética.
+- En listas, mostrar datos registrados y pendientes accionables; omitir valores
+  neutros como «Desconocido» y evitar presentar un riesgo bajo como evaluación.
+- En el perfil inicial o mixto, destacar el alta de animal; en el perfil de
+  mascotas, destacar el alta de mascota.
+- Un control de icono conserva su nombre accesible aunque no muestre texto.
+  Mensajes de error y estado se anuncian al lector de pantalla.
+- Las pruebas y vistas previas solo exportan imágenes si se indica
+  `LIBRET_CAPTURE_DIR` hacia un directorio temporal. Tras registrar hallazgos
+  en texto, eliminar esas imágenes.
+
 ## Estados y accesibilidad
 
 Revisar cada vista con contenido, vacío, carga, error y sin conexión en temas

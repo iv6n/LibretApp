@@ -205,6 +205,26 @@ void main() {
       expect(find.text('Corral Central'), findsWidgets);
     });
 
+    testWidgets('oculta el filtro cuando no hay ubicaciones', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: UbicacionesPage(
+            repository: _FakeLocationRepository(const []),
+            showHeader: false,
+            shellInteractionsEnabled: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sin ubicaciones'), findsOneWidget);
+      expect(find.text('Crear ubicación'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('ubicaciones-root-filter-row')),
+        findsNothing,
+      );
+    });
+
     testWidgets('muestra datos al cargar', (tester) async {
       await tester.pumpWidget(
         MaterialApp(home: UbicacionesPage(repository: repository)),

@@ -78,7 +78,11 @@ void main() {
   group('meat', () {
     test('prefers measured gain over the typed estimate', () {
       final indicators = indicatorsFor(
-        _animal(purpose: ProductionPurpose.meat, weight: 300, dailyGainEstimate: 0.4),
+        _animal(
+          purpose: ProductionPurpose.meat,
+          weight: 300,
+          dailyGainEstimate: 0.4,
+        ),
         snapshot: const AnimalIndicatorSnapshot(
           lastWeightKg: 420,
           averageDailyGainKg: 0.9,
@@ -132,9 +136,34 @@ void main() {
         now: _now,
       );
 
-      expect(_kinds(indicators), contains(PurposeIndicatorKind.reproductiveState));
+      expect(
+        _kinds(indicators),
+        contains(PurposeIndicatorKind.reproductiveState),
+      );
     });
   });
+
+  test(
+    'dual purpose prioritizes milk, pregnancy and weight without duplicates',
+    () {
+      final indicators = indicatorsFor(
+        _animal(
+          purpose: ProductionPurpose.dual,
+          weight: 420,
+          reproductiveStatus: ReproductiveStatus.pregnant,
+          lastServiceDate: _now.subtract(const Duration(days: 120)),
+        ),
+        snapshot: const AnimalIndicatorSnapshot(milkLitersPerDay: 15.3),
+        now: _now,
+      );
+
+      expect(_kinds(indicators), [
+        PurposeIndicatorKind.milkPerDay,
+        PurposeIndicatorKind.daysPregnant,
+        PurposeIndicatorKind.weight,
+      ]);
+    },
+  );
 
   group('breeding', () {
     test('surfaces IEP and calving count from the KPIs', () {
@@ -244,7 +273,10 @@ void main() {
         now: _now,
       );
 
-      expect(_kinds(indicators), isNot(contains(PurposeIndicatorKind.milkWithdrawal)));
+      expect(
+        _kinds(indicators),
+        isNot(contains(PurposeIndicatorKind.milkWithdrawal)),
+      );
     });
 
     test('never returns more than the requested number of chips', () {
@@ -291,6 +323,9 @@ void main() {
     );
 
     expect(indicators.map((i) => i.label), contains('355.5 kg estimado'));
-    expect(indicators.map((i) => i.label).any((label) => label.contains('kg/día')), isFalse);
+    expect(
+      indicators.map((i) => i.label).any((label) => label.contains('kg/día')),
+      isFalse,
+    );
   });
 }

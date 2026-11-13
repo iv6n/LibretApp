@@ -10,7 +10,9 @@ class PilotInformationSheet extends StatelessWidget {
   const PilotInformationSheet({super.key});
   static const supportEmail = String.fromEnvironment('LIBRET_SUPPORT_EMAIL');
   static const privacyUrl = String.fromEnvironment('LIBRET_PRIVACY_URL');
-  static const responsibleName = String.fromEnvironment('LIBRET_RESPONSIBLE_NAME');
+  static const responsibleName = String.fromEnvironment(
+    'LIBRET_RESPONSIBLE_NAME',
+  );
 
   @override
   Widget build(BuildContext context) => ConstrainedBox(
@@ -46,7 +48,9 @@ class PilotInformationSheet extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         const Text(
-          'Puedes eliminar registros desde sus pantallas y tu cuenta desde Ajustes, con confirmación SMS reciente. Se eliminan los respaldos remotos y los datos locales del espacio en este teléfono. Otros teléfonos pueden conservar datos locales incluso después de eliminar la cuenta remota; bórralos desde cada dispositivo. Desinstalar elimina los datos locales. Los archivos que hayas exportado se eliminan desde donde los guardaste.',
+          ReleaseFeatures.cloudBackupEnabled
+              ? 'Puedes eliminar registros desde sus pantallas y tu cuenta desde Ajustes, con confirmación SMS reciente. Se eliminan los respaldos remotos y los datos locales del espacio en este teléfono. Otros teléfonos pueden conservar datos locales incluso después de eliminar la cuenta remota; bórralos desde cada dispositivo. Desinstalar elimina los datos locales. Los archivos que hayas exportado se eliminan desde donde los guardaste.'
+              : 'Puedes eliminar registros desde sus pantallas. Para borrar todos los datos locales de LibretApp, usa Ajustes de Android → Apps → LibretApp → Almacenamiento → Borrar datos, o desinstala la app. Los archivos exportados permanecen donde los guardaste y debes borrarlos allí.',
         ),
         if (privacyUrl.isNotEmpty)
           ListTile(
@@ -60,7 +64,10 @@ class PilotInformationSheet extends StatelessWidget {
             ),
           ),
         if (responsibleName.isNotEmpty)
-          ListTile(title: const Text('Responsable'), subtitle: SelectableText(responsibleName)),
+          ListTile(
+            title: const Text('Responsable'),
+            subtitle: SelectableText(responsibleName),
+          ),
         if (supportEmail.isNotEmpty)
           ListTile(
             contentPadding: EdgeInsets.zero,

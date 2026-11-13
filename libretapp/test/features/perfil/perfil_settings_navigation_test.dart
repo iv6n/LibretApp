@@ -125,9 +125,7 @@ Future<AppExperienceController> _pumpSettings(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('demo usa preferencias unificadas en su espacio', (
-    tester,
-  ) async {
+  testWidgets('demo usa preferencias unificadas en su espacio', (tester) async {
     final preferences = await _pumpSettings(tester, kind: WorkspaceKind.demo);
     await tester.tap(find.text('Qué vas a registrar'));
     await tester.pumpAndSettle();
@@ -203,10 +201,11 @@ void main() {
       await tester.tap(find.text('Cuenta'));
       await tester.pumpAndSettle();
       expect(find.text('Cuenta'), findsWidgets);
+      expect(find.textContaining('Copias en la nube'), findsNothing);
       expect(
         find.text(switch (kind) {
           WorkspaceKind.guest =>
-            'Los registros permanecen locales. Los respaldos automáticos requieren que los actives en Copias en la nube.',
+            'Estás usando un espacio de invitado. Tus registros se guardan en este dispositivo.',
           WorkspaceKind.account => 'Cerrar sesión',
           WorkspaceKind.demo => 'Salir de la demo',
         }),

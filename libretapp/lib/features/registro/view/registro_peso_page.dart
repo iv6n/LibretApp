@@ -163,7 +163,7 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
     return BlocListener<RegistroBloc, RegistroState>(
       listener: (context, state) {
         if (state.status == RegistroStatus.success) {
-          Navigator.of(context).pop();
+          AppFormExitGuard.complete(context);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(l10n.detailFormWeightSaved)));
@@ -188,6 +188,8 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
             fallbackIcon: Icons.monitor_weight_outlined,
             formKey: _formKey,
             saving: isSaving,
+            protectUnsavedChanges: true,
+            currentSignature: () => _selectedAnimal?.uuid ?? '',
             onSave: _save,
             saveLabel: l10n.actionSave,
             onCancel: () => Navigator.of(context).pop(),
@@ -195,23 +197,29 @@ class _RegistroPesoViewState extends State<_RegistroPesoView> {
             fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
-                onSelected: (a) => setState(() => _selectedAnimal = a),
+                onSelected: (a) {
+                  AppFormExitGuard.markChanged(context);
+                  setState(() => _selectedAnimal = a);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
-              if (ReleaseFeatures.hardwareIntegrationsEnabled) Align(
-                alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
-                  onPressed: isSaving || _readingScale ? null : _readFromScale,
-                  icon: _readingScale
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.sensors_outlined),
-                  label: const Text('Tomar lectura de báscula'),
+              if (ReleaseFeatures.hardwareIntegrationsEnabled)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: isSaving || _readingScale
+                        ? null
+                        : _readFromScale,
+                    icon: _readingScale
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.sensors_outlined),
+                    label: const Text('Tomar lectura de báscula'),
+                  ),
                 ),
-              ),
               const SizedBox(height: AppSpacing.sm),
               AppTextField(
                 controller: _weightCtrl,

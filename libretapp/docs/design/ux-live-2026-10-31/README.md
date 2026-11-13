@@ -1,10 +1,8 @@
 # Inspección visual en móvil — 31 de octubre de 2026
 
-Capturas del dispositivo CPH2123, resolución 1080 × 2400, tomadas antes de los ajustes de código:
-
-- `01-actual.png`: Inicio, navegación inferior y accesos rápidos.
-- `02-directorio.png`: Directorio > Animales, búsqueda, filtros y tarjeta de Mika.
-- `03-animal.png`: ficha de Mika y su fotografía.
+Inspección del dispositivo CPH2123, resolución 1080 × 2400, antes de los
+ajustes de código. Se revisaron Inicio, Directorio > Animales y la ficha de Mika.
+La evidencia visual antigua se retiró; los hallazgos se conservan en texto.
 
 ## Hallazgos
 
@@ -14,4 +12,4 @@ Capturas del dispositivo CPH2123, resolución 1080 × 2400, tomadas antes de los
 4. La barra de secciones ocupa espacio de forma permanente. Propuesta: ocultarla al desplazarse hacia abajo y recuperarla al subir, manteniendo un control visible para cambiar de sección.
 5. La fotografía usa un encuadre fijo en tarjeta y perfil. Propuesta: permitir desplazar y ampliar la imagen en el editor, con vista previa cuadrada y vertical antes de guardar el recorte.
 
-Las capturas muestran la versión que estaba instalada en el móvil; no representan los ajustes posteriores del código.
+Los hallazgos describen la versión instalada entonces, no los ajustes posteriores.

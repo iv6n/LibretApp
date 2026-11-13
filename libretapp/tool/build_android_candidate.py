@@ -63,9 +63,7 @@ CONNECTED_GATES = ('sms_flow', 'verify_limits', 'account_isolation', 'two_phone_
 
 
 def validate_store(metadata, evidence, digest, last_code, flavor='offline', config_digest=None):
-    validate_metadata(metadata)
-    if last_code is None or last_code < 0:
-        raise ValueError('Indica --last-play-code con el cÃ³digo real de Console (0 si no hay versiones).')
+    validate_store_build(metadata, last_code)
     if evidence.get('sourceSha256') != digest:
         raise ValueError('La evidencia no corresponde al cÃ³digo actual.')
     if flavor == 'connected' and (evidence.get('flavor') != flavor or evidence.get('configurationSha256') != config_digest):
@@ -74,6 +72,13 @@ def validate_store(metadata, evidence, digest, last_code, flavor='offline', conf
     pending = [key for key in gates if evidence.get('checks', {}).get(key) is not True]
     if pending:
         raise ValueError('AceptaciÃ³n tÃ©cnica pendiente: ' + ', '.join(pending))
+
+
+def validate_store_build(metadata, last_code):
+    """Allow a reviewable AAB before the post-build evidence is complete."""
+    validate_metadata(metadata)
+    if last_code is None or last_code < 0:
+        raise ValueError('Indica --last-play-code con el código real de Console.')
 
 
 def main():
@@ -115,13 +120,19 @@ def main():
     config_digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
     digest = source_digest()
     if args.mode == 'store':
-        validate_store(metadata, evidence, digest, args.last_play_code, args.flavor, config_digest)
+        validate_store_build(metadata, args.last_play_code)
+        if evidence and evidence.get('sourceSha256') != digest:
+            raise ValueError('La evidencia proporcionada corresponde a otro código.')
+        if evidence and args.flavor == 'connected' and (
+                evidence.get('flavor') != args.flavor or
+                evidence.get('configurationSha256') != config_digest):
+            raise ValueError('La evidencia proporcionada corresponde a otra configuración.')
     if args.validate_only:
         print(json.dumps({'mode': args.mode, 'sourceSha256': digest, 'readyForStore': False}))
         return 0
     version_line = next(line for line in (ROOT / 'pubspec.yaml').read_text(encoding='utf-8').splitlines() if line.startswith('version:'))
     version, code = version_line.split(':', 1)[1].strip().split('+')
-    code = max(int(code), (args.last_play_code or 0) + 1)
+    code = max(21, int(code), (args.last_play_code or 0) + 1)
     args.out.mkdir(parents=True, exist_ok=True)
     defines = {**metadata, **config, 'LIBRET_APP_VERSION': f'{version}+{code}',
         'LIBRETAPP_OFFLINE_PILOT': str(args.flavor == 'offline').lower(),
@@ -173,10 +184,13 @@ def main():
     bundle_digest = hashlib.sha256(candidate_bundle.read_bytes()).hexdigest()
     report = {'mode': args.mode, 'flavor': args.flavor,
         'configurationSha256': config_digest,
+        'metadataSha256': hashlib.sha256(json.dumps(metadata, sort_keys=True).encode()).hexdigest(),
         'servicesConfigured': bool(config),
-        'readyForStore': args.mode == 'store' and evidence.get('acceptedBundleSha256') == bundle_digest,
+        # Acceptance is a separate receipt issued only after the exact AAB exists.
+        'readyForStore': False,
         'version': f'{version}+{code}', 'sourceSha256': digest,
-        'bundleSha256': hashlib.sha256(candidate_bundle.read_bytes()).hexdigest(),
+        'bundleSha256': bundle_digest,
+        'inspectionSha256': hashlib.sha256((args.out / 'bundle-inspection.json').read_bytes()).hexdigest(),
         'bundle': str(candidate_bundle), 'createdAt': datetime.now(timezone.utc).isoformat(),
         'signing': 'disposable QA/debug key' if args.mode == 'qa' else 'private upload key',
         'externalPlaySteps': 'Console verification, listing and declarations, pre-launch report and applicable closed testing remain external.'}

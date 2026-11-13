@@ -30,6 +30,7 @@ class LoteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
 
     final cardColor = theme.brightness == Brightness.dark
         ? colorScheme.surface
@@ -60,12 +61,17 @@ class LoteCard extends StatelessWidget {
                 // ── Header ────────────────────────────────────────────────
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                  padding: EdgeInsets.fromLTRB(
+                    metrics.cardPaddingH,
+                    metrics.cardPaddingV,
+                    metrics.cardPaddingH,
+                    metrics.headerGap,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       CircleAvatar(
-                        radius: 22,
+                        radius: metrics.cardBadgeSize / 2,
                         backgroundColor: colorScheme.primary.withValues(
                           alpha: theme.brightness == Brightness.dark
                               ? 0.22
@@ -73,11 +79,11 @@ class LoteCard extends StatelessWidget {
                         ),
                         child: Icon(
                           Icons.layers_outlined,
-                          size: 22,
+                          size: metrics.cardBadgeIconSize,
                           color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: metrics.cardGap),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,7 +111,7 @@ class LoteCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: metrics.actionsGap),
                       _StatusChip(
                         label: lote.active ? 'Activo' : 'Cerrado',
                         color: statusColor,
@@ -114,7 +120,12 @@ class LoteCard extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 10),
+                  padding: EdgeInsets.fromLTRB(
+                    metrics.cardPaddingH,
+                    2,
+                    metrics.cardPaddingH,
+                    metrics.headerSectionGap + 2,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -125,10 +136,10 @@ class LoteCard extends StatelessWidget {
                         label: locationName ?? 'Sin ubicación',
                         onTap: onLocationTap,
                       ),
-                      const SizedBox(height: 9),
+                      SizedBox(height: metrics.cardChipGap + 2),
                       Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
+                        spacing: metrics.cardChipGap,
+                        runSpacing: metrics.cardChipGap,
                         children: [
                           _MetricChip(
                             icon: Icons.pets_outlined,
@@ -151,17 +162,20 @@ class LoteCard extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(color: footerColor),
-                  padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: metrics.cardPaddingH,
+                    vertical: metrics.headerGap - 1,
+                  ),
                   child: Row(
                     children: [
                       Icon(
                         lote.active
                             ? Icons.play_circle_outline
                             : Icons.history_outlined,
-                        size: 18,
+                        size: metrics.cardInlineIconSize,
                         color: colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: metrics.actionsGap),
                       Flexible(
                         child: Text(
                           lote.active
@@ -240,6 +254,7 @@ class _ContextAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
     return Material(
       color: scheme.surfaceContainerHighest.withValues(alpha: 0.48),
       borderRadius: BorderRadius.circular(11),
@@ -247,11 +262,18 @@ class _ContextAction extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(11),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: metrics.cardGap - 2,
+            vertical: 8,
+          ),
           child: Row(
             children: [
-              Icon(icon, size: 19, color: scheme.onSurfaceVariant),
-              const SizedBox(width: 8),
+              Icon(
+                icon,
+                size: metrics.cardInlineIconSize,
+                color: scheme.onSurfaceVariant,
+              ),
+              SizedBox(width: metrics.cardChipGap + 1),
               Expanded(
                 child: Text(
                   label,
@@ -265,7 +287,7 @@ class _ContextAction extends StatelessWidget {
               if (onTap != null)
                 Icon(
                   Icons.chevron_right,
-                  size: 18,
+                  size: metrics.cardInlineIconSize + 1,
                   color: scheme.onSurfaceVariant,
                 ),
             ],
@@ -286,8 +308,12 @@ class _MetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
     final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardGap - 1,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(12),
@@ -295,8 +321,12 @@ class _MetricChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 6),
+          Icon(
+            icon,
+            size: metrics.cardInlineIconSize,
+            color: scheme.onSurfaceVariant,
+          ),
+          SizedBox(width: metrics.actionsGap),
           Flexible(
             child: Text(
               label,

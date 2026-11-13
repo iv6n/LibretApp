@@ -22,7 +22,6 @@ import 'package:libretapp/features/directorio/animales/domain/repositories/healt
 import 'package:libretapp/features/directorio/animales/domain/repositories/reproduction_record_repository.dart';
 import 'package:libretapp/features/directorio/animales/domain/repositories/weight_record_repository.dart';
 import 'package:libretapp/features/milking/domain/milking_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/animal_palette.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_compact_row.dart';
 import 'package:libretapp/features/directorio/animales/widgets/pet_card.dart';
 import 'package:libretapp/features/directorio/bloc/directorio_state.dart';
@@ -57,16 +56,10 @@ class _AnimalesListViewState extends State<AnimalesListView>
   late final HealthRecordRepository _healthRepo;
   late final ScrollController _scrollController;
   late final TabController _tabController;
-  late final TextEditingController _searchController;
-  late final FocusNode _searchFocusNode;
-  bool _isAtTop = true;
   bool _isNearListEnd = true;
   bool _isScrollingUp = false;
-  bool _quickMenuOpen = false;
-  bool _showStageFilters = false;
   bool _taxonomyRefreshInFlight = false;
   String? _lastRouteFilterKey;
-  String? _lastBlocSearchQuery;
   String? _taxonomySourceKey;
   double _quickMenuExtraPadding = 0;
   double _lastScrollOffset = 0;
@@ -76,8 +69,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
     super.initState();
     _scrollController = ScrollController()..addListener(_handleScroll);
     _tabController = TabController(length: 2, vsync: this);
-    _searchController = TextEditingController();
-    _searchFocusNode = FocusNode();
     _healthRepo = locator<HealthRecordRepository>();
     _animalController = AnimalesListController(
       locationRepository: locator<LocationRepository>(),
@@ -139,9 +130,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
       if (_lastRouteFilterKey == key) return;
       _lastRouteFilterKey = key;
       if (focusSearch) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _searchFocusNode.requestFocus();
-        });
+        context.read<AnimalesBloc>().add(const ToggleSearch(enabled: true));
       }
 
       if (clearFilters) {
@@ -184,8 +173,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     _tabController.dispose();
-    _searchController.dispose();
-    _searchFocusNode.dispose();
     _animalController.dispose();
     super.dispose();
   }
@@ -194,7 +181,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
     if (!mounted || !_scrollController.hasClients) return;
     final position = _scrollController.position;
     final offset = position.pixels;
-    final atTop = offset <= 0;
     final canScroll = position.maxScrollExtent > 0;
     final isNearListEnd = !canScroll
         ? true
@@ -208,18 +194,13 @@ class _AnimalesListViewState extends State<AnimalesListView>
     }
 
     final hasChanged =
-        atTop != _isAtTop ||
-        isNearListEnd != _isNearListEnd ||
-        isScrollingUp != _isScrollingUp;
+        isNearListEnd != _isNearListEnd || isScrollingUp != _isScrollingUp;
 
     _lastScrollOffset = offset;
     if (!hasChanged) return;
 
-    setState(() {
-      _isAtTop = atTop;
-      _isNearListEnd = isNearListEnd;
-      _isScrollingUp = isScrollingUp;
-    });
+    _isNearListEnd = isNearListEnd;
+    _isScrollingUp = isScrollingUp;
 
     // Trigger pagination when scrolling near the bottom.
     if (isNearListEnd && !isScrollingUp && mounted) {
@@ -235,13 +216,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
     context.read<AnimalesBloc>().add(const EnsureAllAnimalesLoaded());
   }
 
-  Future<void> _scrollToTop() async {
-    if (!_scrollController.hasClients) return;
-    await _scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
+  void _handleQuickMenuOpenChanged(bool open) {
+    if (!mounted || open || _quickMenuExtraPadding == 0) return;
+    setState(() => _quickMenuExtraPadding = 0);
   }
 
   Future<void> _ensureQuickMenuSpaceBelow(BuildContext menuContext) async {
@@ -323,57 +300,25 @@ class _AnimalesListViewState extends State<AnimalesListView>
           builder: (context, state) {
             final isSelectionMode =
                 state is AnimalesLoaded && state.isSelectionMode;
+            final isSearching = state is AnimalesLoaded && state.isSearching;
             final isKeyboardFullyHidden =
                 MediaQuery.of(context).viewInsets.bottom == 0;
             final bottomInset = ShellInsets.bottomSafePadding(context);
             final listBottomPadding = math.max(
               (isSelectionMode && isKeyboardFullyHidden)
                   ? MediaQuery.of(context).padding.bottom + 112
-                  : bottomInset +
-                        ShellInsets.fabContentClearance +
-                        _quickMenuExtraPadding,
+                  : bottomInset + 8 + _quickMenuExtraPadding,
               0.0,
             );
-
-            final showRegisterFab =
-                isKeyboardFullyHidden &&
-                (state is! AnimalesLoaded || _isScrollingUp || _isNearListEnd);
-            final showScrollFab =
-                state is AnimalesLoaded &&
-                !state.isSearching &&
-                !_isAtTop &&
-                (_isScrollingUp || _isNearListEnd);
-            final fabConfig =
-                isSelectionMode ||
-                    !showRegisterFab ||
-                    _quickMenuOpen ||
-                    (state is AnimalesLoaded && state.herdTotal == 0)
-                ? null
-                : ShellFabConfig(
-                    id: 'animales',
-                    label: 'Nuevo',
-                    icon: Icons.add,
-                    heroTag: 'fab_animales',
-                    onPressed: () =>
-                        context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-                    secondary: showScrollFab
-                        ? ShellFabSecondaryAction(
-                            id: 'animales_scroll_top',
-                            icon: Icons.keyboard_arrow_up,
-                            heroTag: 'fab_animales_scroll_top',
-                            onPressed: _scrollToTop,
-                          )
-                        : null,
-                  );
 
             final scaffold = Scaffold(
               body: _buildAnimalesTab(listBottomPadding, l10n),
             );
             final content = widget.shellInteractionsEnabled
                 ? ShellFabConfigScope(
-                    config: fabConfig,
+                    config: null,
                     child: ShellChromeScope(
-                      visible: !isSelectionMode,
+                      visible: !isSelectionMode && !isSearching,
                       child: scaffold,
                     ),
                   )
@@ -415,35 +360,13 @@ class _AnimalesListViewState extends State<AnimalesListView>
         }
 
         final filtered = _animalController.applyFilters(state.visibleAnimals);
-        if (_lastBlocSearchQuery != state.searchQuery) {
-          _lastBlocSearchQuery = state.searchQuery;
-          _searchController.value = TextEditingValue(
-            text: state.searchQuery,
-            selection: TextSelection.collapsed(
-              offset: state.searchQuery.length,
-            ),
-          );
-        }
         // Counted across the whole herd by the bloc, not over the pages
         // loaded so far — otherwise every chip would read low and climb as
         // the user scrolled.
         final taxonomyCounts = _animalController.state.taxonomyCounts;
         final selectedSpecies = _animalController.state.selectedSpecies;
         final selectedCompanion = _animalController.state.selectedCompanion;
-        final stageSpecies = selectedCompanion
-            ? null
-            : selectedSpecies ??
-                  (taxonomyCounts.length == 1
-                      ? taxonomyCounts.keys.first
-                      : taxonomyCounts.isEmpty
-                      ? _singleSpeciesInPage(state.allAnimals)
-                      : null);
-        final stageCounts = selectedCompanion
-            ? _animalController.state.companionStageCounts
-            : taxonomyCounts.isNotEmpty
-            ? _animalController.selectedSpeciesStageCounts
-            : state.herdStageCounts;
-
+        final selectedStages = _animalController.state.selectedStages;
         final taxonomySourceKey = state.allAnimals
             .map(
               (animal) =>
@@ -481,30 +404,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
           children: [
             Column(
               children: [
-                if (!state.isSelectionMode)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                    child: TextField(
-                      key: const ValueKey('animal-visible-search'),
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      textInputAction: TextInputAction.search,
-                      onChanged: (value) => context.read<AnimalesBloc>().add(
-                        SearchQueryChanged(value),
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Buscar por arete o nombre',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: state.searchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: 'Limpiar búsqueda y filtros',
-                                onPressed: _clearAnimalFilters,
-                                icon: const Icon(Icons.close),
-                              ),
-                      ),
-                    ),
-                  ),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async => context.read<AnimalesBloc>().add(
@@ -525,15 +424,12 @@ class _AnimalesListViewState extends State<AnimalesListView>
                         state: state,
                         filtered: filtered,
                         l10n: l10n,
-                        selectedStages: _animalController.state.selectedStages,
-                        availableStages: stageCounts.keys.toSet(),
-                        stageCounts: stageCounts,
                         taxonomyCounts: taxonomyCounts,
                         selectedSpecies: selectedSpecies,
                         selectedCompanion: selectedCompanion,
+                        selectedStages: selectedStages,
                         companionStageCounts:
                             _animalController.state.companionStageCounts,
-                        stageSpecies: stageSpecies,
                         onSpeciesChanged: (species) {
                           _animalController.setSpecies(species);
                           _ensureAllAnimalsForFilter();
@@ -552,7 +448,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
                           _animalController.setOnlyPendingEarTag(value);
                           _ensureAllAnimalsForFilter();
                         },
-                        hideStageChips: state.isSearching,
+                        hideCategoryChips: state.isSearching,
                       ),
                     ),
                   ),
@@ -808,25 +704,31 @@ class _AnimalesListViewState extends State<AnimalesListView>
   ) {
     final isNarrowed =
         state.searchQuery.trim().isNotEmpty ||
-        state.searchFilterStages.isNotEmpty ||
         state.searchFilterSexes.isNotEmpty ||
         _animalController.state.hasFilters;
     final firstAnimal = state.herdTotal == 0 && !isNarrowed;
     return AppEmptyState(
       illustrationAsset: firstAnimal ? _animalEmptyIllustration(context) : null,
       icon: Icons.search_off_outlined,
-      title: firstAnimal ? 'Tus animales, en un lugar' : l10n.animalsEmptyTitle,
-      message: firstAnimal
-          ? 'Registra el primero para empezar a llevar su seguimiento.'
-          : state.searchQuery.isNotEmpty
-          ? 'No encontré animales con ese arete o nombre. Prueba otra búsqueda.'
-          : l10n.animalsEmptySubtitle,
+      title: firstAnimal ? 'Sin animales' : l10n.animalsEmptyTitle,
       action: firstAnimal
-          ? FilledButton.icon(
-              onPressed: () =>
-                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-              icon: const Icon(Icons.add),
-              label: const Text('Registrar animal'),
+          ? Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Registrar animal'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () =>
+                      context.pushNamed(AppRoutes.nameAnimalNuevoMultiple),
+                  icon: const Icon(Icons.playlist_add_outlined),
+                  label: const Text('Registrar varios'),
+                ),
+              ],
             )
           : OutlinedButton.icon(
               onPressed: _clearAnimalFilters,
@@ -838,7 +740,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
   void _clearAnimalFilters() {
     _animalController.setSpecies(null);
-    _animalController.setStages({});
     _animalController.setOnlyPendingEarTag(false);
     _animalController.setOnlyAttention(false);
     _animalController.setHealthFilter(null);
@@ -854,20 +755,17 @@ class _AnimalesListViewState extends State<AnimalesListView>
     required AnimalesLoaded state,
     required List<AnimalEntity> filtered,
     required AppLocalizations l10n,
-    required Set<LifeStage> selectedStages,
-    required Set<LifeStage> availableStages,
-    required Map<LifeStage, int> stageCounts,
     required Map<Species, Map<LifeStage, int>> taxonomyCounts,
     required Species? selectedSpecies,
     required bool selectedCompanion,
+    required Set<LifeStage> selectedStages,
     required Map<LifeStage, int> companionStageCounts,
-    required Species? stageSpecies,
     required ValueChanged<Species?> onSpeciesChanged,
     required ValueChanged<bool> onCompanionChanged,
     required ValueChanged<Set<LifeStage>> onStagesChanged,
     required bool onlyPendingEarTag,
     required ValueChanged<bool> onPendingEarTagChanged,
-    bool hideStageChips = false,
+    bool hideCategoryChips = false,
   }) {
     final theme = Theme.of(context);
 
@@ -878,34 +776,35 @@ class _AnimalesListViewState extends State<AnimalesListView>
     // the loaded matches can be counted, so the label follows those instead.
     final isNarrowed =
         state.searchQuery.trim().isNotEmpty ||
-        state.searchFilterStages.isNotEmpty ||
         state.searchFilterSexes.isNotEmpty ||
         _animalController.state.hasFilters;
     final headerCount = isNarrowed ? filtered.length : state.herdTotal;
+    if (state.herdTotal == 0 && !isNarrowed) return [];
 
-    const calfStages = {
-      LifeStage.calf,
-      LifeStage.calfMale,
-      LifeStage.calfFemale,
-    };
-    final isOnlyCalfFilter =
-        selectedStages.isNotEmpty && selectedStages.every(calfStages.contains);
-    final calfMaleCount = isOnlyCalfFilter
-        ? filtered.where((a) => a.sex == Sex.male).length
-        : 0;
-    final calfFemaleCount = isOnlyCalfFilter
-        ? filtered.where((a) => a.sex == Sex.female).length
-        : 0;
-    final calfUnknownCount = isOnlyCalfFilter
-        ? filtered.where((a) => a.sex == Sex.unknown).length
-        : 0;
-    final showStageFilters = _showStageFilters || selectedStages.isNotEmpty;
+    final stageCounts = selectedCompanion
+        ? companionStageCounts
+        : selectedSpecies == null
+        ? const <LifeStage, int>{}
+        : taxonomyCounts[selectedSpecies] ?? const <LifeStage, int>{};
+    final stageFilters = hideCategoryChips || stageCounts.isEmpty
+        ? const SizedBox.shrink()
+        : AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: AnimalStageFilterRow(
+              species: selectedCompanion ? null : selectedSpecies,
+              companionOnly: selectedCompanion,
+              counts: stageCounts,
+              selectedStages: selectedStages,
+              onChanged: onStagesChanged,
+            ),
+          );
 
     if (filtered.isEmpty) {
       final filters = <Widget>[
-        if (!hideStageChips)
+        if (!hideCategoryChips)
           _speciesFilterChips(
-            l10n: l10n,
             taxonomyCounts: taxonomyCounts,
             selectedSpecies: selectedSpecies,
             selectedCompanion: selectedCompanion,
@@ -916,23 +815,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
             theme: theme,
             onSpeciesChanged: onSpeciesChanged,
             onCompanionChanged: onCompanionChanged,
-            showStageFilters: showStageFilters,
-            onToggleStages: () => setState(() {
-              _showStageFilters = !_showStageFilters;
-            }),
           ),
-        if (!hideStageChips && showStageFilters)
-          _stageFilterChips(
-            l10n: l10n,
-            selectedStages: selectedStages,
-            availableStages: availableStages,
-            stageCounts: stageCounts,
-            species: stageSpecies,
-            companionOnly: selectedCompanion,
-            theme: theme,
-            onStagesChanged: onStagesChanged,
-          ),
-        if (!hideStageChips && _showPendingEarTagFilterChip)
+        if (!hideCategoryChips) stageFilters,
+        if (!hideCategoryChips && _showPendingEarTagFilterChip)
           AppDirectoryFilterRow(
             children: [
               FilterChip(
@@ -972,19 +857,17 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
     return [
       Divider(
-        height: 2,
+        height: 1,
         thickness: 1,
         color: theme.dividerColor.withValues(alpha: 0.4),
       ),
-      const SizedBox(height: 2),
       Padding(
-        padding: const EdgeInsets.fromLTRB(2, 0, 0, 2),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (!hideStageChips)
+            if (!hideCategoryChips)
               _speciesFilterChips(
-                l10n: l10n,
                 taxonomyCounts: taxonomyCounts,
                 selectedSpecies: selectedSpecies,
                 selectedCompanion: selectedCompanion,
@@ -995,23 +878,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 theme: theme,
                 onSpeciesChanged: onSpeciesChanged,
                 onCompanionChanged: onCompanionChanged,
-                showStageFilters: showStageFilters,
-                onToggleStages: () => setState(() {
-                  _showStageFilters = !_showStageFilters;
-                }),
               ),
-            if (!hideStageChips && showStageFilters)
-              _stageFilterChips(
-                l10n: l10n,
-                selectedStages: selectedStages,
-                availableStages: availableStages,
-                stageCounts: stageCounts,
-                species: stageSpecies,
-                companionOnly: selectedCompanion,
-                theme: theme,
-                onStagesChanged: onStagesChanged,
-              ),
-            if (!hideStageChips && _showPendingEarTagFilterChip)
+            if (!hideCategoryChips) stageFilters,
+            if (!hideCategoryChips && _showPendingEarTagFilterChip)
               Padding(
                 padding: const EdgeInsets.fromLTRB(6, 4, 6, 2),
                 child: Align(
@@ -1038,14 +907,12 @@ class _AnimalesListViewState extends State<AnimalesListView>
                     ),
                   ),
                   const Spacer(),
-                  if (isOnlyCalfFilter)
-                    Text(
-                      '♀ $calfFemaleCount · ♂ $calfMaleCount · — $calfUnknownCount',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
-                      ),
-                    ),
+                  IconButton(
+                    tooltip: 'Alta de varios animales',
+                    icon: const Icon(Icons.playlist_add_outlined),
+                    onPressed: () =>
+                        context.pushNamed(AppRoutes.nameAnimalNuevoMultiple),
+                  ),
                 ],
               ),
             ),
@@ -1088,13 +955,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
           action: action,
           onOpenDetail: () => onOpenDetail(animal),
         ),
-        onQuickMenuOpenChanged: (open) {
-          if (!mounted) return;
-          setState(() {
-            _quickMenuOpen = open;
-            if (!open) _quickMenuExtraPadding = 0;
-          });
-        },
+        onQuickMenuOpenChanged: _handleQuickMenuOpenChanged,
         onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
         onTap: () {
           if (state.isSelectionMode) {
@@ -1130,13 +991,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
           action: action,
           onOpenDetail: () => onOpenDetail(animal),
         ),
-        onQuickMenuOpenChanged: (open) {
-          if (!mounted) return;
-          setState(() {
-            _quickMenuOpen = open;
-            if (!open) _quickMenuExtraPadding = 0;
-          });
-        },
+        onQuickMenuOpenChanged: _handleQuickMenuOpenChanged,
         onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
         onTap: () {
           if (state.isSelectionMode) {
@@ -1164,13 +1019,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
           action: action,
           onOpenDetail: () => onOpenDetail(animal),
         ),
-        onQuickMenuOpenChanged: (open) {
-          if (!mounted) return;
-          setState(() {
-            _quickMenuOpen = open;
-            if (!open) _quickMenuExtraPadding = 0;
-          });
-        },
+        onQuickMenuOpenChanged: _handleQuickMenuOpenChanged,
         onPrepareQuickMenu: _ensureQuickMenuSpaceBelow,
         onTap: () {
           if (state.isSelectionMode) {
@@ -1228,179 +1077,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
   }
 }
 
-Species? _singleSpeciesInPage(Iterable<AnimalEntity> animals) {
-  final species = animals.map((animal) => animal.species).toSet();
-  return species.length == 1 ? species.first : null;
-}
-
-Widget _stageFilterChips({
-  required AppLocalizations l10n,
-  required Set<LifeStage> selectedStages,
-  required Set<LifeStage> availableStages,
-  required Map<LifeStage, int> stageCounts,
-  required Species? species,
-  bool companionOnly = false,
-  required ThemeData theme,
-  required ValueChanged<Set<LifeStage>> onStagesChanged,
-}) {
-  final hasStageFilters = selectedStages.isNotEmpty;
-  final totalCount = stageCounts.values.fold<int>(
-    0,
-    (sum, count) => sum + count,
-  );
-  var configs = companionOnly
-      ? _companionStageConfigs(availableStages)
-      : _stageConfigsForSpecies(
-          l10n,
-          species,
-        ).where((cfg) => cfg.stages.any(availableStages.contains)).toList();
-  if (configs.isEmpty && species != null && availableStages.isNotEmpty) {
-    configs = availableStages
-        .map(
-          (stage) => _StageChipConfig(
-            (count) => '${stage.displayName} ($count)',
-            [stage],
-          ),
-        )
-        .toList();
-  }
-
-  if (totalCount == 0 && configs.isEmpty) return const SizedBox.shrink();
-
-  return AppDirectoryFilterRow(
-    children: [
-      _StageFilterChip(
-        theme: theme,
-        label: 'Todas las etapas',
-        count: totalCount,
-        isSelected: !hasStageFilters,
-        onSelected: () => onStagesChanged({}),
-      ),
-      for (final config in configs)
-        _StageFilterChip(
-          theme: theme,
-          label: config.labelResolver(
-            config.stages
-                .map((stage) => stageCounts[stage] ?? 0)
-                .fold<int>(0, (a, b) => a + b),
-          ),
-          count: config.stages
-              .map((stage) => stageCounts[stage] ?? 0)
-              .fold<int>(0, (a, b) => a + b),
-          isSelected: config.stages.any(selectedStages.contains),
-          onSelected: () {
-            final isSelected = config.stages.any(selectedStages.contains);
-            final updated = Set<LifeStage>.from(selectedStages);
-            if (isSelected) {
-              updated.removeAll(config.stages);
-            } else {
-              updated.addAll(config.stages);
-            }
-            onStagesChanged(updated);
-          },
-        ),
-    ],
-  );
-}
-
-List<_StageChipConfig> _companionStageConfigs(Set<LifeStage> stages) {
-  final grouped = <String, List<LifeStage>>{};
-  final orderedStages = stages.toList()
-    ..sort((a, b) => a.index.compareTo(b.index));
-  for (final stage in orderedStages) {
-    grouped.putIfAbsent(stage.displayName, () => <LifeStage>[]).add(stage);
-  }
-  return grouped.entries
-      .map(
-        (entry) =>
-            _StageChipConfig((count) => '${entry.key} ($count)', entry.value),
-      )
-      .toList(growable: false);
-}
-
-List<_StageChipConfig> _stageConfigsForSpecies(
-  AppLocalizations l10n,
-  Species? species,
-) {
-  if (species == Species.cattle) {
-    return [
-      _StageChipConfig((c) => l10n.stageFilterCalf(c), [
-        LifeStage.calf,
-        LifeStage.calfMale,
-        LifeStage.calfFemale,
-      ]),
-      _StageChipConfig((c) => l10n.stageFilterHeifer(c), [LifeStage.heifer]),
-      _StageChipConfig((c) => l10n.stageFilterYoungBull(c), [
-        LifeStage.youngBull,
-      ]),
-      _StageChipConfig((c) => l10n.stageFilterSteer(c), [LifeStage.steer]),
-      _StageChipConfig((c) => l10n.stageFilterCow(c), [LifeStage.cow]),
-      _StageChipConfig((c) => l10n.stageFilterBull(c), [LifeStage.bull]),
-    ];
-  }
-
-  if (species == Species.equine) {
-    return [
-      _StageChipConfig((c) => l10n.stageFilterColt(c), [
-        LifeStage.colt,
-        LifeStage.filly,
-      ]),
-      _StageChipConfig((c) => l10n.stageFilterHorse(c), [LifeStage.horse]),
-      _StageChipConfig((c) => l10n.stageFilterMare(c), [LifeStage.mare]),
-      _StageChipConfig((c) => l10n.stageFilterDonkey(c), [
-        LifeStage.donkey,
-        LifeStage.donkeyFemale,
-      ]),
-      _StageChipConfig((c) => l10n.stageFilterMule(c), [LifeStage.mule]),
-    ];
-  }
-
-  final groups = switch (species) {
-    Species.goat => const [
-      [LifeStage.kid],
-      [LifeStage.youngGoat],
-      [LifeStage.goat],
-      [LifeStage.breedingBuck],
-    ],
-    Species.sheep => const [
-      [LifeStage.lamb],
-      [LifeStage.youngSheep],
-      [LifeStage.ewe],
-      [LifeStage.ram],
-    ],
-    Species.pig => const [
-      [LifeStage.piglet],
-      [LifeStage.youngPig],
-      [LifeStage.sow],
-      [LifeStage.boar],
-    ],
-    Species.poultry => const [
-      [LifeStage.chick],
-      [LifeStage.pullet],
-      [LifeStage.hen],
-      [LifeStage.rooster],
-    ],
-    Species.canine => const [
-      [LifeStage.puppy],
-      [LifeStage.youngDog],
-      [LifeStage.workingDog],
-      [LifeStage.guardDog],
-    ],
-    _ => const <List<LifeStage>>[],
-  };
-
-  return groups
-      .map(
-        (stages) => _StageChipConfig(
-          (count) => '${stages.first.displayName} ($count)',
-          stages,
-        ),
-      )
-      .toList();
-}
-
 Widget _speciesFilterChips({
-  required AppLocalizations l10n,
   required Map<Species, Map<LifeStage, int>> taxonomyCounts,
   required Species? selectedSpecies,
   required bool selectedCompanion,
@@ -1408,8 +1085,6 @@ Widget _speciesFilterChips({
   required ThemeData theme,
   required ValueChanged<Species?> onSpeciesChanged,
   required ValueChanged<bool> onCompanionChanged,
-  required bool showStageFilters,
-  required VoidCallback onToggleStages,
 }) {
   if (taxonomyCounts.isEmpty && companionCount == 0) {
     return const SizedBox.shrink();
@@ -1423,22 +1098,17 @@ Widget _speciesFilterChips({
     ..sort((a, b) => a.index.compareTo(b.index));
 
   return AppDirectoryFilterRow(
-    trailing: TextButton.icon(
-      onPressed: onToggleStages,
-      icon: Icon(showStageFilters ? Icons.expand_less : Icons.tune, size: 18),
-      label: const Text('Etapas'),
-    ),
     children: [
-      _StageFilterChip(
+      _AnimalCategoryFilterChip(
         theme: theme,
-        label: l10n.stageFilterAll,
+        label: 'Todos',
         count: totalCount,
         isSelected: selectedSpecies == null && !selectedCompanion,
         onSelected: () => onSpeciesChanged(null),
       ),
       if (selectedCompanion ||
           (companionCount > 0 && companionCount < totalCount))
-        _StageFilterChip(
+        _AnimalCategoryFilterChip(
           theme: theme,
           label: 'Mascota',
           count: companionCount,
@@ -1447,7 +1117,7 @@ Widget _speciesFilterChips({
         ),
       for (final value in species)
         if (species.length > 1 || selectedSpecies == value)
-          _StageFilterChip(
+          _AnimalCategoryFilterChip(
             theme: theme,
             label: value.displayName,
             count: taxonomyCounts[value]!.values.fold<int>(0, (a, b) => a + b),
@@ -1458,8 +1128,8 @@ Widget _speciesFilterChips({
   );
 }
 
-class _StageFilterChip extends StatelessWidget {
-  const _StageFilterChip({
+class _AnimalCategoryFilterChip extends StatelessWidget {
+  const _AnimalCategoryFilterChip({
     required this.theme,
     required this.label,
     required this.count,
@@ -1483,217 +1153,6 @@ class _StageFilterChip extends StatelessWidget {
       onTap: onSelected,
     );
   }
-}
-
-class AnimalesSearchAppBar extends StatefulWidget {
-  const AnimalesSearchAppBar({
-    super.key,
-    required this.l10n,
-    required this.isAtTop,
-    required this.onOpenFilters,
-  });
-
-  final AppLocalizations l10n;
-  final bool isAtTop;
-  final VoidCallback onOpenFilters;
-
-  @override
-  State<AnimalesSearchAppBar> createState() => _AnimalesSearchAppBarState();
-}
-
-class _AnimalesSearchAppBarState extends State<AnimalesSearchAppBar> {
-  late final TextEditingController _searchController;
-  late final FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-    _focusNode = FocusNode();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return BlocBuilder<AnimalesBloc, AnimalesState>(
-      buildWhen: (previous, current) {
-        if (previous is AnimalesLoaded && current is AnimalesLoaded) {
-          return previous.isSearching != current.isSearching ||
-              previous.searchQuery != current.searchQuery;
-        }
-        return previous.runtimeType != current.runtimeType;
-      },
-      builder: (context, state) {
-        final loaded = state is AnimalesLoaded ? state : null;
-        final isSearching = loaded?.isSearching ?? false;
-        final query = loaded?.searchQuery ?? '';
-        _syncController(query);
-
-        if (isSearching && !_focusNode.hasFocus) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _focusNode.requestFocus();
-          });
-        }
-
-        return AppBar(
-          automaticallyImplyLeading: false,
-          titleSpacing: 0,
-          title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _buildTitleBar(context, theme, isSearching),
-          ),
-          toolbarHeight: kToolbarHeight,
-        );
-      },
-    );
-  }
-
-  Widget _buildTitleBar(
-    BuildContext context,
-    ThemeData theme,
-    bool isSearching,
-  ) {
-    final showSearchIcon = !isSearching;
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 200),
-      child: isSearching
-          ? _buildSearchBar(context, theme)
-          : _buildNormalBar(context, theme, showSearchIcon: showSearchIcon),
-    );
-  }
-
-  Widget _buildNormalBar(
-    BuildContext context,
-    ThemeData theme, {
-    required bool showSearchIcon,
-  }) {
-    final bloc = context.read<AnimalesBloc>();
-
-    return SizedBox(
-      key: const ValueKey('animales_normal_appbar'),
-      height: 46,
-      child: Row(
-        children: [
-          const SizedBox(width: 8),
-          Text(
-            widget.l10n.animalsTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const Spacer(),
-          if (showSearchIcon)
-            IconButton(
-              tooltip: widget.l10n.animalsSearchHint,
-              icon: const Icon(Icons.search),
-              onPressed: () {
-                bloc.add(const ToggleSearch(enabled: true));
-              },
-            ),
-          IconButton(
-            tooltip: widget.l10n.animalsFilters,
-            icon: const Icon(Icons.tune),
-            onPressed: widget.onOpenFilters,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context, ThemeData theme) {
-    final bloc = context.read<AnimalesBloc>();
-
-    return SizedBox(
-      key: const ValueKey('animales_search_appbar'),
-      height: 56,
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              focusNode: _focusNode,
-              autofocus: true,
-              textInputAction: TextInputAction.search,
-              onChanged: (value) => bloc.add(SearchQueryChanged(value)),
-              decoration: InputDecoration(
-                hintText: widget.l10n.animalsSearchHint,
-                isDense: true,
-                border: InputBorder.none,
-                hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
-                ),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    BlocBuilder<AnimalesBloc, AnimalesState>(
-                      buildWhen: (p, c) {
-                        final pLoaded = p is AnimalesLoaded ? p : null;
-                        final cLoaded = c is AnimalesLoaded ? c : null;
-                        return pLoaded?.searchFilterStages !=
-                                cLoaded?.searchFilterStages ||
-                            pLoaded?.searchFilterSexes !=
-                                cLoaded?.searchFilterSexes;
-                      },
-                      builder: (context, state) {
-                        final loaded = state is AnimalesLoaded ? state : null;
-                        final activeCount =
-                            (loaded?.searchFilterStages.length ?? 0) +
-                            (loaded?.searchFilterSexes.length ?? 0);
-                        return _SearchFilterChipButton(
-                          activeFilterCount: activeCount,
-                          onTap: () => _showSearchFilterPopup(
-                            context,
-                            currentStages:
-                                loaded?.searchFilterStages ?? const {},
-                            currentSexes: loaded?.searchFilterSexes ?? const {},
-                            onApply: (stages, sexes) {
-                              bloc.add(
-                                SetSearchFilters(stages: stages, sexes: sexes),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        _focusNode.unfocus();
-                        bloc.add(const ClearSearch());
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _syncController(String value) {
-    if (_searchController.text == value) return;
-    _searchController.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
-    );
-  }
-}
-
-class _StageChipConfig {
-  _StageChipConfig(this.labelResolver, this.stages);
-
-  final String Function(int count) labelResolver;
-  final List<LifeStage> stages;
 }
 
 String _animalCardLabel(AnimalEntity animal) {
@@ -1757,304 +1216,3 @@ void _handleAnimalCardMenuAction(
 }
 
 // ---------------------------------------------------------------------------
-// Search filter chip button (shown inside the search bar suffix)
-// ---------------------------------------------------------------------------
-
-class _SearchFilterChipButton extends StatelessWidget {
-  const _SearchFilterChipButton({
-    required this.activeFilterCount,
-    required this.onTap,
-  });
-
-  final int activeFilterCount;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasFilters = activeFilterCount > 0;
-    final color = hasFilters
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface.withValues(alpha: 0.6);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.tune, size: 18, color: color),
-            if (hasFilters) ...[
-              const SizedBox(width: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$activeFilterCount',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Search filter popup
-// ---------------------------------------------------------------------------
-
-void _showSearchFilterPopup(
-  BuildContext context, {
-  required Set<LifeStage> currentStages,
-  required Set<Sex> currentSexes,
-  required void Function(Set<LifeStage> stages, Set<Sex> sexes) onApply,
-}) {
-  showAppBottomSheet<void>(
-    context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (sheetContext) => _SearchFilterSheet(
-      initialStages: currentStages,
-      initialSexes: currentSexes,
-      onApply: (stages, sexes) {
-        Navigator.of(sheetContext).pop();
-        onApply(stages, sexes);
-      },
-    ),
-  );
-}
-
-class _SearchFilterSheet extends StatefulWidget {
-  const _SearchFilterSheet({
-    required this.initialStages,
-    required this.initialSexes,
-    required this.onApply,
-  });
-
-  final Set<LifeStage> initialStages;
-  final Set<Sex> initialSexes;
-  final void Function(Set<LifeStage> stages, Set<Sex> sexes) onApply;
-
-  @override
-  State<_SearchFilterSheet> createState() => _SearchFilterSheetState();
-}
-
-class _SearchFilterSheetState extends State<_SearchFilterSheet> {
-  late Set<LifeStage> _stages;
-  late Set<Sex> _sexes;
-
-  @override
-  void initState() {
-    super.initState();
-    _stages = Set<LifeStage>.from(widget.initialStages);
-    _sexes = Set<Sex>.from(widget.initialSexes);
-  }
-
-  bool get _hasFilters => _stages.isNotEmpty || _sexes.isNotEmpty;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPadding),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle bar
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Row(
-            children: [
-              Text(
-                'Filtros de búsqueda',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              if (_hasFilters)
-                TextButton(
-                  onPressed: () => setState(() {
-                    _stages = {};
-                    _sexes = {};
-                  }),
-                  child: const Text('Limpiar'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Etapa / Life stage
-          Text(
-            'Etapa',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildStageChips(theme),
-          const SizedBox(height: 16),
-
-          // Sexo
-          Text(
-            'Sexo',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildSexChips(theme),
-          const SizedBox(height: 20),
-
-          // Apply button
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => widget.onApply(_stages, _sexes),
-              child: const Text('Aplicar filtros'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStageChips(ThemeData theme) {
-    const stageGroups = [
-      (
-        label: 'Ternero/a',
-        stages: [LifeStage.calf, LifeStage.calfMale, LifeStage.calfFemale],
-      ),
-      (label: 'Vaquillona', stages: [LifeStage.heifer]),
-      (label: 'Torito', stages: [LifeStage.youngBull]),
-      (label: 'Novillo', stages: [LifeStage.steer]),
-      (label: 'Vaca', stages: [LifeStage.cow]),
-      (label: 'Toro', stages: [LifeStage.bull]),
-      (label: 'Potro/a', stages: [LifeStage.colt, LifeStage.filly]),
-      (label: 'Caballo', stages: [LifeStage.horse]),
-      (label: 'Yegua', stages: [LifeStage.mare]),
-      (label: 'Burro/a', stages: [LifeStage.donkey, LifeStage.donkeyFemale]),
-      (label: 'Mula', stages: [LifeStage.mule]),
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: stageGroups.map((group) {
-        final isSelected = group.stages.any(_stages.contains);
-        return FilterChip(
-          label: Text(group.label),
-          selected: isSelected,
-          showCheckmark: false,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _stages.addAll(group.stages);
-              } else {
-                _stages.removeAll(group.stages);
-              }
-            });
-          },
-          backgroundColor: AnimalPalette.filterChipBackground(
-            isSelected: isSelected,
-            isDark: theme.brightness == Brightness.dark,
-          ),
-          selectedColor: AnimalPalette.filterChipBackground(
-            isSelected: isSelected,
-            isDark: theme.brightness == Brightness.dark,
-          ),
-          checkmarkColor: AnimalPalette.uiAccent,
-          side: BorderSide(
-            color: AnimalPalette.filterChipBorder(
-              isSelected: isSelected,
-              isDark: theme.brightness == Brightness.dark,
-            ),
-          ),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            color: AnimalPalette.filterChipForeground(
-              isSelected: isSelected,
-              isDark: theme.brightness == Brightness.dark,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSexChips(ThemeData theme) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 6,
-      children: Sex.values.map((sex) {
-        final isSelected = _sexes.contains(sex);
-        return FilterChip(
-          label: Text(sex.displayName),
-          selected: isSelected,
-          showCheckmark: false,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _sexes.add(sex);
-              } else {
-                _sexes.remove(sex);
-              }
-            });
-          },
-          backgroundColor: AnimalPalette.filterChipBackground(
-            isSelected: isSelected,
-            isDark: theme.brightness == Brightness.dark,
-          ),
-          selectedColor: AnimalPalette.filterChipBackground(
-            isSelected: isSelected,
-            isDark: theme.brightness == Brightness.dark,
-          ),
-          side: BorderSide(
-            color: AnimalPalette.filterChipBorder(
-              isSelected: isSelected,
-              isDark: theme.brightness == Brightness.dark,
-            ),
-          ),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            color: AnimalPalette.filterChipForeground(
-              isSelected: isSelected,
-              isDark: theme.brightness == Brightness.dark,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}

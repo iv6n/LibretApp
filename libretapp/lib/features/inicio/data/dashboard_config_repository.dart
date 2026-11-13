@@ -33,8 +33,9 @@ class DashboardConfigRepository {
     CareProfile? profile,
   }) async {
     final raw = _prefs.getString(_widgetsKey);
-    if (raw == null || raw.isEmpty)
+    if (raw == null || raw.isEmpty) {
       return defaultDashboardWidgets(profile: profile);
+    }
     try {
       final list = jsonDecode(raw) as List<dynamic>;
       final configs =
@@ -45,6 +46,26 @@ class DashboardConfigRepository {
               )
               .toList()
             ..sort((a, b) => a.order.compareTo(b.order));
+      if (!configs.any(
+        (item) => item.type == DashboardWidgetType.animalSummary,
+      )) {
+        final pendingIndex = configs.indexWhere(
+          (item) => item.type == DashboardWidgetType.pendingTasks,
+        );
+        configs.insert(
+          pendingIndex < 0 ? 0 : pendingIndex + 1,
+          DashboardWidgetConfig(
+            id: 'animalSummary',
+            title: 'Resumen de animales',
+            type: DashboardWidgetType.animalSummary,
+            enabled: true,
+            order: pendingIndex < 0
+                ? (configs.isEmpty ? 0 : configs.first.order - 1)
+                : configs[pendingIndex].order + 1,
+            size: DashboardWidgetSize.expanded,
+          ),
+        );
+      }
       return configs;
     } catch (_) {
       return defaultDashboardWidgets(profile: profile);
@@ -60,8 +81,9 @@ class DashboardConfigRepository {
     CareProfile? profile,
   }) async {
     final raw = _prefs.getString(_actionsKey);
-    if (raw == null || raw.isEmpty)
+    if (raw == null || raw.isEmpty) {
       return defaultQuickActions(profile: profile);
+    }
     try {
       final list = jsonDecode(raw) as List<dynamic>;
       final actions =

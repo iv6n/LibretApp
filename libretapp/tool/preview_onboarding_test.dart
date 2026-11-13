@@ -35,102 +35,147 @@ void main() {
         ))
         .load();
   });
-  testWidgets('renders Android sized first launch previews without layout errors', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.view.resetPadding);
-    for (final preview in [
-      (
-        name: 'bienvenida-propuesta-implementada',
-        page: 0,
-        width: 390.0,
-        height: 844.0,
-      ),
-      (
-        name: 'vista-previa-propuesta-implementada',
-        page: 1,
-        width: 390.0,
-        height: 844.0,
-      ),
-      (
-        name: 'vista-previa-propuesta-oppo',
-        page: 1,
-        width: 360.0,
-        height: 800.0,
-      ),
-    ]) {
-      final oppo = preview.name.endsWith('-oppo');
-      tester.view.physicalSize = Size(preview.width, preview.height);
-      tester.view.padding = oppo
-          ? const FakeViewPadding(top: 36, bottom: 32)
-          : const FakeViewPadding(top: 26, bottom: 24);
-      for (final dark in [false, true]) {
-        final boundaryKey = GlobalKey();
-        await tester.pumpWidget(
-          RepaintBoundary(
-            key: boundaryKey,
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
-              home: OnboardingPage(
-                key: ValueKey('${preview.name}-$dark'),
-                initialPage: preview.page,
-                onStartEmpty: () async {},
-                onInstallDemo: (_) async {},
-                onAccessPhone: () async {},
+  testWidgets(
+    'renders Android sized first launch previews without layout errors',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPadding);
+      for (final preview in [
+        (
+          name: 'bienvenida-propuesta-implementada',
+          page: 0,
+          width: 390.0,
+          height: 844.0,
+        ),
+        (
+          name: 'bienvenida-propuesta-oppo',
+          page: 0,
+          width: 360.0,
+          height: 800.0,
+        ),
+        (
+          name: 'vista-previa-propuesta-implementada',
+          page: 1,
+          width: 390.0,
+          height: 844.0,
+        ),
+        (
+          name: 'vista-previa-propuesta-oppo',
+          page: 1,
+          width: 360.0,
+          height: 800.0,
+        ),
+        (name: 'vista-previa-tablet', page: 1, width: 600.0, height: 900.0),
+        (name: 'vista-previa-ancha', page: 1, width: 1200.0, height: 900.0),
+        (
+          name: 'acceso-propuesta-implementada',
+          page: 2,
+          width: 390.0,
+          height: 844.0,
+        ),
+        (name: 'acceso-propuesta-oppo', page: 2, width: 360.0, height: 800.0),
+        (name: 'acceso-tablet', page: 2, width: 600.0, height: 900.0),
+        (name: 'acceso-ancho', page: 2, width: 1200.0, height: 900.0),
+      ]) {
+        final oppo = preview.name.endsWith('-oppo');
+        tester.view.physicalSize = Size(preview.width, preview.height);
+        tester.view.padding = oppo
+            ? const FakeViewPadding(top: 36, bottom: 32)
+            : const FakeViewPadding(top: 26, bottom: 24);
+        for (final dark in [false, true]) {
+          final boundaryKey = GlobalKey();
+          await tester.pumpWidget(
+            RepaintBoundary(
+              key: boundaryKey,
+              child: MaterialApp(
+                debugShowCheckedModeBanner: false,
+                theme: dark ? AppTheme.darkTheme : AppTheme.lightTheme,
+                home: OnboardingPage(
+                  key: ValueKey('${preview.name}-$dark'),
+                  initialPage: preview.page,
+                  onStartEmpty: () async {},
+                  onInstallDemo: (_) async {},
+                  onAccessPhone: () async {},
+                ),
               ),
             ),
-          ),
-        );
-        await tester.runAsync(
-          () => Future.wait([
-            for (final asset in [
-              'onboarding_welcome_group.png',
-              'vaca.webp',
-              'onboarding_monstera_illustration.png',
-            ])
-              precacheImage(
-                AssetImage('assets/images/$asset'),
-                boundaryKey.currentContext!,
-              ),
-          ]).timeout(const Duration(seconds: 10)),
-        );
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        if (oppo) {
-          final note = find.text(
-            'Tus registros se guardan aquí. Haz copias periódicas fuera del teléfono.',
           );
-          expect(
-            tester.getBottomRight(note).dy,
-            lessThanOrEqualTo(768),
-            reason:
-                'El aviso debe caber por encima de la barra inferior sin desplazamiento.',
+          await tester.runAsync(
+            () => Future.wait([
+              for (final asset in [
+                'onboarding_welcome_group_v2.jpg',
+                'vaca.webp',
+                'canino.webp',
+                'crop_field.webp',
+                'onboarding_monstera_illustration.png',
+                'onboarding_start_options.jpg',
+              ])
+                precacheImage(
+                  AssetImage('assets/images/$asset'),
+                  boundaryKey.currentContext!,
+                ),
+            ]).timeout(const Duration(seconds: 10)),
           );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          if (preview.name == 'bienvenida-propuesta-oppo') {
+            expect(
+              tester
+                  .getBottomRight(
+                    find.widgetWithText(FilledButton, 'Ver un ejemplo'),
+                  )
+                  .dy,
+              lessThanOrEqualTo(preview.height - 32),
+            );
+          }
+          if (preview.name == 'vista-previa-propuesta-oppo') {
+            expect(
+              tester
+                  .getBottomRight(
+                    find.widgetWithText(FilledButton, 'Continuar'),
+                  )
+                  .dy,
+              lessThanOrEqualTo(preview.height - 32),
+            );
+          }
+          if (preview.name == 'acceso-propuesta-oppo') {
+            expect(
+              tester
+                  .getBottomRight(
+                    find.widgetWithText(
+                      OutlinedButton,
+                      'Continuar como invitado',
+                    ),
+                  )
+                  .dy,
+              lessThanOrEqualTo(preview.height - 32),
+            );
+          }
+          final captureDir = Platform.environment['LIBRET_CAPTURE_DIR'];
+          if (captureDir == null) continue;
+          final boundary =
+              boundaryKey.currentContext!.findRenderObject()!
+                  as RenderRepaintBoundary;
+          await tester.runAsync(() async {
+            final image = await boundary
+                .toImage(pixelRatio: 1.5)
+                .timeout(const Duration(seconds: 10));
+            final bytes = await image
+                .toByteData(format: ui.ImageByteFormat.png)
+                .timeout(const Duration(seconds: 10));
+            final dir = Directory(captureDir);
+            await dir.create(recursive: true);
+            await File(
+              '${dir.path}/${preview.name}${dark ? '-oscuro' : ''}.png',
+            ).writeAsBytes(bytes!.buffer.asUint8List());
+            image.dispose();
+          });
         }
-        final boundary =
-            boundaryKey.currentContext!.findRenderObject()!
-                as RenderRepaintBoundary;
-        await tester.runAsync(() async {
-          final image = await boundary
-              .toImage(pixelRatio: 1.5)
-              .timeout(const Duration(seconds: 10));
-          final bytes = await image
-              .toByteData(format: ui.ImageByteFormat.png)
-              .timeout(const Duration(seconds: 10));
-          final dir = Directory('artifacts/onboarding');
-          await dir.create(recursive: true);
-          await File(
-            '${dir.path}/${preview.name}${dark ? '-oscuro' : ''}.png',
-          ).writeAsBytes(bytes!.buffer.asUint8List());
-          image.dispose();
-        });
       }
-    }
-    tester.view.resetPadding();
-  });
+      tester.view.resetPadding();
+    },
+  );
 }

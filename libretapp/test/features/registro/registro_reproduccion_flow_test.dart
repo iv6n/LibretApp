@@ -89,6 +89,26 @@ void main() {
     expect(find.text('Guardar'), findsOneWidget);
   });
 
+  testWidgets('parición shortcut is clear before animal selection', (
+    tester,
+  ) async {
+    register();
+    await tester.pumpWidget(
+      const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: Locale('es'),
+        home: RegistroReproduccionPage(preset: 'paricion'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Registro de parición'), findsOneWidget);
+    expect(find.text('Registrar parto'), findsOneWidget);
+    expect(find.text('Desenlace'), findsOneWidget);
+    expect(find.text('Fecha de monta o inseminación'), findsNothing);
+  });
+
   testWidgets('the expected calving arrives already projected', (tester) async {
     // 283 days from today, so the user never has to count them by hand.
     register();

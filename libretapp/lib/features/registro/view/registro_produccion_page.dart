@@ -179,7 +179,7 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
     return BlocListener<RegistroBloc, RegistroState>(
       listener: (context, state) {
         if (state.status == RegistroStatus.success) {
-          Navigator.of(context).pop();
+          AppFormExitGuard.complete(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(l10n.detailFormProductionSaved)),
           );
@@ -204,6 +204,8 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
             fallbackIcon: Icons.agriculture_outlined,
             formKey: _formKey,
             saving: isSaving,
+            protectUnsavedChanges: true,
+            currentSignature: () => _selectedAnimal?.uuid ?? '',
             onSave: _save,
             saveLabel: l10n.actionSave,
             onCancel: () => Navigator.of(context).pop(),
@@ -211,7 +213,10 @@ class _RegistroProduccionViewState extends State<_RegistroProduccionView> {
             fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
-                onSelected: (a) => setState(() => _selectedAnimal = a),
+                onSelected: (a) {
+                  AppFormExitGuard.markChanged(context);
+                  setState(() => _selectedAnimal = a);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
               AppSelectField<ProductionRecordType>(

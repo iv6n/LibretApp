@@ -135,7 +135,13 @@ void main() {
   tearDown(() async => locator.reset());
   for (final species in Species.values) {
     for (final dark in [false, true]) {
-      for (final config in [(360.0, 1.0), (320.0, 2.0), (412.0, 1.0)]) {
+      for (final config in [
+        (360.0, 1.0),
+        (320.0, 2.0),
+        (412.0, 1.0),
+        (600.0, 1.0),
+        (1200.0, 1.0),
+      ]) {
         testWidgets(
           '$species ${dark ? "dark" : "light"} ${config.$1}dp text ${config.$2}',
           (tester) async {

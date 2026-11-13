@@ -1,7 +1,4 @@
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:libretapp/app/widgets/app_segmented_tab_bar.dart';
@@ -61,15 +58,6 @@ void main() {
         final background=(tester.widget<AnimatedContainer>(find.byKey(const ValueKey('segmented_tab_background_0'))).decoration! as BoxDecoration).color!;
         expect(textContrast(text.style!.color!,background),greaterThanOrEqualTo(4.5));
         expect(tester.takeException(),isNull);
-        if(width==320 && dark) {
-          await tester.runAsync(() async {
-          final boundary=tester.renderObject<RenderRepaintBoundary>(find.byKey(imageKey));
-          final bitmap=await boundary.toImage(pixelRatio:1);
-          final bytes=await bitmap.toByteData(format:ui.ImageByteFormat.png);
-          final directory=Directory('artifacts/implementacion-2026-10-19/ui');await directory.create(recursive:true);
-          await File('${directory.path}/dark-320-text200.png').writeAsBytes(bytes!.buffer.asUint8List());bitmap.dispose();
-          });
-        }
         await tester.tap(find.byTooltip('Acciones del movimiento'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Eliminar'));

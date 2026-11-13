@@ -7,7 +7,7 @@ import 'package:libretapp/features/inicio/data/inicio_dashboard_models.dart';
 import 'package:libretapp/features/reportes/view/tabs/reportes_summary_tab.dart';
 
 void main() {
-  testWidgets('empty herd state keeps add animal and Excel export actions', (
+  testWidgets('empty herd state offers one registration action', (
     tester,
   ) async {
     final cubit = _Reports(_summary(totalAnimals: 0));
@@ -26,7 +26,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Registrar primer animal'), findsOneWidget);
-    expect(find.text('Exportar a Excel'), findsOneWidget);
+    expect(find.text('Exportar a Excel'), findsNothing);
   });
 
   testWidgets('all upcoming calvings can be expanded beyond the first five', (

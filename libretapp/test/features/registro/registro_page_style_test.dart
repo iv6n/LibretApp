@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -13,6 +14,7 @@ import 'package:libretapp/features/directorio/animales/infrastructure/animal_rep
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/features/directorio/cultivos/domain/cultivation_entity.dart';
 import 'package:libretapp/features/directorio/cultivos/domain/cultivation_repository.dart';
 import 'package:libretapp/features/registro/view/registro_page.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
@@ -66,25 +68,30 @@ void main() {
       expect(find.byType(TabBar), findsNothing);
       expect(find.byType(TabBarView), findsNothing);
       expect(find.text('Registro por lotes'), findsNothing);
-      await tester.tap(find.text('Ver todas las funciones'));
+      await tester.tap(find.textContaining(RegExp(r'^Ver \d+ funciones más$')));
       await tester.pumpAndSettle();
       expect(find.text('Registro por lotes'), findsOneWidget);
     },
   );
 
-  testWidgets('ganado prioriza acciones de lote según animales existentes', (
-    tester,
-  ) async {
-    locator.registerSingleton<AnimalRepository>(
-      _FakeAnimalRepository([_animal(Species.cattle)]),
-    );
-    await tester.pumpWidget(
-      MaterialApp(theme: AppTheme.lightTheme, home: const RegistroPage()),
-    );
-    await tester.pumpAndSettle();
-    expect(find.text('Tratar lote'), findsOneWidget);
-    expect(find.text('Lote'), findsOneWidget);
-  });
+  testWidgets(
+    'ganado prioriza captura rápida y permite expandir todas las acciones',
+    (tester) async {
+      locator.registerSingleton<AnimalRepository>(
+        _FakeAnimalRepository([_animal(Species.cattle)]),
+      );
+      await tester.pumpWidget(
+        MaterialApp(theme: AppTheme.lightTheme, home: const RegistroPage()),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Peso'), findsOneWidget);
+      expect(find.text('Tratar lote'), findsNothing);
+      await tester.tap(find.textContaining(RegExp(r'^Ver \d+ funciones más$')));
+      await tester.pumpAndSettle();
+      expect(find.text('Tratar lote'), findsOneWidget);
+      expect(find.text('Lote'), findsOneWidget);
+    },
+  );
 
   testWidgets('mascotas y espacio mixto priorizan acciones pertinentes', (
     tester,
@@ -97,7 +104,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Añadir mascota'), findsOneWidget);
-    expect(find.text('Sanitario'), findsOneWidget);
+    expect(find.text('Sanitario'), findsNothing);
     expect(find.text('Tratar lote'), findsNothing);
 
     await locator.unregister<AnimalRepository>();
@@ -110,9 +117,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Añadir animal'), findsOneWidget);
-    expect(find.text('Lote'), findsOneWidget);
-    expect(find.text('Sanitario'), findsOneWidget);
-    await tester.tap(find.text('Ver todas las funciones'));
+    expect(find.text('Lote'), findsNothing);
+    expect(find.text('Sanitario'), findsNothing);
+    await tester.tap(find.textContaining(RegExp(r'^Ver \d+ funciones más$')));
     await tester.pumpAndSettle();
     expect(find.text('Lote'), findsOneWidget);
     expect(find.text('Sanitario'), findsOneWidget);
@@ -164,23 +171,29 @@ void main() {
       _FakeCultivationRepository(),
     );
     final router = GoRouter(
+      initialLocation: AppRoutes.registro,
       routes: [
-        GoRoute(path: '/', builder: (context, state) => const RegistroPage()),
         GoRoute(
-          path: '/plantas/nueva',
-          name: AppRoutes.nameCultivoNuevo,
-          builder: (context, state) => Scaffold(
-            body: Text(
-              'Alta de planta sin ubicación: '
-              '${state.uri.queryParameters.isEmpty}',
+          path: AppRoutes.registro,
+          builder: (context, state) => const RegistroPage(),
+          routes: [
+            GoRoute(
+              path: 'plantas/nueva',
+              name: AppRoutes.nameRegistroMenuCultivoNuevo,
+              builder: (context, state) => Scaffold(
+                body: Text(
+                  'Alta de planta sin ubicación: '
+                  '${state.uri.queryParameters.isEmpty}',
+                ),
+              ),
             ),
-          ),
-        ),
-        GoRoute(
-          path: '/ubicaciones/nueva',
-          name: AppRoutes.nameUbicacionNueva,
-          builder: (context, state) =>
-              const Scaffold(body: Text('Alta de ubicación')),
+            GoRoute(
+              path: 'ubicaciones/nueva',
+              name: AppRoutes.nameRegistroMenuUbicacionNueva,
+              builder: (context, state) =>
+                  const Scaffold(body: Text('Alta de ubicación')),
+            ),
+          ],
         ),
       ],
     );
@@ -211,7 +224,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Programar tarea'), findsOneWidget);
-    await tester.tap(find.text('Ver todas las funciones'));
+    await tester.tap(find.textContaining(RegExp(r'^Ver \d+ funciones más$')));
     await tester.pumpAndSettle();
 
     final mainIconContainers = _decoratedContainers(tester).where((container) {
@@ -234,7 +247,7 @@ void main() {
     expect(mainIconContainers.length, greaterThan(cardCount));
     expect(
       mainIconContainers.where(
-        (container) => _sizeOf(tester, container).width == 44,
+        (container) => _sizeOf(tester, container).width == 16,
       ),
       hasLength(mainIconContainers.length),
     );
@@ -244,7 +257,203 @@ void main() {
     expect(find.text('Nueva ubicación'), findsOneWidget);
   });
 
-  for (final width in <double>[360, 390, 604, 1280]) {
+  testWidgets('las tarjetas explican su acción y exponen contexto accesible', (
+    tester,
+  ) async {
+    final semanticsHandle = tester.ensureSemantics();
+
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const RegistroPage()),
+    );
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(const ValueKey('registro-card-Programar tarea'));
+    expect(find.text('Crear un recordatorio en Agenda'), findsOneWidget);
+    expect(tester.getSize(card).height, greaterThanOrEqualTo(64));
+    final data = tester.getSemantics(card).getSemanticsData();
+    expect(data.label, 'Programar tarea. Crear un recordatorio en Agenda');
+    expect(data.hint, 'Abrir formulario');
+    expect(data.hasAction(SemanticsAction.tap), isTrue);
+    semanticsHandle.dispose();
+  });
+
+  testWidgets('cada acción visible del menú abre su ruta asignada', (
+    tester,
+  ) async {
+    locator.registerSingleton<CultivationRepository>(
+      _FakeCultivationRepository(),
+    );
+
+    ({String label, String routeName, String? preset}) target(
+      String label,
+      String routeName, {
+      String? preset,
+    }) => (label: label, routeName: routeName, preset: preset);
+
+    final targets = [
+      target('Programar tarea', AppRoutes.nameRegistroMenuAgendaNuevo),
+      target('Añadir animal', AppRoutes.nameRegistroMenuAnimalNuevo),
+      target(
+        'Alta de varios animales',
+        AppRoutes.nameRegistroMenuAnimalMultiple,
+      ),
+      target('Lote', AppRoutes.nameRegistroMenuLoteNuevo),
+      target(
+        'Parición',
+        AppRoutes.nameRegistroReproduccion,
+        preset: 'paricion',
+      ),
+      target('Tratar lote', AppRoutes.nameRegistroTratarLote),
+      target('Destete', AppRoutes.nameRegistroDestete),
+      target('Peso', AppRoutes.nameRegistroPeso),
+      target('Sanitario', AppRoutes.nameRegistroSanitario),
+      target('Costo', AppRoutes.nameRegistroCosto),
+      target('Cambio de ubicación', AppRoutes.nameRegistroMovimiento),
+      target('Producción', AppRoutes.nameRegistroProduccion),
+      target('Ordeña', AppRoutes.nameRegistroOrdena),
+      target('Reproducción', AppRoutes.nameRegistroReproduccion),
+      target('Comercial', AppRoutes.nameRegistroComercial),
+      target('Registro por lotes', AppRoutes.nameBatchRecords),
+      target('Añadir planta o cultivo', AppRoutes.nameRegistroMenuCultivoNuevo),
+      target('Nueva ubicación', AppRoutes.nameRegistroMenuUbicacionNueva),
+      if (ReleaseFeatures.hardwareIntegrationsEnabled)
+        target('RFID', AppRoutes.nameRfid),
+      if (!ReleaseFeatures.demoMode)
+        target('Importar hato', AppRoutes.nameHerdImport),
+    ];
+    final routeNames = targets.map((target) => target.routeName).toSet();
+    final menuRouteNames = {
+      AppRoutes.nameRegistroMenuAgendaNuevo,
+      AppRoutes.nameRegistroMenuAnimalNuevo,
+      AppRoutes.nameRegistroMenuAnimalMultiple,
+      AppRoutes.nameRegistroMenuLoteNuevo,
+      AppRoutes.nameRegistroMenuCultivoNuevo,
+      AppRoutes.nameRegistroMenuUbicacionNueva,
+    };
+    Widget destination(String routeName, GoRouterState state) => Scaffold(
+      body: Center(
+        child: Text(
+          'abrió $routeName'
+          '${state.uri.queryParameters['preset'] == null ? '' : ' ${state.uri.queryParameters['preset']}'}',
+        ),
+      ),
+    );
+    final router = GoRouter(
+      initialLocation: AppRoutes.registro,
+      routes: [
+        GoRoute(
+          path: AppRoutes.registro,
+          builder: (context, state) => const RegistroPage(),
+          routes: [
+            for (final routeName in menuRouteNames)
+              GoRoute(
+                path: routeName,
+                name: routeName,
+                builder: (context, state) => destination(routeName, state),
+              ),
+          ],
+        ),
+        for (final (index, routeName)
+            in routeNames
+                .where((name) => !menuRouteNames.contains(name))
+                .indexed)
+          GoRoute(
+            path: '/test/$index',
+            name: routeName,
+            builder: (context, state) => destination(routeName, state),
+          ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp.router(theme: AppTheme.lightTheme, routerConfig: router),
+    );
+    await tester.pumpAndSettle();
+    final showAll = find.textContaining(RegExp(r'^Ver \d+ funciones más$'));
+    await tester.ensureVisible(showAll);
+    await tester.pumpAndSettle();
+    await tester.tap(showAll);
+    await tester.pumpAndSettle();
+
+    for (final target in targets) {
+      final card = find.byKey(ValueKey('registro-card-${target.label}')).last;
+      await tester.ensureVisible(card);
+      await tester.pumpAndSettle();
+      await tester.tap(card);
+      await tester.pumpAndSettle();
+
+      final expected =
+          'abrió ${target.routeName}'
+          '${target.preset == null ? '' : ' ${target.preset}'}';
+      expect(find.text(expected), findsOneWidget, reason: target.label);
+
+      router.pop();
+      await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('las acciones de cultivo explican si aún no hay cultivos', (
+    tester,
+  ) async {
+    locator.registerSingleton<CultivationRepository>(
+      _FakeCultivationRepository(),
+    );
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const RegistroPage()),
+    );
+    await tester.pumpAndSettle();
+
+    for (final label in ['Cosecha', 'Riego', 'Salud de cultivo', 'Tarea']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.tap(find.text(label));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text('No hay cultivos disponibles para registrar.'),
+        findsOneWidget,
+        reason: label,
+      );
+      tester
+          .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
+          .clearSnackBars();
+      await tester.pumpAndSettle();
+    }
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('todas las opciones siguen accesibles con texto al 200 %', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: const RegistroPage(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final more = find.textContaining(RegExp(r'^Ver \d+ funciones más$'));
+    await tester.ensureVisible(more);
+    await tester.tap(more);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Comercial'));
+    final card = find.byKey(const ValueKey('registro-card-Comercial'));
+    expect(tester.getSize(card).height, greaterThanOrEqualTo(64));
+    await tester.ensureVisible(find.text('Nueva ubicación'));
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final width in <double>[320, 390, 600, 1200]) {
     for (final dark in <bool>[false, true]) {
       testWidgets(
         'menú sin desbordes a ${width.toInt()} px en tema ${dark ? 'oscuro' : 'claro'}',
@@ -265,7 +474,10 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Programar tarea'), findsOneWidget);
-          expect(find.text('Ver todas las funciones'), findsOneWidget);
+          expect(
+            find.textContaining(RegExp(r'^Ver \d+ funciones más$')),
+            findsOneWidget,
+          );
           expect(tester.takeException(), isNull);
         },
       );
@@ -290,6 +502,11 @@ class _FakeLocationRepository implements LocationRepository {
 }
 
 class _FakeCultivationRepository implements CultivationRepository {
+  @override
+  Future<List<CultivationEntity>> getAll({
+    bool includeArchived = false,
+  }) async => const [];
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

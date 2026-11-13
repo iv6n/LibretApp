@@ -1,5 +1,5 @@
 // Run with: flutter test tool/preview_record_styles_test.dart
-// Writes the shared record form preview to build/record_style_audit/.
+// Set LIBRET_CAPTURE_DIR to a temporary directory to export previews.
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -106,6 +106,8 @@ void main() {
           ),
         ),
       );
+      final captureDir = Platform.environment['LIBRET_CAPTURE_DIR'];
+      if (captureDir == null) return;
       await tester.runAsync(() async {
         final context = tester.element(find.byType(AppFormScaffold).first);
         for (final example in examples) {
@@ -120,7 +122,7 @@ void main() {
                 as RenderRepaintBoundary;
         final rendered = await boundary.toImage();
         final png = await rendered.toByteData(format: ui.ImageByteFormat.png);
-        final directory = Directory('build/record_style_audit');
+        final directory = Directory(captureDir);
         await directory.create(recursive: true);
         await File(
           '${directory.path}/${dark ? 'dark' : 'light'}.png',

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:libretapp/app/widgets/app_bottom_sheet.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:libretapp/core/di/injection.dart';
+import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/inicio/data/dashboard_config_repository.dart';
 import 'package:libretapp/features/inicio/data/dashboard_quick_action.dart';
 import 'package:libretapp/features/inicio/data/dashboard_widget_config.dart';
@@ -145,84 +146,133 @@ class _DashboardCustomizeSheetState extends State<_DashboardCustomizeSheet> {
           children: [
             Row(
               children: [
-                Text(
-                  'Personalizar inicio',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: _previewSuggestions,
-                  child: const Text('Aplicar sugerida'),
+                Expanded(
+                  child: Text(
+                    'Personalizar inicio',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
+                  tooltip: 'Cerrar',
                 ),
               ],
             ),
-            Text(
-              'Widgets del dashboard',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              flex: 3,
-              child: ReorderableListView.builder(
-                itemCount: _widgets.length,
-                onReorder: (oldIndex, newIndex) {
-                  setState(() {
-                    if (newIndex > oldIndex) newIndex--;
-                    final item = _widgets.removeAt(oldIndex);
-                    _widgets.insert(newIndex, item);
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final w = _widgets[index];
-                  return SwitchListTile(
-                    key: ValueKey(w.id),
-                    title: Text(w.title),
-                    value: w.enabled,
-                    secondary: const Icon(Icons.drag_handle),
-                    onChanged: (v) {
-                      setState(() {
-                        _widgets[index] = w.copyWith(enabled: v);
-                      });
-                    },
-                  );
-                },
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _previewSuggestions,
+                child: const Text('Aplicar configuración sugerida'),
               ),
             ),
-            Text(
-              'Accesos rápidos',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
             Expanded(
-              flex: 2,
-              child: ReorderableListView.builder(
-                itemCount: _actions.length,
-                onReorder: (oldIndex, newIndex) {
-                  setState(() {
-                    if (newIndex > oldIndex) newIndex--;
-                    final item = _actions.removeAt(oldIndex);
-                    _actions.insert(newIndex, item);
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final a = _actions[index];
-                  return SwitchListTile(
-                    key: ValueKey(a.id),
-                    title: Text(a.label),
-                    value: a.enabled,
-                    secondary: const Icon(Icons.drag_handle),
-                    onChanged: (v) {
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xs),
+                      child: Text(
+                        'Bloques de Inicio',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                  ),
+                  SliverReorderableList(
+                    itemCount: _widgets.length,
+                    onReorderItem: (oldIndex, newIndex) {
                       setState(() {
-                        _actions[index] = a.copyWith(enabled: v);
+                        final item = _widgets.removeAt(oldIndex);
+                        _widgets.insert(newIndex, item);
                       });
                     },
-                  );
-                },
+                    itemBuilder: (context, index) {
+                      final w = _widgets[index];
+                      final pendingEnabled = _widgets.any(
+                        (item) =>
+                            item.type == DashboardWidgetType.pendingTasks &&
+                            item.enabled,
+                      );
+                      return SwitchListTile(
+                        key: ValueKey('widget-${w.id}'),
+                        title: Text(w.title),
+                        subtitle: w.type == DashboardWidgetType.weather
+                            ? const Text('Siempre visible en la parte superior')
+                            : w.type == DashboardWidgetType.pendingTasks ||
+                                  w.type == DashboardWidgetType.animalSummary
+                            ? const Text('Tarjeta principal')
+                            : w.type == DashboardWidgetType.healthAlerts &&
+                                  pendingEnabled
+                            ? const Text('Incluidas en Pendientes')
+                            : null,
+                        value: w.type == DashboardWidgetType.weather
+                            ? true
+                            : w.enabled,
+                        secondary: w.type == DashboardWidgetType.weather
+                            ? const Icon(Icons.push_pin_outlined)
+                            : ReorderableDragStartListener(
+                                index: index,
+                                child: Tooltip(
+                                  message: 'Reordenar ${w.title}',
+                                  child: const Icon(Icons.drag_handle),
+                                ),
+                              ),
+                        onChanged: w.type == DashboardWidgetType.weather
+                            ? null
+                            : (value) {
+                                setState(() {
+                                  _widgets[index] = w.copyWith(enabled: value);
+                                });
+                              },
+                      );
+                    },
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.md),
+                      child: Text(
+                        'Accesos rápidos',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                  ),
+                  SliverReorderableList(
+                    itemCount: _actions.length,
+                    onReorderItem: (oldIndex, newIndex) {
+                      setState(() {
+                        final item = _actions.removeAt(oldIndex);
+                        _actions.insert(newIndex, item);
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final action = _actions[index];
+                      return SwitchListTile(
+                        key: ValueKey('action-${action.id}'),
+                        title: Text(action.label),
+                        subtitle:
+                            action.routeName == AppRoutes.nameAnimalNuevoRapido
+                            ? const Text('El alta se muestra en Registrar')
+                            : null,
+                        value: action.enabled,
+                        secondary: ReorderableDragStartListener(
+                          index: index,
+                          child: Tooltip(
+                            message: 'Reordenar ${action.label}',
+                            child: const Icon(Icons.drag_handle),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _actions[index] = action.copyWith(enabled: value);
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: AppSpacing.xs),
             FilledButton(onPressed: _save, child: const Text('Guardar')),
           ],
         ),

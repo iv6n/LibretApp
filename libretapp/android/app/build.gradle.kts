@@ -35,10 +35,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         // Permanent pilot identity; changing it would break Android upgrades.
         applicationId = "app.libret"
@@ -99,6 +95,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-splashscreen:1.2.0")
     // Used by the independent six-hour weather alert worker.
@@ -107,4 +109,21 @@ dependencies {
 
 flutter {
     source = "../.."
+}
+
+// `flutter run` sin `--flavor` pide `assembleDebug` (que agrega los tres
+// flavors) y busca `outputs/flutter-apk/app-debug.apk`, pero cada flavor sólo
+// genera `app-<flavor>-debug.apk`. Publicamos el APK de `standard` (el flavor
+// interno por defecto) con el nombre sin flavor para que Run/F5 funcione.
+val unflavoredDebugApk = tasks.register<Copy>("publishUnflavoredDebugApk") {
+    from(layout.buildDirectory.file("outputs/apk/standard/debug/app-standard-debug.apk"))
+    into(layout.buildDirectory.dir("outputs/flutter-apk"))
+    rename { "app-debug.apk" }
+    doLast {
+        logger.lifecycle("app-debug.apk publicado desde el flavor standard.")
+    }
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+    finalizedBy(unflavoredDebugApk)
 }

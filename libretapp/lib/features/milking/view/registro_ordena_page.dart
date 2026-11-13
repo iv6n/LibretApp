@@ -2,7 +2,6 @@ library;
 
 import 'package:libretapp/core/utils/number_parsing.dart';
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,6 +50,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
   final Map<String, TextEditingController> _groupControllers = {};
   String? _selectedAnimalUuid;
   bool _presetApplied = false;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -81,6 +81,75 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     return name == null || name.isEmpty
         ? animal.earTagNumber
         : '${animal.earTagNumber} · $name';
+  }
+
+  void _markUncommittedInput() {
+    if (!mounted) return;
+    final state = context.read<MilkingCubit>().state;
+    if (_hasUncommittedInput(state)) {
+      AppFormExitGuard.markCustomChanged(context);
+    } else {
+      AppFormExitGuard.reset(context);
+    }
+  }
+
+  bool _hasUncommittedInput(MilkingState state) {
+    final individualRaw = _individualAmountCtrl.text.trim();
+    if (individualRaw.isNotEmpty) {
+      final animalUuid = _selectedAnimalUuid;
+      if (animalUuid == null) return true;
+      final parsed = _parseMilliliters(individualRaw);
+      if (parsed == null ||
+          state.entryForAnimal(animalUuid)?.volumeMilliliters != parsed) {
+        return true;
+      }
+    }
+    for (final item in _groupControllers.entries) {
+      final raw = item.value.text.trim();
+      final existing = state.entryForAnimal(item.key);
+      if (raw.isEmpty) {
+        if (existing != null) return true;
+        continue;
+      }
+      final parsed = _parseMilliliters(raw);
+      if (parsed == null || existing?.volumeMilliliters != parsed) return true;
+    }
+    return false;
+  }
+
+  void _refreshExitGuard(MilkingState state) {
+    if (_hasUncommittedInput(state)) {
+      AppFormExitGuard.markCustomChanged(context);
+    } else {
+      AppFormExitGuard.reset(context);
+    }
+  }
+
+  void _setBusy(bool value) {
+    if (!mounted || _busy == value) return;
+    setState(() => _busy = value);
+  }
+
+  Future<void> _write(Future<void> Function() action) async {
+    if (_busy) return;
+    _setBusy(true);
+    try {
+      await action();
+    } finally {
+      _setBusy(false);
+    }
+  }
+
+  Future<void> _removeAnimal(String animalUuid) async {
+    if (_busy) return;
+    _setBusy(true);
+    try {
+      await context.read<MilkingCubit>().removeAnimal(animalUuid);
+      _groupControllers[animalUuid]?.clear();
+    } finally {
+      _setBusy(false);
+      if (mounted) _refreshExitGuard(context.read<MilkingCubit>().state);
+    }
   }
 
   AnimalEntity? _animalByUuid(MilkingState state, String uuid) {
@@ -118,7 +187,12 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         false;
   }
 
-  Future<bool> _saveVolume(String animalUuid, String raw) async {
+  Future<bool> _saveVolume(
+    String animalUuid,
+    String raw, {
+    bool manageBusy = true,
+  }) async {
+    if (_busy && manageBusy) return false;
     final milliliters = _parseMilliliters(raw);
     if (milliliters == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -130,19 +204,27 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       );
       return false;
     }
-    if (!await _confirmUnusualAmount(milliliters) || !mounted) return false;
-    final cubit = context.read<MilkingCubit>();
-    await cubit.upsertAnimalVolume(
-      animalUuid: animalUuid,
-      volumeMilliliters: milliliters,
-    );
-    // A failure here is already surfaced by the BlocConsumer's listener
-    // (which shows state.errorMessage in a SnackBar), so just report
-    // success/failure back to the caller without duplicating that.
-    return cubit.state.status != MilkingLoadStatus.failure;
+    if (manageBusy) _setBusy(true);
+    try {
+      if (!await _confirmUnusualAmount(milliliters) || !mounted) return false;
+      final cubit = context.read<MilkingCubit>();
+      await cubit.upsertAnimalVolume(
+        animalUuid: animalUuid,
+        volumeMilliliters: milliliters,
+      );
+      // A failure here is already surfaced by the BlocConsumer's listener
+      // (which shows state.errorMessage in a SnackBar).
+      return cubit.state.status != MilkingLoadStatus.failure;
+    } finally {
+      if (manageBusy) {
+        _setBusy(false);
+        if (mounted) _refreshExitGuard(context.read<MilkingCubit>().state);
+      }
+    }
   }
 
   Future<bool> _addIndividual() async {
+    if (_busy) return false;
     final animalUuid = _selectedAnimalUuid;
     if (animalUuid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -154,80 +236,119 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       );
       return false;
     }
-    final saved = await _saveVolume(animalUuid, _individualAmountCtrl.text);
-    if (saved && mounted) {
-      setState(() {
-        _selectedAnimalUuid = null;
-        _individualAmountCtrl.clear();
-      });
+    _setBusy(true);
+    try {
+      final saved = await _saveVolume(
+        animalUuid,
+        _individualAmountCtrl.text,
+        manageBusy: false,
+      );
+      if (saved && mounted) {
+        setState(() {
+          _selectedAnimalUuid = null;
+          _individualAmountCtrl.clear();
+        });
+      }
+      return saved;
+    } finally {
+      _setBusy(false);
+      if (mounted) _refreshExitGuard(context.read<MilkingCubit>().state);
     }
-    return saved;
   }
 
-  Future<bool> _commitGroup(MilkingState state) async {
-    final animals = state.animalsForLote(state.session?.sourceLoteUuid);
-    for (final animal in animals) {
-      final controller = _groupControllers[animal.uuid];
-      if (controller == null) continue;
-      final raw = controller.text.trim();
-      final existing = state.entryForAnimal(animal.uuid);
-      if (raw.isEmpty) {
-        if (existing != null) {
-          await context.read<MilkingCubit>().removeAnimal(animal.uuid);
+  Future<bool> _commitGroup(
+    MilkingState state, {
+    bool manageBusy = true,
+  }) async {
+    if (_busy && manageBusy) return false;
+    if (manageBusy) _setBusy(true);
+    try {
+      final animals = state.animalsForLote(state.session?.sourceLoteUuid);
+      for (final animal in animals) {
+        if (!mounted) return false;
+        final controller = _groupControllers[animal.uuid];
+        if (controller == null) continue;
+        final raw = controller.text.trim();
+        final existing = state.entryForAnimal(animal.uuid);
+        if (raw.isEmpty) {
+          if (existing != null) {
+            await context.read<MilkingCubit>().removeAnimal(animal.uuid);
+          }
+          continue;
         }
-        continue;
-      }
-      final parsed = _parseMilliliters(raw);
-      if (parsed == null) {
-        if (!mounted) return false;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(
-                context,
-              ).detailFormMilkingCheckAnimalVolume(_animalLabel(animal)),
-            ),
-          ),
-        );
-        return false;
-      }
-      if (existing?.volumeMilliliters != parsed) {
-        final confirmed = await _confirmUnusualAmount(parsed);
-        if (!mounted) return false;
-        if (!confirmed) {
+        final parsed = _parseMilliliters(raw);
+        if (parsed == null) {
+          if (!mounted) return false;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 AppLocalizations.of(
                   context,
-                ).detailFormMilkingReviewBeforeContinue,
+                ).detailFormMilkingCheckAnimalVolume(_animalLabel(animal)),
               ),
             ),
           );
           return false;
         }
-        final cubit = context.read<MilkingCubit>();
-        await cubit.upsertAnimalVolume(
-          animalUuid: animal.uuid,
-          volumeMilliliters: parsed,
-        );
-        // A failure here is already surfaced by the BlocConsumer's listener.
-        if (cubit.state.status == MilkingLoadStatus.failure) return false;
+        if (existing?.volumeMilliliters != parsed) {
+          final confirmed = await _confirmUnusualAmount(parsed);
+          if (!mounted) return false;
+          if (!confirmed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  AppLocalizations.of(
+                    context,
+                  ).detailFormMilkingReviewBeforeContinue,
+                ),
+              ),
+            );
+            return false;
+          }
+          final cubit = context.read<MilkingCubit>();
+          await cubit.upsertAnimalVolume(
+            animalUuid: animal.uuid,
+            volumeMilliliters: parsed,
+          );
+          // A failure here is already surfaced by the BlocConsumer's listener.
+          if (cubit.state.status == MilkingLoadStatus.failure) return false;
+        }
+      }
+      return true;
+    } finally {
+      if (manageBusy) {
+        _setBusy(false);
+        if (mounted) _refreshExitGuard(context.read<MilkingCubit>().state);
       }
     }
-    return true;
   }
 
   Future<void> _finalize(MilkingState state) async {
-    FocusScope.of(context).unfocus();
-    if (state.captureMode == MilkingCaptureMode.group) {
-      if (!await _commitGroup(state) || !mounted) return;
-    } else if (_selectedAnimalUuid != null &&
-        _individualAmountCtrl.text.trim().isNotEmpty) {
-      if (!await _addIndividual()) return;
+    if (_busy || state.status == MilkingLoadStatus.saving) return;
+    _setBusy(true);
+    try {
+      FocusScope.of(context).unfocus();
+      if (state.captureMode == MilkingCaptureMode.group) {
+        if (!await _commitGroup(state, manageBusy: false) || !mounted) return;
+      } else if (_selectedAnimalUuid != null &&
+          _individualAmountCtrl.text.trim().isNotEmpty) {
+        final saved = await _saveVolume(
+          _selectedAnimalUuid!,
+          _individualAmountCtrl.text,
+          manageBusy: false,
+        );
+        if (!saved || !mounted) return;
+        setState(() {
+          _selectedAnimalUuid = null;
+          _individualAmountCtrl.clear();
+        });
+      }
+      if (!mounted) return;
+      await context.read<MilkingCubit>().finalize();
+    } finally {
+      _setBusy(false);
+      if (mounted) _refreshExitGuard(context.read<MilkingCubit>().state);
     }
-    if (!mounted) return;
-    await context.read<MilkingCubit>().finalize();
   }
 
   Future<AnimalEntity?> _showAnimalPicker(MilkingState state) async {
@@ -330,7 +451,9 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       );
       return;
     }
-    await context.read<MilkingCubit>().updateSchedule(occurredAt: combined);
+    await _write(
+      () => context.read<MilkingCubit>().updateSchedule(occurredAt: combined),
+    );
   }
 
   Future<void> _pickTime(MilkingSession session) async {
@@ -356,9 +479,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       );
       return;
     }
-    await context.read<MilkingCubit>().updateSchedule(
-      occurredAt: combined,
-      shift: MilkingShift.fromTime(combined),
+    await _write(
+      () => context.read<MilkingCubit>().updateSchedule(
+        occurredAt: combined,
+        shift: MilkingShift.fromTime(combined),
+      ),
     );
   }
 
@@ -380,7 +505,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
         if (state.status == MilkingLoadStatus.completed) {
           final messenger = ScaffoldMessenger.of(context);
           final l10n = AppLocalizations.of(context);
-          Navigator.of(context).pop(true);
+          AppFormExitGuard.complete(context, true);
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.detailFormMilkingSaved)),
           );
@@ -394,28 +519,193 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
       builder: (context, state) {
         if (state.status == MilkingLoadStatus.initial ||
             state.status == MilkingLoadStatus.loading) {
-          return const Scaffold(
-            appBar: _MilkingAppBar(),
-            body: Center(child: CircularProgressIndicator()),
+          return const AppFormExitGuard(
+            enabled: true,
+            saving: true,
+            exitConfirmationMessage:
+                'Las lecturas ya agregadas se conservarán. Solo se perderán '
+                'los litros escritos que aún no agregaste.',
+            child: Scaffold(
+              appBar: _MilkingAppBar(),
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+        if (state.status == MilkingLoadStatus.choosingDraft) {
+          return AppFormExitGuard(
+            enabled: true,
+            saving: _busy,
+            exitConfirmationMessage:
+                'Las lecturas ya agregadas se conservarán. Solo se perderán '
+                'los litros escritos que aún no agregaste.',
+            child: Scaffold(
+              appBar: const _MilkingAppBar(),
+              body: _buildDraftChoice(state),
+            ),
           );
         }
         if (state.session == null) {
-          return Scaffold(
-            appBar: const _MilkingAppBar(),
-            body: Center(
-              child: FilledButton(
-                onPressed: () => context.read<MilkingCubit>().load(),
-                child: Text(AppLocalizations.of(context).actionRetry),
+          return AppFormExitGuard(
+            enabled: true,
+            saving: _busy,
+            exitConfirmationMessage:
+                'Las lecturas ya agregadas se conservarán. Solo se perderán '
+                'los litros escritos que aún no agregaste.',
+            child: Scaffold(
+              appBar: const _MilkingAppBar(),
+              body: Center(
+                child: FilledButton(
+                  onPressed: _busy
+                      ? null
+                      : () => context.read<MilkingCubit>().load(),
+                  child: Text(AppLocalizations.of(context).actionRetry),
+                ),
               ),
             ),
           );
         }
-        return Scaffold(
-          appBar: const _MilkingAppBar(),
-          body: _buildBody(state),
+        return AppFormExitGuard(
+          enabled: true,
+          saving:
+              _busy ||
+              state.status == MilkingLoadStatus.saving ||
+              state.status == MilkingLoadStatus.loading,
+          exitConfirmationMessage:
+              'Las lecturas ya agregadas se conservarán. Solo se perderán '
+              'los litros escritos que aún no agregaste.',
+          child: Scaffold(
+            appBar: _MilkingAppBar(
+              draftCount: state.draftSessions
+                  .where((draft) => draft.uuid != state.session?.uuid)
+                  .length,
+              onShowDrafts:
+                  state.draftSessions.any(
+                        (draft) => draft.uuid != state.session?.uuid,
+                      ) &&
+                      !_busy
+                  ? () => _showDrafts(state)
+                  : null,
+            ),
+            body: _buildBody(state),
+          ),
         );
       },
     );
+  }
+
+  Widget _buildDraftChoice(MilkingState state) {
+    final dateLabel = DateFormat('dd/MM/yyyy · HH:mm');
+    return AppFormBody(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AppRecordHeader(style: RecordFormStyle.milking),
+          const SizedBox(height: 20),
+          Text(
+            'Hay ordeñas anteriores sin finalizar',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Puedes continuar una captura guardada o empezar otra sesión. '
+            'Las lecturas anteriores se conservarán.',
+          ),
+          const SizedBox(height: 16),
+          for (final draft in state.draftSessions)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      dateLabel.format(draft.occurredAt),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('Lecturas guardadas'),
+                    const SizedBox(height: 10),
+                    FilledButton.tonalIcon(
+                      onPressed: _busy
+                          ? null
+                          : () => context.read<MilkingCubit>().resumeDraft(
+                              draft.uuid,
+                            ),
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Reanudar'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _busy
+                ? null
+                : () => context.read<MilkingCubit>().startNewSession(),
+            icon: const Icon(Icons.add),
+            label: const Text('Nueva sesión'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDrafts(MilkingState state) async {
+    const newSession = '__new_milking_session__';
+    final dateLabel = DateFormat('dd/MM/yyyy · HH:mm');
+    final selectedUuid = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ordeñas guardadas'),
+        content: SizedBox(
+          width: 420,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final draft in state.draftSessions.where(
+                  (draft) => draft.uuid != state.session?.uuid,
+                ))
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.history),
+                    title: Text(dateLabel.format(draft.occurredAt)),
+                    subtitle: const Text('Lecturas guardadas'),
+                    trailing: TextButton(
+                      onPressed: () =>
+                          Navigator.of(dialogContext).pop(draft.uuid),
+                      child: const Text('Reanudar'),
+                    ),
+                  ),
+                const Divider(),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.add_circle_outline),
+                  title: const Text('Nueva sesión'),
+                  onTap: () => Navigator.of(dialogContext).pop(newSession),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(AppLocalizations.of(context).actionCancel),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || selectedUuid == null) return;
+    if (selectedUuid == newSession) {
+      await context.read<MilkingCubit>().startNewSession();
+    } else {
+      await context.read<MilkingCubit>().resumeDraft(selectedUuid);
+    }
   }
 
   Widget _buildBody(MilkingState state) {
@@ -443,8 +733,10 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               ),
             ],
             selected: {state.captureMode},
-            onSelectionChanged: (selection) =>
-                context.read<MilkingCubit>().setCaptureMode(selection.first),
+            onSelectionChanged: (selection) {
+              if (_busy) return;
+              context.read<MilkingCubit>().setCaptureMode(selection.first);
+            },
           ),
           const SizedBox(height: 16),
           if (state.captureMode == MilkingCaptureMode.individual)
@@ -530,7 +822,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _pickDate(session),
+                    onPressed: _busy ? null : () => _pickDate(session),
                     icon: const Icon(Icons.calendar_today),
                     label: Text(
                       DateFormat('dd/MM/yyyy').format(session.occurredAt),
@@ -540,7 +832,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _pickTime(session),
+                    onPressed: _busy ? null : () => _pickTime(session),
                     icon: const Icon(Icons.schedule),
                     label: Text(DateFormat('HH:mm').format(session.occurredAt)),
                   ),
@@ -563,11 +855,17 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                     ),
                   )
                   .toList(growable: false),
-              onChanged: (shift) {
-                if (shift != null) {
-                  context.read<MilkingCubit>().updateSchedule(shift: shift);
-                }
-              },
+              onChanged: _busy
+                  ? null
+                  : (shift) {
+                      if (shift != null) {
+                        _write(
+                          () => context.read<MilkingCubit>().updateSchedule(
+                            shift: shift,
+                          ),
+                        );
+                      }
+                    },
             ),
           ],
         ),
@@ -592,17 +890,19 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: () async {
-                final animal = await _showAnimalPicker(state);
-                if (animal == null || !mounted) return;
-                final existing = state.entryForAnimal(animal.uuid);
-                setState(() {
-                  _selectedAnimalUuid = animal.uuid;
-                  _individualAmountCtrl.text = existing == null
-                      ? ''
-                      : _formatLiters(existing.volumeMilliliters);
-                });
-              },
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      final animal = await _showAnimalPicker(state);
+                      if (animal == null || !mounted) return;
+                      final existing = state.entryForAnimal(animal.uuid);
+                      setState(() {
+                        _selectedAnimalUuid = animal.uuid;
+                        _individualAmountCtrl.text = existing == null
+                            ? ''
+                            : _formatLiters(existing.volumeMilliliters);
+                      });
+                    },
               icon: const Icon(Icons.search),
               label: Text(
                 selected == null
@@ -624,11 +924,12 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 suffixText: 'L',
                 border: const OutlineInputBorder(),
               ),
+              onChanged: (_) => _markUncommittedInput(),
               onSubmitted: (_) => _addIndividual(),
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: _addIndividual,
+              onPressed: _busy ? null : _addIndividual,
               icon: const Icon(Icons.add),
               label: Text(l10n.detailFormMilkingAddContinue),
             ),
@@ -676,7 +977,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                 ),
               )
               .toList(growable: false),
-          onChanged: context.read<MilkingCubit>().selectLote,
+          onChanged: _busy
+              ? null
+              : (loteUuid) => _write(
+                  () => context.read<MilkingCubit>().selectLote(loteUuid),
+                ),
         ),
         if (excluded > 0)
           Padding(
@@ -705,9 +1010,11 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
           ...animals.map((animal) => _buildGroupAnimalRow(state, animal)),
         if (session.sourceLoteUuid != null)
           TextButton.icon(
-            onPressed: () => context.read<MilkingCubit>().setCaptureMode(
-              MilkingCaptureMode.individual,
-            ),
+            onPressed: _busy
+                ? null
+                : () => context.read<MilkingCubit>().setCaptureMode(
+                    MilkingCaptureMode.individual,
+                  ),
             icon: const Icon(Icons.add),
             label: Text(l10n.detailFormMilkingAddOutsideLote),
           ),
@@ -755,11 +1062,10 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
                   isDense: true,
                   border: const OutlineInputBorder(),
                 ),
+                onChanged: (_) => _markUncommittedInput(),
                 onSubmitted: (raw) async {
                   if (raw.trim().isEmpty) {
-                    await context.read<MilkingCubit>().removeAnimal(
-                      animal.uuid,
-                    );
+                    await _removeAnimal(animal.uuid);
                   } else {
                     await _saveVolume(animal.uuid, raw);
                   }
@@ -834,8 +1140,7 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
               ),
             );
             if (confirmed == true && mounted) {
-              await context.read<MilkingCubit>().removeAnimal(entry.animalUuid);
-              _groupControllers[entry.animalUuid]?.clear();
+              await _removeAnimal(entry.animalUuid);
             }
           },
         ),
@@ -847,17 +1152,20 @@ class _RegistroOrdenaViewState extends State<_RegistroOrdenaView> {
     final saving = state.status == MilkingLoadStatus.saving;
     final l10n = AppLocalizations.of(context);
     return AppFormActions(
-      onSave: () => _finalize(state),
-      saving: saving,
+      onSave: _busy || saving ? null : () => _finalize(state),
+      saving: _busy || saving,
       saveIcon: Icons.check,
       saveLabel: l10n.detailFormMilkingFinalize,
-      onCancel: () => Navigator.of(context).pop(),
+      onCancel: () => AppFormExitGuard.requestExit(context),
     );
   }
 }
 
 class _MilkingAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const _MilkingAppBar();
+  const _MilkingAppBar({this.draftCount = 0, this.onShowDrafts});
+
+  final int draftCount;
+  final VoidCallback? onShowDrafts;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -870,6 +1178,14 @@ class _MilkingAppBar extends StatelessWidget implements PreferredSizeWidget {
         assetPath: RecordFormStyle.milking.assetPath,
         fallbackIcon: RecordFormStyle.milking.icon,
       ),
+      actions: [
+        if (onShowDrafts != null)
+          IconButton(
+            tooltip: 'Ordeñas guardadas ($draftCount)',
+            onPressed: onShowDrafts,
+            icon: const Icon(Icons.history),
+          ),
+      ],
     );
   }
 }

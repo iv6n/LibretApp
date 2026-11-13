@@ -83,7 +83,7 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
     }
     if (!mounted) return;
     if (ok) {
-      Navigator.of(context).pop(true);
+      AppFormExitGuard.complete(context, true);
     } else {
       setState(() => _saving = false);
     }
@@ -97,6 +97,7 @@ class _BulkHealthFormPageState extends State<BulkHealthFormPage> {
       onCancel: () => Navigator.of(context).pop(),
       title: l10n.animalsBulkMaintenanceAction(widget.selectedCount),
       saving: _saving,
+      protectUnsavedChanges: true,
       onSave: _submit,
       saveLabel: l10n.actionSave,
       formKey: _formKey,

@@ -68,7 +68,7 @@ Para reproducir la vista comparativa de componentes comunes:
 flutter test tool/preview_record_styles_test.dart
 ```
 
-Genera `build/record_style_audit/light.png` y `dark.png`, revisadas visualmente.
-Estas capturas muestran la estructura compartida con campos de ejemplo; las
-pruebas de flujo utilizan los formularios reales. Las capturas no sustituyen una
-comprobación de hardware RFID ni una revisión en un dispositivo físico.
+La prueba comprueba la estructura compartida con campos de ejemplo. Para una
+revisión visual temporal, definir `LIBRET_CAPTURE_DIR` fuera del proyecto y
+borrar las imágenes tras registrar hallazgos. Las pruebas de flujo utilizan
+formularios reales; la vista previa no sustituye una revisión física.

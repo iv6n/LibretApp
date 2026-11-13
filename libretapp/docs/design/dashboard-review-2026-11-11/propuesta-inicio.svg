@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="800" viewBox="0 0 360 800" role="img" aria-label="Propuesta conceptual del nuevo inicio de LibretApp">
+  <rect width="360" height="800" fill="#F8F7F2"/>
+  <rect width="360" height="31" fill="#DBEFF5"/>
+  <text x="16" y="20" fill="#315B68" font-family="Arial, sans-serif" font-size="12" font-weight="700">DEMO · Datos ficticios</text>
+  <text x="322" y="20" text-anchor="end" fill="#315B68" font-family="Arial, sans-serif" font-size="12">Salir</text>
+
+  <rect x="16" y="44" width="32" height="32" rx="9" fill="#2F5F50"/>
+  <text x="32" y="67" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="22" font-weight="700">L</text>
+  <text x="58" y="59" fill="#172C26" font-family="Arial, sans-serif" font-size="18" font-weight="700">Buen día, Rodrigo</text>
+  <text x="58" y="76" fill="#62736C" font-family="Arial, sans-serif" font-size="12">Rancho El Mezquite</text>
+  <text x="343" y="56" text-anchor="end" fill="#62736C" font-family="Arial, sans-serif" font-size="12">11 NOV</text>
+  <text x="16" y="105" fill="#223A32" font-family="Arial, sans-serif" font-size="12" font-weight="700">Así está tu rancho</text>
+
+  <rect x="16" y="114" width="102" height="71" rx="14" fill="#FFFFFF" stroke="#E5E7DE"/>
+  <text x="29" y="145" fill="#2F5F50" font-family="Arial, sans-serif" font-size="24" font-weight="700">37</text>
+  <text x="29" y="168" fill="#576B60" font-family="Arial, sans-serif" font-size="12">animales ›</text>
+  <rect x="126" y="114" width="102" height="71" rx="14" fill="#FFF5EF" stroke="#F1D9CF"/>
+  <text x="139" y="145" fill="#BA4632" font-family="Arial, sans-serif" font-size="24" font-weight="700">2</text>
+  <text x="139" y="168" fill="#805344" font-family="Arial, sans-serif" font-size="12">por revisar ›</text>
+  <rect x="236" y="114" width="108" height="71" rx="14" fill="#FFFFFF" stroke="#E5E7DE"/>
+  <text x="249" y="145" fill="#2F5F50" font-family="Arial, sans-serif" font-size="24" font-weight="700">133</text>
+  <text x="249" y="168" fill="#576B60" font-family="Arial, sans-serif" font-size="12">pendientes ›</text>
+
+  <rect x="16" y="196" width="328" height="173" rx="17" fill="#FFFFFF" stroke="#E5E7DE"/>
+  <text x="30" y="221" fill="#172C26" font-family="Arial, sans-serif" font-size="16" font-weight="700">Atender primero</text>
+  <text x="330" y="221" text-anchor="end" fill="#2F5F50" font-family="Arial, sans-serif" font-size="12" font-weight="700">Ver todo ›</text>
+  <rect x="28" y="232" width="304" height="53" rx="10" fill="#FFF2EF"/>
+  <rect x="28" y="232" width="4" height="53" rx="2" fill="#C34836"/>
+  <text x="42" y="253" fill="#662F28" font-family="Arial, sans-serif" font-size="14" font-weight="700">2 animales requieren revisión</text>
+  <text x="42" y="272" fill="#85655E" font-family="Arial, sans-serif" font-size="12">Abrir animales con prioridad alta</text>
+  <text x="317" y="264" text-anchor="end" fill="#9A4F44" font-family="Arial, sans-serif" font-size="19">›</text>
+  <rect x="28" y="293" width="304" height="53" rx="10" fill="#FCF5E7"/>
+  <rect x="28" y="293" width="4" height="53" rx="2" fill="#AC7616"/>
+  <text x="42" y="314" fill="#574123" font-family="Arial, sans-serif" font-size="14" font-weight="700">Aviso de parto · Prieta</text>
+  <text x="42" y="333" fill="#826E4F" font-family="Arial, sans-serif" font-size="12">Actividad vencida desde 28/10</text>
+  <text x="317" y="325" text-anchor="end" fill="#9A7B46" font-family="Arial, sans-serif" font-size="19">›</text>
+
+  <rect x="16" y="381" width="328" height="174" rx="17" fill="#FFFFFF" stroke="#E5E7DE"/>
+  <text x="30" y="407" fill="#172C26" font-family="Arial, sans-serif" font-size="16" font-weight="700">Hoy</text>
+  <text x="330" y="407" text-anchor="end" fill="#2F5F50" font-family="Arial, sans-serif" font-size="12" font-weight="700">Ver agenda ›</text>
+  <rect x="30" y="423" width="4" height="35" rx="2" fill="#4B806E"/>
+  <text x="44" y="438" fill="#20382F" font-family="Arial, sans-serif" font-size="14" font-weight="700">Vacunación · Nancy</text>
+  <text x="44" y="455" fill="#68786F" font-family="Arial, sans-serif" font-size="12">Pendiente hoy · abrir actividad</text>
+  <line x1="30" y1="470" x2="330" y2="470" stroke="#EEF0E9"/>
+  <rect x="30" y="481" width="4" height="35" rx="2" fill="#4B806E"/>
+  <text x="44" y="496" fill="#20382F" font-family="Arial, sans-serif" font-size="14" font-weight="700">Baño garrapaticida · MZQ-0017</text>
+  <text x="44" y="513" fill="#68786F" font-family="Arial, sans-serif" font-size="12">Pendiente hoy · abrir actividad</text>
+  <text x="30" y="541" fill="#2F5F50" font-family="Arial, sans-serif" font-size="12" font-weight="700">Ver otras actividades de hoy ›</text>
+
+  <text x="16" y="583" fill="#223A32" font-family="Arial, sans-serif" font-size="12" font-weight="700">Acciones frecuentes</text>
+  <rect x="16" y="594" width="77" height="74" rx="12" fill="#E8F1ED"/>
+  <text x="54" y="624" text-anchor="middle" fill="#2F5F50" font-family="Arial, sans-serif" font-size="19">⌕</text>
+  <text x="54" y="650" text-anchor="middle" fill="#305A4C" font-family="Arial, sans-serif" font-size="12" font-weight="700">Buscar</text>
+  <rect x="100" y="594" width="77" height="74" rx="12" fill="#E8F1ED"/>
+  <text x="138" y="624" text-anchor="middle" fill="#2F5F50" font-family="Arial, sans-serif" font-size="18">✚</text>
+  <text x="138" y="650" text-anchor="middle" fill="#305A4C" font-family="Arial, sans-serif" font-size="12" font-weight="700">Sanidad</text>
+  <rect x="184" y="594" width="77" height="74" rx="12" fill="#E8F1ED"/>
+  <text x="222" y="624" text-anchor="middle" fill="#2F5F50" font-family="Arial, sans-serif" font-size="19">▣</text>
+  <text x="222" y="650" text-anchor="middle" fill="#305A4C" font-family="Arial, sans-serif" font-size="12" font-weight="700">Peso</text>
+  <rect x="268" y="594" width="76" height="74" rx="12" fill="#E8F1ED"/>
+  <text x="306" y="624" text-anchor="middle" fill="#2F5F50" font-family="Arial, sans-serif" font-size="19">•••</text>
+  <text x="306" y="650" text-anchor="middle" fill="#305A4C" font-family="Arial, sans-serif" font-size="12" font-weight="700">Más</text>
+
+  <rect x="16" y="681" width="328" height="60" rx="15" fill="#F1EEE4"/>
+  <text x="30" y="704" fill="#172C26" font-family="Arial, sans-serif" font-size="14" font-weight="700">Próximos partos</text>
+  <text x="30" y="724" fill="#62736C" font-family="Arial, sans-serif" font-size="12">MZQ-0001 · 18/11  ·  MZQ-0002 · 25/11</text>
+  <rect x="0" y="737" width="360" height="63" rx="22" fill="#FFFFFF" stroke="#E5E7DE"/>
+  <text x="41" y="762" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="18">▣</text>
+  <text x="41" y="783" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="12">Directorio</text>
+  <text x="111" y="762" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="18">□</text>
+  <text x="111" y="783" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="12">Agenda</text>
+  <rect x="153" y="727" width="54" height="54" rx="18" fill="#2F5F50"/>
+  <text x="180" y="765" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="30">+</text>
+  <text x="180" y="795" text-anchor="middle" fill="#2F5F50" font-family="Arial, sans-serif" font-size="12" font-weight="700">Registrar</text>
+  <text x="250" y="762" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="18">▥</text>
+  <text x="250" y="783" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="12">Reportes</text>
+  <text x="321" y="762" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="18">●</text>
+  <text x="321" y="783" text-anchor="middle" fill="#67776D" font-family="Arial, sans-serif" font-size="12">Perfil</text>
+</svg>
+

@@ -40,7 +40,7 @@ class AppSegmentedTabBar extends StatelessWidget
 
   static const double barHeight = 42;
   static const double totalHeight = 54;
-  static const double accentedTotalHeight = 72;
+  static const double accentedTotalHeight = 64;
 
   final TabController controller;
   final List<AppSegmentedTabItem> items;
@@ -318,18 +318,14 @@ class _SegmentedTabButton extends StatelessWidget {
                   children: [
                     if (colorAccented)
                       Container(
-                        width: 38,
-                        height: 38,
+                        width: 30,
+                        height: 30,
                         decoration: BoxDecoration(
                           color: accent.withValues(alpha: isDark ? 0.22 : 0.12),
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
-                        child: Icon(
-                          item.icon,
-                          size: selected ? 23 : 22,
-                          color: iconColor,
-                        ),
+                        child: Icon(item.icon, size: 20, color: iconColor),
                       )
                     else
                       Icon(

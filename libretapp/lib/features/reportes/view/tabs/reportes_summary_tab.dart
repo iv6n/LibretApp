@@ -84,7 +84,6 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
                 AppEmptyState(
                   icon: Icons.pets_outlined,
                   title: 'Sin animales registrados',
-                  message: 'Registra animales para ver reportes del rancho.',
                   action: FilledButton.icon(
                     onPressed: () =>
                         context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
@@ -92,8 +91,6 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
                     label: const Text('Registrar primer animal'),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                _shareDataSection(context),
               ],
             ),
           );
@@ -104,7 +101,6 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
           child: ListView(
             padding: listPadding,
             children: [
-              ReportSummaryHeader(summary: summary),
               _metricsGrid(context, summary),
               const SizedBox(height: AppSpacing.sm),
               _compositionSection(summary),
@@ -134,40 +130,39 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
           icon: Icons.pets_outlined,
           onTap: () => context.push(AppRoutes.animalesPath(clearFilters: true)),
         ),
-        SummaryMetricCard(
-          label: 'Pendientes sanitarios',
-          value: '${summary.healthAlertsCount}',
-          icon: Icons.medical_services_outlined,
-          accentColor: AppColors.warning,
-          onTap: summary.healthAlertsCount == 0
-              ? null
-              : () => context.push(
-                  AppRoutes.animalesPath(
-                    healthFilter: 'pending',
-                    clearFilters: true,
-                  ),
-                ),
-        ),
-        SummaryMetricCard(
-          label: 'Sin vacuna registrada',
-          value: '${summary.unvaccinatedCount}',
-          icon: Icons.vaccines_outlined,
-          onTap: summary.unvaccinatedCount == 0
-              ? null
-              : () => context.push(
-                  AppRoutes.animalesPath(
-                    healthFilter: 'unvaccinated',
-                    clearFilters: true,
-                  ),
-                ),
-        ),
-        SummaryMetricCard(
-          label: 'Próximos partos',
-          value: '${summary.upcomingCalvings.length}',
-          icon: Icons.pregnant_woman_outlined,
-          accentColor: AppColors.secondary,
-          onTap: summary.upcomingCalvings.isEmpty ? null : _scrollToCalvings,
-        ),
+        if (summary.healthAlertsCount > 0)
+          SummaryMetricCard(
+            label: 'Pendientes sanitarios',
+            value: '${summary.healthAlertsCount}',
+            icon: Icons.medical_services_outlined,
+            accentColor: AppColors.warning,
+            onTap: () => context.push(
+              AppRoutes.animalesPath(
+                healthFilter: 'pending',
+                clearFilters: true,
+              ),
+            ),
+          ),
+        if (summary.unvaccinatedCount > 0)
+          SummaryMetricCard(
+            label: 'Sin vacuna registrada',
+            value: '${summary.unvaccinatedCount}',
+            icon: Icons.vaccines_outlined,
+            onTap: () => context.push(
+              AppRoutes.animalesPath(
+                healthFilter: 'unvaccinated',
+                clearFilters: true,
+              ),
+            ),
+          ),
+        if (summary.upcomingCalvings.isNotEmpty)
+          SummaryMetricCard(
+            label: 'Próximos partos',
+            value: '${summary.upcomingCalvings.length}',
+            icon: Icons.pregnant_woman_outlined,
+            accentColor: AppColors.secondary,
+            onTap: _scrollToCalvings,
+          ),
       ],
     );
   }
@@ -338,7 +333,6 @@ class _ReportesSummaryTabState extends State<ReportesSummaryTab>
       child: ReportCard(
         icon: Icons.table_chart_outlined,
         title: 'Exportar a Excel',
-        subtitle: 'Elige qué información incluir',
         onTap: () => context.push(AppRoutes.exportar),
       ),
     );

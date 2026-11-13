@@ -120,13 +120,14 @@ class DashboardWidgetConfig extends Equatable {
 /// Default widget layout for new users.
 List<DashboardWidgetConfig> defaultDashboardWidgets({CareProfile? profile}) {
   const types = [
+    DashboardWidgetType.pendingTasks,
+    DashboardWidgetType.animalSummary,
     DashboardWidgetType.healthAlerts,
     DashboardWidgetType.upcomingCalvings,
     DashboardWidgetType.upcomingEvents,
     DashboardWidgetType.financeMonth,
     DashboardWidgetType.activeLocations,
     DashboardWidgetType.recentActivity,
-    DashboardWidgetType.pendingTasks,
     DashboardWidgetType.weather,
     DashboardWidgetType.inventory,
     DashboardWidgetType.libraryPicks,
@@ -139,29 +140,18 @@ List<DashboardWidgetConfig> defaultDashboardWidgets({CareProfile? profile}) {
       type: types[i],
       enabled:
           types[i] != DashboardWidgetType.inventory &&
-          types[i] != DashboardWidgetType.animalSummary &&
           types[i] != DashboardWidgetType.weather &&
           (profile != CareProfile.pets ||
               types[i] != DashboardWidgetType.upcomingCalvings) &&
           (profile != CareProfile.pets ||
               types[i] != DashboardWidgetType.activeLocations),
       order: i,
-      size: types[i] == DashboardWidgetType.financeMonth
+      size:
+          types[i] == DashboardWidgetType.financeMonth ||
+              types[i] == DashboardWidgetType.animalSummary ||
+              types[i] == DashboardWidgetType.pendingTasks
           ? DashboardWidgetSize.expanded
           : DashboardWidgetSize.compact,
     ),
-  )..addAll(
-    profile == CareProfile.pets || profile == CareProfile.mixed
-        ? [
-            DashboardWidgetConfig(
-              id: 'animalSummary',
-              title: 'Resumen de animales',
-              type: DashboardWidgetType.animalSummary,
-              enabled: true,
-              order: -1,
-              size: DashboardWidgetSize.expanded,
-            ),
-          ]
-        : const <DashboardWidgetConfig>[],
   );
 }

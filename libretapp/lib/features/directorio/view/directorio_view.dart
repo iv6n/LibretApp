@@ -233,6 +233,11 @@ class _DirectorioViewState extends State<DirectorioView>
 
     final section = _activeSection;
     if (_lastNotifiedSection == section) return;
+    if (section != DirectorioSection.animales) {
+      _animalSearchFocusNode.unfocus();
+      _animalSearchController.clear();
+      context.read<AnimalesBloc>().add(const animales_event.ClearSearch());
+    }
     _lastNotifiedSection = section;
     setState(() {});
     context.read<DirectorioBloc>().add(ChangeDirectorioSection(section));
@@ -240,6 +245,21 @@ class _DirectorioViewState extends State<DirectorioView>
 
   void _onSearchChanged(String query) {
     context.read<DirectorioBloc>().add(PerformCombinedSearch(query));
+  }
+
+  void _openAnimalSearch() {
+    context.read<AnimalesBloc>().add(
+      const animales_event.ToggleSearch(enabled: true),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _animalSearchFocusNode.requestFocus();
+    });
+  }
+
+  void _closeAnimalSearch() {
+    _animalSearchFocusNode.unfocus();
+    _animalSearchController.clear();
+    context.read<AnimalesBloc>().add(const animales_event.ClearSearch());
   }
 
   void _toggleSearch() {
@@ -331,19 +351,8 @@ class _DirectorioViewState extends State<DirectorioView>
   }
 
   Widget _buildDirectoryMenu(BuildContext context) {
-    final state = context.read<DirectorioBloc>().state;
     return MenuAnchor(
       menuChildren: [
-        if (_activeSection == DirectorioSection.animales &&
-            state is DirectorioLoaded) ...[
-          AnimalDirectoryViewMenuContent(
-            viewMode: state.animalViewMode,
-            onChanged: (mode) => context.read<DirectorioBloc>().add(
-              SetAnimalDirectoryViewMode(mode),
-            ),
-          ),
-          const Divider(height: 1),
-        ],
         DirectorioTabsMenuContent(
           orderedSections: _orderedSections,
           visibleSections: _visibleSections,
@@ -392,12 +401,7 @@ class _DirectorioViewState extends State<DirectorioView>
             builder: (context, setSheetState) => Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const ListTile(
-                  title: Text('Qué vas a registrar'),
-                  subtitle: Text(
-                    'Estas opciones priorizan el alta y no ocultan fichas guardadas.',
-                  ),
-                ),
+                const ListTile(title: Text('Qué vas a registrar')),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: CareProfileSelector(
@@ -489,9 +493,6 @@ class _DirectorioViewState extends State<DirectorioView>
     // Detect keyboard visibility
     final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    // Hide navbar and FAB when search is active or keyboard is visible
-    final shouldHideChrome = _isSearching || keyboardVisible;
-
     return BlocBuilder<DirectorioBloc, DirectorioState>(
       builder: (context, state) {
         if (state is DirectorioLoading) {
@@ -522,6 +523,21 @@ class _DirectorioViewState extends State<DirectorioView>
               final isAnimalSelectionMode =
                   _activeSection == DirectorioSection.animales &&
                   (animalesLoaded?.isSelectionMode ?? false);
+              final isAnimalSearchActive =
+                  _activeSection == DirectorioSection.animales &&
+                  (animalesLoaded?.isSearching ?? false);
+              if (animalesLoaded != null && isAnimalSearchActive) {
+                _syncAnimalSearchController(animalesLoaded.searchQuery);
+                if (!_animalSearchFocusNode.hasFocus) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && isAnimalSearchActive) {
+                      _animalSearchFocusNode.requestFocus();
+                    }
+                  });
+                }
+              }
+              final shouldHideChrome =
+                  _isSearching || isAnimalSearchActive || keyboardVisible;
 
               return ShellChromeScope(
                 visible: !shouldHideChrome,
@@ -532,6 +548,37 @@ class _DirectorioViewState extends State<DirectorioView>
                       automaticallyImplyLeading: false,
                       title: isAnimalSelectionMode
                           ? _buildAnimalSelectionTitle(context, animalesLoaded!)
+                          : isAnimalSearchActive
+                          ? Row(
+                              children: [
+                                AppIconButton(
+                                  icon: Icons.arrow_back,
+                                  tooltip: MaterialLocalizations.of(
+                                    context,
+                                  ).backButtonTooltip,
+                                  onPressed: _closeAnimalSearch,
+                                ),
+                                Expanded(
+                                  child: AppSearchBar(
+                                    key: const ValueKey(
+                                      'directorio-animal-search',
+                                    ),
+                                    controller: _animalSearchController,
+                                    focusNode: _animalSearchFocusNode,
+                                    autofocus: true,
+                                    hintText: AppLocalizations.of(
+                                      context,
+                                    ).animalsSearchHint,
+                                    onChanged: (value) =>
+                                        context.read<AnimalesBloc>().add(
+                                          animales_event.SearchQueryChanged(
+                                            value,
+                                          ),
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            )
                           : _isSearching
                           ? SizedBox(
                               width: MediaQuery.sizeOf(
@@ -553,15 +600,33 @@ class _DirectorioViewState extends State<DirectorioView>
                               _directoryTitle(),
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
-                      actions: isAnimalSelectionMode
+                      actions: isAnimalSelectionMode || isAnimalSearchActive
                           ? const []
                           : !_isSearching
                           ? [
-                              if (_activeSection != DirectorioSection.animales)
+                              if (_activeSection == DirectorioSection.animales)
+                                AppIconButton(
+                                  key: const ValueKey(
+                                    'directorio-animal-search-button',
+                                  ),
+                                  icon: Icons.search,
+                                  tooltip: AppLocalizations.of(
+                                    context,
+                                  ).animalsSearchHint,
+                                  onPressed: _openAnimalSearch,
+                                )
+                              else
                                 AppIconButton(
                                   icon: Icons.search,
                                   tooltip: 'Buscar en el directorio',
                                   onPressed: _toggleSearch,
+                                ),
+                              if (_activeSection == DirectorioSection.animales)
+                                AnimalDirectoryViewToggleButton(
+                                  viewMode: state.animalViewMode,
+                                  onChanged: (mode) => context
+                                      .read<DirectorioBloc>()
+                                      .add(SetAnimalDirectoryViewMode(mode)),
                                 ),
                               _buildDirectoryMenu(context),
                             ]
@@ -599,7 +664,7 @@ class _DirectorioViewState extends State<DirectorioView>
                             )
                           : null,
                     ),
-                    body: _buildDirectoryBody(),
+                    body: SafeArea(top: false, child: _buildDirectoryBody()),
                   ),
                 ),
               );
@@ -828,8 +893,8 @@ class _DeferredDirectorySectionState extends State<_DeferredDirectorySection> {
   }
 }
 
-class AnimalDirectoryViewMenuContent extends StatelessWidget {
-  const AnimalDirectoryViewMenuContent({
+class AnimalDirectoryViewToggleButton extends StatelessWidget {
+  const AnimalDirectoryViewToggleButton({
     super.key,
     required this.viewMode,
     required this.onChanged,
@@ -840,43 +905,18 @@ class AnimalDirectoryViewMenuContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 344,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-            child: Text(
-              'Vista de animales',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-          ),
-          for (final mode in AnimalDirectoryViewMode.values)
-            Semantics(
-              selected: viewMode == mode,
-              child: MenuItemButton(
-                key: ValueKey('animal_view_mode_${mode.name}'),
-                leadingIcon: Icon(
-                  mode == AnimalDirectoryViewMode.cards
-                      ? Icons.view_agenda_outlined
-                      : Icons.view_list_outlined,
-                  size: 20,
-                ),
-                trailingIcon: viewMode == mode
-                    ? const Icon(Icons.check, size: 20)
-                    : const SizedBox(width: 20),
-                onPressed: () => onChanged(mode),
-                child: Text(
-                  mode == AnimalDirectoryViewMode.cards
-                      ? 'Tarjetas'
-                      : 'Lista compacta',
-                ),
-              ),
-            ),
-        ],
-      ),
+    final nextMode = viewMode == AnimalDirectoryViewMode.cards
+        ? AnimalDirectoryViewMode.compact
+        : AnimalDirectoryViewMode.cards;
+    return AppIconButton(
+      key: const ValueKey('directorio-animal-view-toggle'),
+      icon: nextMode == AnimalDirectoryViewMode.compact
+          ? Icons.view_list_outlined
+          : Icons.view_agenda_outlined,
+      tooltip: nextMode == AnimalDirectoryViewMode.compact
+          ? 'Cambiar a lista compacta'
+          : 'Cambiar a tarjetas',
+      onPressed: () => onChanged(nextMode),
     );
   }
 }
@@ -1011,40 +1051,6 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
     final hasQuery = query.trim().isNotEmpty;
     final slivers = <Widget>[];
 
-    if (!hasQuery && results.isEmpty) {
-      slivers.add(
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 42, 24, 26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.travel_explore,
-                  size: 32,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Busca en todo tu directorio',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Encuentra animales, lotes, plantas y ubicaciones desde aquí.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     if (hasQuery && isLoading) {
       slivers.add(
         SliverToBoxAdapter(
@@ -1090,7 +1096,7 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
                   ? 'No se encontraron resultados'
                   : 'No hay resultados disponibles',
               message: failedSources.isEmpty
-                  ? 'Prueba con otro término de búsqueda.'
+                  ? null
                   : 'Algunas secciones no respondieron. Puedes intentarlo de nuevo.',
             ),
           ),
@@ -1143,8 +1149,11 @@ class DirectorioSearchResultsPanel extends StatelessWidget {
                           theme.colorScheme.surfaceContainerHighest,
                       child: buildDirectorioTypeIcon(context, type),
                     ),
-                    title: Text(result.name),
-                    subtitle: Text(_searchTypeLabel(type)),
+                    title: Text(
+                      result.name,
+                      semanticsLabel:
+                          '${result.name}, ${_searchTypeLabel(type)}',
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => openDirectorioSearchResult(context, result),
                   ),

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
@@ -24,6 +25,7 @@ import 'package:libretapp/features/inicio/view/dashboard_customize_sheet.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_header.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_widgets.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.dart';
+import 'package:libretapp/features/inicio/widgets/quick_summary_section.dart';
 import 'package:libretapp/features/inicio/widgets/weather_home_card.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -143,7 +145,24 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
           data,
           DateUtils.dateOnly(DateTime.now()),
         );
-
+        final showPending = widgets.any(
+          (widget) =>
+              widget.enabled && widget.type == DashboardWidgetType.pendingTasks,
+        );
+        final showAnimals = widgets.any(
+          (widget) =>
+              widget.enabled &&
+              widget.type == DashboardWidgetType.animalSummary,
+        );
+        final animalFirst =
+            showAnimals &&
+            showPending &&
+            widgets.indexWhere(
+                  (widget) => widget.type == DashboardWidgetType.animalSummary,
+                ) <
+                widgets.indexWhere(
+                  (widget) => widget.type == DashboardWidgetType.pendingTasks,
+                );
         return SafeArea(
           top: true,
           bottom: false,
@@ -186,24 +205,98 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 DashboardHeader(data: data),
-                                if (firstRun)
-                                  _GettingStartedCard(profile: careProfile)
-                                else
-                                  _CareDashboardOverview(
-                                    isTablet: isTablet,
+                                const WeatherHomeCard(compact: true),
+                                if (firstRun) ...[
+                                  _GettingStartedCard(profile: careProfile),
+                                  if (showPending && todayCareItems.isNotEmpty)
+                                    _TodayCarePanel(items: todayCareItems),
+                                ] else ...[
+                                  _DashboardStats(
                                     data: data,
-                                    profile: careProfile,
                                     items: todayCareItems,
+                                    showAnimals: showAnimals,
+                                    showPending: showPending,
                                   ),
-                                const SizedBox(height: AppSpacing.sm),
-                                if (!firstRun) ...[
-                                  _DashboardPrimaryActions(
-                                    profile: careProfile,
-                                    data: data,
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
+                                  if (!isTablet && animalFirst)
+                                    KeyedSubtree(
+                                      key: const ValueKey(
+                                        'dashboard-widget-animalSummary',
+                                      ),
+                                      child: _AnimalHighlightsCard(
+                                        profile: careProfile,
+                                        data: data,
+                                      ),
+                                    ),
+                                  if (isTablet && showPending && showAnimals)
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (animalFirst)
+                                          Expanded(
+                                            flex: 2,
+                                            child: KeyedSubtree(
+                                              key: const ValueKey(
+                                                'dashboard-widget-animalSummary',
+                                              ),
+                                              child: _AnimalHighlightsCard(
+                                                profile: careProfile,
+                                                data: data,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Expanded(
+                                            flex: 3,
+                                            child: KeyedSubtree(
+                                              key: const ValueKey(
+                                                'dashboard-widget-pendingTasks',
+                                              ),
+                                              child: _TodayCarePanel(
+                                                items: todayCareItems,
+                                              ),
+                                            ),
+                                          ),
+                                        const SizedBox(width: AppSpacing.sm),
+                                        if (animalFirst)
+                                          Expanded(
+                                            flex: 3,
+                                            child: KeyedSubtree(
+                                              key: const ValueKey(
+                                                'dashboard-widget-pendingTasks',
+                                              ),
+                                              child: _TodayCarePanel(
+                                                items: todayCareItems,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Expanded(
+                                            flex: 2,
+                                            child: KeyedSubtree(
+                                              key: const ValueKey(
+                                                'dashboard-widget-animalSummary',
+                                              ),
+                                              child: _AnimalHighlightsCard(
+                                                profile: careProfile,
+                                                data: data,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    )
+                                  else if (showPending)
+                                    KeyedSubtree(
+                                      key: const ValueKey(
+                                        'dashboard-widget-pendingTasks',
+                                      ),
+                                      child: _TodayCarePanel(
+                                        items: todayCareItems,
+                                      ),
+                                    ),
                                 ],
                                 QuickActionGrid(
+                                  compact: !firstRun,
                                   actions: state.quickActions
                                       .where(
                                         (action) =>
@@ -227,6 +320,19 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
                                         },
                                       ),
                                 ),
+                                if (!firstRun &&
+                                    showAnimals &&
+                                    !animalFirst &&
+                                    !(isTablet && showPending))
+                                  KeyedSubtree(
+                                    key: const ValueKey(
+                                      'dashboard-widget-animalSummary',
+                                    ),
+                                    child: _AnimalHighlightsCard(
+                                      profile: careProfile,
+                                      data: data,
+                                    ),
+                                  ),
                                 const SizedBox(height: AppSpacing.sm),
                                 _DashboardWidgetsLayout(
                                   isTablet: isTablet,
@@ -244,8 +350,9 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
                                       .read<InicioBloc>()
                                       .add(const RefreshInicio()),
                                   showOnlyPopulated: true,
+                                  featuredPending: showPending,
+                                  featuredAnimals: showAnimals && !firstRun,
                                 ),
-                                const WeatherHomeCard(),
                               ],
                             ),
                           ),
@@ -292,7 +399,7 @@ class _GettingStartedCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Registra el primero para tener sus cuidados y actividades a la mano.',
+              'AÃ±ade el primer perfil para tener sus datos, cuidados y prÃ³ximas actividades en Inicio.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -311,9 +418,9 @@ class _GettingStartedCard extends StatelessWidget {
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Align(alignment: Alignment.centerRight, child: artwork),
-                      const SizedBox(height: AppSpacing.xs),
                       content,
+                      const SizedBox(height: AppSpacing.xs),
+                      Align(alignment: Alignment.centerRight, child: artwork),
                     ],
                   )
                 : Row(
@@ -367,6 +474,29 @@ Widget _animalArtwork(CareProfile? profile) {
   );
 }
 
+Widget _registrationAction(
+  BuildContext context, {
+  required bool pet,
+  required bool primary,
+}) {
+  void open() {
+    if (pet) {
+      context.pushNamed(
+        AppRoutes.nameAnimalNuevoRapido,
+        queryParameters: const {'kind': 'pet'},
+      );
+    } else {
+      context.pushNamed(AppRoutes.nameAnimalNuevoRapido);
+    }
+  }
+
+  final icon = Icon(pet ? Icons.pets_outlined : Icons.add_circle_outline);
+  final label = Text(pet ? 'AÃ±adir mascota' : 'AÃ±adir animal');
+  return primary
+      ? FilledButton.icon(onPressed: open, icon: icon, label: label)
+      : OutlinedButton.icon(onPressed: open, icon: icon, label: label);
+}
+
 class _GettingStartedActions extends StatelessWidget {
   const _GettingStartedActions({required this.profile});
 
@@ -383,49 +513,24 @@ class _GettingStartedActions extends StatelessWidget {
       spacing: AppSpacing.xs,
       runSpacing: AppSpacing.xs,
       children: [
+        if (showAnimal) _registrationAction(context, pet: false, primary: true),
         if (showPet)
-          FilledButton.icon(
-            onPressed: () => context.pushNamed(
-              AppRoutes.nameAnimalNuevoRapido,
-              queryParameters: const {'kind': 'pet'},
-            ),
-            icon: const Icon(Icons.pets_outlined),
-            label: const Text('Añadir mascota'),
-          ),
-        if (showAnimal)
-          if (showPet)
-            OutlinedButton.icon(
-              onPressed: () =>
-                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Añadir animal'),
-            )
-          else
-            FilledButton.icon(
-              onPressed: () =>
-                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Añadir animal'),
-            ),
+          _registrationAction(context, pet: true, primary: !showAnimal),
       ],
     );
   }
 }
 
-class _CareProfileSummaryCard extends StatelessWidget {
-  const _CareProfileSummaryCard({
-    required this.profile,
-    required this.data,
-    required this.pendingCount,
-  });
+class _AnimalHighlightsCard extends StatelessWidget {
+  const _AnimalHighlightsCard({required this.profile, required this.data});
 
   final CareProfile? profile;
   final InicioDashboardData data;
-  final int pendingCount;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final pets =
         data.petCount > 0 ||
         profile == CareProfile.pets ||
@@ -434,194 +539,313 @@ class _CareProfileSummaryCard extends StatelessWidget {
         data.livestockCount > 0 ||
         profile == CareProfile.livestock ||
         profile == CareProfile.mixed;
+    final hasSummary = data.categoryBreakdown.isNotEmpty;
     return Card(
-      color: theme.colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Tu resumen',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+      key: const ValueKey('inicio-animales'),
+      color: colors.surfaceContainerLow,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push(AppRoutes.directorio),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.pets_outlined, size: 18, color: colors.primary),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      'Tus animales',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.sm,
-              children: [
-                if (pets)
-                  _SummaryMetric(
-                    icon: Icons.pets_outlined,
-                    label: 'Mascotas',
-                    count: data.petCount,
+              const SizedBox(height: AppSpacing.xxs),
+              Row(
+                children: [
+                  Text(
+                    '${data.totalAnimals} animales',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                if (livestock)
-                  _SummaryMetric(
-                    icon: Icons.agriculture_outlined,
-                    label: 'Ganado',
-                    count: data.livestockCount,
-                  ),
-                if (profile == null)
-                  _SummaryMetric(
-                    icon: Icons.pets_outlined,
-                    label: 'Animales',
-                    count: data.totalAnimals,
-                  ),
-                _SummaryMetric(
-                  icon: Icons.event_available_outlined,
-                  label: 'Pendientes',
-                  count: pendingCount,
-                  attention: pendingCount > 0,
+                  if (pets || livestock) ...[
+                    Text(
+                      '  Â·  ',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      [
+                        if (livestock) '${data.livestockCount} ganado',
+                        if (pets) '${data.petCount} mascotas',
+                      ].join(' Â· '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              if (data.attentionAnimals > 0) ...[
+                const SizedBox(height: AppSpacing.xs),
+                ActionChip(
+                  avatar: const Icon(Icons.priority_high_rounded, size: 16),
+                  label: Text('${data.attentionAnimals} por revisar'),
+                  onPressed: () =>
+                      context.push(AppRoutes.animalesPath(attention: true)),
                 ),
               ],
-            ),
-          ],
+              if (hasSummary) ...[
+                const SizedBox(height: AppSpacing.sm),
+                QuickSummarySection(data: data),
+              ],
+              if (data.recentActivity.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('Actualizados recientemente'),
+                  children: [
+                    for (final animal in data.recentActivity.take(2))
+                      _RecentAnimalTile(animal: animal),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SummaryMetric extends StatelessWidget {
-  const _SummaryMetric({
-    required this.icon,
-    required this.label,
-    required this.count,
-    this.attention = false,
-  });
-  final IconData icon;
-  final String label;
-  final int count;
-  final bool attention;
+class _RecentAnimalTile extends StatelessWidget {
+  const _RecentAnimalTile({required this.animal});
+
+  final RecentActivityItem animal;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 84,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 20),
-          const SizedBox(height: AppSpacing.xxs),
-          Text(
-            '$count',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: attention
-                  ? (theme.extension<AppStatusTheme>()?.warning ??
-                        AppColors.warning)
-                  : theme.colorScheme.primary,
-              fontWeight: FontWeight.w800,
+    final name = animal.animalName?.trim();
+    final label = name != null && name.isNotEmpty
+        ? name
+        : animal.animalTag.trim().isNotEmpty
+        ? animal.animalTag
+        : animal.categoryLabel;
+    final detail =
+        animal.animalTag.trim().isNotEmpty && label != animal.animalTag
+        ? '${animal.categoryLabel} Â· ${animal.animalTag}'
+        : animal.categoryLabel;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+      child: Material(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadii.sm),
+        child: ListTile(
+          key: ValueKey('inicio-animal-${animal.animalUuid}'),
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadii.sm),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: AnimalPhotoImage(
+                path: animal.photoPath,
+                fallback: ColoredBox(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.pets_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ),
           ),
-          Text(
-            label,
-            maxLines: 2,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+          title: Text(label, softWrap: true),
+          subtitle: Text(detail, softWrap: true),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () =>
+              context.push(AppRoutes.animalDetallePath(animal.animalUuid)),
+        ),
       ),
     );
   }
 }
 
-class _CareDashboardOverview extends StatelessWidget {
-  const _CareDashboardOverview({
-    required this.isTablet,
+class _DashboardStats extends StatefulWidget {
+  const _DashboardStats({
     required this.data,
-    required this.profile,
     required this.items,
+    required this.showAnimals,
+    required this.showPending,
   });
 
-  final bool isTablet;
   final InicioDashboardData data;
-  final CareProfile? profile;
   final List<_HomeCareItem> items;
+  final bool showAnimals;
+  final bool showPending;
 
   @override
-  Widget build(BuildContext context) {
-    final carePanel = _TodayCarePanel(items: items);
-    final summary = _CareProfileSummaryCard(
-      profile: profile,
-      data: data,
-      pendingCount: items.length,
-    );
-    if (!isTablet) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          carePanel,
-          const SizedBox(height: AppSpacing.sm),
-          summary,
-        ],
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(flex: 3, child: carePanel),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(flex: 2, child: summary),
-      ],
-    );
-  }
+  State<_DashboardStats> createState() => _DashboardStatsState();
 }
 
-class _DashboardPrimaryActions extends StatelessWidget {
-  const _DashboardPrimaryActions({required this.profile, required this.data});
-
-  final CareProfile? profile;
-  final InicioDashboardData data;
+class _DashboardStatsState extends State<_DashboardStats> {
+  bool _animalsExpanded = false;
 
   @override
   Widget build(BuildContext context) {
-    final showPets =
-        profile == CareProfile.pets ||
-        profile == CareProfile.mixed ||
-        data.petCount > 0;
-    final showAnimals = profile != CareProfile.pets || data.livestockCount > 0;
-    final showBoth = showPets && showAnimals;
-    return Wrap(
-      spacing: AppSpacing.xs,
-      runSpacing: AppSpacing.xs,
-      children: [
-        if (showPets)
-          FilledButton.icon(
-            onPressed: () => context.pushNamed(
-              AppRoutes.nameAnimalNuevoRapido,
-              queryParameters: const {'kind': 'pet'},
+    if (!widget.showPending && !widget.showAnimals) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    final data = widget.data;
+    final items = widget.items;
+    final showAnimals = widget.showAnimals;
+    final showPending = widget.showPending;
+    final stats =
+        <
+          ({
+            String label,
+            int count,
+            IconData icon,
+            VoidCallback onTap,
+            bool attention,
+            bool isAnimals,
+          })
+        >[
+          if (showAnimals)
+            (
+              label: 'Animales',
+              count: data.totalAnimals,
+              icon: Icons.pets_outlined,
+              onTap: () {
+                if (data.categoryBreakdown.isEmpty) {
+                  context.push(AppRoutes.directorio);
+                  return;
+                }
+                setState(() => _animalsExpanded = !_animalsExpanded);
+              },
+              attention: false,
+              isAnimals: true,
             ),
-            icon: const Icon(Icons.pets_outlined),
-            label: const Text('Añadir mascota'),
+          if (showAnimals && data.attentionAnimals > 0)
+            (
+              label: 'Por revisar',
+              count: data.attentionAnimals,
+              icon: Icons.priority_high_rounded,
+              onTap: () =>
+                  context.push(AppRoutes.animalesPath(attention: true)),
+              attention: true,
+              isAnimals: false,
+            ),
+          if (showPending)
+            (
+              label: 'Asuntos',
+              count: items.length,
+              icon: Icons.task_alt_outlined,
+              onTap: () => _TodayCarePanel.showAll(context, items),
+              attention: false,
+              isAnimals: false,
+            ),
+        ];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      child: Column(
+        children: [
+          Row(
+            key: const ValueKey('inicio-resumen'),
+            children: [
+              for (var index = 0; index < stats.length; index++) ...[
+                if (index > 0) const SizedBox(width: AppSpacing.xs),
+                Expanded(
+                  child: Material(
+                    color: stats[index].isAnimals && _animalsExpanded
+                        ? theme.colorScheme.primaryContainer
+                        : stats[index].attention
+                        ? theme.colorScheme.errorContainer
+                        : theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(AppRadii.sm),
+                    child: InkWell(
+                      onTap: stats[index].onTap,
+                      borderRadius: BorderRadius.circular(AppRadii.sm),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 72),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppSpacing.xs),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Icon(
+                                    stats[index].icon,
+                                    size: 16,
+                                    color: stats[index].attention
+                                        ? theme.colorScheme.onErrorContainer
+                                        : theme.colorScheme.primary,
+                                  ),
+                                  if (stats[index].isAnimals &&
+                                      data.categoryBreakdown.isNotEmpty)
+                                    Icon(
+                                      _animalsExpanded
+                                          ? Icons.expand_less_rounded
+                                          : Icons.expand_more_rounded,
+                                      size: 18,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${stats[index].count}',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                stats[index].label,
+                                maxLines: 2,
+                                style: theme.textTheme.labelSmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
-        if (showAnimals)
-          if (showBoth)
-            OutlinedButton.icon(
-              onPressed: () =>
-                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Añadir animal'),
-            )
-          else
-            FilledButton.icon(
-              onPressed: () =>
-                  context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Alta rápida'),
-            ),
-        OutlinedButton.icon(
-          onPressed: () =>
-              context.go(AppRoutes.animalesPath(focusSearch: true)),
-          icon: const Icon(Icons.search),
-          label: const Text('Buscar animal'),
-        ),
-      ],
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _animalsExpanded && data.categoryBreakdown.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: AnimalCategoryRow(data: data),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -639,6 +863,8 @@ class _DashboardWidgetsLayout extends StatelessWidget {
     required this.libraryErrorMessage,
     required this.onRetrySupplements,
     required this.showOnlyPopulated,
+    required this.featuredPending,
+    required this.featuredAnimals,
   });
 
   final bool isTablet;
@@ -652,11 +878,20 @@ class _DashboardWidgetsLayout extends StatelessWidget {
   final String? libraryErrorMessage;
   final VoidCallback onRetrySupplements;
   final bool showOnlyPopulated;
+  final bool featuredPending;
+  final bool featuredAnimals;
 
   @override
   Widget build(BuildContext context) {
     final enabledWidgets = widgets.where((widget) {
       if (!widget.enabled) return false;
+      if (widget.type == DashboardWidgetType.pendingTasks ||
+          widget.type == DashboardWidgetType.animalSummary) {
+        return false;
+      }
+      if (featuredPending && widget.type == DashboardWidgetType.healthAlerts) {
+        return false;
+      }
       if (widget.type == DashboardWidgetType.healthAlerts &&
           !data.alerts.any(_isHealthAlertItem)) {
         return false;
@@ -676,7 +911,8 @@ class _DashboardWidgetsLayout extends StatelessWidget {
               (financeDetail != null &&
                   (financeDetail!.summary.totalRevenue != 0 ||
                       financeDetail!.summary.totalExpenses != 0)),
-        DashboardWidgetType.recentActivity => data.recentActivity.isNotEmpty,
+        DashboardWidgetType.recentActivity =>
+          data.recentActivity.length > (featuredAnimals ? 2 : 0),
         DashboardWidgetType.pendingTasks => data.tasks.any(
           (task) => !task.title.trimLeft().toLowerCase().startsWith('sin '),
         ),
@@ -720,6 +956,7 @@ class _DashboardWidgetsLayout extends StatelessWidget {
                 libraryLoading: libraryLoading,
                 libraryErrorMessage: libraryErrorMessage,
                 onRetrySupplements: onRetrySupplements,
+                recentActivityOffset: featuredAnimals ? 2 : 0,
               ),
             );
           }).toList(),
@@ -741,6 +978,7 @@ class _DashboardWidgetsLayout extends StatelessWidget {
         libraryLoading: libraryLoading,
         libraryErrorMessage: libraryErrorMessage,
         onRetrySupplements: onRetrySupplements,
+        recentActivityOffset: featuredAnimals ? 2 : 0,
       ),
     );
   }
@@ -813,9 +1051,15 @@ List<_HomeCareItem> _buildTodayCareItems(
   for (final entry in dueEntries) {
     final day = DateUtils.dateOnly(entry.fecha);
     final overdue = day.isBefore(today);
+    final displayTitle = overdue
+        ? entry.titulo.replaceFirst(
+            RegExp(r'^Parto prÃ³ximo\s*\([^)]*\)'),
+            'Aviso de parto',
+          )
+        : entry.titulo;
     items.add(
       _HomeCareItem(
-        title: entry.titulo,
+        title: displayTitle,
         message: overdue
             ? 'Vencida desde ${entry.fecha.day}/${entry.fecha.month}'
             : 'Programada para hoy',
@@ -823,7 +1067,7 @@ List<_HomeCareItem> _buildTodayCareItems(
         entryId: entry.id,
         date: day,
         tone: overdue ? _CareItemTone.warning : _CareItemTone.normal,
-        priority: overdue ? 1 : 2,
+        priority: overdue ? 2 : 1,
       ),
     );
   }
@@ -858,41 +1102,122 @@ class _TodayCarePanel extends StatelessWidget {
 
   final List<_HomeCareItem> items;
 
+  static void showAll(BuildContext context, List<_HomeCareItem> items) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final attention = items
+        .where((item) => item.tone == _CareItemTone.critical)
+        .toList();
+    final dueToday = items
+        .where(
+          (item) => item.date != null && DateUtils.isSameDay(item.date, today),
+        )
+        .toList();
+    final overdue = items
+        .where((item) => item.date != null && item.date!.isBefore(today))
+        .toList();
+    final other = items
+        .where(
+          (item) =>
+              !attention.contains(item) &&
+              !dueToday.contains(item) &&
+              !overdue.contains(item),
+        )
+        .toList();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .8,
+        maxChildSize: .95,
+        builder: (listContext, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          children: [
+            Text(
+              'Todos los pendientes',
+              style: Theme.of(listContext).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            for (final group in [
+              ('AtenciÃ³n', attention),
+              ('Hoy', dueToday),
+              ('Vencidos', overdue),
+              ('Otros asuntos', other),
+            ])
+              if (group.$2.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Text(
+                    '${group.$1} Â· ${group.$2.length}',
+                    style: Theme.of(listContext).textTheme.titleSmall,
+                  ),
+                ),
+                for (final item in group.$2)
+                  _TodayCareTile(
+                    item: item,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _openCareItem(context, item);
+                    },
+                  ),
+              ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final today = DateUtils.dateOnly(DateTime.now());
+    final attention = items
+        .where((item) => item.tone == _CareItemTone.critical)
+        .toList();
+    final dueToday = items
+        .where(
+          (item) => item.date != null && DateUtils.isSameDay(item.date, today),
+        )
+        .toList();
+    final overdueCount = items
+        .where((item) => item.date != null && item.date!.isBefore(today))
+        .length;
     return Card(
       key: const ValueKey('inicio-pendientes-hoy'),
       color: colors.surfaceContainerLow,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
+                Icon(
+                  Icons.checklist_rounded,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    'Cuidados de hoy',
+                    'Pendientes',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
                 if (items.isNotEmpty)
-                  Text(
-                    '${items.length}',
-                    semanticsLabel:
-                        '${items.length} pendiente${items.length == 1 ? '' : 's'}',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  TextButton.icon(
+                    onPressed: () => showAll(context, items),
+                    icon: const Icon(Icons.list_alt_outlined, size: 16),
+                    label: Text('Ver ${items.length}'),
                   ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xxs),
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -911,7 +1236,7 @@ class _TodayCarePanel extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Todo al día',
+                            'Todo al dÃ­a',
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -929,16 +1254,57 @@ class _TodayCarePanel extends StatelessWidget {
                   ],
                 ),
               )
-            else
-              for (final item in items.take(3)) _TodayCareTile(item: item),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () => context.go(AppRoutes.agenda),
-                icon: const Icon(Icons.calendar_month_outlined),
-                label: const Text('Ver agenda completa'),
+            else ...[
+              if (attention.isNotEmpty) ...[
+                Text(
+                  'Atender primero',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                for (final item in attention.take(1))
+                  _TodayCareTile(item: item),
+              ],
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+                child: Text(
+                  'Hoy Â· ${dueToday.length}',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
+              if (dueToday.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+                  child: Text(
+                    'Sin actividades programadas',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              for (final item in dueToday.take(2)) _TodayCareTile(item: item),
+              if (attention.isEmpty && dueToday.isEmpty && overdueCount == 0)
+                _TodayCareTile(item: items.first),
+              if (overdueCount > 0)
+                TextButton(
+                  onPressed: () => showAll(context, items),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('$overdueCount vencidas Â· ver pendientes'),
+                  ),
+                ),
+            ],
+            if (items.isEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => context.go(AppRoutes.agenda),
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: const Text('Ver agenda completa'),
+                ),
+              ),
           ],
         ),
       ),
@@ -947,9 +1313,10 @@ class _TodayCarePanel extends StatelessWidget {
 }
 
 class _TodayCareTile extends StatelessWidget {
-  const _TodayCareTile({required this.item});
+  const _TodayCareTile({required this.item, this.onTap});
 
   final _HomeCareItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -971,40 +1338,71 @@ class _TodayCareTile extends StatelessWidget {
       child: Material(
         color: background,
         borderRadius: BorderRadius.circular(AppRadii.sm),
-        child: ListTile(
-          minVerticalPadding: AppSpacing.xxs,
-          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          leading: Icon(
-            item.entryId != null
-                ? (item.tone == _CareItemTone.warning
-                      ? Icons.event_busy_outlined
-                      : Icons.event_available_outlined)
-                : (item.tone == _CareItemTone.critical
-                      ? Icons.priority_high_rounded
-                      : Icons.notifications_active_outlined),
-            color: readableTextColor(toneColor, background),
-          ),
-          title: Text(
-            item.title,
-            softWrap: true,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.sm),
+          onTap: onTap ?? () => _openCareItem(context, item),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 56),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    item.entryId != null
+                        ? (item.tone == _CareItemTone.warning
+                              ? Icons.event_busy_outlined
+                              : Icons.event_available_outlined)
+                        : (item.tone == _CareItemTone.critical
+                              ? Icons.priority_high_rounded
+                              : Icons.notifications_active_outlined),
+                    size: 20,
+                    color: readableTextColor(toneColor, background),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          item.title,
+                          softWrap: true,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          item.message,
+                          softWrap: true,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xxs),
+                  const Icon(Icons.chevron_right, size: 20),
+                ],
+              ),
             ),
           ),
-          subtitle: Text(item.message, softWrap: true),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            if (item.entryId != null) {
-              context.pushNamed(
-                AppRoutes.nameAgendaTask,
-                pathParameters: {'id': item.entryId!},
-              );
-            } else {
-              context.push(item.route);
-            }
-          },
         ),
       ),
     );
+  }
+}
+
+void _openCareItem(BuildContext context, _HomeCareItem item) {
+  if (item.entryId != null) {
+    context.pushNamed(
+      AppRoutes.nameAgendaTask,
+      pathParameters: {'id': item.entryId!},
+    );
+  } else {
+    context.push(item.route);
   }
 }

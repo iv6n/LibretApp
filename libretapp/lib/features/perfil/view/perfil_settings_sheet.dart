@@ -775,9 +775,9 @@ class _DataSettingsPageState extends State<_DataSettingsPage> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.offline_pin_outlined),
-              title: const Text('Datos guardados en este dispositivo'),
-              subtitle: Text(
-                '${widget.lastBackupLabel()}\nPuedes trabajar sin conexión. Guarda una copia fuera del teléfono para recuperar tus datos.',
+              title: Text(widget.lastBackupLabel()),
+              subtitle: const Text(
+                'Guarda una copia fuera del teléfono para recuperar tus datos.',
               ),
             ),
           ),

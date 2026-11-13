@@ -6,6 +6,8 @@
 ///   Step 2 — Health form: fill in treatment details and save to all selected animals.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:libretapp/core/di/injection.dart';
@@ -57,6 +59,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
   DateTime _date = DateTime.now();
   DateTime? _nextDate;
   bool _saving = false;
+  late final String _initialCaptureSignature;
 
   @override
   void initState() {
@@ -70,6 +73,22 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
     }
     final initialType = widget.initialType;
     if (initialType != null) _recordType = initialType;
+    _initialCaptureSignature = _captureExitSignature();
+  }
+
+  String _captureExitSignature() {
+    final selected = _selectedUuids.toList()..sort();
+    return jsonEncode([
+      selected,
+      _recordType.name,
+      _date.toIso8601String(),
+      _nextDate?.toIso8601String(),
+      _productCtrl.text,
+      _doseCtrl.text,
+      _appliedByCtrl.text,
+      _causeCtrl.text,
+      _notesCtrl.text,
+    ]);
   }
 
   @override
@@ -116,6 +135,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
   }
 
   void _toggleAnimal(String uuid) {
+    AppFormExitGuard.markChanged(context);
     setState(() {
       if (_selectedUuids.contains(uuid)) {
         _selectedUuids.remove(uuid);
@@ -126,6 +146,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
   }
 
   void _toggleSelectAll() {
+    AppFormExitGuard.markChanged(context);
     final allVisibleSelected = _filtered.every(
       (a) => _selectedUuids.contains(a.uuid),
     );
@@ -174,7 +195,7 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
         record,
       );
       if (!mounted) return;
-      Navigator.of(context).pop(savedUuids);
+      AppFormExitGuard.complete(context, savedUuids);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -190,45 +211,51 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
   @override
   Widget build(BuildContext context) {
     if (_step == 1) return _buildFormStep();
-    return Scaffold(
-      appBar: AppBar(
-        title: GeneratedAssetTitle(
-          title: _step == 0
-              ? 'Seleccionar animales'
-              : 'Aplicar tratamiento (${_selectedUuids.length})',
-          assetPath: assetForHealthRecordType(_recordType),
-          fallbackIcon: fallbackIconForHealthRecordType(_recordType),
+    return AppFormExitGuard(
+      enabled: true,
+      saving: _saving,
+      currentSignature: _captureExitSignature,
+      initialSignature: _initialCaptureSignature,
+      child: Scaffold(
+        appBar: AppBar(
+          title: GeneratedAssetTitle(
+            title: _step == 0
+                ? 'Seleccionar animales'
+                : 'Aplicar tratamiento (${_selectedUuids.length})',
+            assetPath: assetForHealthRecordType(_recordType),
+            fallbackIcon: fallbackIconForHealthRecordType(_recordType),
+          ),
+          leading: _step == 1
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => setState(() => _step = 0),
+                )
+              : null,
         ),
-        leading: _step == 1
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() => _step = 0),
+        body: SafeArea(
+          top: false,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: _buildSelectionStep(),
+            ),
+          ),
+        ),
+        floatingActionButton:
+            _step == 0 && MediaQuery.viewInsetsOf(context).bottom == 0
+            ? FloatingActionButton.extended(
+                onPressed: _selectedUuids.isEmpty
+                    ? null
+                    : () => setState(() => _step = 1),
+                icon: const Icon(Icons.arrow_forward),
+                label: Text('Continuar (${_selectedUuids.length})'),
+                backgroundColor: _selectedUuids.isEmpty
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : null,
               )
             : null,
       ),
-      body: SafeArea(
-        top: false,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: _buildSelectionStep(),
-          ),
-        ),
-      ),
-      floatingActionButton:
-          _step == 0 && MediaQuery.viewInsetsOf(context).bottom == 0
-          ? FloatingActionButton.extended(
-              onPressed: _selectedUuids.isEmpty
-                  ? null
-                  : () => setState(() => _step = 1),
-              icon: const Icon(Icons.arrow_forward),
-              label: Text('Continuar (${_selectedUuids.length})'),
-              backgroundColor: _selectedUuids.isEmpty
-                  ? Theme.of(context).colorScheme.surfaceContainerHighest
-                  : null,
-            )
-          : null,
     );
   }
 
@@ -383,11 +410,15 @@ class _BulkHealthRegistroPageState extends State<BulkHealthRegistroPage> {
       assetPath: assetForHealthRecordType(_recordType),
       formKey: _formKey,
       saving: _saving,
+      protectUnsavedChanges: true,
+      currentSignature: _captureExitSignature,
+      initialSignature: _initialCaptureSignature,
       onSave: _save,
       saveLabel: 'Guardar en ${_selectedUuids.length} animales',
       onCancel: () => setState(() => _step = 0),
       cancelLabel: 'Volver a selección',
       onBack: () => setState(() => _step = 0),
+      onExitWithinFlow: () => setState(() => _step = 0),
       fields: [
         // summary chip
         Wrap(

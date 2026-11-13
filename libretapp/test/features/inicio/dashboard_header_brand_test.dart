@@ -73,7 +73,7 @@ void main() {
           expect(find.text(_farmName), findsOneWidget);
           expect(find.byType(InicioWeatherCard), findsOneWidget);
           expect(find.text('38°'), findsOneWidget);
-          expect(tester.getSize(find.byType(AppBrand)).height, 24);
+          expect(tester.getSize(find.byType(AppBrand)).height, 20);
           expect(tester.takeException(), isNull);
         },
       );

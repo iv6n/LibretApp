@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/router/app_routes.dart';
+import 'package:libretapp/core/widgets/app_directory_layout.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/ubicaciones/domain/entities/location_entity.dart';
 
@@ -58,6 +59,7 @@ class AnimalCompactRow extends StatelessWidget {
     final alert = compactAnimalAlert(animal, snapshot: indicatorSnapshot);
     final stageColor = AnimalPalette.categoryColor(animal.category);
     final background = AnimalPalette.cardHeader(context);
+    final metrics = AppDirectoryMetrics.of(context);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 4),
@@ -84,7 +86,7 @@ class AnimalCompactRow extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 64),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+            padding: EdgeInsets.fromLTRB(metrics.headerPaddingH, 6, 4, 6),
             child: Row(
               children: [
                 Expanded(
@@ -102,7 +104,7 @@ class AnimalCompactRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: metrics.nameGap),
                       _CompactMetadata(
                         metadata: metadata,
                         species: hasName ? species : null,
@@ -179,6 +181,7 @@ class _CompactMetadata extends StatelessWidget {
     );
     final warning = alert;
     if (warning == null) return metadataText();
+    final metrics = AppDirectoryMetrics.of(context);
     final colors = animalStatusPillColors(
       isDark: Theme.of(context).brightness == Brightness.dark,
       accentColor: warning.accentColor,
@@ -220,7 +223,11 @@ class _CompactMetadata extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(warning.icon, size: 15, color: colors.foreground),
+                  Icon(
+                    warning.icon,
+                    size: metrics.cardInlineIconSize - 3,
+                    color: colors.foreground,
+                  ),
                   const SizedBox(width: 4),
                   Expanded(child: Text(warning.label, style: warningStyle)),
                 ],

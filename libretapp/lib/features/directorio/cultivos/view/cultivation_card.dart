@@ -26,6 +26,7 @@ class CultivationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
     final overdue = cultivation.isOverdueForWatering;
     final pending = cultivation.tasks.where((task) => !task.completed).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -43,7 +44,7 @@ class CultivationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppDirectoryCardFrame.cornerRadius),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(metrics.cardPaddingV),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -51,7 +52,7 @@ class CultivationCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: 23,
+                    radius: metrics.cardBadgeSize / 2,
                     backgroundColor: scheme.primaryContainer,
                     child: Padding(
                       padding: const EdgeInsets.all(3),
@@ -60,12 +61,13 @@ class CultivationCard extends StatelessWidget {
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           _iconForScale(cultivation.scale),
+                          size: metrics.cardBadgeIconSize,
                           color: scheme.onPrimaryContainer,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 11),
+                  SizedBox(width: metrics.cardGap),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +93,7 @@ class CultivationCard extends StatelessWidget {
                   _StatusChip(status: cultivation.status),
                 ],
               ),
-              const SizedBox(height: 11),
+              SizedBox(height: metrics.headerGap),
               Material(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(11),
@@ -99,8 +101,8 @@ class CultivationCard extends StatelessWidget {
                   onTap: onLocationTap,
                   borderRadius: BorderRadius.circular(11),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: metrics.cardGap - 2,
                       vertical: 8,
                     ),
                     child: Row(
@@ -109,10 +111,10 @@ class CultivationCard extends StatelessWidget {
                           locationName == null
                               ? Icons.location_off_outlined
                               : Icons.location_on_outlined,
-                          size: 17,
+                          size: metrics.cardInlineIconSize,
                           color: scheme.onSurfaceVariant,
                         ),
-                        const SizedBox(width: 7),
+                        SizedBox(width: metrics.cardChipGap),
                         Expanded(
                           child: Text(
                             locationName ?? 'Sin ubicación',
@@ -124,16 +126,19 @@ class CultivationCard extends StatelessWidget {
                           ),
                         ),
                         if (onLocationTap != null)
-                          const Icon(Icons.chevron_right, size: 18),
+                          Icon(
+                            Icons.chevron_right,
+                            size: metrics.cardInlineIconSize + 1,
+                          ),
                       ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: metrics.headerGap - 1),
               Wrap(
-                spacing: 7,
-                runSpacing: 7,
+                spacing: metrics.cardChipGap,
+                runSpacing: metrics.cardChipGap,
                 children: [
                   _InfoChip(
                     icon: Icons.straighten_outlined,
@@ -151,15 +156,15 @@ class CultivationCard extends StatelessWidget {
                 ],
               ),
               if (nextAction != null) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: metrics.headerGap - 2),
                 Row(
                   children: [
                     Icon(
                       Icons.event_note_outlined,
-                      size: 17,
+                      size: metrics.cardInlineIconSize,
                       color: scheme.primary,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: metrics.actionsGap),
                     Expanded(
                       child: Text(
                         'Próximo: $nextAction',
@@ -195,9 +200,13 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
     final active = status == CropStatus.active;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardChipGap + 1,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
         color: active
             ? scheme.primaryContainer
@@ -229,9 +238,13 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final metrics = AppDirectoryMetrics.of(context);
     final color = warning ? scheme.error : scheme.onSurfaceVariant;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardChipGap + 1,
+        vertical: 5,
+      ),
       decoration: BoxDecoration(
         color: warning
             ? scheme.errorContainer.withValues(alpha: 0.45)
@@ -241,7 +254,7 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: metrics.cardInlineIconSize - 3, color: color),
           const SizedBox(width: 4),
           Text(
             label,

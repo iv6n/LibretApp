@@ -92,15 +92,10 @@ class _RegistroPageState extends State<RegistroPage> {
       label: 'Programar tarea',
       subtitle: 'Crear un recordatorio en Agenda',
       color: AppColors.secondary,
-      onTap: (context) => context.pushNamed(AppRoutes.nameAgendaNuevo),
+      onTap: (context) =>
+          context.pushNamed(AppRoutes.nameRegistroMenuAgendaNuevo),
     );
-    final labels = _animalCount == 0
-        ? <String>[]
-        : switch (profile) {
-            CareProfile.pets => <String>['Sanitario', 'Peso'],
-            CareProfile.livestock => <String>['Lote', 'Tratar lote', 'Peso'],
-            _ => <String>['Lote', 'Sanitario', 'Peso'],
-          };
+    final labels = _animalCount == 0 ? <String>[] : <String>['Peso'];
     final primary = <_RegistroCardItem>[
       starter,
       task,
@@ -119,7 +114,11 @@ class _RegistroPageState extends State<RegistroPage> {
               .where((item) => !primaryLabels.contains(item.label))
               .toList(),
         ),
-    ].where((section) => section.items.isNotEmpty);
+    ].where((section) => section.items.isNotEmpty).toList();
+    final moreCount = remaining.fold<int>(
+      0,
+      (total, section) => total + section.items.length,
+    );
     return [
       _RegistroSection(label: 'Animal', items: primary, isCategory: true),
       _RegistroSection(
@@ -131,8 +130,11 @@ class _RegistroPageState extends State<RegistroPage> {
                 : Icons.apps_outlined,
             label: _showAllAnimalActions
                 ? 'Ocultar funciones'
-                : 'Ver todas las funciones',
-            subtitle: 'Registros, importación y herramientas',
+                : 'Ver $moreCount funciones más',
+            subtitle: 'Registros y herramientas de captura',
+            hint: _showAllAnimalActions
+                ? 'Ocultar opciones de registro'
+                : 'Mostrar más opciones de registro',
             color: AppColors.primary,
             onTap: (_) =>
                 setState(() => _showAllAnimalActions = !_showAllAnimalActions),
@@ -157,7 +159,7 @@ class _RegistroPageState extends State<RegistroPage> {
                   _RegistroCardItem(
                     icon: Icons.upload_file_outlined,
                     label: 'Importar hato',
-                    subtitle: 'Excel o CSV con vista previa',
+                    subtitle: 'Cargar animales desde Excel o CSV',
                     color: AppColors.primary,
                     onTap: (context) =>
                         context.pushNamed(AppRoutes.nameHerdImport),
@@ -165,7 +167,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.playlist_add_check_outlined,
                   label: 'Registro por lotes',
-                  subtitle: 'Capturar y continuar sin señal',
+                  subtitle: 'Capturar varios registros en una sesión',
                   color: AppColors.secondary,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameBatchRecords),
@@ -179,30 +181,39 @@ class _RegistroPageState extends State<RegistroPage> {
                   _RegistroCardItem(
                     icon: Icons.sensors,
                     label: 'RFID',
-                    subtitle: 'Escanear y asignar aretes',
+                    subtitle: 'Leer y asignar aretes electrónicos',
                     color: Colors.deepOrange,
                     onTap: (context) => context.pushNamed(AppRoutes.nameRfid),
                   ),
                 _RegistroCardItem(
                   icon: Icons.pets,
                   label: 'Animal',
-                  subtitle: 'Nuevo animal',
+                  subtitle: 'Crear una ficha nueva',
                   color: AppColors.primary,
                   onTap: (context) =>
-                      context.pushNamed(AppRoutes.nameAnimalNuevo),
+                      context.pushNamed(AppRoutes.nameRegistroMenuAnimalNuevo),
+                ),
+                _RegistroCardItem(
+                  icon: Icons.playlist_add_outlined,
+                  label: 'Alta de varios animales',
+                  subtitle: 'Crear varias fichas en menos pasos',
+                  color: AppColors.primary,
+                  onTap: (context) => context.pushNamed(
+                    AppRoutes.nameRegistroMenuAnimalMultiple,
+                  ),
                 ),
                 _RegistroCardItem(
                   icon: Icons.groups,
                   label: 'Lote',
-                  subtitle: 'Nuevo lote',
+                  subtitle: 'Agrupar animales para su manejo',
                   color: AppColors.secondary,
                   onTap: (context) =>
-                      context.pushNamed(AppRoutes.nameLoteNuevo),
+                      context.pushNamed(AppRoutes.nameRegistroMenuLoteNuevo),
                 ),
                 _RegistroCardItem(
                   icon: Icons.child_care,
                   label: 'Parición',
-                  subtitle: 'Registro de parición',
+                  subtitle: 'Registrar el nacimiento de becerros',
                   color: Colors.pink,
                   onTap: (context) => context.pushNamed(
                     AppRoutes.nameRegistroReproduccion,
@@ -217,7 +228,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.vaccines,
                   label: 'Tratar lote',
-                  subtitle: 'Vacunar o tratar varios animales',
+                  subtitle: 'Registrar vacunas o tratamientos grupales',
                   color: Colors.teal.shade700,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroTratarLote),
@@ -225,7 +236,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.child_friendly_outlined,
                   label: 'Destete',
-                  subtitle: 'Fecha y peso del becerro',
+                  subtitle: 'Anotar fecha y peso del becerro',
                   color: Colors.brown,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroDestete),
@@ -233,7 +244,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.monitor_weight,
                   label: 'Peso',
-                  subtitle: 'Peso del animal',
+                  subtitle: 'Guardar el peso y la fecha de medición',
                   color: Colors.green,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroPeso),
@@ -241,7 +252,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.medical_services,
                   label: 'Sanitario',
-                  subtitle: 'Vacunas y tratamiento',
+                  subtitle: 'Registrar vacuna, tratamiento o revisión',
                   color: Colors.teal,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroSanitario),
@@ -249,7 +260,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.payments,
                   label: 'Costo',
-                  subtitle: 'Costos de manejo',
+                  subtitle: 'Anotar un gasto asociado al animal',
                   color: Colors.brown,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroCosto),
@@ -257,7 +268,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.swap_horiz,
                   label: 'Cambio de ubicación',
-                  subtitle: 'Movimiento interno',
+                  subtitle: 'Mover el animal a otro rancho o potrero',
                   color: Colors.indigo,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroMovimiento),
@@ -265,7 +276,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.analytics,
                   label: 'Producción',
-                  subtitle: 'Ganancia o condición',
+                  subtitle: 'Registrar ganancia o condición corporal',
                   color: Colors.blue,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroProduccion),
@@ -273,7 +284,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.water_drop,
                   label: 'Ordeña',
-                  subtitle: 'Leche por vaca o lote',
+                  subtitle: 'Anotar leche por vaca o por lote',
                   color: Colors.lightBlue.shade700,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroOrdena),
@@ -281,7 +292,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.favorite,
                   label: 'Reproducción',
-                  subtitle: 'Servicio o parición',
+                  subtitle: 'Registrar servicio, diagnóstico o parto',
                   color: Colors.deepOrange,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroReproduccion),
@@ -289,7 +300,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 _RegistroCardItem(
                   icon: Icons.store,
                   label: 'Comercial',
-                  subtitle: 'Compra y venta',
+                  subtitle: 'Guardar una compra o venta',
                   color: Colors.purple,
                   onTap: (context) =>
                       context.pushNamed(AppRoutes.nameRegistroComercial),
@@ -304,14 +315,14 @@ class _RegistroPageState extends State<RegistroPage> {
               _RegistroCardItem(
                 icon: Icons.grass,
                 label: 'Añadir planta o cultivo',
-                subtitle: 'Crear una ficha nueva',
+                subtitle: 'Crear una ficha de cultivo',
                 color: Colors.lightGreen,
                 onTap: _handleNewCrop,
               ),
               _RegistroCardItem(
                 icon: Icons.agriculture,
                 label: 'Cosecha',
-                subtitle: 'Rendimiento de cultivo',
+                subtitle: 'Registrar cantidad y rendimiento',
                 color: Colors.orange,
                 onTap: (context) {
                   _handleCropRecord(context, _CropRecordMenuAction.harvest);
@@ -320,7 +331,7 @@ class _RegistroPageState extends State<RegistroPage> {
               _RegistroCardItem(
                 icon: Icons.water_drop,
                 label: 'Riego',
-                subtitle: 'Riego de cultivo',
+                subtitle: 'Anotar riego y cantidad de agua',
                 color: Colors.blueAccent,
                 onTap: (context) {
                   _handleCropRecord(context, _CropRecordMenuAction.watering);
@@ -329,7 +340,7 @@ class _RegistroPageState extends State<RegistroPage> {
               _RegistroCardItem(
                 icon: Icons.health_and_safety,
                 label: 'Salud de cultivo',
-                subtitle: 'Problemas y tratamiento',
+                subtitle: 'Registrar plagas, enfermedad o tratamiento',
                 color: Colors.redAccent,
                 onTap: (context) {
                   _handleCropRecord(context, _CropRecordMenuAction.health);
@@ -338,7 +349,7 @@ class _RegistroPageState extends State<RegistroPage> {
               _RegistroCardItem(
                 icon: Icons.task_alt,
                 label: 'Tarea',
-                subtitle: 'Nueva tarea de cultivo',
+                subtitle: 'Programar una labor para el cultivo',
                 color: Colors.amber,
                 onTap: (context) {
                   _handleCropRecord(context, _CropRecordMenuAction.task);
@@ -353,10 +364,10 @@ class _RegistroPageState extends State<RegistroPage> {
               _RegistroCardItem(
                 icon: Icons.place,
                 label: 'Nueva ubicación',
-                subtitle: 'Crear una ubicación',
+                subtitle: 'Crear un rancho, potrero o área de cultivo',
                 color: AppColors.accent,
                 onTap: (context) =>
-                    context.pushNamed(AppRoutes.nameUbicacionNueva),
+                    context.pushNamed(AppRoutes.nameRegistroMenuUbicacionNueva),
               ),
             ],
           ),
@@ -370,7 +381,7 @@ class _RegistroPageState extends State<RegistroPage> {
       _showMessage('El catálogo de cultivos no está disponible.');
       return;
     }
-    context.pushNamed(AppRoutes.nameCultivoNuevo);
+    context.pushNamed(AppRoutes.nameRegistroMenuCultivoNuevo);
   }
 
   Future<void> _handleCropRecord(
@@ -679,7 +690,11 @@ class _RegistroCardGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
-        if (constraints.maxWidth < 600 || largeText) {
+        final width = MediaQuery.sizeOf(context).width;
+        final columns = largeText
+            ? 1
+            : (width >= 960 ? 3 : (width >= 600 ? 2 : 1));
+        if (columns == 1) {
           return Column(
             children: [
               for (final item in items) ...[
@@ -691,23 +706,24 @@ class _RegistroCardGrid extends StatelessWidget {
         }
 
         final rows = <Widget>[];
-        int i = 0;
-        while (i < items.length) {
-          final next = i + 1 < items.length ? items[i + 1] : null;
+        for (var i = 0; i < items.length; i += columns) {
           rows.add(
             Row(
               children: [
-                Expanded(child: _RegistroCard(item: items[i])),
-                const SizedBox(width: 10),
-                if (next != null)
-                  Expanded(child: _RegistroCard(item: next))
-                else
-                  const Expanded(child: SizedBox()),
+                for (var column = 0; column < columns; column++) ...[
+                  if (column > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: i + column < items.length
+                        ? _RegistroCard(item: items[i + column])
+                        : const SizedBox(),
+                  ),
+                ],
               ],
             ),
           );
-          i += next != null ? 2 : 1;
-          if (i < items.length) rows.add(const SizedBox(height: 10));
+          if (i + columns < items.length) {
+            rows.add(const SizedBox(height: 12));
+          }
         }
         return Column(children: rows);
       },
@@ -771,84 +787,107 @@ class _RegistroCardState extends State<_RegistroCard> {
         ? Color.lerp(baseColor, Colors.white, 0.42)!
         : baseColor;
     final bgColor = theme.colorScheme.surfaceContainerLow;
-    const iconSize = 44.0;
-    const iconInnerSize = 24.0;
+    const iconSize = 16.0;
+    const iconInnerSize = 16.0;
     const chevronSize = 20.0;
     const chevronIcon = 14.0;
-    const hPad = AppSpacing.sm;
+    const hPad = AppSpacing.md;
     const vPad = AppSpacing.xs;
     const iconGap = AppSpacing.sm;
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w700,
+      fontSize: 14,
     );
+    final largeText = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
     return Material(
       color: bgColor,
       borderRadius: BorderRadius.circular(16),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: _opening ? null : _open,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: hPad,
-              vertical: vPad,
+      child: Semantics(
+        key: ValueKey('registro-card-${item.label}'),
+        button: true,
+        enabled: !_opening,
+        label: '${item.label}. ${item.subtitle}',
+        hint: item.hint,
+        onTap: _opening ? null : _open,
+        child: ExcludeSemantics(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: iconSize,
-                  height: iconSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                    color: color.withValues(alpha: 0.15),
+            child: InkWell(
+              excludeFromSemantics: true,
+              borderRadius: BorderRadius.circular(16),
+              onTap: _opening ? null : _open,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 64),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: hPad,
+                    vertical: vPad,
                   ),
-                  child: Icon(item.icon, color: color, size: iconInnerSize),
-                ),
-                const SizedBox(width: iconGap),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Row(
                     children: [
-                      Text(
-                        item.label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: titleStyle,
+                      Container(
+                        width: iconSize,
+                        height: iconSize,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(AppRadii.sm),
+                          color: color.withValues(alpha: 0.15),
+                        ),
+                        child: Icon(
+                          item.icon,
+                          color: color,
+                          size: iconInnerSize,
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        item.subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(width: iconGap),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item.label,
+                              maxLines: largeText ? null : 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: titleStyle,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.subtitle,
+                              maxLines: largeText ? null : 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: chevronSize,
+                        height: chevronSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color.withValues(alpha: 0.15),
+                        ),
+                        child: Icon(
+                          _opening ? Icons.hourglass_top : Icons.chevron_right,
+                          color: _opening
+                              ? color.withValues(alpha: 0.55)
+                              : color,
+                          size: chevronIcon,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  width: chevronSize,
-                  height: chevronSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.15),
-                  ),
-                  child: Icon(
-                    _opening ? Icons.hourglass_top : Icons.chevron_right,
-                    color: _opening ? color.withValues(alpha: 0.55) : color,
-                    size: chevronIcon,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -876,6 +915,7 @@ class _RegistroCardItem {
     required this.subtitle,
     required this.color,
     required this.onTap,
+    this.hint = 'Abrir formulario',
   });
 
   final IconData icon;
@@ -883,6 +923,7 @@ class _RegistroCardItem {
   final String subtitle;
   final Color color;
   final void Function(BuildContext context) onTap;
+  final String hint;
 
   @override
   bool operator ==(Object other) {

@@ -225,7 +225,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'De la casa al campo,\ntodo lo que cuidas\nen un lugar.',
+          'Animales, plantas y tareas',
           style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 32,
             fontWeight: FontWeight.w800,
@@ -234,9 +234,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          'Registra animales, mascotas, siembras y plantas. Organiza sus cuidados y próximas tareas en un solo lugar.',
+          'Organiza lo que cuidas y descubre qué necesita atención cada día.',
           style: theme.textTheme.bodyLarge?.copyWith(
-            height: 1.38,
+            height: 1.35,
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
@@ -254,22 +254,35 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
         ),
-        const SizedBox(height: 15),
-        const Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.spaceBetween,
-          children: [
-            _FeatureChip(icon: Icons.history, label: 'Guarda su historia'),
-            _FeatureChip(
-              icon: Icons.event_note_outlined,
-              label: 'Planea cuidados',
-            ),
-            _FeatureChip(
-              icon: Icons.notifications_none_outlined,
-              label: 'Recibe avisos',
-            ),
-          ],
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: const Column(
+            children: [
+              _WelcomeBenefit(
+                icon: Icons.pets_outlined,
+                title: 'Fichas de animales',
+                detail: 'Fotos, salud y registros en un lugar.',
+              ),
+              Divider(height: 1),
+              _WelcomeBenefit(
+                icon: Icons.event_available_outlined,
+                title: 'Agenda de cuidados',
+                detail: 'Próximas actividades y pendientes.',
+              ),
+              Divider(height: 1),
+              _WelcomeBenefit(
+                icon: Icons.spa_outlined,
+                title: 'Plantas y siembras',
+                detail: 'Sigue su progreso día a día.',
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -285,19 +298,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Tus cuidados, de un vistazo.',
+          'Fichas y próximos cuidados',
           style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 30,
             fontWeight: FontWeight.w800,
             height: 1.08,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'Consulta fichas y próximos cuidados en un solo lugar.',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            height: 1.38,
-            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 10),
@@ -366,6 +371,44 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.event_available_outlined,
+                size: 28,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mañana en tu agenda',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Revisión de Capitán',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -379,37 +422,55 @@ class _OnboardingPageState extends State<OnboardingPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Empieza a tu manera.',
+          'Elige cómo empezar',
           style: theme.textTheme.headlineLarge?.copyWith(
             fontSize: 32,
             fontWeight: FontWeight.w800,
             height: 1.1,
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          widget.onAccessPhone == null
-              ? 'Empieza como invitado o explora la app con ejemplos.'
-              : 'Accede con tu teléfono, empieza como invitado o explora la app con ejemplos.',
-          style: theme.textTheme.bodyLarge?.copyWith(
-            height: 1.4,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
         const SizedBox(height: 14),
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.xl),
-          child: Container(
-            height: compactArtwork ? 120 : 170,
-            color: theme.colorScheme.surfaceContainerHighest,
-            child: Image.asset(
-              'assets/images/onboarding_start_options.jpg',
-              fit: compactArtwork ? BoxFit.contain : BoxFit.cover,
-              alignment: Alignment.topCenter,
-              filterQuality: FilterQuality.high,
-              semanticLabel:
-                  'Persona organizando cuidados desde su teléfono junto a un perro y una siembra',
+          child: AspectRatio(
+            aspectRatio: compactArtwork ? 2.6 : 1.85,
+            child: ColoredBox(
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Image.asset(
+                'assets/images/onboarding_start_options.jpg',
+                fit: compactArtwork ? BoxFit.contain : BoxFit.cover,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.high,
+                semanticLabel:
+                    'Persona organizando cuidados desde su teléfono junto a un perro y una siembra',
+              ),
             ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.tips_and_updates_outlined,
+                size: 23,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(
+                  'Empieza con tus registros o explora la demo con datos ficticios.',
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -456,7 +517,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           FilledButton(
             onPressed: _working ? null : () => _goTo(1),
             style: _primaryButtonStyle(context),
-            child: const Text('Continuar'),
+            child: const Text('Ver un ejemplo'),
           )
         else if (page == 1 &&
             (MediaQuery.sizeOf(context).width < 360 ||
@@ -496,45 +557,41 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ],
           )
         else ...[
-          FilledButton.icon(
-            onPressed: _working || widget.onAccessPhone == null
-                ? null
-                : _openPhoneAccess,
-            style: _primaryButtonStyle(context),
-            icon: const Icon(Icons.phone_android_outlined),
-            label: const Text('Acceder con teléfono'),
-          ),
+          if (widget.onAccessPhone != null) ...[
+            FilledButton.icon(
+              onPressed: _working ? null : _openPhoneAccess,
+              style: _primaryButtonStyle(context),
+              icon: const Icon(Icons.phone_android_outlined),
+              label: const Text('Acceder con teléfono'),
+            ),
+            const SizedBox(height: 7),
+          ],
           if (widget.onAccessPhone == null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'El acceso por teléfono no está disponible en esta versión.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+            FilledButton(
+              onPressed: _working ? null : () => _choose(widget.onStartEmpty),
+              style: _primaryButtonStyle(context),
+              child: const Text('Continuar como invitado'),
+            )
+          else
+            OutlinedButton(
+              onPressed: _working ? null : () => _choose(widget.onStartEmpty),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: isDark ? const Color(0xFFC3E1D0) : _green,
+                side: BorderSide(
+                  color: isDark ? const Color(0xFF89B49C) : _green,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
+              child: const Text('Continuar como invitado'),
             ),
-          const SizedBox(height: 7),
-          OutlinedButton(
-            onPressed: _working ? null : () => _choose(widget.onStartEmpty),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              foregroundColor: isDark ? const Color(0xFFC3E1D0) : _green,
-              side: BorderSide(
-                color: isDark ? const Color(0xFF89B49C) : _green,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            child: const Text('Continuar como invitado'),
-          ),
           const SizedBox(height: 10),
           _demoSection(context),
           const SizedBox(height: 8),
           Text(
-            'Tus registros se guardan en este dispositivo. Haz copias de seguridad periódicas.',
+            'Tus datos están en este teléfono. Crea una copia de seguridad.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -560,12 +617,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             'Explorar con ejemplos',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
-            'Prueba fichas y actividades ficticias en un espacio separado.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -666,40 +717,57 @@ class _ProgressDots extends StatelessWidget {
       );
 }
 
-class _FeatureChip extends StatelessWidget {
-  const _FeatureChip({required this.icon, required this.label});
+class _WelcomeBenefit extends StatelessWidget {
+  const _WelcomeBenefit({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
 
   final IconData icon;
-  final String label;
+  final String title;
+  final String detail;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF25463B) : _OnboardingPageState._sage,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: isDark
-                ? const Color(0xFFB7DBC5)
-                : _OnboardingPageState._green,
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              label,
-              softWrap: true,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+          ExcludeSemantics(
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
+              child: Icon(
+                icon,
+                size: 21,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  detail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -176,20 +176,13 @@ void main() {
       final lastRow = find.byKey(const ValueKey('last-row-0'));
       final fab = find.byType(FloatingActionButton);
       expect(fab, findsOneWidget);
-      final scrim = find.byKey(const ValueKey('shell_dock_scrim'));
-      expect(scrim, findsOneWidget);
-      final decoration = tester.widget<Container>(scrim).decoration!;
-      expect(decoration, isA<BoxDecoration>());
-      expect((decoration as BoxDecoration).gradient, isA<LinearGradient>());
-      final dockGradient = decoration.gradient! as LinearGradient;
-      expect(dockGradient.colors.last.a, 1);
-      expect(dockGradient.colors[dockGradient.colors.length - 2].a, 1);
+      expect(find.byKey(const ValueKey('shell_dock_scrim')), findsNothing);
       expect(
-        find
-            .ancestor(of: scrim, matching: find.byType(IgnorePointer))
-            .evaluate()
-            .any((element) => (element.widget as IgnorePointer).ignoring),
-        isTrue,
+        find.ancestor(
+          of: find.byType(AppBottomNavBar),
+          matching: find.byType(ColoredBox),
+        ),
+        findsNothing,
       );
       expect(tester.getRect(lastRow).bottom, lessThan(tester.getRect(fab).top));
       expect(lastRow.hitTestable(), findsOneWidget);

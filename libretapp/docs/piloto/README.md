@@ -1,5 +1,11 @@
 # Piloto offline: implementación y aceptación
 
+**Estado del 3 de noviembre de 2026:** la aceptación de la nueva entrega está
+abierta. Consultar el [registro único de hallazgos actuales](../design/final-polish-findings-2026-11-02.md),
+la [matriz sin enlaces visuales obsoletos](directorio-cobertura.csv) y el
+[procedimiento del candidato de prueba interna](candidato-play-interno.md).
+Los resultados históricos siguientes no acreditan el AAB nuevo.
+
 **Estado vigente, 19 de octubre de 2026:** versión prevista `0.1.3+6`, respaldo
 11, Android 9/API 28 mínimo. Consulte [las correcciones y evidencias actuales](../auditoria-2026-10-19/IMPLEMENTACION.md).
 Los resultados que siguen documentan el candidato histórico del 2 de octubre;
@@ -23,14 +29,10 @@ Fecha de revisión: 2 de octubre de 2026 (Hermosillo). El candidato conserva `ap
 
 [Matriz de cobertura](directorio-cobertura.csv) y [hallazgos](hallazgos.md) registran superficies, pruebas, evidencias y recorridos pendientes. «Prueba automatizada» no significa que se haya ejecutado ese formulario en Android. «Pendiente» es una brecha de validación, no un fallo demostrado.
 
-La evidencia local está en `artifacts/directorio/`, excluida de Git para no incorporar fotografías ni bases de datos a futuras contribuciones:
-
-- `index.html`: comparación antes/después de las ocho especies en claro/oscuro y capturas Android.
-- `before/`: capturas del perfil original a 360 dp; se conservaron los desbordamientos encontrados, sin alterar la captura.
-- `after/`: capturas del nuevo perfil a 360 dp. Las pruebas adicionales recorren las cinco pestañas a 320/360/412 dp y texto 1×/2×.
-- `android/`: capturas reales con su árbol de accesibilidad. Las primeras documentan el candidato intermedio; las terminadas en `final` documentan el APK final.
-- `demo.libretbackup`: escenario ficticio de 40 animales, ocho especies y relaciones; no contiene datos de usuarios.
-- `release-verification.json`: manifiesto y alineación ELF del AAB final. `performance-40.json` y `performance-1000.json`: medición de consultas locales.
+La evidencia visual local de este candidato histórico se retiró. Los resultados
+de las pruebas y recorridos se conservan en esta página y en la matriz de
+cobertura. Los archivos de datos y mediciones no visuales siguen separados de
+la documentación de interfaz.
 
 La suite completa pasó 1,015 pruebas y la variante offline pasó otras 17. Se probaron errores de guardado, 48 combinaciones visuales del perfil y los ocho formularios de registro con texto doble y teclado. Las pruebas de persistencia y recuperación usan Isar real; las pruebas de interfaz usan repositorios controlados para reproducir fallos. Las capturas de widgets no sustituyen TalkBack ni permisos de cámara en un teléfono físico.
 
@@ -43,9 +45,7 @@ flutter pub get
 flutter test --reporter expanded
 flutter analyze --no-fatal-infos
 flutter test test/core/platform/offline_pilot_test.dart --dart-define=LIBRETAPP_OFFLINE_PILOT=true
-$env:LIBRET_CAPTURE_DIR = 'artifacts/directorio/after'
 flutter test test/features/directorio/animales/animal_profile_visual_test.dart
-Remove-Item Env:LIBRET_CAPTURE_DIR
 flutter build appbundle --release --flavor offline
 flutter build apk --release --flavor offline
 python tool/verify_offline_release.py build/app/outputs/bundle/offlineRelease/app-offline-release.aab --manifest build/app/intermediates/merged_manifests/offlineRelease/processOfflineReleaseManifest/AndroidManifest.xml --out artifacts/directorio/release-verification.json
@@ -72,12 +72,12 @@ Se reinstaló el candidato con `adb install -r` y se confirmó conservación de 
 ## Condiciones antes de subir a Play Console
 
 1. Completar los recorridos manuales pendientes de la matriz, TalkBack, permisos rechazados, teclado/cancelación y pruebas en un teléfono de gama baja. No hay certificación de cobertura Android completa todavía.
-2. Completar `privacidad.html` con el responsable y correo reales, publicarla en HTTPS y configurar `LIBRET_SUPPORT_EMAIL` y `LIBRET_PRIVACY_URL` al compilar. Los valores no se inventaron; el borrador no debe publicarse sin editar.
+2. La [política offline](https://libretapp-mexico.delcarmenmariscos.chatgpt.site/privacidad/offline/) ya está publicada en HTTPS. Configurar `LIBRET_SUPPORT_EMAIL` y `LIBRET_PRIVACY_URL` con los valores confirmados al compilar; el archivo local `privacidad.html` es un borrador histórico, no la página vigente.
 3. Completar recursos y declaraciones en [la ficha propuesta](play-store-ficha.md): icono, gráfico de funciones, capturas del build final, contenido, audiencia, anuncios y seguridad de datos. Revisar lo declarado frente al AAB final y sus SDKs.
 4. Verificar la cuenta, activar Play App Signing y distribuir primero en pruebas internas. Con una cuenta personal creada después del 13/11/2023, cumplir al menos 12 participantes inscritos durante 14 días consecutivos antes de solicitar producción; se recomienda reclutar 15 y recoger comentarios reales.
 5. Validar la actualización desde cualquier APK que ya se haya distribuido usando su firma original. La reinstalación conservando datos del candidato local y la compatibilidad de la base antigua no prueban una firma histórica desconocida.
 
-Estos pasos requieren datos del titular, acceso a Play Console, participantes y pruebas humanas; no se ejecutaron acciones externas ni se publicó la app.
+Los pasos restantes requieren revisión del certificado de subida, pruebas físicas separadas y participantes. La política web está publicada; la app no se ha enviado a Play.
 
 ## Criterio de aceptación
 

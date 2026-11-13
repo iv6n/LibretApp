@@ -135,7 +135,7 @@ class _AnimalSelectorState extends State<AnimalSelector> {
             child: Row(
               children: [
                 Icon(
-                  selected != null ? Icons.pets : Icons.search,
+                  Icons.pets,
                   size: 20,
                   color: selected != null
                       ? theme.colorScheme.primary

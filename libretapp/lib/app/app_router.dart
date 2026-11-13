@@ -29,9 +29,11 @@ import 'package:libretapp/features/directorio/animales/view/animal_cost_form_pag
 import 'package:libretapp/features/directorio/animales/view/animal_production_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_movement_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_reproduction_form_page.dart';
-import 'package:libretapp/features/registro/view/registro_reproduccion_page.dart' show ReproductionInitialStep;
+import 'package:libretapp/features/registro/view/registro_reproduccion_page.dart'
+    show ReproductionInitialStep;
 import 'package:libretapp/features/directorio/animales/view/animal_health_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
+import 'package:libretapp/features/directorio/animales/view/animal_batch_register_page.dart';
 import 'package:libretapp/features/directorio/animales/view/animal_commercial_form_page.dart';
 import 'package:libretapp/features/directorio/directorio.dart';
 import 'package:libretapp/features/agenda/agenda.dart';
@@ -209,6 +211,20 @@ GoRouter createAppRouter({
                   ),
                 ),
                 GoRoute(
+                  path: 'animales/nuevo-multiple',
+                  name: AppRoutes.nameAnimalNuevoMultiple,
+                  pageBuilder: (context, state) => _buildOverlayDetailPage(
+                    state: state,
+                    child: AnimalBatchRegisterPage(
+                      preferredSpecies:
+                          AppExperienceScope.maybeOf(
+                            context,
+                          )?.value.preferredSpecies.toList() ??
+                          const [],
+                    ),
+                  ),
+                ),
+                GoRoute(
                   path: 'lotes/nuevo',
                   name: AppRoutes.nameLoteNuevo,
                   pageBuilder: (context, state) => _buildOverlayDetailPage(
@@ -303,12 +319,13 @@ GoRouter createAppRouter({
                       child: AnimalReproductionFormPage(
                         animalUuid: uuid,
                         recordId: state.uri.queryParameters['recordId'],
-                        initialStep: switch (state.uri.queryParameters['step']) {
-                          'service' => ReproductionInitialStep.service,
-                          'diagnosis' => ReproductionInitialStep.diagnosis,
-                          'calving' => ReproductionInitialStep.calving,
-                          _ => null,
-                        },
+                        initialStep:
+                            switch (state.uri.queryParameters['step']) {
+                              'service' => ReproductionInitialStep.service,
+                              'diagnosis' => ReproductionInitialStep.diagnosis,
+                              'calving' => ReproductionInitialStep.calving,
+                              _ => null,
+                            },
                       ),
                     );
                   },
@@ -682,6 +699,98 @@ GoRouter createAppRouter({
       pageBuilder: (context, state) =>
           _buildOverlayDetailPage(state: state, child: const RegistroPage()),
       routes: [
+        GoRoute(
+          path: 'tarea',
+          name: AppRoutes.nameRegistroMenuAgendaNuevo,
+          pageBuilder: (context, state) {
+            final dateParam = state.uri.queryParameters['date'];
+            final initialDate =
+                DateTime.tryParse(dateParam ?? '') ?? DateTime.now();
+            return _buildOverlayDetailPage(
+              state: state,
+              child: BlocProvider(
+                create: (_) => AgendaBloc(
+                  locator<AgendaRepository>(),
+                  lotesRepository: locator<LotesRepository>(),
+                  refreshSignal: locator<AgendaRefreshSignal>(),
+                  registrationRepository:
+                      locator<AgendaRegistrationRepository>(),
+                  registrationReadService:
+                      locator<AgendaRegistrationReadService>(),
+                ),
+                child: state.uri.queryParameters['kind'] == 'reminder'
+                    ? const LiteTaskFormPage()
+                    : AgendaEntryFormPage(initialDate: initialDate),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: 'animal/nuevo',
+          name: AppRoutes.nameRegistroMenuAnimalNuevo,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: RegisterAnimalPage(
+              initialSpecies: AppExperienceScope.maybeOf(
+                context,
+              )?.value.preferredSpecies.firstOrNull,
+              preferredSpecies:
+                  AppExperienceScope.maybeOf(
+                    context,
+                  )?.value.preferredSpecies.toList() ??
+                  const [],
+            ),
+          ),
+        ),
+        GoRoute(
+          path: 'animales/nuevo-multiple',
+          name: AppRoutes.nameRegistroMenuAnimalMultiple,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: AnimalBatchRegisterPage(
+              preferredSpecies:
+                  AppExperienceScope.maybeOf(
+                    context,
+                  )?.value.preferredSpecies.toList() ??
+                  const [],
+            ),
+          ),
+        ),
+        GoRoute(
+          path: 'lote/nuevo',
+          name: AppRoutes.nameRegistroMenuLoteNuevo,
+          pageBuilder: (context, state) =>
+              _buildOverlayDetailPage(state: state, child: LoteFormPage()),
+        ),
+        GoRoute(
+          path: 'cultivo/nuevo',
+          name: AppRoutes.nameRegistroMenuCultivoNuevo,
+          pageBuilder: (context, state) => _buildOverlayDetailPage(
+            state: state,
+            child: CultivationFormPage(
+              presetLocationUuid: state.uri.queryParameters['location'],
+            ),
+          ),
+        ),
+        GoRoute(
+          path: 'ubicacion/nueva',
+          name: AppRoutes.nameRegistroMenuUbicacionNueva,
+          pageBuilder: (context, state) {
+            final extra = state.extra;
+            final args = extra is LocationFormRouteArgs
+                ? extra
+                : LocationFormRouteArgs(
+                    presetParentUuid: extra is String ? extra : null,
+                  );
+            return _buildOverlayDetailPage(
+              state: state,
+              child: LocationFormPage(
+                presetParentUuid: args.presetParentUuid,
+                returnCreatedUuid: args.returnCreatedUuid,
+              ),
+            );
+          },
+        ),
         GoRoute(
           path: 'sanitario',
           name: AppRoutes.nameRegistroSanitario,

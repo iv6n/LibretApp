@@ -102,6 +102,13 @@ class LocationCard extends StatelessWidget {
         : isNested
         ? 16.0
         : 20.0;
+    final metrics = AppDirectoryMetrics.of(context);
+    final padH = standardizedDirectoryLayout ? metrics.cardPaddingH : 12.0;
+    final padV = standardizedDirectoryLayout ? metrics.cardPaddingV : 10.0;
+    final avatarGap = standardizedDirectoryLayout ? metrics.headerGap : 10.0;
+    final avatarRadius = standardizedDirectoryLayout
+        ? (isNested ? metrics.compactAvatarRadius : metrics.leadingAvatarRadius)
+        : (isNested ? 24.0 : 28.0);
 
     final headerColor = isDark
         ? Color.alphaBlend(
@@ -147,15 +154,20 @@ class LocationCard extends StatelessWidget {
                 children: [
                   Container(
                     color: headerColor,
-                    padding: const EdgeInsets.fromLTRB(12, 10, 10, 9),
+                    padding: EdgeInsets.fromLTRB(
+                      padH,
+                      padV,
+                      padH - 2,
+                      padV - 1,
+                    ),
                     child: Row(
                       children: [
                         LocationTypeAvatar(
                           type: location.type,
-                          radius: isNested ? 24 : 28,
+                          radius: avatarRadius,
                           backgroundColor: typeColor.withValues(alpha: 0.12),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: avatarGap),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,9 +180,9 @@ class LocationCard extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              SizedBox(height: metrics.nameGap - 1),
                               Wrap(
-                                spacing: 7,
+                                spacing: metrics.cardChipGap,
                                 runSpacing: 2,
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
@@ -194,7 +206,7 @@ class LocationCard extends StatelessWidget {
                                     ),
                                 ],
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: metrics.actionsGap - 2),
                               Text(
                                 summary,
                                 maxLines: 2,
@@ -205,15 +217,15 @@ class LocationCard extends StatelessWidget {
                                 ),
                               ),
                               if (activeCultivations.isNotEmpty) ...[
-                                const SizedBox(height: 4),
+                                SizedBox(height: metrics.actionsGap - 2),
                                 Row(
                                   children: [
                                     Icon(
                                       Icons.eco_outlined,
-                                      size: 14,
+                                      size: metrics.cardInlineIconSize - 3,
                                       color: typeColor,
                                     ),
-                                    const SizedBox(width: 4),
+                                    SizedBox(width: metrics.actionsGap - 2),
                                     Expanded(
                                       child: Text(
                                         'En uso por ${activeCultivations.first.name}${activeCultivations.length > 1 ? ' +${activeCultivations.length - 1}' : ''}',
@@ -232,15 +244,15 @@ class LocationCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: metrics.cardChipGap + 1),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             _StatusPill(status: effectiveStatus),
-                            const SizedBox(height: 7),
+                            SizedBox(height: metrics.cardChipGap),
                             Icon(
                               Icons.chevron_right,
-                              size: 20,
+                              size: metrics.cardInlineIconSize,
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ],
@@ -256,7 +268,7 @@ class LocationCard extends StatelessWidget {
                         typeColor.withValues(alpha: 0.05),
                         colorScheme.surface,
                       ),
-                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                      padding: EdgeInsets.fromLTRB(padH, 4, padH, 2),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
@@ -265,7 +277,7 @@ class LocationCard extends StatelessWidget {
                             isExpanded
                                 ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
-                            size: 18,
+                            size: metrics.cardInlineIconSize + 1,
                             color: colorScheme.onSurfaceVariant,
                           ),
                           label: Text(
@@ -289,7 +301,12 @@ class LocationCard extends StatelessWidget {
                     ),
                   Container(
                     color: footerColor,
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                    padding: EdgeInsets.fromLTRB(
+                      padH,
+                      metrics.headerGap - 2,
+                      padH,
+                      metrics.headerGap,
+                    ),
                     child: _BottomBar(
                       location: location,
                       animalCount: animalCount,
@@ -304,7 +321,12 @@ class LocationCard extends StatelessWidget {
                   ),
                   if (animalsAction != null || cultivationsAction != null)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      padding: EdgeInsets.fromLTRB(
+                        padH,
+                        0,
+                        padH,
+                        metrics.headerGap - 2,
+                      ),
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 6,
@@ -797,7 +819,8 @@ class _BottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final subtle = theme.colorScheme.onSurfaceVariant;
-    final metrics = _metrics();
+    final chips = _metrics();
+    final metrics = AppDirectoryMetrics.of(context);
     final showsOccupancy =
         location.effectiveCategory == LocationCategory.livestock ||
         location.effectiveCategory == LocationCategory.handling;
@@ -813,10 +836,10 @@ class _BottomBar extends StatelessWidget {
           children: [
             Expanded(
               child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
+                spacing: metrics.cardChipGap - 1,
+                runSpacing: metrics.cardChipGap - 1,
                 children: [
-                  for (final (icon, label) in metrics)
+                  for (final (icon, label) in chips)
                     _MetricChip(icon: icon, label: label, color: subtle),
                 ],
               ),
@@ -856,9 +879,13 @@ class _HeaderPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final metrics = AppDirectoryMetrics.of(context);
     return Container(
       constraints: const BoxConstraints(maxWidth: 150),
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardChipGap,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
@@ -867,8 +894,8 @@ class _HeaderPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: metrics.cardInlineIconSize - 5, color: color),
+          SizedBox(width: metrics.actionsGap - 2),
           Flexible(
             child: Text(
               label,
@@ -901,8 +928,12 @@ class _MetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final metrics = AppDirectoryMetrics.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardChipGap,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.48),
         borderRadius: BorderRadius.circular(999),
@@ -913,7 +944,7 @@ class _MetricChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: metrics.cardInlineIconSize - 4, color: color),
           const SizedBox(width: 4),
           Text(
             label,
@@ -943,13 +974,17 @@ class _LinkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final metrics = AppDirectoryMetrics.of(context);
     return TextButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, size: 16),
+      icon: Icon(icon, size: metrics.cardInlineIconSize - 1),
       label: Text(label),
       style: TextButton.styleFrom(
         visualDensity: VisualDensity.compact,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: metrics.cardChipGap + 1,
+          vertical: 4,
+        ),
       ),
     );
   }
@@ -963,8 +998,12 @@ class _StatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
+    final metrics = AppDirectoryMetrics.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.cardChipGap + 1,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         color: status.backgroundOn(brightness),
         borderRadius: BorderRadius.circular(999),

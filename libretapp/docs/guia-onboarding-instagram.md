@@ -96,7 +96,10 @@ Tomar estos valores del tema actual como punto de partida y comprobar legibilida
 
 ## 2. Onboarding: bienvenida y opciones de acceso
 
-El recorrido actual tiene dos pantallas y conserva el avance. Las instalaciones con información previa mantienen sus registros y no necesitan repetirlo. Capturas actualizadas: `artifacts/onboarding/bienvenida.png`, `mascotas.png` y `ganado.png`, con sus variantes `-oscuro`.
+El recorrido de acceso conserva el avance. Las instalaciones con información
+previa mantienen sus registros y no necesitan repetirlo. La interfaz de
+bienvenida se debe revisar en el candidato Android actual antes de publicar
+material nuevo.
 
 | Pantalla | Título | Mensaje | Acción | Visual |
 | --- | --- | --- | --- | --- |
@@ -973,7 +976,7 @@ La versión técnica de referencia se obtiene de `pubspec.yaml` y de la document
 | Acciones por perfil y formulario de peso | [acciones del animal](C:/Code/LibretApp/libretapp/lib/features/directorio/animales/domain/services/animal_record_actions.dart), [formulario de peso](C:/Code/LibretApp/libretapp/lib/features/directorio/animales/view/animal_weight_form_page.dart), [textos en español](C:/Code/LibretApp/libretapp/lib/l10n/app_es.arb) | Guardado y consulta del dato ficticio en el candidato de grabación. |
 | Respaldo, Excel, ayuda y ajustes | [ajustes](C:/Code/LibretApp/libretapp/lib/features/perfil/view/perfil_settings_sheet.dart), [ayuda integrada](C:/Code/LibretApp/libretapp/lib/core/platform/pilot_information.dart) | Selector, permisos y copia externa en el dispositivo concreto. Los nombres o textos internos pueden conservar referencias históricas; esta entrega no modifica la app. |
 | Identidad de color | [tema actual](C:/Code/LibretApp/libretapp/lib/theme/app_theme.dart) | Icono aprobado y legibilidad de cada arte final. |
-| Referencias visuales previas | [capturas de auditoría](C:/Code/LibretApp/libretapp/artifacts/ui-audit/inicio.png), [bienvenida Android](C:/Code/LibretApp/libretapp/artifacts/bovinos/android/bovine-clean-install.png), [galería de pruebas internas](C:/Code/LibretApp/libretapp/artifacts/directorio/index.html) | Disponibilidad local de archivos; varias evidencias están excluidas de Git. No tratarlas como capturas nuevas. |
+| Referencias visuales previas | capturas de auditoría, bienvenida Android, [galería de pruebas internas](C:/Code/LibretApp/libretapp/artifacts/directorio/index.html) | Disponibilidad local de archivos; varias evidencias están excluidas de Git. No tratarlas como capturas nuevas. |
 | Video vertical y zona segura para Reels | [Meta para empresas](https://www.facebook.com/business/ads/facebook-instagram-reels-ads) | Requisitos y vista previa vigentes de cada ubicación al exportar o pautar. La ficha detallada de anuncios puede pedir iniciar sesión. |
 
 ### Comprobaciones antes de usar la guía en producción

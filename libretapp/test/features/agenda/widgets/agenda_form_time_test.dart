@@ -4,6 +4,39 @@ import 'package:libretapp/features/agenda/data/agenda_model.dart';
 import 'package:libretapp/features/agenda/widgets/agenda_form_sheet.dart';
 
 void main() {
+  testWidgets('guardar sigue visible con el teclado abierto en 360 dp', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetViewInsets);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AgendaEntryForm(
+            initialDate: DateTime(2026, 10, 29),
+            onSave: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('agenda-task-title')),
+      'Revisar cerca',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(find.byKey(const ValueKey('agenda-task-save'))).bottom,
+      lessThanOrEqualTo(380),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('la tarea nueva exige tipo y se guarda sin hora', (tester) async {
     AgendaEntry? saved;
     await tester.pumpWidget(

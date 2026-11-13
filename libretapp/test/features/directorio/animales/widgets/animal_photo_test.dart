@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_stage.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
+import 'package:libretapp/features/directorio/animales/widgets/animal_avatar.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_card.dart';
 import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -82,8 +83,11 @@ void main() {
 
     final image = find.byType(Image);
     expect(image, findsOneWidget);
-    expect(tester.getSize(image).width, greaterThan(70));
-    expect(tester.getSize(image).height, greaterThan(70));
+    final avatarSize = tester.getSize(find.byType(AnimalAvatar)).width;
+    final photoSize = tester.getSize(image);
+    // Only the thin border ring may separate the photo from the avatar frame.
+    expect(avatarSize - photoSize.width, inInclusiveRange(4, 16));
+    expect(avatarSize - photoSize.height, inInclusiveRange(4, 16));
     expect(tester.widget<Image>(image).fit, BoxFit.cover);
   });
 }

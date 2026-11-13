@@ -367,15 +367,6 @@ class _CultivationListBody extends StatelessWidget {
       return CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: _CultivationFilterBar(
-              filter: filter,
-              total: 0,
-              active: 0,
-              history: 0,
-              onChanged: onFilterChanged,
-            ),
-          ),
           SliverFillRemaining(
             hasScrollBody: false,
             child: AppDirectoryEmptySlot(
@@ -383,11 +374,8 @@ class _CultivationListBody extends StatelessWidget {
               child: AppEmptyState(
                 illustrationAsset: 'assets/images/location_garden.webp',
                 title: locationUuid == null
-                    ? 'Empieza a cuidar tus plantas y cultivos'
+                    ? 'Sin plantas ni cultivos'
                     : 'Sin cultivos en esta ubicación',
-                message: locationUuid == null
-                    ? 'Organiza una planta, un huerto o una siembra en un solo lugar.'
-                    : 'Puedes vincular una planta, huerto o siembra desde esta ubicación.',
                 action: locationUuid == null
                     ? FilledButton.icon(
                         onPressed: () =>
@@ -437,7 +425,6 @@ class _CultivationListBody extends StatelessWidget {
                 title: filter == _CultivationFilter.active
                     ? 'No hay cultivos activos'
                     : 'No hay cultivos en el historial',
-                message: 'Prueba con otro filtro para ver tus cultivos.',
                 action: OutlinedButton.icon(
                   onPressed: () => onFilterChanged(_CultivationFilter.all),
                   icon: const Icon(Icons.filter_alt_off_outlined),
@@ -516,7 +503,9 @@ class _CultivationSection extends StatelessWidget {
           Align(
             alignment: Alignment.center,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
+              constraints: const BoxConstraints(
+                maxWidth: AppDirectoryCardFrame.maxWidth,
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
                 child: Text(

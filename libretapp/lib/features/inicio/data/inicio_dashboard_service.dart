@@ -172,7 +172,8 @@ class InicioDashboardService {
       alerts.add(
         InicioAlertItem(
           title: 'Animales con prioridad alta',
-          message: '$attentionAnimals requieren revision inmediata.',
+          message:
+              '$attentionAnimals ${attentionAnimals == 1 ? 'requiere' : 'requieren'} revisión inmediata.',
           severity: InicioAlertSeverity.critical,
           targetRoute: AppRoutes.animalesPath(attention: true),
         ),
@@ -183,7 +184,8 @@ class InicioDashboardService {
       alerts.add(
         InicioAlertItem(
           title: 'Eventos vencidos',
-          message: '$overdueEvents actividad(es) quedaron fuera de fecha.',
+          message:
+              '$overdueEvents ${overdueEvents == 1 ? 'actividad quedó' : 'actividades quedaron'} fuera de fecha.',
           severity: InicioAlertSeverity.warning,
           targetRoute: AppRoutes.agenda,
         ),
@@ -206,8 +208,9 @@ class InicioDashboardService {
     if (unvaccinated > 0) {
       tasks.add(
         InicioTaskItem(
-          title: 'Programar vacunacion',
-          message: '$unvaccinated animales sin vacuna registrada.',
+          title: 'Programar vacunación',
+          message:
+              '$unvaccinated ${unvaccinated == 1 ? 'animal' : 'animales'} sin vacuna registrada.',
           targetRoute: AppRoutes.animales,
         ),
       );
@@ -216,8 +219,9 @@ class InicioDashboardService {
     if (underObservation > 0) {
       tasks.add(
         InicioTaskItem(
-          title: 'Seguir animales en observacion',
-          message: '$underObservation animales con seguimiento activo.',
+          title: 'Seguir animales en observación',
+          message:
+              '$underObservation ${underObservation == 1 ? 'animal' : 'animales'} con seguimiento activo.',
           targetRoute: AppRoutes.animalesPath(attention: true),
         ),
       );

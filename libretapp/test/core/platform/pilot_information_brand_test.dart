@@ -31,6 +31,8 @@ void main() {
       find.textContaining('Puedes eliminar registros'),
       300,
     );
+    expect(find.textContaining('confirmación SMS'), findsNothing);
+    expect(find.textContaining('Borrar datos'), findsOneWidget);
     final paragraph = tester.getRect(
       find.textContaining('Puedes eliminar registros'),
     );

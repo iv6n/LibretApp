@@ -25,6 +25,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/reproductive
 import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_lifecycle_calculator.dart';
 import 'package:libretapp/features/directorio/animales/domain/services/animal_taxonomy.dart';
+import 'package:libretapp/features/directorio/animales/domain/services/animal_initial_weight_policy.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
@@ -314,6 +315,12 @@ class AnimalRepositoryIsar
           .where()
           .uuidEqualTo(model.uuid)
           .findFirst();
+      if (!AnimalInitialWeightPolicy.allows(
+        proposed: model.weight,
+        persisted: stored?.weight,
+      )) {
+        throw ArgumentError(AnimalInitialWeightPolicy.errorMessage);
+      }
       if (stored != null) {
         model.id = stored.id;
         _preserveProjection(model, stored);
@@ -355,6 +362,12 @@ class AnimalRepositoryIsar
           .where()
           .uuidEqualTo(model.uuid)
           .findFirst();
+      if (!AnimalInitialWeightPolicy.allows(
+        proposed: model.weight,
+        persisted: stored?.weight,
+      )) {
+        throw ArgumentError(AnimalInitialWeightPolicy.errorMessage);
+      }
       if (stored != null) {
         model.id = stored.id;
         _preserveProjection(model, stored);

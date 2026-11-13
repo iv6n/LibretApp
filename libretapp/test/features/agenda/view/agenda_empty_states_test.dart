@@ -159,25 +159,20 @@ Future<void> _scrollToActions(WidgetTester tester) async {
 void main() {
   setUpAll(() async => initializeDateFormatting('es'));
 
-  testWidgets('first use keeps calendar and opens help and animal form', (
-    tester,
-  ) async {
+  testWidgets('first use keeps calendar and opens animal form', (tester) async {
     await _mountAgenda(tester, crops: const [], entries: const []);
     expect(find.byType(AgendaCalendar), findsOneWidget);
     expect(find.text('Tu agenda empieza aquí'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('agenda-empty-illustration')),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<ShellFabConfigScope>(find.byType(ShellFabConfigScope))
           .config,
       isNull,
     );
-
-    await _scrollToActions(tester);
-    await tester.tap(find.text('¿Cómo funciona?'));
-    await tester.pumpAndSettle();
-    expect(find.text('Cómo funciona la agenda'), findsOneWidget);
-    Navigator.of(tester.element(find.text('Cómo funciona la agenda'))).pop();
-    await tester.pumpAndSettle();
 
     await _scrollToActions(tester);
     await tester.tap(find.text('Agregar'));
@@ -253,22 +248,14 @@ void main() {
     expect(find.text('Formulario cultivo'), findsOneWidget);
   });
 
-  testWidgets('registered crop and no entries opens the directory', (
-    tester,
-  ) async {
-    await _mountAgenda(tester, crops: [_Crop()], entries: const []);
-    expect(find.text('Hoy no hay actividades'), findsOneWidget);
-    expect(find.text('Programar actividad'), findsOneWidget);
-    await _scrollToActions(tester);
-    await tester.tap(find.text('Ver mis registros'));
-    await tester.pumpAndSettle();
-    expect(find.text('Directorio abierto'), findsOneWidget);
-  });
-
   testWidgets('registered crop and no entries opens the agenda form', (
     tester,
   ) async {
     await _mountAgenda(tester, crops: [_Crop()], entries: const []);
+    expect(
+      find.byKey(const ValueKey('agenda-empty-illustration')),
+      findsOneWidget,
+    );
     await _scrollToActions(tester);
     await tester.tap(find.text('Programar actividad'));
     await tester.pumpAndSettle();

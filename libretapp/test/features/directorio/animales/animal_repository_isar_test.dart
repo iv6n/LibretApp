@@ -9,6 +9,7 @@ import 'package:libretapp/features/directorio/animales/domain/enums/production_s
 import 'package:libretapp/features/directorio/animales/domain/enums/production_system.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_remote_data_source.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository_isar.dart';
+import 'package:libretapp/features/directorio/animales/infrastructure/isar/isar_animal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/commercial_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/cost_record_repository_isar.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/health_record_repository_isar.dart';
@@ -133,6 +134,74 @@ void main() {
     expect(await repository.getPage(offset: 0, limit: 20), isEmpty);
     expect(await repository.count(), 0);
   }, skip: !_canRunIsarNative());
+
+  test(
+    'validates new weights while preserving a historical zero on unrelated edits',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPrefs = await SharedPreferences.getInstance();
+      final repository = AnimalRepositoryIsar(
+        IsarDatabase(),
+        SharedPrefsService(sharedPrefs),
+        _FakeAnimalRemoteDataSource(),
+      );
+
+      // A legacy value must be seeded below the current write policy.
+      final db = IsarDatabase();
+      final historical = _buildAnimal(
+        uuid: 'weight-legacy-zero',
+        earTag: 'TAG-WEIGHT-LEGACY-ZERO',
+        breed: 'Prueba',
+      ).copyWith(weight: 0.0);
+      await db.isar.writeTxn(() async {
+        await db.isar.isarAnimals.put(historical.toIsar());
+      });
+      final edited = await repository.update(
+        historical.copyWith(customName: 'Nombre actualizado'),
+      );
+      expect(edited.customName, 'Nombre actualizado');
+      expect(edited.weight, 0.0);
+
+      await expectLater(
+        repository.save(
+          _buildAnimal(
+            uuid: 'weight-new-zero',
+            earTag: 'TAG-WEIGHT-NEW-ZERO',
+            breed: 'Prueba',
+          ).copyWith(weight: 0.0),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+      await expectLater(
+        repository.save(
+          _buildAnimal(
+            uuid: 'weight-negative',
+            earTag: 'TAG-WEIGHT-NEGATIVE',
+            breed: 'Prueba',
+          ).copyWith(weight: -1.0),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      final positive = await repository.save(
+        _buildAnimal(
+          uuid: 'weight-positive',
+          earTag: 'TAG-WEIGHT-POSITIVE',
+          breed: 'Prueba',
+        ).copyWith(weight: 145.5),
+      );
+      final unknown = await repository.save(
+        _buildAnimal(
+          uuid: 'weight-unknown',
+          earTag: 'TAG-WEIGHT-UNKNOWN',
+          breed: 'Prueba',
+        ),
+      );
+      expect(positive.weight, 145.5);
+      expect(unknown.weight, isNull);
+    },
+    skip: !_canRunIsarNative(),
+  );
 
   test(
     'sold and dead animals leave the active herd but stay in the pedigree',

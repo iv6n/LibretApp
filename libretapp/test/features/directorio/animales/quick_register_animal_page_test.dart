@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
+import 'package:libretapp/features/directorio/animales/domain/models/animal_batch_draft.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
 import 'package:libretapp/features/directorio/animales/view/quick_register_animal_page.dart';
 import 'package:libretapp/l10n/app_localizations.dart';
@@ -166,6 +169,53 @@ void main() {
     expect(find.text('Volver al directorio'), findsOneWidget);
   });
 
+  testWidgets('disables repeated saves while the animal write is pending', (
+    tester,
+  ) async {
+    repository.saveGate = Completer<void>();
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('animal-quick-identification')),
+      'TAG-PENDING',
+    );
+
+    final save = find.byKey(const ValueKey('animal-quick-save'));
+    await tester.tap(save);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(repository.saveCalls, 1);
+
+    await tester.tap(save, warnIfMissed: false);
+    await tester.pump();
+    expect(repository.saveCalls, 1);
+
+    repository.saveGate!.complete();
+    await tester.pumpAndSettle();
+    expect(repository.savedAnimals, hasLength(1));
+    expect(repository.saveCalls, 1);
+  });
+
+  testWidgets('allows retry after a failed animal write', (tester) async {
+    repository.failuresRemaining = 1;
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('animal-quick-identification')),
+      'TAG-RETRY',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('animal-quick-save')));
+    await tester.pumpAndSettle();
+    expect(find.text('No se pudo guardar. Intenta de nuevo.'), findsOneWidget);
+    expect(repository.savedAnimals, isEmpty);
+
+    await tester.tap(find.byKey(const ValueKey('animal-quick-save')));
+    await tester.pumpAndSettle();
+    expect(repository.savedAnimals, hasLength(1));
+    expect(repository.saveCalls, 2);
+  });
+
   testWidgets('offers Registrar monta only after saving an eligible female', (
     tester,
   ) async {
@@ -307,13 +357,19 @@ void main() {
     await tester.tap(find.text('Guardar como pendiente'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Proteger mis datos · Ver respaldos'), findsOneWidget);
+    expect(find.text('Ver respaldos'), findsOneWidget);
   });
 
   testWidgets('adapts identification and purposes for equines', (tester) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
+    final speciesScroller = find.ancestor(
+      of: find.text('Équido'),
+      matching: find.byType(SingleChildScrollView),
+    ).first;
+    await tester.drag(speciesScroller, const Offset(-240, 0));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Équido'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Más datos'));
@@ -326,6 +382,41 @@ void main() {
     expect(find.text('Microchip, pasaporte o identificación'), findsOneWidget);
     expect(find.text('Deporte'), findsOneWidget);
     expect(find.text('Guardia'), findsNothing);
+  });
+
+  testWidgets('batch mode returns a draft without saving an animal', (
+    tester,
+  ) async {
+    AnimalBatchDraft? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                result = await Navigator.of(context).push<AnimalBatchDraft>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        const QuickRegisterAnimalPage(batchMode: true),
+                  ),
+                );
+              },
+              child: const Text('Abrir'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Abrir'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('animal-quick-identification')),
+      'A-101',
+    );
+    await tester.tap(find.text('Agregar a la lista').last);
+    await tester.pumpAndSettle();
+    expect(result?.animal.earTagNumber, 'A-101');
+    expect(repository.savedAnimals, isEmpty);
   });
 
   testWidgets('meets Flutter tap-target and semantic-label guidelines', (
@@ -354,12 +445,21 @@ Finder _fieldByLabel(String label) {
 
 class _FakeAnimalRepository implements AnimalRepository {
   final List<AnimalEntity> savedAnimals = [];
+  Completer<void>? saveGate;
+  var saveCalls = 0;
+  var failuresRemaining = 0;
 
   @override
   Future<List<AnimalEntity>> getAll() async => List.unmodifiable(savedAnimals);
 
   @override
   Future<AnimalEntity> save(AnimalEntity animal) async {
+    saveCalls++;
+    if (failuresRemaining > 0) {
+      failuresRemaining--;
+      throw StateError('simulated write failure');
+    }
+    await saveGate?.future;
     savedAnimals.add(animal);
     return animal;
   }

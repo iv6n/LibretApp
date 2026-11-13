@@ -93,7 +93,7 @@ void main() {
     );
     await tester.pump();
     final save = tester.widget<FilledButton>(find.byType(FilledButton));
-    final cancel = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
+    final cancel = tester.widget<TextButton>(find.byType(TextButton));
     expect(save.onPressed, isNull);
     expect(cancel.onPressed, isNull);
     expect(
@@ -131,7 +131,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final field = tester.getRect(find.byType(AppTextField));
-    expect(field.width, lessThanOrEqualTo(720));
+    expect(field.width, lessThanOrEqualTo(640));
     expect(field.center.dx, 720);
     expect(tester.takeException(), isNull);
   });

@@ -207,264 +207,267 @@ class _AgendaEntryFormState extends State<AgendaEntryForm> {
   @override
   Widget build(BuildContext context) {
     final totalSelected = _selectedAnimalIds.length + _selectedLoteIds.length;
+    final saveButton = AppButton(
+      key: const ValueKey('agenda-task-save'),
+      onPressed: _save,
+      expanded: true,
+      icon: Icons.save_alt,
+      label: widget.entry == null ? 'Guardar tarea' : 'Actualizar tarea',
+    );
+    final fields = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.showDragHandle) ...[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (widget.showDragHandle) ...[
+          Text(
+            widget.entry == null ? 'Nueva tarea / evento' : 'Editar tarea',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 14),
+        ],
+        AppTextField(
+          controller: _tituloController,
+          key: const ValueKey('agenda-task-title'),
+          labelText: 'Título',
+          prefixIcon: const Icon(Icons.title),
+          requiredField: true,
+          validator: (value) => value == null || value.trim().isEmpty
+              ? 'Ingrese un título'
+              : null,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppSelectField<String>(
+          value: _tipoSeleccionado,
+          items: agendaTipos,
+          itemLabel: (tipo) => tipo,
+          onChanged: (value) {
+            setState(() => _tipoSeleccionado = value);
+          },
+          labelText: 'Tipo de tarea',
+          hintText: 'Selecciona un tipo',
+          requiredField: true,
+          validator: (value) =>
+              value == null ? 'Selecciona un tipo de tarea' : null,
+          prefixIcon: const Icon(Icons.category_outlined),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppSelectField<String>(
+          value: _prioridad,
+          items: const [
+            AgendaPrioridad.baja,
+            AgendaPrioridad.normal,
+            AgendaPrioridad.alta,
+            AgendaPrioridad.urgente,
+          ],
+          itemLabel: (priority) => switch (priority) {
+            AgendaPrioridad.baja => 'Prioridad baja',
+            AgendaPrioridad.normal => 'Prioridad normal',
+            AgendaPrioridad.alta => 'Prioridad alta',
+            AgendaPrioridad.urgente => 'Prioridad urgente',
+            _ => priority,
+          },
+          onChanged: (value) => setState(() {
+            _prioridad = value ?? AgendaPrioridad.normal;
+          }),
+          labelText: 'Prioridad',
+          prefixIcon: const Icon(Icons.flag_outlined),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppTextField(
+          controller: _descripcionController,
+          labelText: 'Descripción (opcional)',
+          prefixIcon: const Icon(Icons.description_outlined),
+          maxLines: 2,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          variant: AppButtonVariant.secondary,
+          expanded: true,
+          onPressed: () async {
+            final result = await showWorkforceSelector(
+              context: context,
+              assigneeId: _assigneeId,
+              teamId: _workTeamId,
+              collaboratorIds: _collaboratorIds,
+            );
+            if (result == null || !mounted) return;
+            setState(() {
+              _assigneeId = result.assigneeId;
+              _workTeamId = result.teamId;
+              _collaboratorIds = result.collaboratorIds;
+            });
+          },
+          icon: Icons.assignment_ind_outlined,
+          label: _assigneeId == null && _workTeamId == null
+              ? 'Asignar responsable / cuadrilla'
+              : 'Asignación configurada · ${_collaboratorIds.length} colaborador(es)',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          variant: AppButtonVariant.secondary,
+          expanded: true,
+          onPressed: () async {
+            final result = await showAgendaAnimalSelector(
+              context,
+              initialAnimalIds: _selectedAnimalIds,
+              initialLoteIds: _selectedLoteIds,
+            );
+            if (result == null) return;
+            setState(() {
+              _selectedAnimalIds = result.animalIds;
+              _selectedLoteIds = result.loteIds;
+            });
+          },
+          icon: Icons.pets_outlined,
+          label: totalSelected == 0
+              ? 'Seleccionar animales / lotes'
+              : '${_selectedAnimalIds.length} animal(es)  ·  ${_selectedLoteIds.length} lote(s)',
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (widget.locations.isEmpty)
+          AppTextField(
+            controller: _ubicacionController,
+            labelText: 'Ubicación (opcional)',
+            prefixIcon: const Icon(Icons.place_outlined),
+            hintText: 'Ej: Potrero B',
+          )
+        else
+          AppSelectField<String>(
+            value: _locationUuid ?? '',
+            items: ['', ...widget.locations.map((location) => location.uuid)],
+            itemLabel: (uuid) => uuid.isEmpty
+                ? 'Sin ubicación'
+                : widget.locations
+                      .firstWhere((location) => location.uuid == uuid)
+                      .name,
+            onChanged: (value) => setState(
+              () =>
+                  _locationUuid = value == null || value.isEmpty ? null : value,
+            ),
+            labelText: 'Ubicación (opcional)',
+            prefixIcon: const Icon(Icons.place_outlined),
+          ),
+        const SizedBox(height: AppSpacing.sm),
+        AppDateField(
+          value: _fechaSeleccionada,
+          labelText: 'Fecha programada',
+          firstDate: DateTime.now().subtract(const Duration(days: 365)),
+          lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+          onChanged: (picked) {
+            if (picked == null) return;
+            setState(() {
+              _fechaSeleccionada = DateTime(
+                picked.year,
+                picked.month,
+                picked.day,
+                _fechaSeleccionada.hour,
+                _fechaSeleccionada.minute,
+              );
+            });
+          },
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          variant: AppButtonVariant.secondary,
+          expanded: true,
+          icon: Icons.schedule_outlined,
+          label: _hasExplicitTime
+              ? 'Hora límite · ${DateFormat('HH:mm').format(_fechaSeleccionada)}'
+              : 'Sin hora · Añadir hora',
+          onPressed: () async {
+            final picked = await showTimePicker(
+              context: context,
+              initialTime: TimeOfDay.fromDateTime(_fechaSeleccionada),
+            );
+            if (picked == null) return;
+            setState(() {
+              _hasExplicitTime = true;
+              _fechaSeleccionada = DateTime(
+                _fechaSeleccionada.year,
+                _fechaSeleccionada.month,
+                _fechaSeleccionada.day,
+                picked.hour,
+                picked.minute,
+              );
+            });
+          },
+        ),
+        if (_hasExplicitTime)
+          TextButton(
+            onPressed: () => setState(() {
+              _hasExplicitTime = false;
+              _fechaSeleccionada = DateTime(
+                _fechaSeleccionada.year,
+                _fechaSeleccionada.month,
+                _fechaSeleccionada.day,
+              );
+            }),
+            child: const Text('Quitar hora'),
+          ),
+        const SizedBox(height: AppSpacing.sm),
+        AppSelectField<String>(
+          value: _recurrenceRule ?? '',
+          items: const ['', 'weekly', 'monthly'],
+          itemLabel: (rule) => switch (rule) {
+            '' => 'No repetir',
+            'weekly' => 'Cada semana',
+            'monthly' => 'Cada mes',
+            _ => rule,
+          },
+          onChanged: (value) => setState(
+            () =>
+                _recurrenceRule = value == null || value.isEmpty ? null : value,
+          ),
+          labelText: 'Repetición',
+          prefixIcon: const Icon(Icons.repeat),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppTextField(
+          controller: _checklistController,
+          labelText: 'Checklist (un paso por línea)',
+          prefixIcon: const Icon(Icons.checklist_outlined),
+          minLines: 2,
+          maxLines: 5,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppTextField(
+          controller: _notasController,
+          labelText: 'Notas adicionales (opcional)',
+          prefixIcon: const Icon(Icons.sticky_note_2_outlined),
+          maxLines: 2,
+        ),
+        if (widget.showDragHandle) ...[
+          const SizedBox(height: AppSpacing.md),
+          saveButton,
+        ],
+      ],
+    );
 
     return Form(
       key: _formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.showDragHandle) ...[
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (widget.showDragHandle) ...[
-              Text(
-                widget.entry == null ? 'Nueva tarea / evento' : 'Editar tarea',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 14),
-            ],
-            AppSelectField<String>(
-              value: _tipoSeleccionado,
-              items: agendaTipos,
-              itemLabel: (tipo) => tipo,
-              onChanged: (value) {
-                setState(() => _tipoSeleccionado = value);
-              },
-              labelText: 'Tipo de tarea',
-              hintText: 'Selecciona un tipo',
-              requiredField: true,
-              validator: (value) =>
-                  value == null ? 'Selecciona un tipo de tarea' : null,
-              prefixIcon: const Icon(Icons.category_outlined),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppSelectField<String>(
-              value: _prioridad,
-              items: const [
-                AgendaPrioridad.baja,
-                AgendaPrioridad.normal,
-                AgendaPrioridad.alta,
-                AgendaPrioridad.urgente,
+      child: widget.showDragHandle
+          ? SingleChildScrollView(child: fields)
+          : Column(
+              children: [
+                Expanded(child: SingleChildScrollView(child: fields)),
+                const SizedBox(height: AppSpacing.sm),
+                saveButton,
               ],
-              itemLabel: (priority) => switch (priority) {
-                AgendaPrioridad.baja => 'Prioridad baja',
-                AgendaPrioridad.normal => 'Prioridad normal',
-                AgendaPrioridad.alta => 'Prioridad alta',
-                AgendaPrioridad.urgente => 'Prioridad urgente',
-                _ => priority,
-              },
-              onChanged: (value) => setState(() {
-                _prioridad = value ?? AgendaPrioridad.normal;
-              }),
-              labelText: 'Prioridad',
-              prefixIcon: const Icon(Icons.flag_outlined),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              controller: _tituloController,
-              key: const ValueKey('agenda-task-title'),
-              labelText: 'Título',
-              prefixIcon: const Icon(Icons.title),
-              requiredField: true,
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Ingrese un título'
-                  : null,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              controller: _descripcionController,
-              labelText: 'Descripción (opcional)',
-              prefixIcon: const Icon(Icons.description_outlined),
-              maxLines: 2,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.secondary,
-              expanded: true,
-              onPressed: () async {
-                final result = await showWorkforceSelector(
-                  context: context,
-                  assigneeId: _assigneeId,
-                  teamId: _workTeamId,
-                  collaboratorIds: _collaboratorIds,
-                );
-                if (result == null || !mounted) return;
-                setState(() {
-                  _assigneeId = result.assigneeId;
-                  _workTeamId = result.teamId;
-                  _collaboratorIds = result.collaboratorIds;
-                });
-              },
-              icon: Icons.assignment_ind_outlined,
-              label: _assigneeId == null && _workTeamId == null
-                  ? 'Asignar responsable / cuadrilla'
-                  : 'Asignación configurada · ${_collaboratorIds.length} colaborador(es)',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.secondary,
-              expanded: true,
-              onPressed: () async {
-                final result = await showAgendaAnimalSelector(
-                  context,
-                  initialAnimalIds: _selectedAnimalIds,
-                  initialLoteIds: _selectedLoteIds,
-                );
-                if (result == null) return;
-                setState(() {
-                  _selectedAnimalIds = result.animalIds;
-                  _selectedLoteIds = result.loteIds;
-                });
-              },
-              icon: Icons.pets_outlined,
-              label: totalSelected == 0
-                  ? 'Seleccionar animales / lotes'
-                  : '${_selectedAnimalIds.length} animal(es)  ·  ${_selectedLoteIds.length} lote(s)',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            if (widget.locations.isEmpty)
-              AppTextField(
-                controller: _ubicacionController,
-                labelText: 'Ubicación (opcional)',
-                prefixIcon: const Icon(Icons.place_outlined),
-                hintText: 'Ej: Potrero B',
-              )
-            else
-              AppSelectField<String>(
-                value: _locationUuid ?? '',
-                items: [
-                  '',
-                  ...widget.locations.map((location) => location.uuid),
-                ],
-                itemLabel: (uuid) => uuid.isEmpty
-                    ? 'Sin ubicación'
-                    : widget.locations
-                          .firstWhere((location) => location.uuid == uuid)
-                          .name,
-                onChanged: (value) => setState(
-                  () => _locationUuid = value == null || value.isEmpty
-                      ? null
-                      : value,
-                ),
-                labelText: 'Ubicación (opcional)',
-                prefixIcon: const Icon(Icons.place_outlined),
-              ),
-            const SizedBox(height: AppSpacing.sm),
-            AppDateField(
-              value: _fechaSeleccionada,
-              labelText: 'Fecha programada',
-              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-              onChanged: (picked) {
-                if (picked == null) return;
-                setState(() {
-                  _fechaSeleccionada = DateTime(
-                    picked.year,
-                    picked.month,
-                    picked.day,
-                    _fechaSeleccionada.hour,
-                    _fechaSeleccionada.minute,
-                  );
-                });
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.secondary,
-              expanded: true,
-              icon: Icons.schedule_outlined,
-              label: _hasExplicitTime
-                  ? 'Hora límite · ${DateFormat('HH:mm').format(_fechaSeleccionada)}'
-                  : 'Sin hora · Añadir hora',
-              onPressed: () async {
-                final picked = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(_fechaSeleccionada),
-                );
-                if (picked == null) return;
-                setState(() {
-                  _hasExplicitTime = true;
-                  _fechaSeleccionada = DateTime(
-                    _fechaSeleccionada.year,
-                    _fechaSeleccionada.month,
-                    _fechaSeleccionada.day,
-                    picked.hour,
-                    picked.minute,
-                  );
-                });
-              },
-            ),
-            if (_hasExplicitTime)
-              TextButton(
-                onPressed: () => setState(() {
-                  _hasExplicitTime = false;
-                  _fechaSeleccionada = DateTime(
-                    _fechaSeleccionada.year,
-                    _fechaSeleccionada.month,
-                    _fechaSeleccionada.day,
-                  );
-                }),
-                child: const Text('Quitar hora'),
-              ),
-            const SizedBox(height: AppSpacing.sm),
-            AppSelectField<String>(
-              value: _recurrenceRule ?? '',
-              items: const ['', 'weekly', 'monthly'],
-              itemLabel: (rule) => switch (rule) {
-                '' => 'No repetir',
-                'weekly' => 'Cada semana',
-                'monthly' => 'Cada mes',
-                _ => rule,
-              },
-              onChanged: (value) => setState(
-                () => _recurrenceRule = value == null || value.isEmpty
-                    ? null
-                    : value,
-              ),
-              labelText: 'Repetición',
-              prefixIcon: const Icon(Icons.repeat),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              controller: _checklistController,
-              labelText: 'Checklist (un paso por línea)',
-              prefixIcon: const Icon(Icons.checklist_outlined),
-              minLines: 2,
-              maxLines: 5,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            AppTextField(
-              controller: _notasController,
-              labelText: 'Notas adicionales (opcional)',
-              prefixIcon: const Icon(Icons.sticky_note_2_outlined),
-              maxLines: 2,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              key: const ValueKey('agenda-task-save'),
-              onPressed: _save,
-              expanded: true,
-              icon: Icons.save_alt,
-              label: widget.entry == null
-                  ? 'Guardar tarea'
-                  : 'Actualizar tarea',
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

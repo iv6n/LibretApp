@@ -32,15 +32,29 @@ flutter analyze --no-fatal-infos
 flutter test
 ```
 
-Plain debug builds remain fully offline. Optional cloud backups are enabled
-only when both Supabase values are supplied:
+The single VS Code profile, **LibretApp (candidato final)**, uses the `connected`
+Android flavor in release mode with `onboarding.dart-define.local.json`, ignored
+by Git. No global run argument overrides this flavor. The `standard` and
+`offline` flavors remain available to internal tooling, but are not separate
+choices for final mobile testing.
+
+Build the installable candidate with:
 
 ```powershell
-flutter run --flavor standard --dart-define-from-file=dart_define.local.json
+flutter build apk --release --flavor connected --dart-define-from-file=onboarding.dart-define.local.json
 ```
 
-Copy `dart_define.example.json` to `dart_define.local.json` and fill in local
-values. The local file is ignored by Git.
+Use the same source, version, signing identity and parameters when producing
+the store bundle with `flutter build appbundle` instead of `flutter build apk`.
+Phone access is enabled by the local configuration; cloud backup has its own
+feature flag and is not enabled merely by signing in. See
+[phone setup](docs/supabase-sms.md).
+
+Before updating a phone with real data, compare the installed and candidate
+signing certificates and install with `adb install -r`. A debug installation
+may have a different certificate from the release candidate. Do not uninstall
+to resolve that difference. Selecting the final profile does not certify store
+readiness; the checks in the staging/release guide still apply.
 
 ## Demo scenario
 

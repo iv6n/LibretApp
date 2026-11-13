@@ -7,6 +7,7 @@ void main() {
   for (final size in [
     const Size(360, 800),
     const Size(390, 844),
+    const Size(412, 915),
     const Size(320, 568),
   ]) {
     for (final dark in [false, true]) {

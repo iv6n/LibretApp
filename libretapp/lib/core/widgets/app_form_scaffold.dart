@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:libretapp/core/widgets/app_form_body.dart';
+import 'package:libretapp/core/widgets/app_form_exit_guard.dart';
 import 'package:libretapp/core/widgets/app_loading_indicator.dart';
 import 'package:libretapp/core/widgets/app_record_header.dart';
 import 'package:libretapp/core/widgets/generated_asset_title.dart';
@@ -32,6 +33,11 @@ class AppFormScaffold extends StatelessWidget {
     this.cancelLabel = 'Cancelar',
     this.saveIcon = Icons.save_outlined,
     this.saveKey,
+    this.protectUnsavedChanges = false,
+    this.onExitWithinFlow,
+    this.onCaptureChanged,
+    this.currentSignature,
+    this.initialSignature,
     super.key,
   });
 
@@ -58,6 +64,11 @@ class AppFormScaffold extends StatelessWidget {
 
   /// Stable semantic hook for UI/integration tests of the form action.
   final Key? saveKey;
+  final bool protectUnsavedChanges;
+  final VoidCallback? onExitWithinFlow;
+  final VoidCallback? onCaptureChanged;
+  final String Function()? currentSignature;
+  final String? initialSignature;
 
   @override
   Widget build(BuildContext context) {
@@ -82,26 +93,36 @@ class AppFormScaffold extends StatelessWidget {
             children: fields,
           ),
         ),
-        const SizedBox(height: AppSpacing.md),
-        AppFormActions(
-          onSave: onSave,
-          saving: saving,
-          saveLabel: saveLabel,
-          saveIcon: saveIcon,
-          saveKey: saveKey,
-          onCancel: onCancel,
-          cancelLabel: cancelLabel,
-        ),
-        const SizedBox(height: AppSpacing.xl),
       ],
     );
 
-    return Scaffold(
+    final formContent = protectUnsavedChanges
+        ? Form(
+            key: formKey,
+            onChanged: () {
+              AppFormExitGuard.refreshFromForm(context);
+              onCaptureChanged?.call();
+            },
+            child: content,
+          )
+        : formKey == null
+        ? content
+        : Form(key: formKey, child: content);
+
+    final scaffold = Scaffold(
       appBar: AppBar(
-        leading: onBack == null
+        leading: onBack == null && !protectUnsavedChanges
             ? null
             : IconButton(
-                onPressed: saving ? null : onBack,
+                onPressed: saving
+                    ? null
+                    : () {
+                        if (protectUnsavedChanges) {
+                          AppFormExitGuard.requestExit(context);
+                        } else {
+                          onBack?.call();
+                        }
+                      },
                 icon: const Icon(Icons.arrow_back),
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               ),
@@ -121,10 +142,76 @@ class AppFormScaffold extends StatelessWidget {
           : errorMessage != null
           ? _FormErrorState(message: errorMessage!, onRetry: onRetry)
           : AppFormBody(
-              child: formKey == null
-                  ? content
-                  : Form(key: formKey, child: content),
+              bottomPadding: 56,
+              includeKeyboardInset: false,
+              bottomSafeArea: false,
+              child: formContent,
             ),
+      bottomNavigationBar: loading || errorMessage != null
+          ? null
+          : AnimatedPadding(
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: Material(
+                color: Theme.of(context).colorScheme.surface,
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    key: const ValueKey('form-action-footer'),
+                    constraints: const BoxConstraints(minHeight: 72),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                      ),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: MediaQuery.sizeOf(context).width >= 600
+                          ? AppSpacing.lg
+                          : AppSpacing.md,
+                      vertical: 12,
+                    ),
+                    child: Align(
+                      heightFactor: 1,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 640),
+                        child: AppFormActions(
+                          onSave: onSave,
+                          saving: saving,
+                          saveLabel: saveLabel,
+                          saveSemanticLabel:
+                              saveLabel == 'Guardar' && recordStyle != null
+                              ? 'Guardar ${recordStyle!.label.toLowerCase()}'
+                                    '${contextLabel == null ? '' : ': $contextLabel'}'
+                              : saveLabel,
+                          saveIcon: saveIcon,
+                          saveKey: saveKey,
+                          onCancel: protectUnsavedChanges
+                              ? () => AppFormExitGuard.requestExit(context)
+                              : onCancel,
+                          cancelLabel: cancelLabel,
+                          textCancel: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+    return AppFormExitGuard(
+      enabled: protectUnsavedChanges,
+      saving: saving,
+      onExitWithinFlow: onExitWithinFlow,
+      currentSignature: loading || errorMessage != null
+          ? null
+          : currentSignature,
+      initialSignature: initialSignature,
+      child: scaffold,
     );
   }
 }

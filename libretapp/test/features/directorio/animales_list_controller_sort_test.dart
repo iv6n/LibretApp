@@ -199,7 +199,7 @@ void main() {
       },
     );
 
-    test('filters selected species and its available stages together', () {
+    test('species filter keeps every life stage for that species', () {
       final cattle = _buildAnimal(
         uuid: 'cattle',
         earTagNumber: 'C-1',
@@ -220,12 +220,56 @@ void main() {
 
       controller.loadTaxonomy([cattle, goat, goatKid]);
       controller.setSpecies(Species.goat);
-      controller.setStages({LifeStage.goat});
 
       final filtered = controller.applyFilters([cattle, goat, goatKid]);
 
-      expect(filtered.map((animal) => animal.uuid), ['goat']);
+      expect(filtered.map((animal) => animal.uuid), ['goat', 'goat-kid']);
     });
+
+    test(
+      'stage selection narrows a category and resets on category change',
+      () async {
+        final cow = _buildAnimal(
+          uuid: 'cow-stage',
+          earTagNumber: 'C-1',
+          species: Species.cattle,
+          lifeStage: LifeStage.cow,
+        );
+        final calf = _buildAnimal(
+          uuid: 'calf-stage',
+          earTagNumber: 'C-2',
+          species: Species.cattle,
+          lifeStage: LifeStage.calf,
+        );
+        final goat = _buildAnimal(
+          uuid: 'goat-stage',
+          earTagNumber: 'G-1',
+          species: Species.goat,
+          lifeStage: LifeStage.goat,
+        );
+        await controller.loadTaxonomy([cow, calf, goat]);
+
+        controller.setSpecies(Species.cattle);
+        controller.setStages({LifeStage.cow});
+
+        expect(controller.state.hasFilters, isTrue);
+        expect(
+          controller
+              .applyFilters([cow, calf, goat])
+              .map((animal) => animal.uuid),
+          ['cow-stage'],
+        );
+
+        controller.setSpecies(Species.goat);
+        expect(controller.state.selectedStages, isEmpty);
+        expect(
+          controller
+              .applyFilters([cow, calf, goat])
+              .map((animal) => animal.uuid),
+          ['goat-stage'],
+        );
+      },
+    );
 
     test(
       'companion filter includes companion animals across species',
@@ -271,7 +315,6 @@ void main() {
 
         controller.setSpecies(Species.cattle);
         expect(controller.state.selectedCompanion, isFalse);
-        expect(controller.state.selectedStages, isEmpty);
       },
     );
   });

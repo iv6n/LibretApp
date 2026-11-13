@@ -33,20 +33,18 @@ class AnimalSummaryPanel extends StatelessWidget {
         : <ScheduledCare>[];
     pending.sort((a, b) => a.dueAt.compareTo(b.dueAt));
     final next = pending.firstOrNull;
-    final hasRecords =
-        data != null &&
-        [
-          data!.weights,
-          data!.weanings,
-          data!.health,
-          data!.reproductions,
-          data!.productions,
-          data!.milkingRecords,
-          data!.commercial,
-          data!.movements,
-          data!.costs,
-          data!.careRecords,
-        ].any((records) => records.isNotEmpty);
+    final today = DateUtils.dateOnly(DateTime.now());
+    final overdueCount = pending
+        .where((care) => DateUtils.dateOnly(care.dueAt).isBefore(today))
+        .length;
+    final nextCareName = next == null
+        ? null
+        : data?.careRules[next.ruleId]?.name ?? next.type.displayName;
+    final careSubtitle = next == null
+        ? null
+        : overdueCount > 0
+        ? '$overdueCount ${overdueCount == 1 ? 'atrasado' : 'atrasados'} · $nextCareName · ${formatDate(next.dueAt)}'
+        : 'Siguiente: $nextCareName · ${formatDate(next.dueAt)}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -86,10 +84,10 @@ class AnimalSummaryPanel extends StatelessWidget {
                   icon: const Icon(Icons.edit_outlined),
                   label: const Text('Definir propósito'),
                 ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Nacimiento: ${animal.hasKnownAge ? formatDate(animal.birthDate) : 'Sin dato'}',
-              ),
+              if (animal.hasKnownAge) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text('Nacimiento: ${formatDate(animal.birthDate)}'),
+              ],
               if (animal.species == Species.cattle &&
                   ({Category.calf, Category.weaned}.contains(animal.category) ||
                       animal.productionPurpose == ProductionPurpose.meat)) ...[
@@ -155,12 +153,6 @@ class AnimalSummaryPanel extends StatelessWidget {
                 Text(
                   'Destete: ${formatDate(data!.weanings.first.date)}${data!.weanings.first.weightKg == null ? '' : ' · ${data!.weanings.first.weightKg} kg'}',
                 ),
-              if (!hasRecords) ...[
-                const SizedBox(height: AppSpacing.sm),
-                const Text(
-                  'Sin registros todavía. Registra una actividad para comenzar el seguimiento.',
-                ),
-              ],
             ],
           ),
         ),
@@ -170,13 +162,18 @@ class AnimalSummaryPanel extends StatelessWidget {
               ? 'Historial conservado'
               : next == null
               ? 'Sin cuidados pendientes'
-              : 'Próximo cuidado',
-          leading: const Icon(Icons.event_available_outlined),
+              : '${pending.length} ${pending.length == 1 ? 'cuidado pendiente' : 'cuidados pendientes'}',
+          leading: Icon(
+            overdueCount > 0
+                ? Icons.warning_amber_rounded
+                : Icons.event_available_outlined,
+            color: overdueCount > 0
+                ? Theme.of(context).colorScheme.error
+                : Theme.of(context).colorScheme.primary,
+          ),
           subtitle: !animal.status.isInActiveHerd
               ? 'Este animal salió del hato. Puedes consultar y corregir sus registros.'
-              : next == null
-              ? 'Consulta Cuidados para ver el seguimiento.'
-              : '${data!.careRules[next.ruleId]?.name ?? next.type.displayName} · ${formatDate(next.dueAt)}',
+              : careSubtitle,
           trailing: onShowCare == null ? null : const Icon(Icons.chevron_right),
           onTap: onShowCare,
         ),

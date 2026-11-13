@@ -13,10 +13,10 @@ Este piloto incluye únicamente funciones disponibles y verificadas de la varian
 
 ## Recursos para completar antes de subir
 
-- Correo real de soporte y nombre del responsable; mismos datos en política y Play Console.
-- URL HTTPS pública de `privacidad.html`, después de completar los campos del borrador.
+- Nombre público y correo de soporte confirmados para la política offline.
+- Política offline publicada: https://libretapp-mexico.delcarmenmariscos.chatgpt.site/privacidad/offline/.
 - Icono de alta resolución y gráfico de funciones con la identidad verde/ámbar.
-- Capturas reales del build final: directorio, resumen del animal, cuidados, lotes, cultivos y respaldo. Las capturas de widgets son evidencia de QA, no imágenes oficiales de la tienda.
+- Capturas reales del build final con datos ficticios: directorio, resumen del animal, cuidados, lotes, cultivos y respaldo. Prepararlas fuera del repositorio y borrar los archivos locales tras subirlos; las capturas de widgets no son imágenes oficiales de la tienda.
 - Revisión de clasificación de contenido, público objetivo, anuncios (sin anuncios) y seguridad de datos frente al AAB final. La información se registra localmente; revisar por separado cualquier exportación elegida por el usuario.
 - Cuenta personal verificada y acceso de prueba que no requiera credenciales.
 

@@ -12,6 +12,7 @@ class AppRoutes {
   static const animales = '/directorio?tab=animales';
   static const animalNuevo = '/directorio/animales/nuevo';
   static const animalNuevoRapido = '/directorio/animales/nuevo-rapido';
+  static const animalNuevoMultiple = '/directorio/animales/nuevo-multiple';
   static const animalDetalle = '/directorio/animales/:uuid';
   static const animalRegistroPeso = '/directorio/animales/:uuid/registros/peso';
   static const animalRegistroReproduccion =
@@ -73,6 +74,7 @@ class AppRoutes {
   static const nameOnboardingProfile = 'onboarding_profile';
   static const nameAnimalNuevo = 'animal_nuevo';
   static const nameAnimalNuevoRapido = 'animal_nuevo_rapido';
+  static const nameAnimalNuevoMultiple = 'animal_nuevo_multiple';
   static const nameAnimalDetalle = 'animal_detalle';
   static const nameAnimalRegistroDestete = 'animal_registro_destete';
   static const nameRegistroDestete = 'registro_destete';
@@ -103,6 +105,15 @@ class AppRoutes {
   static const nameUbicacionEditar = 'ubicacion_editar';
   static const namePerfil = 'perfil';
   static const nameRegistro = 'registro';
+  // The registration menu is a root-level page. These wrappers keep its
+  // creation flows on the same navigator instead of pushing into an inactive
+  // StatefulShell branch.
+  static const nameRegistroMenuAgendaNuevo = 'registro_menu_agenda_nuevo';
+  static const nameRegistroMenuAnimalNuevo = 'registro_menu_animal_nuevo';
+  static const nameRegistroMenuAnimalMultiple = 'registro_menu_animal_multiple';
+  static const nameRegistroMenuLoteNuevo = 'registro_menu_lote_nuevo';
+  static const nameRegistroMenuCultivoNuevo = 'registro_menu_cultivo_nuevo';
+  static const nameRegistroMenuUbicacionNueva = 'registro_menu_ubicacion_nueva';
   static const nameHerdImport = 'importar_hato';
   static const nameBatchRecords = 'registro_lotes';
   static const nameRegistroSanitario = 'registro_sanitario';

@@ -17,8 +17,15 @@ def main():
     parser.add_argument('--package', help='Require this app to be foreground before reading or tapping')
     parser.add_argument('--tap', action='append', help='Exact accessible text or description; repeat for sequential taps')
     parser.add_argument('--capture', required=True)
-    parser.add_argument('--out', type=Path, default=Path('artifacts/directorio/android'))
+    parser.add_argument('--out', type=Path, required=True,
+                        help='Temporary directory for this review; remove it after recording findings')
     args = parser.parse_args()
+    output = args.out.resolve()
+    project = Path(__file__).resolve().parents[1]
+    if output == project or project in output.parents:
+        parser.error('--out debe ser un directorio temporal fuera del proyecto')
+    if not args.capture or Path(args.capture).name != args.capture:
+        parser.error('--capture debe ser un nombre simple')
     prefix = [args.adb, '-s', args.device]
 
     def run(*command):

@@ -62,6 +62,7 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
   var _date = DateTime.now();
   AnimalEntity? _selectedAnimal;
   bool _captureGps = false;
+  bool _preparingSave = false;
 
   @override
   void dispose() {
@@ -73,6 +74,10 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
   }
 
   Future<void> _save() async {
+    if (_preparingSave ||
+        context.read<RegistroBloc>().state.status == RegistroStatus.loading) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
@@ -99,6 +104,7 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
       return;
     }
 
+    setState(() => _preparingSave = true);
     final geo = _captureGps
         ? await locator<GpsCaptureService>().tryCapture()
         : null;
@@ -131,12 +137,13 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
     return BlocListener<RegistroBloc, RegistroState>(
       listener: (context, state) {
         if (state.status == RegistroStatus.success) {
-          Navigator.of(context).pop();
+          AppFormExitGuard.complete(context);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(l10n.detailFormMovementSaved)));
           context.read<RegistroBloc>().add(const RegistroReset());
         } else if (state.status == RegistroStatus.failure) {
+          setState(() => _preparingSave = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? l10n.errorGenericSave),
@@ -155,7 +162,10 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
             assetPath: AppAssetPaths.recordMovement,
             fallbackIcon: Icons.swap_horiz,
             formKey: _formKey,
-            saving: isSaving,
+            saving: isSaving || _preparingSave,
+            protectUnsavedChanges: true,
+            currentSignature: () =>
+                '${_selectedAnimal?.uuid ?? ''}|$_captureGps',
             onSave: _save,
             saveLabel: l10n.actionSave,
             onCancel: () => Navigator.of(context).pop(),
@@ -163,7 +173,10 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
             fields: [
               AnimalSelector(
                 selectedAnimal: _selectedAnimal,
-                onSelected: (a) => setState(() => _selectedAnimal = a),
+                onSelected: (a) {
+                  AppFormExitGuard.markChanged(context);
+                  setState(() => _selectedAnimal = a);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
               AppSelectField<MovementReason>(
@@ -181,9 +194,12 @@ class _RegistroMovimientoViewState extends State<_RegistroMovimientoView> {
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
                   value: _captureGps,
-                  onChanged: isSaving
+                  onChanged: isSaving || _preparingSave
                       ? null
-                      : (value) => setState(() => _captureGps = value),
+                      : (value) {
+                          AppFormExitGuard.markChanged(context);
+                          setState(() => _captureGps = value);
+                        },
                   title: const Text('Capturar ubicación GPS'),
                   subtitle: const Text(
                     'Opcional; si falla, el movimiento se guarda manualmente.',

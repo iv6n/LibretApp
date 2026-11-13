@@ -17,8 +17,7 @@ class LocationEmptyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppEmptyState(
       illustrationAsset: 'assets/images/location_property.webp',
-      title: 'Da un lugar a cada registro',
-      message: 'Crea tu primera ubicación para organizar lo que cuidas.',
+      title: 'Sin ubicaciones',
       action: FilledButton.icon(
         onPressed: onCreate,
         icon: const Icon(Icons.add_location_alt_outlined),
@@ -36,7 +35,6 @@ class UbicacionesFilteredEmptyView extends StatelessWidget {
     return AppEmptyState(
       icon: Icons.search_off_outlined,
       title: 'Sin coincidencias',
-      message: 'Prueba con otros filtros o limpia la búsqueda.',
       action: OutlinedButton.icon(
         onPressed: () =>
             context.read<UbicacionesBloc>().add(const ClearAllFilters()),

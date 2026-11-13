@@ -83,20 +83,18 @@ class ProfileHeaderCard extends StatelessWidget {
                         height: 1.05,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      perfil.finca.trim().isEmpty
-                          ? 'Ganado y campo'
-                          : perfil.finca,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: perfil.finca.trim().isEmpty
-                            ? cs.onSurfaceVariant
-                            : cs.primary,
-                        fontWeight: FontWeight.w800,
+                    if (perfil.finca.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        perfil.finca,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
-                    ),
+                    ],
                     if (compactEdit)
                       TextButton.icon(
                         onPressed: onEditTap,

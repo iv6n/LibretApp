@@ -101,6 +101,59 @@ class CompactAnimalAlert {
   final IconData icon;
 }
 
+/// One health warning for the end of a directory card. Production warnings
+/// such as medicine withdrawal remain among the purpose indicators.
+CompactAnimalAlert? animalHealthAlert(AnimalEntity animal) {
+  final showRisk = animalRiskStatusHasPriority(
+    animal.healthStatus,
+    animal.riskLevel,
+  );
+  if (showRisk && animal.riskLevel == RiskLevel.critical ||
+      !showRisk && animal.healthStatus == HealthStatus.critical) {
+    return CompactAnimalAlert(
+      label: showRisk ? 'Riesgo crítico' : animal.healthStatus.displayName,
+      severity: IndicatorSeverity.critical,
+      accentColor: showRisk
+          ? animalColorFromHex(animal.riskLevel.hexColor)
+          : animalColorFromHex(animal.healthStatus.hexColor),
+      icon: Icons.health_and_safety_outlined,
+    );
+  }
+  if (animal.requiresAttention) {
+    return const CompactAnimalAlert(
+      label: 'Requiere atención',
+      severity: IndicatorSeverity.attention,
+      accentColor: Color(0xFFC58B2A),
+      icon: Icons.health_and_safety_outlined,
+    );
+  }
+  if (showRisk && !isNeutralAnimalRiskLevel(animal.riskLevel)) {
+    return CompactAnimalAlert(
+      label: 'Riesgo ${animal.riskLevel.displayName.toLowerCase()}',
+      severity: IndicatorSeverity.attention,
+      accentColor: animalColorFromHex(animal.riskLevel.hexColor),
+      icon: Icons.warning_amber_rounded,
+    );
+  }
+  if (!isNeutralAnimalHealthStatus(animal.healthStatus)) {
+    return CompactAnimalAlert(
+      label: animal.healthStatus.displayName,
+      severity: IndicatorSeverity.attention,
+      accentColor: animalColorFromHex(animal.healthStatus.hexColor),
+      icon: Icons.health_and_safety_outlined,
+    );
+  }
+  if (animal.underObservation) {
+    return const CompactAnimalAlert(
+      label: 'En observación',
+      severity: IndicatorSeverity.attention,
+      accentColor: Color(0xFFC58B2A),
+      icon: Icons.visibility_outlined,
+    );
+  }
+  return null;
+}
+
 /// Picks one actionable warning. Health/risk wins ties with production,
 /// while a critical production warning still outranks an attention status.
 CompactAnimalAlert? compactAnimalAlert(

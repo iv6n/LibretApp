@@ -69,14 +69,16 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
                 ? 'La demo utiliza datos ficticios y no puede vincularse a una cuenta.'
                 : widget.manager.isGuest
                 ? widget.manager.auth.available
-                    ? 'Estás usando un espacio de invitado. Puedes vincularlo después sin perder tus registros.'
-                    : 'Estás usando un espacio de invitado. Tus registros se guardan en este dispositivo.'
+                      ? 'Estás usando un espacio de invitado. Puedes vincularlo después sin perder tus registros.'
+                      : 'Estás usando un espacio de invitado. Tus registros se guardan en este dispositivo.'
                 : 'Cuenta verificada por teléfono${widget.manager.current?.phoneSuffix == null ? '' : ' · termina en ${widget.manager.current!.phoneSuffix}'}.',
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Los registros permanecen locales. Los respaldos automáticos requieren que los actives en Copias en la nube.',
-          ),
+          if (ReleaseFeatures.cloudBackupEnabled && !widget.manager.isDemo) ...[
+            const SizedBox(height: 8),
+            const Text(
+              'Los registros permanecen locales. Los respaldos automáticos requieren que los actives en Copias en la nube.',
+            ),
+          ],
           if (widget.manager.isDemo)
             TextButton(
               onPressed: () => widget.manager.exitDemo(),
@@ -96,12 +98,25 @@ class _AccountSettingsCardState extends State<AccountSettingsCard> {
               onPressed: _busy || !widget.enabled ? null : _leave,
               child: Text(_busy ? 'Cerrando sesión…' : 'Cerrar sesión'),
             ),
-          if (ReleaseFeatures.cloudBackupEnabled && !widget.manager.isDemo && !widget.manager.isGuest)
-            TextButton.icon(onPressed: _busy || !widget.enabled ? null : () => showModalBottomSheet<void>(
-              context: context, useRootNavigator: true, isScrollControlled: true,
-              useSafeArea: true, isDismissible: false, enableDrag: false,
-              builder: (_) => DeleteAccountSheet(manager: widget.manager)),
-              icon: const Icon(Icons.delete_forever_outlined), label: const Text('Eliminar mi cuenta')),
+          if (ReleaseFeatures.cloudBackupEnabled &&
+              !widget.manager.isDemo &&
+              !widget.manager.isGuest)
+            TextButton.icon(
+              onPressed: _busy || !widget.enabled
+                  ? null
+                  : () => showModalBottomSheet<void>(
+                      context: context,
+                      useRootNavigator: true,
+                      isScrollControlled: true,
+                      useSafeArea: true,
+                      isDismissible: false,
+                      enableDrag: false,
+                      builder: (_) =>
+                          DeleteAccountSheet(manager: widget.manager),
+                    ),
+              icon: const Icon(Icons.delete_forever_outlined),
+              label: const Text('Eliminar mi cuenta'),
+            ),
         ],
       ),
     ),

@@ -7,6 +7,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:libretapp/features/agenda/data/agenda_reminder_sync_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:libretapp/features/directorio/animales/widgets/offspring_editor.dart';
@@ -113,11 +114,32 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
   var _diagnosisDate = DateTime.now();
   var _diagnosisResult = PregnancyCheckResult.positive;
 
+  String _captureExitSignature() => jsonEncode([
+    _selectedAnimal?.uuid,
+    _selectedSire?.uuid,
+    _serviceType.name,
+    _serviceDate.toIso8601String(),
+    _expectedCalvingDate?.toIso8601String(),
+    _expectedCalvingManuallyEdited,
+    _calvingMode,
+    _calvingDate.toIso8601String(),
+    _calvingOutcome?.name,
+    _calvingEase,
+    _diagnosisMode,
+    _diagnosisDate.toIso8601String(),
+    _diagnosisResult.name,
+    _serviceNotesCtrl.text,
+    _calvingNotesCtrl.text,
+    _responsibleCtrl.text,
+    _externalSireCtrl.text,
+  ]);
+
   @override
   void initState() {
     super.initState();
     final isParicionPreset = widget.preset?.toLowerCase() == 'paricion';
     if (isParicionPreset) {
+      _calvingMode = true;
       _serviceType = ServiceType.naturalService;
     }
     _projectExpectedCalving();
@@ -255,8 +277,9 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       records = await locator<ReproductionRecordRepository>()
           .getReproductionRecords(animal.uuid);
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         setState(() => _loadError = 'No se pudieron cargar los ciclos: $error');
+      }
       return;
     }
     if (!mounted || _selectedAnimal?.uuid != animal.uuid) return;
@@ -273,8 +296,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
       _openCycle = open;
       _pendingDiagnosis = pending;
       _selectedSire = sire;
-      _externalSireCtrl.text = current?.maleSireIdentifier ?? "";
-      _responsibleCtrl.text = current?.servicedBy ?? "";
+      _externalSireCtrl.text = current?.maleSireIdentifier ?? '';
+      _responsibleCtrl.text = current?.servicedBy ?? '';
       // Landing here from the "parición" shortcut means the calving is the
       // reason the user opened the page.
       _calvingMode =
@@ -302,8 +325,9 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     if (candidate.sex != Sex.male ||
         !candidate.status.isInActiveHerd ||
         candidate.reproductiveStatus == ReproductiveStatus.neutered ||
-        candidate.reproductiveStatus == ReproductiveStatus.retired)
+        candidate.reproductiveStatus == ReproductiveStatus.retired) {
       return false;
+    }
     final cow = _selectedAnimal;
     if (cow == null) return true;
     return candidate.species == cow.species && candidate.uuid != cow.uuid;
@@ -408,7 +432,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     try {
       await locator<AgendaReminderSyncService>().sync();
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -416,12 +440,13 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
             ),
           ),
         );
+      }
     }
   }
 
   Future<void> _finishService() async {
     await _syncAgenda();
-    if (mounted) Navigator.of(context).pop(true);
+    if (mounted) AppFormExitGuard.complete(context, true);
   }
 
   Future<void> _afterCalvingSaved() async {
@@ -439,7 +464,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
             ),
           ),
         );
-        Navigator.of(context).pop(true);
+        AppFormExitGuard.complete(context, true);
       }
       return;
     }
@@ -454,7 +479,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
     if (stored != null && stored.calvingOutcome == CalvingOutcome.liveBirth) {
       await editOffspring(context, _selectedAnimal!, stored);
     }
-    if (mounted) Navigator.of(context).pop(true);
+    if (mounted) AppFormExitGuard.complete(context, true);
   }
 
   void _saveCalving(ScaffoldMessengerState messenger) {
@@ -515,6 +540,8 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
             ? RecordFormStyle.birth
             : RecordFormStyle.reproduction,
         saving: _submitting,
+        protectUnsavedChanges: true,
+        currentSignature: _loading ? null : _captureExitSignature,
         loading: _loading,
         errorMessage: _loadError,
         onRetry: _loadInitial,
@@ -536,7 +563,10 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                     a.species,
                   ).supportsReproduction,
               selectedAnimal: _selectedAnimal,
-              onSelected: (a) => unawaited(_onAnimalSelected(a)),
+              onSelected: (a) {
+                AppFormExitGuard.markChanged(context);
+                unawaited(_onAnimalSelected(a));
+              },
             ),
           if (_selectedAnimal != null) ...[
             const SizedBox(height: 12),
@@ -549,10 +579,13 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                   ? 'Sin servicio conocido: no se inventará una fecha de monta.'
                   : _cycleSubtitle(_openCycle!),
               value: _calvingMode,
-              onChanged: (value) => setState(() {
-                _calvingMode = value;
-                if (value) _diagnosisMode = false;
-              }),
+              onChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() {
+                  _calvingMode = value;
+                  if (value) _diagnosisMode = false;
+                });
+              },
             ),
           ],
           if (_pendingDiagnosis != null) ...[
@@ -565,29 +598,45 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                   '${DateFormat('dd/MM/yyyy').format(_pendingDiagnosis!.serviceDate!)}'
                   ' sin diagnosticar',
               value: _diagnosisMode,
-              onChanged: (value) => setState(() {
-                _diagnosisMode = value;
-                if (value) _calvingMode = false;
-              }),
+              onChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() {
+                  _diagnosisMode = value;
+                  if (value) _calvingMode = false;
+                });
+              },
             ),
           ],
           if (_diagnosisMode) ...[
             _DiagnosisFields(
               checkDate: _diagnosisDate,
               result: _diagnosisResult,
-              onDateChanged: (value) => setState(() => _diagnosisDate = value),
-              onResultChanged: (value) =>
-                  setState(() => _diagnosisResult = value),
+              onDateChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() => _diagnosisDate = value);
+              },
+              onResultChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() => _diagnosisResult = value);
+              },
             ),
           ] else if (_calvingMode) ...[
             _CalvingFields(
               calvingDate: _calvingDate,
               outcome: _calvingOutcome,
               ease: _calvingEase,
-              onDateChanged: (value) => setState(() => _calvingDate = value),
-              onOutcomeChanged: (value) =>
-                  setState(() => _calvingOutcome = value),
-              onEaseChanged: (value) => setState(() => _calvingEase = value),
+              onDateChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() => _calvingDate = value);
+              },
+              onOutcomeChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() => _calvingOutcome = value);
+              },
+              onEaseChanged: (value) {
+                AppFormExitGuard.markChanged(context);
+                setState(() => _calvingEase = value);
+              },
             ),
             if (_editing?.hasCalved == true &&
                 _editing?.calvingOutcome == CalvingOutcome.liveBirth)
@@ -604,6 +653,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
               lastDate: DateTime(_serviceDate.year + 1),
               onChanged: (date) {
                 if (date == null) return;
+                AppFormExitGuard.markChanged(context);
                 setState(() {
                   _serviceDate = date;
                   _projectExpectedCalving();
@@ -659,15 +709,19 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                 label: l10n.detailFormReproductionSire,
                 selectedAnimal: _selectedSire,
                 eligible: _isEligibleSire,
-                onSelected: (sire) => setState(() {
-                  _selectedSire = sire;
-                  if (sire != null) _externalSireCtrl.clear();
-                }),
+                onSelected: (sire) {
+                  AppFormExitGuard.markChanged(context);
+                  setState(() {
+                    _selectedSire = sire;
+                    if (sire != null) _externalSireCtrl.clear();
+                  });
+                },
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _externalSireCtrl,
                 enabled: _selectedSire == null,
+                onChanged: (_) => AppFormExitGuard.markChanged(context),
                 decoration: const InputDecoration(
                   labelText: 'O semental externo al hato',
                   border: OutlineInputBorder(),
@@ -676,6 +730,7 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
               const SizedBox(height: 12),
               TextField(
                 controller: _responsibleCtrl,
+                onChanged: (_) => AppFormExitGuard.markChanged(context),
                 decoration: const InputDecoration(
                   labelText: 'Responsable',
                   border: OutlineInputBorder(),
@@ -689,17 +744,20 @@ class _RegistroReproduccionViewState extends State<_RegistroReproduccionView> {
                   firstDate: DateTime(_serviceDate.year - 1),
                   lastDate: DateTime(_serviceDate.year + 2),
                   onChanged: (date) {
-                    if (date != null)
+                    if (date != null) {
+                      AppFormExitGuard.markChanged(context);
                       setState(() {
                         _expectedCalvingDate = date;
                         _expectedCalvingManuallyEdited = true;
                       });
+                    }
                   },
                 ),
               ],
               if (!_diagnosisMode) ...[
                 const SizedBox(height: 12),
                 TextField(
+                  onChanged: (_) => AppFormExitGuard.markChanged(context),
                   decoration: InputDecoration(
                     labelText: l10n.detailFormReproductionNotes,
                     border: const OutlineInputBorder(),

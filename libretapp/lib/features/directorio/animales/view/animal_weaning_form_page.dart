@@ -1,7 +1,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
 import '../domain/animal_domain.dart';
@@ -110,7 +109,7 @@ class _AnimalWeaningFormPageState extends State<AnimalWeaningFormPage> {
       } else {
         await repo.updateRecord(animal.uuid, value);
       }
-      if (mounted) context.pop(true);
+      if (mounted) AppFormExitGuard.complete(context, true);
     } catch (error) {
       if (mounted) {
         setState(() => _busy = false);
@@ -137,6 +136,8 @@ class _AnimalWeaningFormPageState extends State<AnimalWeaningFormPage> {
     formKey: _form,
     loading: _loading,
     saving: _busy,
+    protectUnsavedChanges: true,
+    currentSignature: () => _animal?.uuid ?? '',
     onSave: _save,
     saveLabel: 'Guardar',
     contextLabel: _animal == null ? null : primaryAnimalLabel(_animal!),
@@ -150,7 +151,10 @@ class _AnimalWeaningFormPageState extends State<AnimalWeaningFormPage> {
           selectedAnimal: _animal,
           eligible: (a) =>
               a.species == Species.cattle && a.status.isInActiveHerd,
-          onSelected: (a) => setState(() => _animal = a),
+          onSelected: (a) {
+            AppFormExitGuard.markChanged(context);
+            setState(() => _animal = a);
+          },
         ),
       if (widget.animalUuid == null) const SizedBox(height: 16),
       AppDateField(

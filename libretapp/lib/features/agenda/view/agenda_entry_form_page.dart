@@ -23,12 +23,7 @@ class AgendaEntryFormPage extends StatelessWidget {
       body: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          ),
+          padding: const EdgeInsets.all(16),
           child: AgendaEntryForm(
             initialDate: initialDate,
             entry: entry,

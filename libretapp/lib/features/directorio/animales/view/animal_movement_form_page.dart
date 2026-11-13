@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/assets/app_asset_paths.dart';
 import 'package:libretapp/features/directorio/animales/advisor/livestock_advisor.dart';
 import 'package:libretapp/features/directorio/animales/advisor/widgets/advisor_tips_panel.dart';
@@ -86,7 +85,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
             content: Text(AppLocalizations.of(context).recordEditNotFound),
           ),
         );
-        context.pop(false);
+        AppFormExitGuard.complete(context, false);
         return;
       }
 
@@ -194,7 +193,7 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
           ),
         ),
       );
-      context.pop(true);
+      AppFormExitGuard.complete(context, true);
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(content: Text(l10n.errorGenericSave)));
@@ -216,6 +215,8 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
       contextLabel: animalRecordContextLabel(_animal),
       contextIcon: Icons.pets_outlined,
       saving: _saving,
+      protectUnsavedChanges: true,
+      currentSignature: () => '${widget.animalUuid}|$_captureGps',
       loading: _loading,
       onSave: _save,
       saveLabel: l10n.actionSave,
@@ -270,7 +271,10 @@ class _AnimalMovementFormPageState extends State<AnimalMovementFormPage> {
             value: _captureGps,
             onChanged: _saving
                 ? null
-                : (value) => setState(() => _captureGps = value),
+                : (value) {
+                    AppFormExitGuard.markChanged(context);
+                    setState(() => _captureGps = value);
+                  },
             title: const Text('Capturar ubicación GPS'),
             subtitle: const Text(
               'Opcional; si falla, el movimiento se guarda manualmente.',
