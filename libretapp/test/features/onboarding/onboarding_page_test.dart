@@ -10,7 +10,7 @@ import 'package:libretapp/theme/app_theme.dart';
 Widget _app({
   Future<void> Function()? guest,
   Future<void> Function(AppExperience)? demo,
-  Future<void> Function()? phoneAccess,
+  Future<void> Function(BuildContext)? phoneAccess,
   Future<void> Function(int)? progress,
   int page = 0,
   double scale = 1,
@@ -173,7 +173,7 @@ void main() {
 
   testWidgets('acceder con teléfono usa un único flujo', (tester) async {
     var accesses = 0;
-    await tester.pumpWidget(_app(phoneAccess: () async => accesses++));
+    await tester.pumpWidget(_app(phoneAccess: (_) async => accesses++));
     await _goToAccess(tester);
     await _tap(tester, 'Acceder con teléfono');
 
@@ -181,6 +181,53 @@ void main() {
     expect(find.text('Crear cuenta'), findsNothing);
     expect(find.text('Ya tengo cuenta'), findsNothing);
     expect(find.text('Elige cómo empezar'), findsOneWidget);
+  });
+
+  testWidgets('acceder con teléfono puede abrir una hoja modal', (
+    tester,
+  ) async {
+    // Reproduce el armado real del router (`pageBuilder`) para asegurar que el
+    // contexto entregado al acceso telefónico vive bajo un Navigator.
+    final router = GoRouter(
+      initialLocation: AppRoutes.onboarding,
+      routes: [
+        GoRoute(
+          path: AppRoutes.onboarding,
+          pageBuilder: (context, state) => MaterialPage<void>(
+            child: OnboardingPage(
+              initialPage: 2,
+              onStartEmpty: () async {},
+              onInstallDemo: (_) async {},
+              onAccessPhone: (pageContext) => showModalBottomSheet<void>(
+                context: pageContext,
+                useRootNavigator: true,
+                builder: (_) => const SizedBox(
+                  height: 120,
+                  child: Text('Hoja de acceso lista'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: router,
+        theme: AppTheme.lightTheme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    );
+
+    await tester.ensureVisible(find.text('Acceder con teléfono').first);
+    await tester.tap(find.text('Acceder con teléfono').first);
+    // La bienvenida espera a que se cierre la hoja, así que no puede usarse
+    // `pumpAndSettle` (el indicador de progreso anima sin parar).
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Hoja de acceso lista'), findsOneWidget);
   });
 
   testWidgets('oculta el acceso telefónico cuando no está disponible', (

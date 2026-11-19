@@ -1,6 +1,12 @@
 /// features \u203a inicio \u203a data \u203a inicio_dashboard_service \u2014 service that aggregates data for the home dashboard.
 library;
 
+import 'package:libretapp/features/reportes/domain/report_summary_service.dart';
+
+import 'package:libretapp/features/reportes/data/report_summary.dart';
+
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
 import 'package:libretapp/features/directorio/animales/domain/entities/animal_entity.dart';
@@ -24,19 +30,22 @@ import 'package:libretapp/features/ubicaciones/domain/repositories/location_repo
 
 class InicioDashboardService {
   InicioDashboardService({
+    ReportSummaryService? reportService,
     required AnimalRepository animalRepository,
     required LotesRepository lotesRepository,
     required AgendaRepository agendaRepository,
     required LocationRepository locationRepository,
     required PerfilRepository perfilRepository,
     required ReproductionRecordRepository reproductionRepository,
-  }) : _animalRepository = animalRepository,
+  }) : _reportService = reportService,
+       _animalRepository = animalRepository,
        _lotesRepository = lotesRepository,
        _agendaRepository = agendaRepository,
        _locationRepository = locationRepository,
        _perfilRepository = perfilRepository,
        _reproductionRepository = reproductionRepository;
 
+  final ReportSummaryService? _reportService;
   final AnimalRepository _animalRepository;
   final LotesRepository _lotesRepository;
   final AgendaRepository _agendaRepository;
@@ -328,7 +337,28 @@ class InicioDashboardService {
         )
         .toList(growable: false);
 
+    final speciesCounts = <Species, int>{};
+    for (final animal in animals) {
+      speciesCounts.update(animal.species, (n) => n + 1, ifAbsent: () => 1);
+    }
+    final activity = await _reportService?.loadRecentActivity(animalMap);
+    final latestRecords = <RecentRecordItem>[
+      ...?activity?.$1,
+      ...?activity?.$2,
+      for (final entry in eventos)
+        if (entry.estado == AgendaEstado.completado ||
+            entry.estado == AgendaEstado.verificado)
+          RecentRecordItem(
+            title: entry.titulo,
+            subtitle: 'Completada en Agenda',
+            date: entry.fechaCompletado ?? entry.updatedAt ?? entry.fecha,
+            animalTag: '',
+            route: '/agenda/task/${Uri.encodeComponent(entry.id)}',
+          ),
+    ]..sort((a, b) => b.date.compareTo(a.date));
     return InicioDashboardData(
+      speciesCounts: speciesCounts,
+      latestRecords: latestRecords.take(5).toList(),
       profileName: perfil.nombre,
       farmName: perfil.finca,
       totalAnimals: totalAnimals,
@@ -339,7 +369,7 @@ class InicioDashboardService {
       activeLotes: activeLotes.length,
       totalLocations: locations.length,
       upcomingEventsCount: upcomingEvents.length,
-      upcomingEvents: upcomingEvents.take(4).toList(growable: false),
+      upcomingEvents: upcomingEvents,
       dueEntries: dueEntries,
       alerts: alerts,
       tasks: tasks,

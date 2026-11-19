@@ -3,9 +3,15 @@ import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/services/herd_import_service.dart';
 
 class HerdImportPage extends StatefulWidget {
-  const HerdImportPage({super.key, this.service, this.initialDocument});
+  const HerdImportPage({
+    super.key,
+    this.service,
+    this.initialDocument,
+    this.showInitialPreview = false,
+  });
   final HerdImportService? service;
   final HerdImportDocument? initialDocument;
+  final bool showInitialPreview;
 
   @override
   State<HerdImportPage> createState() => _HerdImportPageState();
@@ -29,6 +35,11 @@ class _HerdImportPageState extends State<HerdImportPage> {
     if (initial != null) {
       _document = initial;
       _mapping = _service.detectMapping(initial);
+      if (widget.showInitialPreview) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _refresh();
+        });
+      }
     }
   }
 
@@ -222,7 +233,7 @@ class _HerdImportPageState extends State<HerdImportPage> {
                             const Padding(
                               padding: EdgeInsets.all(12),
                               child: Text(
-                                'Asigna al menos Arete, SINIIGA o RFID. Se leen los encabezados, sin depender del orden de las columnas. Las columnas sin asignar no se importan.',
+                                'Asigna las columnas con datos de cada animal. Si falta el UUID, Libretapp lo genera al crear el registro. Las columnas sin asignar quedan fuera de la importación.',
                               ),
                             ),
                             for (final field in HerdImportField.values)

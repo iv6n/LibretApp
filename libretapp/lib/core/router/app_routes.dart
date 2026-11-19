@@ -170,6 +170,7 @@ class AppRoutes {
   /// pre-applying one of the list filters. There is no standalone `/animales`
   /// route: the list lives inside the directory shell branch.
   static String animalesPath({
+    String? species,
     bool focusSearch = false,
     bool attention = false,
     bool pendingEarTag = false,
@@ -179,6 +180,7 @@ class AppRoutes {
     String? locationUuid,
   }) {
     final buffer = StringBuffer('/directorio?tab=animales');
+    if (species != null) buffer.write('&species=${Uri.encodeQueryComponent(species)}');
     if (focusSearch) buffer.write('&buscar=1');
     if (clearFilters) buffer.write('&clearFilters=true');
     if (attention) buffer.write('&attention=true');

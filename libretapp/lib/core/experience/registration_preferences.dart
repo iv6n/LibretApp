@@ -61,7 +61,7 @@ class RegistrationPreferences {
     preferredSpecies: allSpecies,
     includePlants: true,
     configured: false,
-    careProfile: CareProfile.mixed,
+    careProfile: null,
   );
 
   Map<String, Object?> toJson() => {
@@ -108,23 +108,7 @@ class RegistrationPreferencesController extends ChangeNotifier {
   static RegistrationPreferences _readOrMigrate(SharedPrefsService prefs) {
     final stored = prefs.getString(RegistrationPreferences.storageKey);
     if (stored != null) return RegistrationPreferences.decode(stored);
-
-    // Preserve legacy workspace preferences as presentation priorities. New
-    // workspaces default to every registration category without a setup step.
-    final legacyMode = prefs.getString('experience.mode.v1');
-    if (legacyMode != 'lite' && legacyMode != 'complete') {
-      return RegistrationPreferences.defaults;
-    }
-    final lite = legacyMode == 'lite';
-    final migrated = RegistrationPreferences(
-      preferredSpecies: lite
-          ? const {Species.canine, Species.feline}
-          : RegistrationPreferences.allSpecies,
-      includePlants: lite
-          ? prefs.getBool('experience.lite.plants.v1') ?? true
-          : true,
-      configured: true,
-    );
-    return migrated;
+    // Legacy mode preferences no longer narrow the app for a workspace.
+    return RegistrationPreferences.defaults;
   }
 }

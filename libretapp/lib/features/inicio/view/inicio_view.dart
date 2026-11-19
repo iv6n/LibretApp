@@ -1,12 +1,18 @@
 /// features > inicio > view > inicio_view - customizable home dashboard.
 library;
 
+import 'package:libretapp/features/agenda/agenda.dart';
+import 'package:libretapp/features/agenda/view/agenda_task_detail_page.dart';
+import 'package:libretapp/features/directorio/lotes/infrastructure/lotes_repository.dart';
+
+import 'package:libretapp/features/reportes/widgets/report_activity_tile.dart';
+
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:libretapp/features/agenda/data/agenda_refresh_signal.dart';
 import 'package:libretapp/features/directorio/animales/infrastructure/animal_repository.dart';
-import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
 import 'package:libretapp/core/experience/care_profile.dart';
@@ -25,7 +31,6 @@ import 'package:libretapp/features/inicio/view/dashboard_customize_sheet.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_header.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/dashboard_widgets.dart';
 import 'package:libretapp/features/inicio/widgets/dashboard/quick_action_grid.dart';
-import 'package:libretapp/features/inicio/widgets/quick_summary_section.dart';
 import 'package:libretapp/features/inicio/widgets/weather_home_card.dart';
 import 'package:libretapp/theme/app_theme.dart';
 
@@ -40,6 +45,8 @@ class InicioView extends StatefulWidget {
 }
 
 class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
+  bool _animalsSelected = false;
+  final _hiddenAlerts = <String>{};
   String? _preferenceSignature;
   AgendaRefreshSignal? _agendaRefreshSignal;
   StreamSubscription<void>? _animalChanges;
@@ -154,15 +161,17 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
               widget.enabled &&
               widget.type == DashboardWidgetType.animalSummary,
         );
-        final animalFirst =
-            showAnimals &&
-            showPending &&
-            widgets.indexWhere(
-                  (widget) => widget.type == DashboardWidgetType.animalSummary,
-                ) <
-                widgets.indexWhere(
-                  (widget) => widget.type == DashboardWidgetType.pendingTasks,
-                );
+        final pending = todayCareItems
+            .where((item) => item.entryId != null)
+            .toList();
+        final alert = todayCareItems
+            .where(
+              (item) =>
+                  item.tone != _CareItemTone.normal &&
+                  !_hiddenAlerts.contains(item.key),
+            )
+            .firstOrNull;
+        final animalsActive = showAnimals && (_animalsSelected || !showPending);
         return SafeArea(
           top: true,
           bottom: false,
@@ -204,106 +213,90 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                DashboardHeader(data: data),
-                                const WeatherHomeCard(compact: true),
-                                if (firstRun) ...[
-                                  _GettingStartedCard(profile: careProfile),
-                                  if (showPending && todayCareItems.isNotEmpty)
-                                    _TodayCarePanel(items: todayCareItems),
-                                ] else ...[
-                                  _DashboardStats(
-                                    data: data,
-                                    items: todayCareItems,
-                                    showAnimals: showAnimals,
-                                    showPending: showPending,
+                                DashboardHeader(
+                                  data: data,
+                                  weatherCard: const WeatherHomeCard(
+                                    compact: true,
                                   ),
-                                  if (!isTablet && animalFirst)
-                                    KeyedSubtree(
-                                      key: const ValueKey(
-                                        'dashboard-widget-animalSummary',
-                                      ),
-                                      child: _AnimalHighlightsCard(
-                                        profile: careProfile,
-                                        data: data,
+                                ),
+                                if (alert != null)
+                                  Dismissible(
+                                    key: ValueKey(alert.key),
+                                    onDismissed: (_) => setState(
+                                      () => _hiddenAlerts.add(alert.key),
+                                    ),
+                                    child: Card(
+                                      color: theme.colorScheme.errorContainer,
+                                      child: ListTile(
+                                        leading: Icon(
+                                          Icons.notification_important_outlined,
+                                          color: theme
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                        title: Text(alert.title),
+                                        subtitle: Text(alert.message),
+                                        onTap: () =>
+                                            _openCareItem(context, alert),
+                                        trailing: IconButton(
+                                          tooltip: 'Ocultar aviso',
+                                          icon: const Icon(Icons.close),
+                                          onPressed: () => setState(
+                                            () => _hiddenAlerts.add(alert.key),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  if (isTablet && showPending && showAnimals)
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (animalFirst)
-                                          Expanded(
-                                            flex: 2,
-                                            child: KeyedSubtree(
-                                              key: const ValueKey(
-                                                'dashboard-widget-animalSummary',
-                                              ),
-                                              child: _AnimalHighlightsCard(
-                                                profile: careProfile,
-                                                data: data,
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          Expanded(
-                                            flex: 3,
-                                            child: KeyedSubtree(
-                                              key: const ValueKey(
-                                                'dashboard-widget-pendingTasks',
-                                              ),
-                                              child: _TodayCarePanel(
-                                                items: todayCareItems,
-                                              ),
-                                            ),
+                                  ),
+                                if (showAnimals || showPending) ...[
+                                  const SizedBox(height: AppSpacing.sm),
+                                  if (showAnimals && showPending)
+                                    SegmentedButton<bool>(
+                                      segments: [
+                                        ButtonSegment(
+                                          value: true,
+                                          icon: const Icon(Icons.pets_outlined),
+                                          label: Text(
+                                            'Animales · ${data.totalAnimals}',
                                           ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        if (animalFirst)
-                                          Expanded(
-                                            flex: 3,
-                                            child: KeyedSubtree(
-                                              key: const ValueKey(
-                                                'dashboard-widget-pendingTasks',
-                                              ),
-                                              child: _TodayCarePanel(
-                                                items: todayCareItems,
-                                              ),
-                                            ),
-                                          )
-                                        else
-                                          Expanded(
-                                            flex: 2,
-                                            child: KeyedSubtree(
-                                              key: const ValueKey(
-                                                'dashboard-widget-animalSummary',
-                                              ),
-                                              child: _AnimalHighlightsCard(
-                                                profile: careProfile,
-                                                data: data,
-                                              ),
-                                            ),
+                                        ),
+                                        ButtonSegment(
+                                          value: false,
+                                          icon: const Icon(
+                                            Icons.checklist_rounded,
                                           ),
+                                          label: Text(
+                                            'Asuntos · ${pending.length}',
+                                          ),
+                                        ),
                                       ],
-                                    )
-                                  else if (showPending)
-                                    KeyedSubtree(
-                                      key: const ValueKey(
-                                        'dashboard-widget-pendingTasks',
-                                      ),
-                                      child: _TodayCarePanel(
-                                        items: todayCareItems,
+                                      showSelectedIcon: false,
+                                      selected: {animalsActive},
+                                      onSelectionChanged: (v) => setState(
+                                        () => _animalsSelected = v.first,
                                       ),
                                     ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  if (animalsActive && !firstRun)
+                                    _SpeciesCards(data: data)
+                                  else if (!animalsActive)
+                                    _TodayCarePanel(items: pending),
                                 ],
+                                if (firstRun && (animalsActive || !showPending))
+                                  _GettingStartedCard(profile: careProfile),
+                                const SizedBox(height: AppSpacing.md),
                                 QuickActionGrid(
-                                  compact: !firstRun,
-                                  actions: state.quickActions
-                                      .where(
-                                        (action) =>
-                                            action.routeName !=
-                                            AppRoutes.nameAnimalNuevoRapido,
-                                      )
-                                      .toList(growable: false),
+                                  compact: true,
+                                  actions: firstRun
+                                      ? state.quickActions
+                                            .where(
+                                              (a) =>
+                                                  a.routeName !=
+                                                  AppRoutes
+                                                      .nameAnimalNuevoRapido,
+                                            )
+                                            .toList()
+                                      : state.quickActions,
                                   onCustomizeTap: () =>
                                       showDashboardCustomizeSheet(
                                         context: context,
@@ -320,20 +313,28 @@ class _InicioViewState extends State<InicioView> with WidgetsBindingObserver {
                                         },
                                       ),
                                 ),
-                                if (!firstRun &&
-                                    showAnimals &&
-                                    !animalFirst &&
-                                    !(isTablet && showPending))
-                                  KeyedSubtree(
-                                    key: const ValueKey(
-                                      'dashboard-widget-animalSummary',
-                                    ),
-                                    child: _AnimalHighlightsCard(
-                                      profile: careProfile,
-                                      data: data,
+                                const SizedBox(height: AppSpacing.md),
+                                if (widgets.any(
+                                  (w) =>
+                                      w.enabled &&
+                                      w.type ==
+                                          DashboardWidgetType.recentActivity,
+                                ))
+                                  AppCard(
+                                    title: 'Actividad reciente',
+                                    body: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        if (data.latestRecords.isEmpty)
+                                          const Text(
+                                            'Aquí aparecerán tus últimos registros.',
+                                          ),
+                                        for (final record in data.latestRecords)
+                                          ReportActivityTile(item: record),
+                                      ],
                                     ),
                                   ),
-                                const SizedBox(height: AppSpacing.sm),
                                 _DashboardWidgetsLayout(
                                   isTablet: isTablet,
                                   widgets: widgets,
@@ -399,7 +400,7 @@ class _GettingStartedCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'AÃ±ade el primer perfil para tener sus datos, cuidados y prÃ³ximas actividades en Inicio.',
+              'Añade el primer perfil para tener sus datos, cuidados y próximas actividades en Inicio.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -491,7 +492,7 @@ Widget _registrationAction(
   }
 
   final icon = Icon(pet ? Icons.pets_outlined : Icons.add_circle_outline);
-  final label = Text(pet ? 'AÃ±adir mascota' : 'AÃ±adir animal');
+  final label = Text(pet ? 'Añadir mascota' : 'Añadir animal');
   return primary
       ? FilledButton.icon(onPressed: open, icon: icon, label: label)
       : OutlinedButton.icon(onPressed: open, icon: icon, label: label);
@@ -521,329 +522,82 @@ class _GettingStartedActions extends StatelessWidget {
   }
 }
 
-class _AnimalHighlightsCard extends StatelessWidget {
-  const _AnimalHighlightsCard({required this.profile, required this.data});
-
-  final CareProfile? profile;
+class _SpeciesCards extends StatelessWidget {
+  const _SpeciesCards({required this.data});
   final InicioDashboardData data;
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final pets =
-        data.petCount > 0 ||
-        profile == CareProfile.pets ||
-        profile == CareProfile.mixed;
-    final livestock =
-        data.livestockCount > 0 ||
-        profile == CareProfile.livestock ||
-        profile == CareProfile.mixed;
-    final hasSummary = data.categoryBreakdown.isNotEmpty;
-    return Card(
-      key: const ValueKey('inicio-animales'),
-      color: colors.surfaceContainerLow,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push(AppRoutes.directorio),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.pets_outlined, size: 18, color: colors.primary),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      'Tus animales',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: colors.onSurfaceVariant,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xxs),
-              Row(
-                children: [
-                  Text(
-                    '${data.totalAnimals} animales',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (pets || livestock) ...[
-                    Text(
-                      '  Â·  ',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    Text(
-                      [
-                        if (livestock) '${data.livestockCount} ganado',
-                        if (pets) '${data.petCount} mascotas',
-                      ].join(' Â· '),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (data.attentionAnimals > 0) ...[
-                const SizedBox(height: AppSpacing.xs),
-                ActionChip(
-                  avatar: const Icon(Icons.priority_high_rounded, size: 16),
-                  label: Text('${data.attentionAnimals} por revisar'),
-                  onPressed: () =>
-                      context.push(AppRoutes.animalesPath(attention: true)),
-                ),
-              ],
-              if (hasSummary) ...[
-                const SizedBox(height: AppSpacing.sm),
-                QuickSummarySection(data: data),
-              ],
-              if (data.recentActivity.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xs),
-                ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  title: const Text('Actualizados recientemente'),
-                  children: [
-                    for (final animal in data.recentActivity.take(2))
-                      _RecentAnimalTile(animal: animal),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RecentAnimalTile extends StatelessWidget {
-  const _RecentAnimalTile({required this.animal});
-
-  final RecentActivityItem animal;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final name = animal.animalName?.trim();
-    final label = name != null && name.isNotEmpty
-        ? name
-        : animal.animalTag.trim().isNotEmpty
-        ? animal.animalTag
-        : animal.categoryLabel;
-    final detail =
-        animal.animalTag.trim().isNotEmpty && label != animal.animalTag
-        ? '${animal.categoryLabel} Â· ${animal.animalTag}'
-        : animal.categoryLabel;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadii.sm),
-        child: ListTile(
-          key: ValueKey('inicio-animal-${animal.animalUuid}'),
-          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-          leading: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadii.sm),
-            child: SizedBox(
-              width: 44,
-              height: 44,
-              child: AnimalPhotoImage(
-                path: animal.photoPath,
-                fallback: ColoredBox(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.pets_outlined,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          title: Text(label, softWrap: true),
-          subtitle: Text(detail, softWrap: true),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () =>
-              context.push(AppRoutes.animalDetallePath(animal.animalUuid)),
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardStats extends StatefulWidget {
-  const _DashboardStats({
-    required this.data,
-    required this.items,
-    required this.showAnimals,
-    required this.showPending,
-  });
-
-  final InicioDashboardData data;
-  final List<_HomeCareItem> items;
-  final bool showAnimals;
-  final bool showPending;
-
-  @override
-  State<_DashboardStats> createState() => _DashboardStatsState();
-}
-
-class _DashboardStatsState extends State<_DashboardStats> {
-  bool _animalsExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.showPending && !widget.showAnimals) {
-      return const SizedBox.shrink();
-    }
-    final theme = Theme.of(context);
-    final data = widget.data;
-    final items = widget.items;
-    final showAnimals = widget.showAnimals;
-    final showPending = widget.showPending;
-    final stats =
-        <
-          ({
-            String label,
-            int count,
-            IconData icon,
-            VoidCallback onTap,
-            bool attention,
-            bool isAnimals,
-          })
-        >[
-          if (showAnimals)
-            (
-              label: 'Animales',
-              count: data.totalAnimals,
-              icon: Icons.pets_outlined,
-              onTap: () {
-                if (data.categoryBreakdown.isEmpty) {
-                  context.push(AppRoutes.directorio);
-                  return;
-                }
-                setState(() => _animalsExpanded = !_animalsExpanded);
-              },
-              attention: false,
-              isAnimals: true,
-            ),
-          if (showAnimals && data.attentionAnimals > 0)
-            (
-              label: 'Por revisar',
-              count: data.attentionAnimals,
-              icon: Icons.priority_high_rounded,
-              onTap: () =>
-                  context.push(AppRoutes.animalesPath(attention: true)),
-              attention: true,
-              isAnimals: false,
-            ),
-          if (showPending)
-            (
-              label: 'Asuntos',
-              count: items.length,
-              icon: Icons.task_alt_outlined,
-              onTap: () => _TodayCarePanel.showAll(context, items),
-              attention: false,
-              isAnimals: false,
-            ),
-        ];
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Column(
+    const images = {
+      Species.cattle: 'vaca.webp',
+      Species.canine: 'canino.webp',
+      Species.feline: 'felino.png',
+      Species.goat: 'cabra.webp',
+      Species.sheep: 'oveja.webp',
+      Species.equine: 'caballo.webp',
+      Species.pig: 'cerdo.webp',
+      Species.poultry: 'ave.webp',
+    };
+    final counts = data.speciesCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final colors = Theme.of(context).colorScheme;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
         children: [
-          Row(
-            key: const ValueKey('inicio-resumen'),
-            children: [
-              for (var index = 0; index < stats.length; index++) ...[
-                if (index > 0) const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Material(
-                    color: stats[index].isAnimals && _animalsExpanded
-                        ? theme.colorScheme.primaryContainer
-                        : stats[index].attention
-                        ? theme.colorScheme.errorContainer
-                        : theme.colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                    child: InkWell(
-                      onTap: stats[index].onTap,
-                      borderRadius: BorderRadius.circular(AppRadii.sm),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(minHeight: 72),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Icon(
-                                    stats[index].icon,
-                                    size: 16,
-                                    color: stats[index].attention
-                                        ? theme.colorScheme.onErrorContainer
-                                        : theme.colorScheme.primary,
+          for (final group in counts)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.xs),
+              child: Material(
+                color: colors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  onTap: () => context.push(
+                    AppRoutes.animalesPath(
+                      species: group.key.name,
+                      clearFilters: true,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (images[group.key] case final asset?)
+                              Image.asset(
+                                'assets/images/$asset',
+                                height: 40,
+                                width: 40,
+                              )
+                            else
+                              const Icon(Icons.pets, size: 40),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${group.value}',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colors.primary,
                                   ),
-                                  if (stats[index].isAnimals &&
-                                      data.categoryBreakdown.isNotEmpty)
-                                    Icon(
-                                      _animalsExpanded
-                                          ? Icons.expand_less_rounded
-                                          : Icons.expand_more_rounded,
-                                      size: 18,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${stats[index].count}',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              Text(
-                                stats[index].label,
-                                maxLines: 2,
-                                style: theme.textTheme.labelSmall,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 4),
+                        Text(
+                          group.key.displayName,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ],
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            alignment: Alignment.topCenter,
-            child: _animalsExpanded && data.categoryBreakdown.isNotEmpty
-                ? Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.sm),
-                    child: AnimalCategoryRow(data: data),
-                  )
-                : const SizedBox.shrink(),
-          ),
+              ),
+            ),
         ],
       ),
     );
@@ -884,7 +638,13 @@ class _DashboardWidgetsLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabledWidgets = widgets.where((widget) {
-      if (!widget.enabled) return false;
+      if (!widget.enabled ||
+          widget.type == DashboardWidgetType.recentActivity ||
+          widget.type == DashboardWidgetType.weather ||
+          (featuredPending &&
+              widget.type == DashboardWidgetType.upcomingEvents)) {
+        return false;
+      }
       if (widget.type == DashboardWidgetType.pendingTasks ||
           widget.type == DashboardWidgetType.animalSummary) {
         return false;
@@ -1005,7 +765,7 @@ class _HomeCareItem {
     required this.route,
     required this.tone,
     required this.priority,
-    this.entryId,
+    this.group,
     this.date,
   });
 
@@ -1014,7 +774,9 @@ class _HomeCareItem {
   final String route;
   final _CareItemTone tone;
   final int priority;
-  final String? entryId;
+  String get key => [entryId ?? route, title, message, tone.name].join('|');
+  final AgendaEventGroup? group;
+  String? get entryId => group?.primaryEntry.id;
   final DateTime? date;
 }
 
@@ -1025,8 +787,9 @@ List<_HomeCareItem> _buildTodayCareItems(
   DateTime today,
 ) {
   final items = <_HomeCareItem>[];
-  final dueEntries = List.of(data.dueEntries)
-    ..sort((a, b) => a.fecha.compareTo(b.fecha));
+  final dueEntries = {
+    for (final e in [...data.dueEntries, ...data.upcomingEvents]) e.id: e,
+  }.values.toList()..sort((a, b) => a.fecha.compareTo(b.fecha));
 
   for (final alert in data.alerts) {
     if (alert.severity == InicioAlertSeverity.info) continue;
@@ -1048,40 +811,42 @@ List<_HomeCareItem> _buildTodayCareItems(
     );
   }
 
-  for (final entry in dueEntries) {
+  final categories = const AgendaTaskGrouper().group(dueEntries, today: today);
+  for (final group in categories.expand((category) => category.events)) {
+    final entry = group.rows.first.entry;
     final day = DateUtils.dateOnly(entry.fecha);
     final overdue = day.isBefore(today);
     final displayTitle = overdue
-        ? entry.titulo.replaceFirst(
-            RegExp(r'^Parto prÃ³ximo\s*\([^)]*\)'),
+        ? group.titulo.replaceFirst(
+            RegExp(r'^Parto próximo\s*\([^)]*\)'),
             'Aviso de parto',
           )
-        : entry.titulo;
+        : group.titulo;
+    final rank = switch (entry.prioridad) {
+      AgendaPrioridad.urgente => 0,
+      AgendaPrioridad.alta => 1,
+      _ when overdue => 2,
+      AgendaPrioridad.baja => 4,
+      _ => 3,
+    };
+    final timing = overdue
+        ? 'Vencida desde ${day.day}/${day.month}'
+        : day == today
+        ? 'Hoy'
+        : 'Próxima · ${day.day}/${day.month}';
     items.add(
       _HomeCareItem(
         title: displayTitle,
-        message: overdue
-            ? 'Vencida desde ${entry.fecha.day}/${entry.fecha.month}'
-            : 'Programada para hoy',
+        message: rank < 2 ? 'Prioridad ${entry.prioridad} · $timing' : timing,
         route: AppRoutes.agenda,
-        entryId: entry.id,
+        group: group,
         date: day,
-        tone: overdue ? _CareItemTone.warning : _CareItemTone.normal,
-        priority: overdue ? 2 : 1,
-      ),
-    );
-  }
-
-  for (final task in data.tasks) {
-    if (task.title.trimLeft().toLowerCase().startsWith('sin ')) continue;
-    if (items.any((item) => item.route == task.targetRoute)) continue;
-    items.add(
-      _HomeCareItem(
-        title: task.title,
-        message: task.message,
-        route: task.targetRoute,
-        tone: _CareItemTone.normal,
-        priority: 3,
+        tone: rank == 0
+            ? _CareItemTone.critical
+            : rank <= 2
+            ? _CareItemTone.warning
+            : _CareItemTone.normal,
+        priority: rank,
       ),
     );
   }
@@ -1102,214 +867,40 @@ class _TodayCarePanel extends StatelessWidget {
 
   final List<_HomeCareItem> items;
 
-  static void showAll(BuildContext context, List<_HomeCareItem> items) {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final attention = items
-        .where((item) => item.tone == _CareItemTone.critical)
-        .toList();
-    final dueToday = items
-        .where(
-          (item) => item.date != null && DateUtils.isSameDay(item.date, today),
-        )
-        .toList();
-    final overdue = items
-        .where((item) => item.date != null && item.date!.isBefore(today))
-        .toList();
-    final other = items
-        .where(
-          (item) =>
-              !attention.contains(item) &&
-              !dueToday.contains(item) &&
-              !overdue.contains(item),
-        )
-        .toList();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: .8,
-        maxChildSize: .95,
-        builder: (listContext, controller) => ListView(
-          controller: controller,
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            Text(
-              'Todos los pendientes',
-              style: Theme.of(listContext).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final group in [
-              ('AtenciÃ³n', attention),
-              ('Hoy', dueToday),
-              ('Vencidos', overdue),
-              ('Otros asuntos', other),
-            ])
-              if (group.$2.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Text(
-                    '${group.$1} Â· ${group.$2.length}',
-                    style: Theme.of(listContext).textTheme.titleSmall,
-                  ),
-                ),
-                for (final item in group.$2)
-                  _TodayCareTile(
-                    item: item,
+  @override
+  Widget build(BuildContext context) => AppCard(
+    title: 'Pendientes',
+    body: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (items.isEmpty) const Text('Todo al día'),
+        for (final item in items.take(3)) _TodayCareTile(item: item),
+        if (items.length > 3)
+          TextButton(
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              useSafeArea: true,
+              isScrollControlled: true,
+              builder: (sheet) => FractionallySizedBox(
+                heightFactor: .8,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  itemCount: items.length,
+                  itemBuilder: (_, i) => _TodayCareTile(
+                    item: items[i],
                     onTap: () {
-                      Navigator.of(sheetContext).pop();
-                      _openCareItem(context, item);
+                      Navigator.pop(sheet);
+                      _openCareItem(context, items[i]);
                     },
                   ),
-              ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final today = DateUtils.dateOnly(DateTime.now());
-    final attention = items
-        .where((item) => item.tone == _CareItemTone.critical)
-        .toList();
-    final dueToday = items
-        .where(
-          (item) => item.date != null && DateUtils.isSameDay(item.date, today),
-        )
-        .toList();
-    final overdueCount = items
-        .where((item) => item.date != null && item.date!.isBefore(today))
-        .length;
-    return Card(
-      key: const ValueKey('inicio-pendientes-hoy'),
-      color: colors.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.checklist_rounded,
-                  size: 18,
-                  color: theme.colorScheme.primary,
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    'Pendientes',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                if (items.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () => showAll(context, items),
-                    icon: const Icon(Icons.list_alt_outlined, size: 16),
-                    label: Text('Ver ${items.length}'),
-                  ),
-              ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.xxs),
-            if (items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      color:
-                          theme.extension<AppStatusTheme>()?.success ??
-                          AppColors.success,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Todo al dÃ­a',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            'No hay actividades vencidas ni avisos urgentes.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else ...[
-              if (attention.isNotEmpty) ...[
-                Text(
-                  'Atender primero',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                for (final item in attention.take(1))
-                  _TodayCareTile(item: item),
-              ],
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                child: Text(
-                  'Hoy Â· ${dueToday.length}',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (dueToday.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                  child: Text(
-                    'Sin actividades programadas',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              for (final item in dueToday.take(2)) _TodayCareTile(item: item),
-              if (attention.isEmpty && dueToday.isEmpty && overdueCount == 0)
-                _TodayCareTile(item: items.first),
-              if (overdueCount > 0)
-                TextButton(
-                  onPressed: () => showAll(context, items),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('$overdueCount vencidas Â· ver pendientes'),
-                  ),
-                ),
-            ],
-            if (items.isEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => context.go(AppRoutes.agenda),
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: const Text('Ver agenda completa'),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+            child: Text('Ver los ${items.length} pendientes'),
+          ),
+      ],
+    ),
+  );
 }
 
 class _TodayCareTile extends StatelessWidget {
@@ -1385,7 +976,26 @@ class _TodayCareTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xxs),
-                  const Icon(Icons.chevron_right, size: 20),
+                  if ((item.group?.animalCount ?? 0) > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                      child: Text(
+                        item.group!.animalCount == 1
+                            ? '1 animal'
+                            : '${item.group!.animalCount} animales',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  const Icon(Icons.chevron_right, size: 18),
                 ],
               ),
             ),
@@ -1397,12 +1007,23 @@ class _TodayCareTile extends StatelessWidget {
 }
 
 void _openCareItem(BuildContext context, _HomeCareItem item) {
-  if (item.entryId != null) {
-    context.pushNamed(
-      AppRoutes.nameAgendaTask,
-      pathParameters: {'id': item.entryId!},
-    );
-  } else {
+  final group = item.group;
+  if (group == null) {
     context.push(item.route);
+    return;
   }
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => BlocProvider(
+        create: (_) => AgendaBloc(
+          locator<AgendaRepository>(),
+          lotesRepository: locator<LotesRepository>(),
+          refreshSignal: locator<AgendaRefreshSignal>(),
+          registrationRepository: locator<AgendaRegistrationRepository>(),
+          registrationReadService: locator<AgendaRegistrationReadService>(),
+        )..add(const LoadAgenda()),
+        child: AgendaTaskDetailPage(group: group),
+      ),
+    ),
+  );
 }

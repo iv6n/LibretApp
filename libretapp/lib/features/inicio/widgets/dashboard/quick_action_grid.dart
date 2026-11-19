@@ -72,24 +72,13 @@ class QuickActionGrid extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     if (compact) {
-      final preferred = <DashboardQuickAction>[
-        for (final id in ['health', 'weight'])
-          if (enabled.any((action) => action.id == id))
-            enabled.firstWhere((action) => action.id == id),
-      ];
-      final visible = <DashboardQuickAction>[
-        ...preferred,
-        ...enabled.where(
-          (action) => action.id != 'all' && !preferred.contains(action),
-        ),
-      ].take(2).toList();
       final entries = <({String label, IconData icon, VoidCallback onTap})>[
         (
           label: 'Buscar',
           icon: Icons.search,
           onTap: () => context.go(AppRoutes.animalesPath(focusSearch: true)),
         ),
-        for (final action in visible)
+        for (final action in enabled.take(6))
           (
             label: action.label,
             icon: action.icon,
@@ -114,7 +103,12 @@ class QuickActionGrid extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Acciones frecuentes', style: tt.titleSmall),
+                    child: Text(
+                      'Acciones rápidas',
+                      style: tt.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                   if (onCustomizeTap != null)
                     IconButton(
@@ -126,9 +120,7 @@ class QuickActionGrid extends StatelessWidget {
               ),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final columns = textScale >= 1.5 || constraints.maxWidth < 290
-                      ? 2
-                      : 4;
+                  const columns = 4;
                   const gap = AppSpacing.xs;
                   final width =
                       (constraints.maxWidth - gap * (columns - 1)) / columns;
@@ -139,13 +131,9 @@ class QuickActionGrid extends StatelessWidget {
                       for (final entry in entries)
                         SizedBox(
                           width: width,
-                          height: textScale >= 2
-                              ? 144
-                              : textScale >= 1.5
-                              ? 112
-                              : textScale > 1
-                              ? 92
-                              : 76,
+                          height:
+                              38 +
+                              MediaQuery.textScalerOf(context).scale(12) * 3.8,
                           child: InkWell(
                             onTap: entry.onTap,
                             borderRadius: BorderRadius.circular(AppRadii.sm),
@@ -158,24 +146,38 @@ class QuickActionGrid extends StatelessWidget {
                                   AppRadii.sm,
                                 ),
                               ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(entry.icon, size: 22),
-                                  const SizedBox(height: AppSpacing.xxs),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                    ),
-                                    child: Text(
-                                      entry.label,
-                                      maxLines: textScale >= 1.5 ? 3 : 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                      style: tt.labelSmall,
-                                    ),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                    vertical: 8,
                                   ),
-                                ],
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        entry.icon,
+                                        size: 20,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Flexible(
+                                        child: Text(
+                                          entry.label,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: tt.labelSmall,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),

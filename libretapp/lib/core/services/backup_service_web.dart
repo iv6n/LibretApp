@@ -96,8 +96,19 @@ class BackupService {
       type: FileType.any,
     );
     if (file == null) return null;
-    final bytes = await file.readAsBytes();
-    final lowerName = file.name.toLowerCase();
+    return importFileBytes(
+      await file.readAsBytes(),
+      fileName: file.name,
+      mode: mode,
+    );
+  }
+
+  Future<BackupImportSummary> importFileBytes(
+    Uint8List bytes, {
+    required String fileName,
+    required BackupImportMode mode,
+  }) async {
+    final lowerName = fileName.toLowerCase();
     if (!lowerName.endsWith('.libretbackup') && !lowerName.endsWith('.json')) {
       throw const FormatException(
         'Selecciona un respaldo .libretbackup o .json.',
@@ -106,7 +117,7 @@ class BackupService {
     if (lowerName.endsWith('.json')) {
       return importFromJsonString(utf8.decode(bytes), mode: mode);
     }
-    return importArchiveBytes(Uint8List.fromList(bytes), mode: mode);
+    return importArchiveBytes(bytes, mode: mode);
   }
 
   Future<BackupImportSummary> importFromJsonString(

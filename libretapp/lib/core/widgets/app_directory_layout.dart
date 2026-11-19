@@ -9,15 +9,18 @@ class AppDirectoryFilterRow extends StatelessWidget {
     super.key,
     required this.children,
     this.trailing,
+    this.compact = false,
   });
 
   final List<Widget> children;
   final Widget? trailing;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final rowHeight = (52 + ((textScale - 1).clamp(0, 3) * 16)).toDouble();
+    final rowHeight = ((compact ? 44 : 52) + ((textScale - 1).clamp(0, 3) * 16))
+        .toDouble();
     final filters = ListView.separated(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -127,13 +130,13 @@ class AppDirectoryMetrics {
 
   /// Gap between the avatar and the identity column.
   double get headerGap => _lerp(10, 12);
-  double get headerPaddingH => _lerp(12, 16);
-  double get headerPaddingV => _lerp(10, 12);
-  double get headerSectionGap => _lerp(6, 8);
+  double get headerPaddingH => _lerp(10, 14);
+  double get headerPaddingV => _lerp(6, 9);
+  double get headerSectionGap => _lerp(2, 4);
   double get actionsGap => _lerp(6, 8);
 
   /// Tight gap between the primary identity line and the name/age line.
-  double get nameGap => _lerp(3, 4);
+  double get nameGap => _lerp(1, 2);
 
   /// Left inset that keeps the identity chips aligned with the avatar's text.
   double get chipsIndent => avatarSize + (headerGap * 1.3) + 1.5;

@@ -1,6 +1,10 @@
 /// features \u203a inicio \u203a data \u203a inicio_dashboard_models \u2014 data models for the dashboard.
 library;
 
+import 'package:libretapp/features/reportes/data/report_summary.dart';
+
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
+
 import 'package:equatable/equatable.dart';
 import 'package:libretapp/features/directorio/animales/domain/enums/category.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
@@ -188,6 +192,8 @@ class InicioDashboardData extends Equatable {
     required this.profileName,
     required this.farmName,
     required this.totalAnimals,
+    this.speciesCounts = const {},
+    this.latestRecords = const [],
     this.petCount = 0,
     this.livestockCount = 0,
     required this.totalAnimalCapacity,
@@ -210,6 +216,8 @@ class InicioDashboardData extends Equatable {
   final String profileName;
   final String farmName;
   final int totalAnimals;
+  final Map<Species, int> speciesCounts;
+  final List<RecentRecordItem> latestRecords;
   final int petCount;
   final int livestockCount;
   final int totalAnimalCapacity;
@@ -235,6 +243,8 @@ class InicioDashboardData extends Equatable {
     profileName,
     farmName,
     totalAnimals,
+    speciesCounts,
+    latestRecords,
     petCount,
     livestockCount,
     totalAnimalCapacity,

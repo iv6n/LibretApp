@@ -9,137 +9,135 @@ import 'package:libretapp/features/inicio/widgets/dashboard/inicio_weather_card.
 import 'package:libretapp/theme/app_theme.dart';
 
 class DashboardHeader extends StatelessWidget {
-  const DashboardHeader({required this.data, super.key});
-
+  const DashboardHeader({required this.data, this.weatherCard, super.key});
   final InicioDashboardData data;
+  final Widget? weatherCard;
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
     final theme = Theme.of(context);
-    final tt = theme.textTheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.xs),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
-          final identity = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final colors = theme.colorScheme;
+    final name = data.profileName.trim();
+    final date = DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Text.rich(
+          TextSpan(
             children: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xxs,
-                children: [
-                  const AppBrand(height: 20),
-                  _InlineMeta(
-                    icon: Icons.calendar_today_outlined,
-                    label: DateFormat('EEE d MMM', 'es').format(now),
-                  ),
-                ],
-              ),
-              if (data.profileName.isNotEmpty || data.farmName.isNotEmpty) ...[
-                const SizedBox(height: AppSpacing.xxs),
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xxs,
-                  children: [
-                    if (data.profileName.isNotEmpty)
-                      Text(
-                        data.profileName,
-                        softWrap: true,
-                        style: tt.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    if (data.farmName.isNotEmpty)
-                      _InlineMeta(
-                        icon: Icons.location_on_outlined,
-                        label: data.farmName,
-                        maxWidth: constraints.maxWidth - 24,
-                        maxLines: textScale >= 1.5 ? null : 2,
-                      ),
-                  ],
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: colors.primary,
                 ),
-              ],
+              ),
+              TextSpan(
+                text:
+                    '  ' +
+                    DateFormat('EEEE d MMM', 'es').format(DateTime.now()),
+              ),
             ],
-          );
-
-          if (data.weather == null) return identity;
-
-          final weatherWidth = (136 * textScale.clamp(1.0, 2.0))
-              .clamp(0.0, constraints.maxWidth)
-              .toDouble();
-          final weather = SizedBox(
-            width: weatherWidth,
-            child: InicioWeatherCard(weather: data.weather!),
-          );
-          if (constraints.maxWidth < weatherWidth + AppSpacing.sm + 240 ||
-              textScale > 1.3) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                identity,
-                const SizedBox(height: AppSpacing.md),
-                weather,
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: identity),
-              const SizedBox(width: AppSpacing.sm),
-              weather,
-            ],
-          );
-        },
+          ),
+          style: theme.textTheme.labelMedium,
+        ),
       ),
     );
-  }
-}
-
-class _InlineMeta extends StatelessWidget {
-  const _InlineMeta({
-    required this.icon,
-    required this.label,
-    this.maxWidth = 130,
-    this.maxLines = 1,
-  });
-
-  final IconData icon;
-  final String label;
-  final double maxWidth;
-  final int? maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: AppSpacing.xxs),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
-          child: Text(
-            label,
-            maxLines: maxLines,
-            overflow: maxLines == null ? null : TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          name.isEmpty ? 'Hola' : 'Hola, $name',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
           ),
         ),
+        if (data.farmName.trim().isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xxs),
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined, size: 15, color: colors.primary),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(data.farmName, style: theme.textTheme.bodySmall),
+              ),
+            ],
+          ),
+        ],
       ],
+    );
+    final weather =
+        weatherCard ??
+        (data.weather == null
+            ? null
+            : InicioWeatherCard(weather: data.weather!));
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.alphaBlend(
+              colors.primary.withValues(alpha: .08),
+              colors.surface,
+            ),
+            colors.surface,
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.sm,
+        ),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final stacked =
+                MediaQuery.textScalerOf(context).scale(14) > 19 ||
+                box.maxWidth < 275;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [const AppBrand(height: 30), date],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (stacked || weather == null) ...[
+                  identity,
+                  if (weather != null) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    weather,
+                  ],
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: identity),
+                      const SizedBox(width: AppSpacing.sm),
+                      SizedBox(
+                        width: (box.maxWidth * .53)
+                            .clamp(172.0, 210.0)
+                            .toDouble(),
+                        child: weather,
+                      ),
+                    ],
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

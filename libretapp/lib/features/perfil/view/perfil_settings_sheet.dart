@@ -3,11 +3,9 @@ library;
 
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:libretapp/core/workspace/workspace_manager.dart';
-import 'package:libretapp/core/experience/app_experience.dart';
-import 'package:libretapp/core/experience/care_profile_selector.dart';
-import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'package:libretapp/features/lite/lite_notification_service.dart';
 import 'package:libretapp/features/perfil/view/account_settings_card.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +20,7 @@ import 'package:libretapp/core/platform/release_features.dart';
 import 'package:libretapp/core/backup/backup_operation_lock.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/services/backup_service.dart';
+import 'package:libretapp/core/services/herd_import_service.dart';
 import 'package:libretapp/features/biblioteca/data/region_catalog.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_bloc.dart';
 import 'package:libretapp/features/perfil/bloc/perfil_event.dart';
@@ -75,22 +74,6 @@ void showPerfilEditor(
 
 class PerfilSettingsContentState extends State<PerfilSettingsContent> {
   bool _backupBusy = false;
-  bool _experienceBusy = false;
-
-  Future<void> _changePlants(bool value) async {
-    try {
-      final controller = AppExperienceScope.of(context);
-      await controller.setPreferences(
-        controller.value.copyWith(includePlants: value, configured: true),
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo guardar la preferencia: $error')),
-        );
-      }
-    }
-  }
 
   void _openRegionSettings() {
     final perfilBloc = context.read<PerfilBloc>();
@@ -102,119 +85,6 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
       builder: (_) => BlocProvider.value(
         value: perfilBloc,
         child: _RegionSettingsSheet(perfil: widget.perfil),
-      ),
-    );
-  }
-
-  void _openRegistrationSettings(AppExperienceController experience) {
-    var selection = experience.value;
-    showAppBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.8,
-        ),
-        child: SingleChildScrollView(
-          child: StatefulBuilder(
-            builder: (context, setSheetState) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const ListTile(
-                  title: Text('Qué vas a registrar'),
-                  subtitle: Text(
-                    'Tu selección prioriza accesos y no oculta las fichas guardadas.',
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: CareProfileSelector(
-                    value: selection.careProfile,
-                    onChanged: (profile) => setSheetState(
-                      () => selection = selection.copyWith(
-                        careProfile: profile,
-                        configured: true,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 2,
-                    children: [
-                      for (final species in Species.values)
-                        FilterChip(
-                          label: Text(species.displayName),
-                          selected: selection.preferredSpecies.contains(
-                            species,
-                          ),
-                          onSelected: (selected) {
-                            final speciesSet = Set<Species>.of(
-                              selection.preferredSpecies,
-                            );
-                            selected
-                                ? speciesSet.add(species)
-                                : speciesSet.remove(species);
-                            setSheetState(
-                              () => selection = selection.copyWith(
-                                preferredSpecies: speciesSet,
-                                configured:
-                                    speciesSet.isNotEmpty ||
-                                    selection.includePlants,
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                SwitchListTile(
-                  secondary: const Icon(Icons.eco_outlined),
-                  title: const Text('Plantas y cultivos'),
-                  value: selection.includePlants,
-                  onChanged: (value) => setSheetState(
-                    () => selection = selection.copyWith(
-                      includePlants: value,
-                      configured:
-                          value || selection.preferredSpecies.isNotEmpty,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton(
-                    onPressed: _experienceBusy
-                        ? null
-                        : () async {
-                            setState(() => _experienceBusy = true);
-                            try {
-                              await experience.setPreferences(selection);
-                              if (sheetContext.mounted) {
-                                Navigator.of(sheetContext).pop();
-                              }
-                            } catch (error) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('No se pudo guardar: $error'),
-                                  ),
-                                );
-                              }
-                            } finally {
-                              if (mounted)
-                                setState(() => _experienceBusy = false);
-                            }
-                          },
-                    child: const Text('Guardar'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -287,7 +157,6 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final experience = AppExperienceScope.maybeOf(context);
     final manager = locator.isRegistered<WorkspaceManager>()
         ? locator<WorkspaceManager>()
         : null;
@@ -319,22 +188,6 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
         ),
         const SizedBox(height: AppSpacing.sm),
         const _SettingsSectionLabel('Preferencias'),
-        if (experience != null)
-          _SettingsNavTile(
-            icon: Icons.tune_outlined,
-            title: 'Qué vas a registrar',
-            subtitle:
-                experience.value.preferredSpecies.isEmpty &&
-                    !experience.value.includePlants
-                ? 'Animales; puedes configurar especies después'
-                : [
-                    ...experience.value.preferredSpecies.map(
-                      (s) => s.displayName,
-                    ),
-                    if (experience.value.includePlants) 'Plantas y cultivos',
-                  ].join(' · '),
-            onTap: () => _openRegistrationSettings(experience),
-          ),
         BlocBuilder<ThemeBloc, ThemeState>(
           builder: (context, state) => _SettingsNavTile(
             icon: Icons.brightness_6_outlined,
@@ -352,13 +205,6 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
           title: 'Región y producción',
           onTap: _openRegionSettings,
         ),
-        if (experience != null)
-          SwitchListTile(
-            secondary: const Icon(Icons.local_florist_outlined),
-            title: const Text('Plantas y cultivos en accesos sugeridos'),
-            value: experience.value.includePlants,
-            onChanged: _changePlants,
-          ),
         FutureBuilder<bool>(
           future: LiteNotificationService.exactAvailable(),
           builder: (context, status) => _SettingsNavTile(
@@ -569,7 +415,90 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
 
   Future<void> _importBackup(BuildContext context) async {
     if (_backupBusy) return;
-    final mode = await showDialog<BackupImportMode>(
+    setState(() => _backupBusy = true);
+    try {
+      final file = await FilePicker.pickFile(
+        dialogTitle: 'Seleccionar archivo para importar',
+        type: FileType.any,
+      );
+      if (file == null || !context.mounted) return;
+
+      final extension = file.name.split('.').last.toLowerCase();
+      switch (extension) {
+        case 'xlsx':
+        case 'csv':
+        case 'tsv':
+          final bytes = await file.readAsBytes();
+          if (!context.mounted) return;
+          final document = locator<HerdImportService>().readDocument(
+            bytes,
+            fileName: file.name,
+          );
+          await context.pushNamed(AppRoutes.nameHerdImport, extra: document);
+          return;
+        case 'libretbackup':
+        case 'json':
+          break;
+        default:
+          throw const FormatException(
+            'Elige un Excel (.xlsx), CSV, TSV o un respaldo de Libretapp.',
+          );
+      }
+
+      final mode = await _chooseBackupImportMode(context);
+      if (mode == null || !context.mounted) return;
+      final summary = await BackupOperationLock().run(
+        () async => locator<BackupService>().importFileBytes(
+          await file.readAsBytes(),
+          fileName: file.name,
+          mode: mode,
+        ),
+      );
+      if (!context.mounted) return;
+      if (locator.isRegistered<WorkspaceManager>()) {
+        await locator<WorkspaceManager>().reload();
+        return;
+      }
+      context.read<PerfilBloc>().add(const LoadPerfil());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Importados ${summary.animalsImported} animales, '
+            '${summary.lotesImported} lotes, '
+            '${summary.agendaEntriesImported} tareas, '
+            '${summary.workersImported} integrantes y '
+            '${summary.teamsImported} equipos, '
+            '${summary.milkingSessionsImported} ordeñas.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (context.mounted) {
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('No se pudo importar el archivo'),
+            content: Text(switch (error) {
+              FormatException() => error.message,
+              StateError() => error.message.toString(),
+              _ => 'Revisa que el archivo se pueda abrir y vuelve a intentar.',
+            }),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _backupBusy = false);
+    }
+  }
+
+  Future<BackupImportMode?> _chooseBackupImportMode(BuildContext context) {
+    return showDialog<BackupImportMode>(
       context: context,
       useRootNavigator: true,
       builder: (ctx) => AlertDialog(
@@ -597,40 +526,6 @@ class PerfilSettingsContentState extends State<PerfilSettingsContent> {
         ],
       ),
     );
-    if (mode == null || !context.mounted) return;
-    setState(() => _backupBusy = true);
-    try {
-      final summary = await BackupOperationLock().run(
-        () => locator<BackupService>().importFromFile(mode: mode),
-      );
-      if (!context.mounted) return;
-      if (summary == null) return;
-      if (locator.isRegistered<WorkspaceManager>()) {
-        await locator<WorkspaceManager>().reload();
-        return;
-      }
-      context.read<PerfilBloc>().add(const LoadPerfil());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Importados ${summary.animalsImported} animales, '
-            '${summary.lotesImported} lotes, '
-            '${summary.agendaEntriesImported} tareas, '
-            '${summary.workersImported} integrantes y '
-            '${summary.teamsImported} equipos, '
-            '${summary.milkingSessionsImported} ordeñas.',
-          ),
-        ),
-      );
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _backupBusy = false);
-    }
   }
 
   Future<void> _importAnimalsFromExcel(BuildContext context) async {
@@ -791,8 +686,10 @@ class _DataSettingsPageState extends State<_DataSettingsPage> {
           ),
           _SettingsNavTile(
             icon: Icons.download_for_offline_outlined,
-            title: 'Importar respaldo completo',
-            subtitle: widget.demo ? 'No disponible en la demo' : null,
+            title: 'Importar respaldo o Excel',
+            subtitle: widget.demo
+                ? 'No disponible en la demo'
+                : 'Respaldo de Libretapp, Excel o CSV',
             onTap: enabled ? () => _run(widget.importBackup) : null,
           ),
           if (!widget.demo &&

@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "LibretApp (debug con SMS)",
+      "cwd": "libretapp",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "debug",
+      "args": [
+        "--flavor=connected",
+        "--dart-define-from-file=onboarding.dart-define.local.json"
+      ]
+    },
+    {
       "name": "LibretApp (candidato final)",
       "cwd": "libretapp",
       "request": "launch",

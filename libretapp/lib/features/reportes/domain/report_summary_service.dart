@@ -107,6 +107,28 @@ class ReportSummaryService {
             .toList(growable: false)
           ..sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
 
+    final (recentMovements, recentRecords) = await loadRecentActivity(
+      animalMap,
+    );
+    return ReportSummary(
+      totalAnimals: animals.length,
+      bySpecies: bySpecies,
+      byCategory: byCategory,
+      upcomingCalvings: upcomingCalvings,
+      healthAlertsCount: sanitaryPending,
+      unvaccinatedCount: unvaccinated,
+      underObservationCount: underObservation,
+      recentMovements: recentMovements,
+      recentRecords: recentRecords,
+      generatedAt: now,
+    );
+  }
+}
+
+extension RecentReportActivity on ReportSummaryService {
+  Future<(List<RecentRecordItem>, List<RecentRecordItem>)> loadRecentActivity(
+    Map<String, AnimalEntity> animalMap,
+  ) async {
     // Two queries for the whole herd rather than two per animal. The old
     // loop asked each animal for its movements and its health records, built
     // a RecentRecordItem for every row in the herd, sorted both lists, and
@@ -152,18 +174,7 @@ class ReportSummaryService {
             .whereType<RecentRecordItem>()
             .toList(growable: false);
 
-    return ReportSummary(
-      totalAnimals: animals.length,
-      bySpecies: bySpecies,
-      byCategory: byCategory,
-      upcomingCalvings: upcomingCalvings,
-      healthAlertsCount: sanitaryPending,
-      unvaccinatedCount: unvaccinated,
-      underObservationCount: underObservation,
-      recentMovements: recentMovements,
-      recentRecords: recentRecords,
-      generatedAt: now,
-    );
+    return (recentMovements, recentRecords);
   }
 }
 

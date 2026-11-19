@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:libretapp/core/utils/number_parsing.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:libretapp/core/di/injection.dart';
 import 'package:libretapp/core/widgets/app_form_exit_guard.dart';
 import 'package:libretapp/features/directorio/animales/domain/animal_domain.dart';
@@ -129,7 +130,13 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
   }
 
   void _applyAnimal(AnimalEntity animal) {
-    _earTagCtrl.text = animal.earTagNumber;
+    _earTagCtrl.text =
+        AnimalRegistrationPolicy.forSpecies(
+              animal.species,
+            ).identificationKind ==
+            AnimalIdentificationKind.earTag
+        ? AnimalRegistrationNormalizer.earTag(animal.earTagNumber)
+        : animal.earTagNumber;
     _nameCtrl.text = animal.customName ?? '';
     _visualIdCtrl.text = animal.visualId ?? '';
     _breedCtrl.text = animal.breed;
@@ -159,7 +166,9 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
     if (animal == null || _saving) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    final earTag = _earTagCtrl.text.trim();
+    final earTag = _policy.identificationKind == AnimalIdentificationKind.earTag
+        ? AnimalRegistrationNormalizer.earTag(_earTagCtrl.text)
+        : _earTagCtrl.text.trim();
     final weight = _parseOptionalDouble(_weightCtrl.text);
     if (_weightCtrl.text.trim().isNotEmpty &&
         (weight == null ||
@@ -296,6 +305,11 @@ class _AnimalEditPageState extends State<AnimalEditPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _earTagCtrl,
+                      inputFormatters:
+                          _policy.identificationKind ==
+                              AnimalIdentificationKind.earTag
+                          ? [FilteringTextInputFormatter.deny(RegExp(r'\s'))]
+                          : null,
                       decoration: InputDecoration(
                         labelText: _policy.identificationLabel,
                         helperText: _policy.tracksPendingEarTag

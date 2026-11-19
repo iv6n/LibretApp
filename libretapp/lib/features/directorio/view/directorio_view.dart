@@ -6,8 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/widgets/widgets.dart';
-import 'package:libretapp/core/experience/app_experience.dart';
-import 'package:libretapp/core/experience/care_profile_selector.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/features/directorio/animales/animals.dart'
     hide ClearSearch;
@@ -361,12 +359,6 @@ class _DirectorioViewState extends State<DirectorioView>
           onVisibilityChanged: _toggleSectionVisibility,
           onMoveSection: _moveSection,
         ),
-        const Divider(height: 1),
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.tune_outlined),
-          onPressed: () => _openRegistrationPreferences(context),
-          child: const Text('Qué vas a registrar'),
-        ),
       ],
       builder: (context, controller, child) {
         return AppIconButton(
@@ -381,110 +373,6 @@ class _DirectorioViewState extends State<DirectorioView>
           },
         );
       },
-    );
-  }
-
-  void _openRegistrationPreferences(BuildContext context) {
-    final controller = AppExperienceScope.maybeOf(context);
-    if (controller == null) return;
-    var selection = controller.value;
-    showAppBottomSheet<void>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(sheetContext).height * .8,
-        ),
-        child: SingleChildScrollView(
-          child: StatefulBuilder(
-            builder: (context, setSheetState) => Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const ListTile(title: Text('Qué vas a registrar')),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: CareProfileSelector(
-                    value: selection.careProfile,
-                    onChanged: (profile) => setSheetState(
-                      () => selection = selection.copyWith(
-                        careProfile: profile,
-                        configured: true,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 2,
-                    children: [
-                      for (final species in Species.values)
-                        FilterChip(
-                          label: Text(species.displayName),
-                          selected: selection.preferredSpecies.contains(
-                            species,
-                          ),
-                          onSelected: (selected) {
-                            final speciesSet = Set<Species>.of(
-                              selection.preferredSpecies,
-                            );
-                            selected
-                                ? speciesSet.add(species)
-                                : speciesSet.remove(species);
-                            setSheetState(
-                              () => selection = selection.copyWith(
-                                preferredSpecies: speciesSet,
-                                configured:
-                                    speciesSet.isNotEmpty ||
-                                    selection.includePlants,
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                SwitchListTile(
-                  secondary: const Icon(Icons.eco_outlined),
-                  title: const Text('Plantas y cultivos'),
-                  value: selection.includePlants,
-                  onChanged: (value) => setSheetState(
-                    () => selection = selection.copyWith(
-                      includePlants: value,
-                      configured:
-                          value || selection.preferredSpecies.isNotEmpty,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton(
-                    onPressed: () async {
-                      try {
-                        await controller.setPreferences(selection);
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                      } catch (error) {
-                        if (sheetContext.mounted) {
-                          ScaffoldMessenger.of(sheetContext).showSnackBar(
-                            SnackBar(
-                              content: Text('No se pudo guardar: $error'),
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text('Guardar'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -512,9 +400,6 @@ class _DirectorioViewState extends State<DirectorioView>
 
         if (state is DirectorioLoaded) {
           _syncBlocState(state);
-          // FAB config is null when searching or keyboard is visible (hides FAB)
-          final fabConfig = null;
-
           return BlocBuilder<AnimalesBloc, AnimalesState>(
             builder: (context, animalesState) {
               final animalesLoaded = animalesState is AnimalesLoaded
@@ -538,6 +423,18 @@ class _DirectorioViewState extends State<DirectorioView>
               }
               final shouldHideChrome =
                   _isSearching || isAnimalSearchActive || keyboardVisible;
+              final fabConfig =
+                  _activeSection == DirectorioSection.animales &&
+                      !shouldHideChrome &&
+                      !isAnimalSelectionMode
+                  ? ShellFabConfig(
+                      id: 'directorio_agregar_animal',
+                      label: 'Agregar animal',
+                      icon: Icons.add,
+                      onPressed: () =>
+                          context.pushNamed(AppRoutes.nameAnimalNuevoRapido),
+                    )
+                  : null;
 
               return ShellChromeScope(
                 visible: !shouldHideChrome,
@@ -664,7 +561,11 @@ class _DirectorioViewState extends State<DirectorioView>
                             )
                           : null,
                     ),
-                    body: SafeArea(top: false, child: _buildDirectoryBody()),
+                    body: SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: _buildDirectoryBody(),
+                    ),
                   ),
                 ),
               );

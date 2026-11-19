@@ -221,15 +221,27 @@ class BackupService {
     );
 
     if (file == null) return null;
+    return importFileBytes(
+      await file.readAsBytes(),
+      fileName: file.name,
+      mode: mode,
+    );
+  }
 
-    final lowerName = file.name.toLowerCase();
+  Future<BackupImportSummary> importFileBytes(
+    Uint8List bytes, {
+    required String fileName,
+    required BackupImportMode mode,
+  }) async {
+    if (!_allowFileOperations)
+      throw StateError('Sal de la demo para importar un respaldo.');
+    final lowerName = fileName.toLowerCase();
     if (!lowerName.endsWith('.libretbackup') && !lowerName.endsWith('.json')) {
       throw const FormatException(
         'Selecciona un respaldo .libretbackup o .json.',
       );
     }
 
-    final bytes = await file.readAsBytes();
     if (lowerName.endsWith('.json')) {
       return importFromJsonString(utf8.decode(bytes), mode: mode);
     }

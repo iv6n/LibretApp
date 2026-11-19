@@ -83,11 +83,17 @@ class HerdImportPreviewRow {
     proposed: proposed,
   );
   String get tag =>
-      proposed?.earTagNumber ??
-      values[HerdImportField.earTag] ??
-      values[HerdImportField.siniiga] ??
-      values[HerdImportField.rfid] ??
-      'Sin identificación';
+      [
+        proposed?.earTagNumber,
+        values[HerdImportField.earTag],
+        values[HerdImportField.siniiga],
+        values[HerdImportField.rfid],
+        values[HerdImportField.visualId],
+        values[HerdImportField.name],
+      ].whereType<String>().firstWhere(
+        (value) => value.isNotEmpty,
+        orElse: () => 'Sin identificación',
+      );
   HerdImportAction get defaultAction =>
       isValid && !isExisting ? HerdImportAction.create : HerdImportAction.skip;
 }

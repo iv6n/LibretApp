@@ -166,7 +166,7 @@ void main() {
     await tester.tap(find.text('Datos y respaldos'));
     await tester.pumpAndSettle();
     expect(find.text('Exportar respaldo completo'), findsOneWidget);
-    expect(find.text('Importar respaldo completo'), findsOneWidget);
+    expect(find.text('Importar respaldo o Excel'), findsOneWidget);
     expect(find.text('Exportar a Excel'), findsOneWidget);
     expect(find.text('Importar hato (Excel o CSV)'), findsOneWidget);
   });

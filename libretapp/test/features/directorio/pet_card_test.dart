@@ -22,6 +22,7 @@ void main() {
           .firstWhere((animal) => animal.species == Species.canine)
           .copyWith(
             customName: 'Mora',
+            sex: Sex.male,
             profilePhoto: null,
             ageMonths: -1,
             birthDate: DateTime.fromMillisecondsSinceEpoch(0),
@@ -71,9 +72,22 @@ void main() {
       expect(find.textContaining('Edad sin dato'), findsNothing);
       expect(find.textContaining('Último peso'), findsNothing);
       expect(find.byIcon(Icons.tag_outlined), findsNothing);
-      expect(find.text('Sin ubicación'), findsNothing);
+      expect(find.text('Sin ubicación'), findsOneWidget);
+      expect(find.text('Macho'), findsOneWidget);
+      expect(
+        (tester.getRect(find.text('Sin ubicación')).center.dy -
+                tester.getRect(find.text('Macho')).center.dy)
+            .abs(),
+        lessThan(15),
+      );
+      expect(
+        tester.getRect(find.text('Macho')).bottom,
+        lessThan(
+          tester.getRect(find.byKey(const ValueKey('pet_card_footer'))).bottom,
+        ),
+      );
       expect(find.byKey(const ValueKey('pet_card_footer')), findsOneWidget);
-      expect(find.textContaining('Canino'), findsOneWidget);
+      expect(find.text('CANINO'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byType(PetCard));
@@ -103,10 +117,10 @@ void main() {
     );
 
     expect(find.text('MASCOTA'), findsOneWidget);
-    expect(find.textContaining('Felino'), findsOneWidget);
+    expect(find.text('FELINO'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('MASCOTA')).dy,
-      lessThan(tester.getTopLeft(find.textContaining('Felino')).dy),
+      lessThan(tester.getTopLeft(find.text('FELINO')).dy),
     );
     expect(find.text('Vaca'), findsNothing);
     expect(
@@ -121,96 +135,83 @@ void main() {
     );
   });
 
-  testWidgets(
-    'pet orders breed and purpose, then care and health after location',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final sample = buildDemoAnimals(reference: DateTime(2026, 1, 1))
-          .firstWhere((animal) => animal.customName == 'Luna')
-          .copyWith(healthStatus: HealthStatus.fair);
+  testWidgets('pet shows species and breed above, sex beside location', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final sample = buildDemoAnimals(reference: DateTime(2026, 1, 1))
+        .firstWhere((animal) => animal.customName == 'Luna')
+        .copyWith(
+          breed: 'Shepinois',
+          sex: Sex.female,
+          productionPurpose: ProductionPurpose.work,
+          healthStatus: HealthStatus.fair,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: MediaQuery(
-                data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-                child: PetCard(
-                  animal: sample,
-                  location: const LocationEntity(
-                    uuid: 'home',
-                    name: 'Casa',
-                    type: LocationType.house,
-                    surfaceArea: 0,
-                    capacity: 1,
-                    waterSource: '',
-                    terrainType: '',
-                  ),
-                  indicatorSnapshot: AnimalIndicatorSnapshot(
-                    nextCareDueOn: DateTime.now().add(const Duration(days: 2)),
-                  ),
-                  onMenuAction: (_) {},
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+              child: PetCard(
+                animal: sample,
+                location: const LocationEntity(
+                  uuid: 'home',
+                  name: 'Casa',
+                  type: LocationType.house,
+                  surfaceArea: 0,
+                  capacity: 1,
+                  waterSource: '',
+                  terrainType: '',
                 ),
+                indicatorSnapshot: AnimalIndicatorSnapshot(
+                  nextCareDueOn: DateTime.now().add(const Duration(days: 2)),
+                ),
+                onMenuAction: (_) {},
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      final summaryChip = find.textContaining(RegExp(r'^\+\d+$'));
-      final purposeChip = find.text('COMPAÑÍA');
-      // The purpose chip stays reachable: either it fits the two-line budget
-      // or it folds into the `+N` summary.
-      expect(
-        purposeChip.evaluate().isNotEmpty,
-        isTrue,
-        reason: 'purpose remains visible in wrapped layouts',
-      );
-      expect(summaryChip, findsNothing);
-      if (purposeChip.evaluate().isEmpty) {
-        final semantics = tester.ensureSemantics();
-        expect(
-          find.bySemanticsLabel(RegExp(r'Propósito COMPAÑÍA')),
-          findsOneWidget,
-        );
-        semantics.dispose();
-      }
-      expect(find.textContaining('Canino'), findsOneWidget);
-      final avatarFrame = find.byWidgetPredicate(
-        (widget) =>
-            widget is Material &&
-            widget.borderRadius == BorderRadius.circular(10),
-      );
-      expect(tester.getSize(avatarFrame), const Size(56, 56));
-      expect(
-        (tester.getRect(find.text('Luna')).center.dy -
-                tester.getRect(find.text('2 años')).center.dy)
-            .abs(),
-        lessThan(3),
-      );
-      expect(
-        tester.getRect(find.text('2 años')).right,
-        greaterThan(tester.getRect(find.text('Luna')).right),
-      );
-      if (purposeChip.evaluate().isNotEmpty &&
-          summaryChip.evaluate().isNotEmpty) {
-        expect(
-          (tester.getRect(summaryChip).center.dy -
-                  tester.getRect(purposeChip).center.dy)
-              .abs(),
-          lessThan(2),
-        );
-      }
-      expect(find.text('Casa'), findsOneWidget);
-      expect(find.text('Aceptable'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.text('CANINO'), findsOneWidget);
+    expect(find.text('SHEPINOIS'), findsOneWidget);
+    expect(find.text('Hembra'), findsOneWidget);
+    expect(find.text('TRABAJO'), findsNothing);
+    expect(find.byIcon(Icons.pets), findsNothing);
+    final avatarFrame = find.byWidgetPredicate(
+      (widget) =>
+          widget is Material &&
+          widget.borderRadius == BorderRadius.circular(10),
+    );
+    expect(tester.getSize(avatarFrame), const Size(56, 56));
+    expect(
+      (tester.getRect(find.text('Luna')).center.dy -
+              tester.getRect(find.text('2 años')).center.dy)
+          .abs(),
+      lessThan(3),
+    );
+    expect(
+      tester.getRect(find.text('2 años')).right,
+      greaterThan(tester.getRect(find.text('Luna')).right),
+    );
+    expect(find.text('Casa'), findsOneWidget);
+    expect(
+      (tester.getRect(find.text('Casa')).center.dy -
+              tester.getRect(find.text('Hembra')).center.dy)
+          .abs(),
+      lessThan(35),
+    );
+    expect(find.text('Aceptable'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('PetCard hides weight and identity summary but keeps the menu', (
     tester,
@@ -239,7 +240,7 @@ void main() {
       tester.widget<Text>(find.text('Mora')).style!.fontSize,
       greaterThan(20),
     );
-    expect(find.byIcon(Icons.pets), findsOneWidget);
+    expect(find.byIcon(Icons.pets), findsNothing);
     expect(find.textContaining('Último peso'), findsNothing);
     expect(find.text('MZQ-0039'), findsNothing);
     expect(find.byKey(const ValueKey('pet_card_footer')), findsOneWidget);

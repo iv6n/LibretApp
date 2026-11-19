@@ -107,6 +107,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
   void _syncRouteFilters() {
     try {
       final query = GoRouterState.of(context).uri.queryParameters;
+      final species = Species.values.where((s) => s.name == query['species']).firstOrNull;
       final pendingEarTag = query['pendingEarTag'] == 'true';
       final attention = query['attention'] == 'true';
       final clearFilters = query['clearFilters'] == 'true';
@@ -119,6 +120,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
       final locationUuid = query['ubicacion']?.trim();
       final focusSearch = query['buscar'] == '1';
       final key = [
+        species?.name,
         pendingEarTag,
         attention,
         clearFilters,
@@ -135,6 +137,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
       if (clearFilters) {
         _animalController.setSpecies(null);
+        _animalController.setStages(const <LifeStage>{});
         _animalController.setOnlyPendingEarTag(false);
         _animalController.setOnlyAttention(false);
         _animalController.setHealthFilter(null);
@@ -146,6 +149,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
           ..add(const SetSearchFilters());
       }
 
+      if (species != null) _animalController.setSpecies(species);
       _animalController.setOnlyPendingEarTag(pendingEarTag);
       _animalController.setOnlyAttention(attention);
       _animalController.setHealthFilter(healthFilter);
@@ -315,12 +319,9 @@ class _AnimalesListViewState extends State<AnimalesListView>
               body: _buildAnimalesTab(listBottomPadding, l10n),
             );
             final content = widget.shellInteractionsEnabled
-                ? ShellFabConfigScope(
-                    config: null,
-                    child: ShellChromeScope(
-                      visible: !isSelectionMode && !isSearching,
-                      child: scaffold,
-                    ),
+                ? ShellChromeScope(
+                    visible: !isSelectionMode && !isSearching,
+                    child: scaffold,
                   )
                 : scaffold;
 
@@ -740,6 +741,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
   void _clearAnimalFilters() {
     _animalController.setSpecies(null);
+    _animalController.setStages(const <LifeStage>{});
     _animalController.setOnlyPendingEarTag(false);
     _animalController.setOnlyAttention(false);
     _animalController.setHealthFilter(null);
@@ -781,11 +783,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
     final headerCount = isNarrowed ? filtered.length : state.herdTotal;
     if (state.herdTotal == 0 && !isNarrowed) return [];
 
+    final singleSpecies = taxonomyCounts.length == 1;
+    final effectiveSpecies = singleSpecies
+        ? taxonomyCounts.keys.single
+        : selectedSpecies;
     final stageCounts = selectedCompanion
         ? companionStageCounts
-        : selectedSpecies == null
+        : effectiveSpecies == null
         ? const <LifeStage, int>{}
-        : taxonomyCounts[selectedSpecies] ?? const <LifeStage, int>{};
+        : taxonomyCounts[effectiveSpecies] ?? const <LifeStage, int>{};
     final stageFilters = hideCategoryChips || stageCounts.isEmpty
         ? const SizedBox.shrink()
         : AnimatedSize(
@@ -793,7 +799,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
             curve: Curves.easeOutCubic,
             alignment: Alignment.topCenter,
             child: AnimalStageFilterRow(
-              species: selectedCompanion ? null : selectedSpecies,
+              species: selectedCompanion ? null : effectiveSpecies,
               companionOnly: selectedCompanion,
               counts: stageCounts,
               selectedStages: selectedStages,
@@ -803,7 +809,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
 
     if (filtered.isEmpty) {
       final filters = <Widget>[
-        if (!hideCategoryChips)
+        if (!hideCategoryChips && !singleSpecies)
           _speciesFilterChips(
             taxonomyCounts: taxonomyCounts,
             selectedSpecies: selectedSpecies,
@@ -830,21 +836,6 @@ class _AnimalesListViewState extends State<AnimalesListView>
           ),
       ];
       filters.removeWhere((widget) => widget is SizedBox && widget.width == 0);
-      if (filters.isEmpty) {
-        filters.add(
-          AppDirectoryFilterRow(
-            children: [
-              AppDirectoryFilterChip(
-                label: 'Todos',
-                count: state.herdTotal,
-                icon: Icons.pets_outlined,
-                selected: !isNarrowed,
-                onTap: _clearAnimalFilters,
-              ),
-            ],
-          ),
-        );
-      }
       return [
         if (isNarrowed)
           Padding(
@@ -866,7 +857,7 @@ class _AnimalesListViewState extends State<AnimalesListView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (!hideCategoryChips)
+            if (!hideCategoryChips && !singleSpecies)
               _speciesFilterChips(
                 taxonomyCounts: taxonomyCounts,
                 selectedSpecies: selectedSpecies,
@@ -897,23 +888,15 @@ class _AnimalesListViewState extends State<AnimalesListView>
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
-                children: [
-                  Text(
-                    l10n.animalsCount(headerCount),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  l10n.animalsCount(headerCount),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Alta de varios animales',
-                    icon: const Icon(Icons.playlist_add_outlined),
-                    onPressed: () =>
-                        context.pushNamed(AppRoutes.nameAnimalNuevoMultiple),
-                  ),
-                ],
+                ),
               ),
             ),
           ],

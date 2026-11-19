@@ -190,6 +190,8 @@ class AnimalesListController extends ChangeNotifier {
         : null;
     final availableStages = _state.selectedCompanion
         ? companionCounts.keys.toSet()
+        : nextSelected == null && counts.length == 1
+        ? counts.values.single.keys.toSet()
         : nextSelected == null
         ? const <LifeStage>{}
         : counts[nextSelected]!.keys.toSet();

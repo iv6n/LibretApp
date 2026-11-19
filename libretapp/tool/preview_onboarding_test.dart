@@ -98,7 +98,7 @@ void main() {
                   initialPage: preview.page,
                   onStartEmpty: () async {},
                   onInstallDemo: (_) async {},
-                  onAccessPhone: () async {},
+                  onAccessPhone: (_) async {},
                 ),
               ),
             ),

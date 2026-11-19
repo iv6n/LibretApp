@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/core/experience/app_experience.dart';
+import 'package:libretapp/core/services/logger_service.dart';
 import 'package:libretapp/core/router/app_routes.dart';
 import 'package:libretapp/core/widgets/app_brand.dart';
 import 'package:libretapp/theme/app_theme.dart';
@@ -21,7 +22,10 @@ class OnboardingPage extends StatefulWidget {
 
   final Future<void> Function() onStartEmpty;
   final Future<void> Function(AppExperience experience) onInstallDemo;
-  final Future<void> Function()? onAccessPhone;
+  /// Recibe el [BuildContext] de la página: el contexto que expone el router
+  /// en `pageBuilder` queda por encima del [Navigator] y no puede presentar
+  /// hojas modales.
+  final Future<void> Function(BuildContext context)? onAccessPhone;
   final Future<void> Function(int page)? onProgress;
 
   /// The three welcome screens use indexes 0, 1, and 2.
@@ -108,7 +112,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     try {
       await action();
       if (mounted && navigate) context.go(AppRoutes.inicio);
-    } catch (_) {
+    } catch (error, stack) {
+      LoggerService.e(
+        'No se pudo abrir el espacio desde la bienvenida: $error',
+        tag: 'Onboarding',
+        stackTrace: stack,
+      );
       if (mounted) {
         setState(
           () => _error = demo
@@ -124,7 +133,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _openPhoneAccess() async {
     final action = widget.onAccessPhone;
     if (_working || action == null) return;
-    await _choose(action, navigate: false);
+    await _choose(() => action(context), navigate: false);
   }
 
   @override

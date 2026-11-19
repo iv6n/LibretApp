@@ -11,6 +11,66 @@ import 'package:libretapp/theme/app_theme.dart';
 import 'advisor/rules/rule_test_fixtures.dart';
 
 void main() {
+  test('ear tags discard whitespace while passport IDs keep it', () {
+    final cattle = buildAnimal().copyWith(
+      species: Species.cattle,
+      earTagNumber: '00 26 57492598',
+    );
+    final horse = buildAnimal().copyWith(
+      species: Species.equine,
+      earTagNumber: 'PAS 123',
+    );
+    expect(
+      AnimalRegistrationNormalizer.normalizeEntity(cattle).earTagNumber,
+      '002657492598',
+    );
+    expect(
+      AnimalRegistrationNormalizer.normalizeEntity(horse).earTagNumber,
+      'PAS 123',
+    );
+    expect(
+      AnimalRegistrationNormalizer.isDuplicateIdentification(
+        candidate: '002657492598',
+        animals: [cattle],
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('ear tag, stage and menu share the card identity row', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('es'),
+        home: Scaffold(
+          body: AnimalCard(
+            animal: buildAnimal().copyWith(
+              earTagNumber: '00 26 57492598',
+              customName: 'Prieta',
+            ),
+            onMenuAction: (_) {},
+          ),
+        ),
+      ),
+    );
+    final tag = find.text('002657492598');
+    expect(tag, findsOneWidget);
+    expect(find.text('00 26 57492598'), findsNothing);
+    expect(
+      (tester.getCenter(tag).dy - tester.getCenter(find.text('VACA')).dy).abs(),
+      lessThan(18),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   void expectChipVisibleOrSemantic(
     WidgetTester tester,
     String label,

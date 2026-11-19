@@ -925,6 +925,7 @@ void _registerInicioPerfilReportes() {
     )
     ..registerLazySingleton<InicioDashboardService>(
       () => InicioDashboardService(
+        reportService: locator<ReportSummaryService>(),
         animalRepository: locator<AnimalRepository>(),
         lotesRepository: locator<LotesRepository>(),
         agendaRepository: locator<AgendaRepository>(),

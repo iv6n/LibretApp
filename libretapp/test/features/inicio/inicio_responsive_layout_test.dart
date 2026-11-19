@@ -1,3 +1,4 @@
+import 'package:libretapp/features/directorio/animales/domain/enums/species.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -9,7 +10,6 @@ import 'package:libretapp/core/utils/color_contrast.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:libretapp/features/agenda/data/agenda_model.dart';
-import 'package:libretapp/features/directorio/animales/widgets/animal_photo.dart';
 import 'package:libretapp/features/biblioteca/data/book_content.dart';
 import 'package:libretapp/features/biblioteca/data/library_manifest.dart';
 import 'package:libretapp/features/biblioteca/data/library_repository.dart';
@@ -172,11 +172,44 @@ void main() {
       });
     }
 
+    testWidgets(
+      'alterna especies y pendientes y permite ocultar el aviso urgente',
+      (tester) async {
+        final now = DateTime.now();
+        await _pumpInicio(
+          tester,
+          width: 390,
+          dueEntries: [
+            _agendaEntry(id: 'later', title: 'Pesaje normal', date: now),
+            _agendaEntry(
+              id: 'urgent',
+              title: 'Visita urgente',
+              date: now,
+            ).copyWith(prioridad: AgendaPrioridad.urgente),
+          ],
+        );
+        expect(find.text('Bovino'), findsOneWidget);
+        expect(find.text('Canino'), findsOneWidget);
+        await tester.tap(find.byTooltip('Ocultar aviso'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Asuntos · 2'));
+        await tester.pumpAndSettle();
+        expect(find.text('Bovino'), findsNothing);
+        expect(
+          tester.getTopLeft(find.text('Visita urgente')).dy,
+          lessThan(tester.getTopLeft(find.text('Pesaje normal')).dy),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets('shows actionable care and hides duplicate empty tasks', (
       tester,
     ) async {
       await _pumpInicio(tester, width: 390, noActionable: true);
 
+      await tester.tap(find.textContaining('Asuntos ·'));
+      await tester.pumpAndSettle();
       expect(find.text('Pendientes'), findsOneWidget);
       expect(find.text('Todo al día'), findsOneWidget);
       expect(find.text('Sin pendientes críticos'), findsNothing);
@@ -199,12 +232,11 @@ void main() {
         duplicateOverdueAlert: true,
       );
 
-      expect(find.text('Actividad vencida'), findsNothing);
-      expect(find.text('Actividad de hoy'), findsOneWidget);
-      expect(find.text('Eventos vencidos'), findsNothing);
-      await tester.tap(find.text('Ver 2'));
+      await tester.tap(find.textContaining('Asuntos ·'));
       await tester.pumpAndSettle();
-      expect(find.text('Vencidos · 1'), findsOneWidget);
+      await tester.tap(find.byTooltip('Ocultar aviso'));
+      await tester.pumpAndSettle();
+      expect(find.text('Actividad de hoy'), findsOneWidget);
       expect(find.text('Actividad vencida'), findsOneWidget);
       final overdueTile = tester.widget<InkWell>(
         find
@@ -230,30 +262,31 @@ void main() {
       );
     });
 
-    testWidgets('keeps today visible with many overdue activities', (
-      tester,
-    ) async {
-      final today = DateUtils.dateOnly(DateTime.now());
-      await _pumpInicio(
-        tester,
-        width: 360,
-        height: 800,
-        dueEntries: [
-          for (var i = 0; i < 130; i++)
-            _agendaEntry(
-              id: 'overdue-$i',
-              title: 'Vencida $i',
-              date: today.subtract(const Duration(days: 1)),
-            ),
-          _agendaEntry(id: 'today', title: 'Actividad de hoy', date: today),
-        ],
-      );
+    testWidgets(
+      'offers the full list when overdue activities fill the preview',
+      (tester) async {
+        final today = DateUtils.dateOnly(DateTime.now());
+        await _pumpInicio(
+          tester,
+          width: 360,
+          height: 800,
+          dueEntries: [
+            for (var i = 0; i < 130; i++)
+              _agendaEntry(
+                id: 'overdue-$i',
+                title: 'Vencida $i',
+                date: today.subtract(const Duration(days: 1)),
+              ),
+            _agendaEntry(id: 'today', title: 'Actividad de hoy', date: today),
+          ],
+        );
 
-      expect(find.text('Ver 132'), findsOneWidget);
-      expect(find.text('Actividad de hoy'), findsOneWidget);
-      expect(tester.getRect(find.text('Actividad de hoy')).top, lessThan(800));
-      expect(tester.takeException(), isNull);
-    });
+        await tester.tap(find.textContaining('Asuntos ·'));
+        await tester.pumpAndSettle();
+        expect(find.text('Ver los 131 pendientes'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('customization scrolls without overflow at 320dp and 200%', (
       tester,
@@ -274,35 +307,36 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('keeps actions ahead of animal details on a phone', (
-      tester,
-    ) async {
-      final today = DateUtils.dateOnly(DateTime.now());
-      await _pumpInicio(
-        tester,
-        width: 390,
-        height: 800,
-        dueEntries: [
-          _agendaEntry(id: 'due-1', title: 'Revisión de Prieta', date: today),
-          _agendaEntry(id: 'due-2', title: 'Revisión de Wera', date: today),
-        ],
-      );
+    testWidgets(
+      'keeps weather above the tabs and actions below the selected content',
+      (tester) async {
+        final today = DateUtils.dateOnly(DateTime.now());
+        await _pumpInicio(
+          tester,
+          width: 390,
+          height: 800,
+          dueEntries: [
+            _agendaEntry(id: 'due-1', title: 'Revisión de Prieta', date: today),
+            _agendaEntry(id: 'due-2', title: 'Revisión de Wera', date: today),
+          ],
+        );
 
-      expect(find.text('Revisión de Prieta'), findsOneWidget);
-      expect(find.text('Revisión de Wera'), findsOneWidget);
-      expect(
-        tester.getRect(find.byKey(const ValueKey('quick-action-grid'))).top,
-        lessThan(tester.getRect(find.text('Tus animales')).top),
-      );
-      expect(
-        tester.getRect(find.byType(WeatherHomeCard)).top,
-        lessThan(
-          tester.getRect(find.byKey(const ValueKey('inicio-resumen'))).top,
-        ),
-      );
-      expect(tester.takeException(), isNull);
-      await _captureInicio(tester, 'inicio-pendientes-compacto');
-    });
+        await tester.tap(find.textContaining('Asuntos ·'));
+        await tester.pumpAndSettle();
+        expect(find.text('Revisión de Prieta'), findsOneWidget);
+        expect(find.text('Revisión de Wera'), findsOneWidget);
+        expect(
+          tester.getRect(find.byKey(const ValueKey('quick-action-grid'))).top,
+          greaterThan(tester.getRect(find.text('Revisión de Prieta')).bottom),
+        );
+        expect(
+          tester.getRect(find.byType(WeatherHomeCard)).top,
+          lessThan(tester.getRect(find.byType(SegmentedButton<bool>)).top),
+        );
+        expect(tester.takeException(), isNull);
+        await _captureInicio(tester, 'inicio-pendientes-compacto');
+      },
+    );
 
     testWidgets('three pending items remain legible at 320dp and 200 percent', (
       tester,
@@ -320,6 +354,10 @@ void main() {
         ],
       );
 
+      await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('Asuntos ·'));
+      await tester.pumpAndSettle();
       expect(find.text('Revisión de Prieta'), findsOneWidget);
       expect(find.text('Revisión de Wera'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -345,17 +383,14 @@ void main() {
         find.byKey(const ValueKey('complete-getting-started')),
         findsOneWidget,
       );
+      await tester.tap(find.textContaining('Asuntos ·'));
+      await tester.pumpAndSettle();
       expect(find.text('Preparar visita'), findsOneWidget);
-      expect(
-        find.byKey(const ValueKey('inicio-pendientes-hoy')),
-        findsOneWidget,
-      );
+      expect(find.text('Pendientes'), findsOneWidget);
       expect(find.byKey(const ValueKey('inicio-animales')), findsNothing);
     });
 
-    testWidgets('shows a recent animal once with a photo fallback', (
-      tester,
-    ) async {
+    testWidgets('excludes profile edits from the record feed', (tester) async {
       await _pumpInicio(
         tester,
         width: 390,
@@ -371,20 +406,15 @@ void main() {
         ],
       );
 
-      await tester.tap(find.text('Actualizados recientemente'));
-      await tester.pumpAndSettle();
-      final tile = find.byKey(const ValueKey('inicio-animal-mika'));
-      expect(tile, findsOneWidget);
-      expect(find.text('Mika'), findsOneWidget);
-      expect(find.byType(AnimalPhotoImage), findsOneWidget);
-      expect(tester.widget<ListTile>(tile).onTap, isNotNull);
-      expect(find.byKey(_widgetKey('recentActivity')), findsNothing);
-      await _captureInicio(tester, 'inicio-con-animales');
+      expect(find.text('Actividad reciente'), findsOneWidget);
+      expect(
+        find.text('Aquí aparecerán tus últimos registros.'),
+        findsOneWidget,
+      );
+      expect(find.text('Mika'), findsNothing);
     });
 
-    testWidgets('respects the saved order of the two main cards', (
-      tester,
-    ) async {
+    testWidgets('keeps Animales on the left of Asuntos', (tester) async {
       await _pumpInicio(
         tester,
         width: 390,
@@ -407,8 +437,8 @@ void main() {
       );
 
       expect(
-        _widgetRect(tester, 'animalSummary').top,
-        lessThan(_widgetRect(tester, 'pendingTasks').top),
+        tester.getCenter(find.textContaining('Animales ·')).dx,
+        lessThan(tester.getCenter(find.textContaining('Asuntos ·')).dx),
       );
     });
 
@@ -416,12 +446,15 @@ void main() {
       'dark priority text remains readable at 320dp and 200 percent text',
       (tester) async {
         await _pumpInicio(tester, width: 320, textScale: 2, dark: true);
-        final label = find.text('Pendientes');
+        final label = find.text('Revisar animales');
         final foreground =
             tester.widget<Text>(label).style?.color ??
-            AppTheme.darkTheme.colorScheme.onSurface;
+            AppTheme.darkTheme.colorScheme.onErrorContainer;
         final card = tester.widget<Card>(
-          find.byKey(const ValueKey('inicio-pendientes-hoy')),
+          find.descendant(
+            of: find.byType(Dismissible),
+            matching: find.byType(Card),
+          ),
         );
         final background = card.color ?? AppTheme.darkTheme.colorScheme.surface;
         expect(textContrast(foreground, background), greaterThanOrEqualTo(4.5));
@@ -440,40 +473,19 @@ void main() {
     ) async {
       await _pumpInicio(tester, width: 599, includeWidgetData: true);
 
-      final pending = _widgetRect(tester, 'pendingTasks');
-      final animals = _widgetRect(tester, 'animalSummary');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
-      final events = _widgetRect(tester, 'upcomingEvents');
-
-      expect(pending.left, closeTo(16, 0.5));
-      expect(animals.left, closeTo(16, 0.5));
-      expect(animals.top, greaterThanOrEqualTo(pending.bottom));
       expect(calvings.left, closeTo(16, 0.5));
-      expect(events.left, closeTo(16, 0.5));
-      expect(events.top, greaterThanOrEqualTo(calvings.bottom));
-      expect(find.byKey(_widgetKey('healthAlerts')), findsNothing);
-      expect(find.text('Ver todas'), findsNothing);
+      expect(calvings.width, closeTo(567, 0.5));
+      expect(find.textContaining('Animales ·'), findsOneWidget);
     });
 
     testWidgets('uses two columns from the tablet breakpoint', (tester) async {
       await _pumpInicio(tester, width: 600, includeWidgetData: true);
 
-      final pending = _widgetRect(tester, 'pendingTasks');
-      final animals = _widgetRect(tester, 'animalSummary');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
-      final events = _widgetRect(tester, 'upcomingEvents');
-
-      expect(pending.left, closeTo(20, 0.5));
-      expect(pending.width, closeTo(328.8, 0.5));
-      expect(animals.left, closeTo(360.8, 0.5));
-      expect(animals.width, closeTo(219.2, 0.5));
       expect(calvings.left, closeTo(20, 0.5));
-      expect(events.left, closeTo(306, 0.5));
       expect(calvings.width, closeTo(274, 0.5));
-      expect(events.width, closeTo(274, 0.5));
-      expect(events.top, closeTo(calvings.top, 0.5));
-      expect(find.byKey(_widgetKey('healthAlerts')), findsNothing);
-      expect(find.text('Ver todas'), findsWidgets);
+      expect(find.textContaining('Animales ·'), findsOneWidget);
     });
 
     testWidgets('keeps full-width cards and centers wide content', (
@@ -481,17 +493,10 @@ void main() {
     ) async {
       await _pumpInicio(tester, width: 1400, includeWidgetData: true);
 
-      final pending = _widgetRect(tester, 'pendingTasks');
-      final animals = _widgetRect(tester, 'animalSummary');
       final calvings = _widgetRect(tester, 'upcomingCalvings');
-      final events = _widgetRect(tester, 'upcomingEvents');
-
-      expect(pending.left, closeTo(120, 0.5));
-      expect(pending.width, closeTo(688.8, 0.5));
-      expect(animals.left, closeTo(820.8, 0.5));
-      expect(animals.width, closeTo(459.2, 0.5));
+      expect(calvings.left, closeTo(120, 0.5));
       expect(calvings.width, closeTo(574, 0.5));
-      expect(events.left, closeTo(706, 0.5));
+      expect(find.textContaining('Animales ·'), findsOneWidget);
     });
 
     testWidgets('does not overflow with accessible text scaling', (
@@ -506,8 +511,7 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.byKey(_widgetKey('healthAlerts')), findsNothing);
-      expect(find.byKey(_widgetKey('pendingTasks')), findsOneWidget);
-      expect(find.byKey(_widgetKey('animalSummary')), findsOneWidget);
+      expect(find.byType(SegmentedButton<bool>), findsOneWidget);
     });
 
     testWidgets('keeps eight quick actions readable', (tester) async {
@@ -842,6 +846,9 @@ class _FakeInicioDashboardService implements InicioDashboardService {
       profileName: 'Usuario de prueba',
       farmName: 'Rancho de prueba',
       totalAnimals: firstRun ? 0 : 12,
+      speciesCounts: firstRun
+          ? const {}
+          : const {Species.cattle: 11, Species.canine: 1},
       petCount: firstRun ? 0 : 1,
       livestockCount: firstRun ? 0 : 11,
       totalAnimalCapacity: firstRun ? 0 : 30,

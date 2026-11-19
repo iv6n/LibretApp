@@ -14,7 +14,7 @@ class AnimalDirectoryHeader extends StatelessWidget {
     this.age,
     required this.stage,
     required this.stageColor,
-    required this.chips,
+    this.chips,
     this.stageIcon,
     this.titleFontSize,
     this.nameFontSize,
@@ -28,7 +28,7 @@ class AnimalDirectoryHeader extends StatelessWidget {
   final String? age;
   final String stage;
   final Color stageColor;
-  final Widget chips;
+  final Widget? chips;
   final IconData? stageIcon;
   final double? titleFontSize;
   final double? nameFontSize;
@@ -45,13 +45,13 @@ class AnimalDirectoryHeader extends StatelessWidget {
     final titleStyle = theme.textTheme.titleLarge?.copyWith(
       fontSize: titleFontSize ?? metrics.identityTitleFontSize,
       fontWeight: FontWeight.w800,
-      height: 1.1,
+      height: 1.05,
       color: primary,
     );
     final nameStyle = theme.textTheme.titleMedium?.copyWith(
       fontSize: nameFontSize ?? metrics.identityNameFontSize,
       fontWeight: FontWeight.w700,
-      height: 1.15,
+      height: 1.1,
       color: primary,
     );
     final ageStyle = theme.textTheme.bodyMedium?.copyWith(
@@ -60,173 +60,171 @@ class AnimalDirectoryHeader extends StatelessWidget {
       color: secondary,
     );
     final stageLabelStyle = theme.textTheme.labelSmall?.copyWith(
-      fontSize: metrics.stageFontSize,
+      fontSize: math.max(10, metrics.stageFontSize - 2),
       fontWeight: FontWeight.w800,
       color: primary,
     );
     final stageText = stage.toUpperCase();
-    final stagePillWidth = math.min(
-      _textWidth(context, stageText, stageLabelStyle) +
-          24 +
-          (stageIcon == null ? 0 : 22),
-      metrics.stagePillMaxWidth,
-    );
-    final actionsWidth =
-        stagePillWidth +
-        (selected != null || menu != null
-            ? metrics.actionsGap + AppDirectoryMetrics.minTapTarget
-            : 0);
-    final stagePill = Container(
-      constraints: BoxConstraints(maxWidth: metrics.stagePillMaxWidth),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: stageColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (stageIcon != null) ...[
-            Icon(stageIcon, size: 18, color: Colors.white),
-            const SizedBox(width: 6),
-          ],
-          Flexible(
-            child: Text(
-              stageText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: stageLabelStyle?.copyWith(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-    final actions = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        stagePill,
-        if (selected != null)
-          SizedBox(
-            width: AppDirectoryMetrics.minTapTarget,
-            height: AppDirectoryMetrics.minTapTarget,
-            child: Center(
-              child: Icon(
-                selected! ? Icons.check_circle : Icons.radio_button_unchecked,
-                color: selected! ? stageColor : secondary,
-              ),
-            ),
-          )
-        else
-          ?menu,
-      ],
-    );
     return Container(
       width: double.infinity,
       color: AnimalPalette.cardHeader(context),
-      padding: EdgeInsets.symmetric(
-        horizontal: metrics.headerPaddingH,
-        vertical: metrics.headerPaddingV,
+      padding: EdgeInsets.fromLTRB(
+        metrics.headerPaddingH,
+        math.max(2, metrics.headerPaddingV - 3),
+        6,
+        math.max(2, metrics.headerPaddingV - 3),
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // The actions only share the primary line when that line still has
-          // room for a usable title afterwards; otherwise they drop below.
-          final ageWidth = age == null
-              ? 0.0
-              : _textWidth(context, age!, ageStyle) + 17;
-          final titleBudget = math.min(
-            _textWidth(context, title, titleStyle),
-            115.0,
-          );
-          final identityWidth =
-              constraints.maxWidth -
-              metrics.profileAvatarSize -
-              (metrics.headerGap * 1.3) -
-              1.5;
-          final stacked =
-              largeText ||
-              identityWidth < actionsWidth + titleBudget + metrics.actionsGap;
-          final ageBelowForPet =
-              name == null &&
-              age != null &&
-              !stacked &&
-              identityWidth - actionsWidth - metrics.actionsGap <
-                  _textWidth(context, title, titleStyle) + ageWidth;
-          final Widget identity = name == null && !ageBelowForPet
-              ? _NameAndAge(
-                  name: title,
-                  age: age,
-                  nameStyle: titleStyle,
-                  ageStyle: ageStyle,
-                  largeText: largeText,
-                )
-              : Text(
-                  title,
-                  style: titleStyle,
-                  maxLines: largeText ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          avatar,
+          SizedBox(width: metrics.headerGap * 0.65),
+          Container(
+            width: 1.5,
+            height: metrics.profileAvatarSize,
+            color: AnimalPalette.cardDivider(context),
+          ),
+          SizedBox(width: metrics.headerGap * 0.65),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final stageMaxWidth = math.min(
+                  metrics.stagePillMaxWidth,
+                  math.max(48.0, constraints.maxWidth - 104),
                 );
-          final Widget? nameLine = name != null
-              ? _NameAndAge(
-                  name: name!,
-                  age: age,
-                  nameStyle: nameStyle,
-                  ageStyle: ageStyle,
-                  largeText: largeText,
-                )
-              : ageBelowForPet
-              ? Text(age!, style: ageStyle)
-              : null;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  avatar,
-                  SizedBox(width: metrics.headerGap * 0.65),
-                  Container(
-                    width: 1.5,
-                    height: metrics.profileAvatarSize,
-                    color: AnimalPalette.cardDivider(context),
+                final stagePill = Container(
+                  constraints: BoxConstraints(maxWidth: stageMaxWidth),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
                   ),
-                  SizedBox(width: metrics.headerGap * 0.65),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // The stage pill and the menu share the first identity
-                        // line so they stay level with the primary text instead
-                        // of floating against the middle of the whole block.
-                        Row(
-                          children: [
-                            Expanded(child: identity),
-                            if (!stacked) ...[
-                              SizedBox(width: metrics.actionsGap),
-                              actions,
-                            ],
-                          ],
+                  decoration: BoxDecoration(
+                    color: stageColor,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (stageIcon != null) ...[
+                        Icon(stageIcon, size: 14, color: Colors.white),
+                        const SizedBox(width: 4),
+                      ],
+                      Flexible(
+                        child: Text(
+                          stageText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: stageLabelStyle?.copyWith(color: Colors.white),
                         ),
-                        if (nameLine != null) ...[
-                          SizedBox(height: metrics.nameGap),
-                          nameLine,
-                        ],
-                        if (stacked)
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: actions,
+                      ),
+                    ],
+                  ),
+                );
+                final actions = Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    stagePill,
+                    if (selected != null)
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: Center(
+                          child: Icon(
+                            selected!
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            color: selected! ? stageColor : secondary,
                           ),
-                        SizedBox(height: metrics.headerSectionGap),
-                        chips,
+                        ),
+                      )
+                    else
+                      ?menu,
+                  ],
+                );
+                final actionWidth =
+                    math.min(
+                      _textWidth(context, stageText, stageLabelStyle) +
+                          16 +
+                          (stageIcon == null ? 0 : 18),
+                      stageMaxWidth,
+                    ) +
+                    (selected != null
+                        ? 40
+                        : menu != null
+                        ? 32
+                        : 0);
+                const actionGap = 2.0;
+                final titleWidth = math.max(
+                  0.0,
+                  constraints.maxWidth - actionWidth - actionGap,
+                );
+                final measuredTitle = _textWidth(context, title, titleStyle);
+                final fittedTitleStyle =
+                    name != null &&
+                        measuredTitle > titleWidth &&
+                        titleWidth >= 90
+                    ? titleStyle?.copyWith(
+                        fontSize:
+                            ((titleStyle.fontSize ?? 18) *
+                                    titleWidth /
+                                    measuredTitle)
+                                .clamp(14.0, titleStyle.fontSize ?? 18),
+                      )
+                    : titleStyle;
+                final petAgeFits =
+                    age == null ||
+                    measuredTitle + _textWidth(context, age!, ageStyle) + 17 <=
+                        titleWidth;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: name == null && petAgeFits
+                              ? _NameAndAge(
+                                  name: title,
+                                  age: age,
+                                  nameStyle: titleStyle,
+                                  ageStyle: ageStyle,
+                                  largeText: largeText,
+                                )
+                              : Text(
+                                  title,
+                                  style: fittedTitleStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                        ),
+                        const SizedBox(width: actionGap),
+                        actions,
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ],
-          );
-        },
+                    if (name == null && !petAgeFits)
+                      Text(age!, style: ageStyle),
+                    if (name != null) ...[
+                      _NameAndAge(
+                        name: name!,
+                        age: age,
+                        nameStyle: nameStyle,
+                        ageStyle: ageStyle,
+                        largeText: largeText,
+                      ),
+                    ],
+                    if (chips != null) ...[
+                      SizedBox(
+                        height: math.max(0, metrics.headerSectionGap - 1),
+                      ),
+                      chips!,
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -27,7 +27,7 @@ try {
     $allowed = @(
         'LIBRETAPP_PUBLIC_RELEASE', 'LIBRETAPP_ENABLE_PHONE_AUTH',
         'LIBRETAPP_ENABLE_CLOUD_DATA', 'SUPABASE_URL', 'SUPABASE_ANON_KEY',
-        'LIBRET_SUPPORT_EMAIL', 'LIBRET_PRIVACY_URL'
+        'LIBRET_SUPPORT_EMAIL', 'LIBRET_PRIVACY_URL', 'LIBRET_CAPTCHA_URL'
     )
     if (@($config.Keys | Where-Object { $_ -cnotin $allowed }).Count -gt 0) {
         throw 'El archivo contiene campos no permitidos. No agregues credenciales de Twilio, service_role ni tokens de administración.'

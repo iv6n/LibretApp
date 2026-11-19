@@ -94,66 +94,107 @@ class _WeatherHomeCardState extends State<WeatherHomeCard> {
     final location = _service.location;
     if (widget.compact) {
       final weather = _snapshot?.weather;
-      return Card(
+      final sunny = weather != null && weather.weatherCode <= 1;
+      final heading = weather == null
+          ? 'Clima del rancho'
+          : '${weather.temperature}° · Máx. ${weather.maxTemperature}°';
+      final detail =
+          weather?.condition ??
+          (_demo
+              ? 'Modo demo'
+              : location == null
+              ? 'Elegir ubicación'
+              : _loading
+              ? 'Consultando…'
+              : 'Sin pronóstico');
+      return Material(
         key: const ValueKey('weather-home-card'),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              Icon(Icons.wb_sunny_outlined, color: colors.primary, size: 26),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      location?.label ?? 'Clima del rancho',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    Text(
-                      weather == null
-                          ? _demo
-                                ? 'Configura el clima fuera de la demo'
-                                : location == null
-                                ? 'Configurar ubicación para ver el pronóstico'
-                                : _loading
-                                ? 'Consultando el clima…'
-                                : _error ?? 'Pronóstico no disponible'
-                          : '${weather.temperature}° · ${weather.condition} · Máx. ${weather.maxTemperature}°',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    if (_snapshot?.isStale == true)
-                      Text('Dato anterior', style: theme.textTheme.labelSmall),
-                  ],
-                ),
-              ),
-              if (location != null && !_demo)
-                IconButton(
-                  onPressed: _loading ? null : _refresh,
-                  tooltip: 'Actualizar clima',
-                  icon: const Icon(Icons.refresh),
-                ),
-              if (!_demo)
-                IconButton(
-                  onPressed: _configure,
-                  tooltip: 'Ubicación y avisos del clima',
-                  icon: Icon(
-                    location == null
-                        ? Icons.add_location_alt_outlined
-                        : Icons.settings_outlined,
+        color: colors.surfaceContainerHigh,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _demo
+              ? null
+              : location == null
+              ? _configure
+              : _loading
+              ? null
+              : _refresh,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: sunny
+                      ? Colors.amber.shade100
+                      : colors.tertiaryContainer,
+                  child: Icon(
+                    weather == null
+                        ? Icons.cloud_outlined
+                        : weather.weatherCode <= 1
+                        ? Icons.wb_sunny_outlined
+                        : weather.weatherCode <= 48
+                        ? Icons.cloud_outlined
+                        : Icons.grain,
+                    size: 16,
+                    color: sunny
+                        ? Colors.orange.shade900
+                        : colors.onTertiaryContainer,
                   ),
                 ),
-            ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          heading,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Tooltip(
+                          message: detail,
+                          child: Text(
+                            detail,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontSize: 11,
+                              height: 1.15,
+                            ),
+                          ),
+                        ),
+                        if (_snapshot?.isStale == true)
+                          Text(
+                            'Dato anterior',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (!_demo)
+                  IconButton(
+                    tooltip: 'Ubicación y avisos del clima',
+                    onPressed: _configure,
+                    icon: const Icon(Icons.tune, size: 16),
+                    constraints: const BoxConstraints(
+                      minHeight: 48,
+                      minWidth: 36,
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
+            ),
           ),
         ),
       );

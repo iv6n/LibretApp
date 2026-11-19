@@ -5,6 +5,7 @@ library;
 
 import 'package:libretapp/features/directorio/animales/view/animal_weaning_form_page.dart';
 import 'package:libretapp/features/directorio/animales/view/herd_import_page.dart';
+import 'package:libretapp/core/services/herd_import_models.dart';
 import 'package:libretapp/features/registro/lotes/batch_record_page.dart';
 
 import 'package:flutter/material.dart';
@@ -114,8 +115,8 @@ GoRouter createAppRouter({
           onAccessPhone:
               locator.isRegistered<WorkspaceManager>() &&
                   locator<WorkspaceManager>().auth.available
-              ? () => showPhoneAuth(
-                  context,
+              ? (pageContext) => showPhoneAuth(
+                  pageContext,
                   locator<WorkspaceManager>(),
                   intent: PhoneAccessIntent.createAccount,
                 )
@@ -896,7 +897,13 @@ GoRouter createAppRouter({
           name: AppRoutes.nameHerdImport,
           pageBuilder: (context, state) => _buildOverlayDetailPage(
             state: state,
-            child: const HerdImportPage(),
+            child: HerdImportPage(
+              showInitialPreview: true,
+              initialDocument: switch (state.extra) {
+                final HerdImportDocument document => document,
+                _ => null,
+              },
+            ),
           ),
         ),
         GoRoute(

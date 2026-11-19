@@ -1,5 +1,7 @@
 # Configurar cuentas por teléfono: Supabase y SMS
 
+> **Migración (14 de noviembre de 2026).** El proyecto original `ylbmwsgaavonqmwhdpci` dejó de resolver en DNS, así que la app apunta ahora al proyecto `rtvjumptsthujxsbksrh` (`https://rtvjumptsthujxsbksrh.supabase.co`) con clave Publishable nueva y **Phone + Twilio** habilitados. Las evidencias de las secciones siguientes corresponden al proyecto anterior.
+
 Estado al 31 de octubre de 2026: el proyecto **LibretApp** (`ylbmwsgaavonqmwhdpci`) está activo en Supabase. Su URL y clave pública Publishable están configuradas en `onboarding.dart-define.local.json`, ignorado por Git. **Phone está activado con Twilio Verify**. El diagnóstico real anterior confirmó que responde, permite altas y exige confirmar el teléfono. La prueba física con `0.1.3+6` en un OPPO CPH2123 confirmó el acceso de la cuenta terminada en **4477**: la app muestra la cuenta verificada y una consulta de lectura a `auth.users` confirmó una cuenta, teléfono confirmado e inicio de sesión registrado. Al reiniciar el proceso, la app volvió a Inicio sin repetir el onboarding. Siguen pendientes el reingreso después de cerrar sesión y la prueba con un destinatario nuevo tras la actualización de Twilio.
 
 Proyecto: [panel de LibretApp](https://supabase.com/dashboard/project/ylbmwsgaavonqmwhdpci). Organización gratuita LibretApp; región asignada `us-east-1`. La contraseña de la base de datos no se incluye en la configuración de Flutter. Soporte y política de privacidad siguen pendientes; se dejan vacíos para no mostrar enlaces ficticios en la app.
@@ -105,7 +107,7 @@ Después de que la conexión responda correctamente:
 flutter build apk --debug --flavor standard --dart-define-from-file=onboarding.dart-define.local.json
 ```
 
-El APK resultante es `build/app/outputs/flutter-apk/app-standard-debug.apk`. Antes de actualizar una instalación existente, comparar el paquete, el código de versión y el certificado de firma. Una APK debug no actualiza una app firmada con otra clave. Si el teléfono ya tiene una versión release, compilar `--release --flavor standard` con el mismo archivo de parámetros y la firma privada existente; no sustituir sus claves ni desinstalar para forzar la prueba. Instalar mediante `adb -s <dispositivo> install -r <apk>` únicamente cuando la firma coincida y el código de versión sea igual o mayor. La variante `offline` no permite Internet ni autenticación por teléfono. Nube y sincronización siguen deshabilitadas. Para publicar, completar también privacidad y soporte.
+El APK resultante es `build/app/outputs/flutter-apk/app-standard-debug.apk`. `android/app/build.gradle.kts` completa los `--dart-define` de las compilaciones **debug** y **profile** con `onboarding.dart-define.local.json` cuando existe, así que `flutter run`, `flutter build apk --debug` y el arranque con F5 ya incluyen Supabase y el acceso por teléfono sin repetir el archivo; los valores pasados explícitamente con `--dart-define` siguen teniendo prioridad y las compilaciones **release** no lo usan. Antes de actualizar una instalación existente, comparar el paquete, el código de versión y el certificado de firma. Una APK debug no actualiza una app firmada con otra clave. Si el teléfono ya tiene una versión release, compilar `--release --flavor standard` con el mismo archivo de parámetros y la firma privada existente; no sustituir sus claves ni desinstalar para forzar la prueba. Instalar mediante `adb -s <dispositivo> install -r <apk>` únicamente cuando la firma coincida y el código de versión sea igual o mayor. La variante `offline` no permite Internet ni autenticación por teléfono. Nube y sincronización siguen deshabilitadas. Para publicar, completar también privacidad y soporte.
 
 ## 6. Prueba que confirma el funcionamiento
 
@@ -144,3 +146,23 @@ El diagnóstico pasó 13 comprobaciones con archivos ficticios y respuestas simu
 Se compiló correctamente `artifacts/onboarding/LibretApp-supabase-debug.apk` usando el archivo local del proyecto. Se verificaron paquete `app.libret`, versión `0.1.2+5` y permiso `android.permission.INTERNET`. SHA-256 del APK: `4C01F9F61E50777EF99BDAD4760CFF493E4DF9748DEC03E270EAE3702F4A40C3`. Después de guardar Twilio Verify, el diagnóstico real de Auth terminó con código 0 y confirmó Phone, altas y verificación requerida. El mismo APK ya contiene la configuración pública necesaria; este cambio remoto no requiere recompilarlo. Se comprobó recepción real de un SMS al destinatario autorizado terminado en 4477. Sigue pendiente instalar o abrir este APK en Android, solicitar allí su propio código, verificarlo y comprobar el reingreso. No introducir el código de la prueba externa en una pantalla de la app que todavía no haya solicitado el suyo.
 
 Prueba física del 19 de octubre mediante ADB: el OPPO CPH2123 con Android 12 (API 31) tenía `0.1.3+6`, variante sin permiso de Internet, y solo mostraba invitado y demo. La APK debug anterior tenía menor versión y otro certificado, por lo que no se intentó instalarla. Se compiló el código actual como `standard release`, conservando `0.1.3+6`, los parámetros locales de Supabase y la firma privada existente. Tras comprobar que los certificados coinciden, `adb install -r` terminó en **Success**, sin desinstalar ni limpiar datos. Se comprobó en la interfaz del móvil que aparece **Crear cuenta con mi teléfono** y se abre **Tu cuenta por teléfono**, con México y envío por SMS. APK: `artifacts/onboarding/LibretApp-0.1.3+6-supabase-release.apk`; SHA-256: `99BB0F9ED4B4C86E86E3A2D21C9C6EC68C396C885081E249267BB2E8B98F2490`. El formulario observado contenía el destinatario terminado en 3453; no considerarlo habilitado por esta actualización, pues sigue sujeto a la restricción de Twilio. Queda pendiente completar el SMS y la verificación desde la app con un destinatario autorizado, y después el reingreso. Esta APK es para la prueba local; la compilación no acredita preparación para publicación.
+
+## Diagnóstico del 14 de noviembre de 2026 (proyecto nuevo)
+
+Tras migrar al proyecto `rtvjumptsthujxsbksrh`, el botón **Acceder con teléfono** de la bienvenida ya abre el formulario (`0.1.4+43`). Sin embargo el envío de SMS falla del lado del servidor. Comprobación de solo lectura contra el endpoint de Auth (sin enviar el mensaje al destinatario real):
+
+```powershell
+$k = '<publishable key>'
+Invoke-WebRequest -Uri "https://rtvjumptsthujxsbksrh.supabase.co/auth/v1/otp" -Method Post `
+  -Headers @{ apikey = $k; 'Content-Type' = 'application/json' } `
+  -Body '{"phone":"+525512345678"}'
+```
+
+Respuesta: `422 sms_send_failed` con el detalle de Twilio **21212 Invalid From Number (caller ID): VA…**. El campo de número remitente de Supabase guarda el **Service SID de Twilio Verify** (`VA…`) en lugar de un número de teléfono o de activar la verificación de Verify.
+
+Para corregirlo, en **Authentication → Providers → Phone → Twilio**:
+
+1. Activar **Use Twilio Verify** y pegar el Service SID `VA…` en su campo (recomendado, es el flujo de octubre), o
+2. Escribir un número de Twilio en formato E.164 (por ejemplo `+1XXXXXXXXXX`) en el campo de número remitente y, si existe, el **Message Service SID** en su propio campo.
+
+El CAPTCHA no bloquea el envío: el endpoint aceptó la solicitud con un token inválido, así que la verificación de CAPTCHA está desactivada en este proyecto. La hoja de CAPTCHA de la app sí carga desde `https://libret.app/captcha/`.

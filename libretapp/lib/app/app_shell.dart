@@ -121,66 +121,31 @@ class _AppShellState extends State<AppShell>
                 ),
               ],
             ),
-            if (navigationEnabled)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: IgnorePointer(
-                  child: Container(
-                    key: const ValueKey('shell_dock_scrim'),
-                    height:
-                        56 +
-                        barHeight +
-                        _barBottomGap +
-                        MediaQuery.paddingOf(context).bottom,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0, 0.32, 0.58, 1],
-                        colors: [
-                          Colors.transparent,
-                          Theme.of(
-                            context,
-                          ).scaffoldBackgroundColor.withValues(alpha: 0.72),
-                          Theme.of(context).scaffoldBackgroundColor,
-                          Theme.of(context).scaffoldBackgroundColor,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
         bottomNavigationBar: chromeVisible
-            ? ColoredBox(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: SafeArea(
-                  top: false,
-                  child: AppBottomNavBar(
-                    items: navItems,
-                    selectedIndex: selectedIndex,
-                    onItemSelected: (index) => widget.navigationShell.goBranch(
-                      index,
-                      initialLocation: index == selectedIndex,
-                    ),
-                    center: _buildCenterButton(
-                      context,
-                      isHomeSelected: isHomeSelected,
-                      accent: isHomeSelected ? homeFabColor : accent,
-                    ),
-                    barHeight: barHeight,
-                    centerGapWidth: centerWidth,
-                    barHorizontalPadding: _barHorizontalPadding,
-                    barBottomGap: _barBottomGap,
-                    backgroundColor:
-                        shellTheme?.navBackground ??
-                        Theme.of(context).colorScheme.surface,
-                    shadowColor:
-                        shellTheme?.navShadow ?? const Color(0x33000000),
+            ? SafeArea(
+                top: false,
+                child: AppBottomNavBar(
+                  items: navItems,
+                  selectedIndex: selectedIndex,
+                  onItemSelected: (index) => widget.navigationShell.goBranch(
+                    index,
+                    initialLocation: index == selectedIndex,
                   ),
+                  center: _buildCenterButton(
+                    context,
+                    isHomeSelected: isHomeSelected,
+                    accent: isHomeSelected ? homeFabColor : accent,
+                  ),
+                  barHeight: barHeight,
+                  centerGapWidth: centerWidth,
+                  barHorizontalPadding: _barHorizontalPadding,
+                  barBottomGap: _barBottomGap,
+                  backgroundColor:
+                      shellTheme?.navBackground ??
+                      Theme.of(context).colorScheme.surface,
+                  shadowColor: shellTheme?.navShadow ?? const Color(0x33000000),
                 ),
               )
             : null,

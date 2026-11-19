@@ -6,7 +6,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $project = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$apk = Join-Path $project 'build\app\outputs\flutter-apk\app-offline-debug.apk'
+$apk = Join-Path $project 'build\app\outputs\flutter-apk\app-connected-release.apk'
+$configPath = Join-Path $project 'onboarding.dart-define.local.json'
+if (-not (Test-Path -LiteralPath $configPath)) {
+    throw 'Falta la configuración local del acceso por teléfono.'
+}
+$config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+if ($config.LIBRETAPP_ENABLE_PHONE_AUTH -ne 'true' -or
+    [string]::IsNullOrWhiteSpace($config.SUPABASE_URL) -or
+    [string]::IsNullOrWhiteSpace($config.SUPABASE_ANON_KEY) -or
+    [string]::IsNullOrWhiteSpace($config.LIBRET_CAPTCHA_URL)) {
+    throw 'La configuración local del acceso por teléfono está incompleta.'
+}
 
 if (-not (Test-Path -LiteralPath $Flutter)) {
     throw "Flutter no existe en $Flutter"
@@ -23,8 +34,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Las pruebas de Inicio fallaron. No se instalará el APK.' }
 
     $started = Get-Date
-    & $Flutter --no-version-check build apk --debug --flavor offline --no-pub `
-        --build-number=$BuildNumber --dart-define=LIBRETAPP_OFFLINE_PILOT=true
+    # Sin `--no-pub`: el registro de plugins debe regenerarse en modo release para
+    # excluir dependencias de desarrollo (integration_test) del build conectado.
+    & $Flutter --no-version-check build apk --release --flavor connected `
+        --build-number=$BuildNumber --dart-define-from-file=onboarding.dart-define.local.json
     if ($LASTEXITCODE -ne 0) { throw 'Falló la compilación. No se instalará un APK anterior.' }
 
     $built = Get-Item -LiteralPath $apk -ErrorAction Stop

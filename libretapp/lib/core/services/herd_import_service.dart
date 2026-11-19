@@ -150,10 +150,9 @@ class HerdImportService {
     final columns = Map<HerdImportField, int>.unmodifiable(
       mapping ?? detectMapping(document),
     );
-    if (!columns.keys.any(_identityFields.contains))
-      throw const FormatException(
-        'Asigna una columna de arete, SINIIGA o RFID.',
-      );
+    if (columns.isEmpty) {
+      throw const FormatException('Asigna al menos una columna del archivo.');
+    }
     if (columns.values.any((i) => i < 0 || i >= document.headers.length) ||
         columns.values.toSet().length != columns.length) {
       throw const FormatException(
@@ -182,7 +181,12 @@ class HerdImportService {
       final errors = <String>[];
       final warnings = <String>[];
       final keys = _keys(values);
-      if (keys.isEmpty) errors.add('Falta arete, SINIIGA o RFID.');
+      if (keys.isEmpty &&
+          !_animalDataFields.any(
+            (field) => values[field]?.isNotEmpty == true,
+          )) {
+        errors.add('La fila no tiene datos del animal para importar.');
+      }
       final duplicateRows = {for (final key in keys) ...occurrences[key]!}
         ..remove(row.number);
       if (duplicateRows.isNotEmpty)
@@ -214,21 +218,11 @@ class HerdImportService {
           'Los identificadores corresponden a varios animales. Corrige la fila antes de importar.',
         );
       final current = matches.length == 1 ? matches.single : null;
-      final externalUuid = values[HerdImportField.uuid];
-      if (externalUuid != null && externalUuid.isNotEmpty) {
-        final byUuid = existing
-            .where((a) => a.uuid == externalUuid)
-            .firstOrNull;
-        if (byUuid != null && byUuid.uuid != current?.uuid)
-          errors.add(
-            'El UUID pertenece a otro animal. No se cambiará su identificación desde la importación.',
-          );
-      }
       AnimalEntity? proposed;
       final changes = <HerdImportChange>[];
       try {
         proposed = _propose(values, current);
-        if (!_animalKeys(proposed).containsAll(_keys(values))) {
+        if (!_animalKeys(proposed).containsAll(_identificationKeys(values))) {
           errors.add(
             'Una identificación asignada no se puede conservar en esta combinación. Revisa las columnas de arete, SINIIGA e identificación visual.',
           );
@@ -259,6 +253,12 @@ class HerdImportService {
             );
           changes.addAll(_changes(current, proposed));
         } else {
+          if (_identificationKeys(values).isEmpty) {
+            warnings.add(
+              'Se generará un UUID. Si vuelves a importar esta fila sin un '
+              'identificador registrado, se creará otro animal.',
+            );
+          }
           if (values[HerdImportField.species]?.isNotEmpty != true)
             warnings.add(
               'Sin especie indicada: se usará ${proposed.species.displayName}.',
@@ -357,12 +357,17 @@ class HerdImportService {
       for (final row in selected) {
         final matches = _matches(identityIndex, _keys(row.values));
         final primary = _tag(row.proposed!.earTagNumber);
-        final primaryConflict = _matches(identityIndex, {'tag:$primary'}).any(
-          (a) => a.uuid != row.current?.uuid && _tag(a.earTagNumber) == primary,
-        );
+        final primaryConflict =
+            primary.isNotEmpty &&
+            _matches(identityIndex, {'tag:$primary'}).any(
+              (a) =>
+                  a.uuid != row.current?.uuid &&
+                  _tag(a.earTagNumber) == primary,
+            );
         if (primaryConflict ||
             (row.current == null
-                ? matches.isNotEmpty
+                ? matches.isNotEmpty ||
+                      identityIndex.containsKey('uuid:${row.proposed!.uuid}')
                 : matches.length != 1 || matches.single != row.current)) {
           throw StateError(
             'El hato cambió desde la vista previa (fila ${row.number}). Actualiza la vista previa antes de guardar.',
@@ -445,7 +450,7 @@ class HerdImportService {
       current?.healthStatus ?? HealthStatus.unknown,
       (v) => v.displayName,
     );
-    var age = current?.ageMonths ?? 0;
+    var age = current?.ageMonths ?? -1;
     if (value(HerdImportField.ageMonths) case final String raw) {
       final parsed = int.tryParse(raw);
       if (parsed == null || parsed < 0 || parsed > 1200)
@@ -455,7 +460,10 @@ class HerdImportService {
       age = parsed;
     }
     var birth =
-        current?.birthDate ?? DateTime(now.year, now.month - age, now.day);
+        current?.birthDate ??
+        (age < 0
+            ? DateTime.fromMillisecondsSinceEpoch(0)
+            : DateTime(now.year, now.month - age, now.day));
     var precision =
         current?.birthDatePrecision ??
         (value(HerdImportField.ageMonths) == null
@@ -592,21 +600,37 @@ class HerdImportService {
     HerdImportField.rfid,
     HerdImportField.visualId,
   };
+  static const _animalDataFields = {
+    HerdImportField.name,
+    HerdImportField.species,
+    HerdImportField.category,
+    HerdImportField.sex,
+    HerdImportField.breed,
+    HerdImportField.birthDate,
+    HerdImportField.ageMonths,
+    HerdImportField.weight,
+  };
   static String _tag(String value) => value.trim().toLowerCase();
   static String _rfid(String value) => AnimalIdentifier(
     type: AnimalIdentifierType.rfid,
     value: value,
   ).normalized;
   static Set<String> _keys(Map<HerdImportField, String> values) => {
-    for (final field in [
-      HerdImportField.earTag,
-      HerdImportField.siniiga,
-      HerdImportField.visualId,
-    ])
-      if (values[field]?.isNotEmpty == true) 'tag:${_tag(values[field]!)}',
-    if (values[HerdImportField.rfid]?.isNotEmpty == true)
-      'rfid:${_rfid(values[HerdImportField.rfid]!)}',
+    ..._identificationKeys(values),
+    if (values[HerdImportField.uuid]?.isNotEmpty == true)
+      'uuid:${values[HerdImportField.uuid]}',
   };
+  static Set<String> _identificationKeys(Map<HerdImportField, String> values) =>
+      {
+        for (final field in [
+          HerdImportField.earTag,
+          HerdImportField.siniiga,
+          HerdImportField.visualId,
+        ])
+          if (values[field]?.isNotEmpty == true) 'tag:${_tag(values[field]!)}',
+        if (values[HerdImportField.rfid]?.isNotEmpty == true)
+          'rfid:${_rfid(values[HerdImportField.rfid]!)}',
+      };
   static Set<String> _animalKeys(AnimalEntity animal) => {
     if (animal.earTagNumber.trim().isNotEmpty)
       'tag:${_tag(animal.earTagNumber)}',
@@ -621,7 +645,7 @@ class HerdImportService {
   ) {
     final index = <String, List<AnimalEntity>>{};
     for (final animal in animals) {
-      for (final key in _animalKeys(animal)) {
+      for (final key in {..._animalKeys(animal), 'uuid:${animal.uuid}'}) {
         index.putIfAbsent(key, () => []).add(animal);
       }
     }
@@ -754,6 +778,9 @@ class HerdImportService {
       'eartag',
       'eartagnumber',
       'ncaravana',
+      'ndecaravana',
+      'numerodearete',
+      'numerodecaravana',
       'caravana',
       'identificacion',
       'numeroarete',
@@ -773,6 +800,7 @@ class HerdImportService {
     HerdImportField.birthDate: [
       'fechanac',
       'fechanacimiento',
+      'fechadenacimiento',
       'birthdate',
       'nacimiento',
     ],
@@ -780,7 +808,12 @@ class HerdImportService {
       'precisionnacimiento',
       'birthdateprecision',
     ],
-    HerdImportField.ageMonths: ['edadmeses', 'edad', 'agemonths'],
+    HerdImportField.ageMonths: [
+      'edadmeses',
+      'edadenmeses',
+      'edad',
+      'agemonths',
+    ],
     HerdImportField.weight: ['pesokg', 'peso', 'weight', 'weightkg'],
     HerdImportField.status: ['estado', 'status'],
     HerdImportField.healthStatus: [

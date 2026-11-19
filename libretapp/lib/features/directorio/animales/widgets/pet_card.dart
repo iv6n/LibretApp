@@ -56,7 +56,6 @@ class PetCard extends StatelessWidget {
         breed.toLowerCase() != 'desconocido' &&
         breed.toLowerCase() != 'sin dato' &&
         breed.toLowerCase() != animal.species.displayName.toLowerCase();
-    final showPurpose = animal.productionPurpose != ProductionPurpose.undefined;
     final illustration = petIllustrationAsset(animal.species);
     final locationName = location?.name;
     final ageLabel = !animal.hasKnownAge
@@ -64,10 +63,6 @@ class PetCard extends StatelessWidget {
         : animal.ageMonths < 12
         ? '${animal.ageMonths} mes${animal.ageMonths == 1 ? '' : 'es'}'
         : '${animal.ageMonths ~/ 12} año${animal.ageMonths ~/ 12 == 1 ? '' : 's'}';
-    final facts = <String>[
-      animal.species.displayName,
-      if (animal.sex != Sex.unknown) animal.sex.displayName,
-    ];
     final indicators =
         indicatorsFor(animal, snapshot: indicatorSnapshot, maxIndicators: 12)
             .where(
@@ -81,11 +76,6 @@ class PetCard extends StatelessWidget {
             .take(3)
             .toList();
     final healthAlert = animalHealthAlert(animal);
-    final showFooter =
-        locationName?.isNotEmpty == true ||
-        indicators.isNotEmpty ||
-        healthAlert != null ||
-        facts.isNotEmpty;
     final selectedOverlay = isSelected
         ? AnimalPalette.uiAccent.withValues(alpha: 0.12)
         : Colors.transparent;
@@ -129,7 +119,6 @@ class PetCard extends StatelessWidget {
               age: ageLabel,
               stage: 'Mascota',
               stageColor: speciesColor,
-              stageIcon: Icons.pets,
               titleFontSize: AppDirectoryMetrics.of(context).petNameFontSize,
               selected: selectionEnabled ? isSelected : null,
               menu: !isPreview && !selectionEnabled && onMenuAction != null
@@ -138,41 +127,55 @@ class PetCard extends StatelessWidget {
                       stageColor: speciesColor,
                       iconColor: AnimalPalette.cardTextSecondary(context),
                       showStageLabel: false,
+                      dense: true,
                       onSelected: onMenuAction!,
                       onMenuOpenChanged: onQuickMenuOpenChanged,
                       onPrepareQuickMenu: onPrepareQuickMenu,
                     )
                   : null,
-              chips: AnimalIdentityChipRow(
-                breedLabel: showBreed ? breed.toUpperCase() : null,
-                purposeLabel: showPurpose
-                    ? purposeChipShortLabel(
-                        animal.productionPurpose,
-                      ).toUpperCase()
-                    : null,
-                breedAccentColor: AnimalPalette.breedChipAccent,
-                breedTextColor: AnimalPalette.cardTextPrimary(context),
-                purposeAccentColor: const Color(0xFF9E9485),
-                purposeTextColor: const Color(0xFF544639),
+              chips: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  TagChip(
+                    label: animal.species.displayName.toUpperCase(),
+                    accentColor: speciesColor,
+                    textColor: AnimalPalette.cardTextPrimary(context),
+                    fontSize: 11,
+                    tintOpacity: 0.18,
+                    borderOpacity: 0.14,
+                    useProvidedTextColorInDark: true,
+                  ),
+                  if (showBreed)
+                    TagChip(
+                      label: breed.toUpperCase(),
+                      accentColor: AnimalPalette.breedChipAccent,
+                      textColor: AnimalPalette.cardTextPrimary(context),
+                      fontSize: 11,
+                      tintOpacity: 0.18,
+                      borderOpacity: 0.14,
+                      useProvidedTextColorInDark: true,
+                    ),
+                ],
               ),
             ),
-            if (showFooter)
-              AnimalDirectoryCardFooter(
-                key: const ValueKey('pet_card_footer'),
-                locationLabel: locationName?.isNotEmpty == true
-                    ? locationName
-                    : null,
-                onLocationTap: isPreview ? null : onLocationTap,
-                indicators: indicators,
-                purpose: animal.productionPurpose,
-                healthAlert: healthAlert,
-                identityIcon: switch (animal.sex) {
-                  Sex.female => Icons.female,
-                  Sex.male => Icons.male,
-                  Sex.unknown => Icons.pets_outlined,
-                },
-                identityFact: facts.join(' · '),
-              ),
+            AnimalDirectoryCardFooter(
+              key: const ValueKey('pet_card_footer'),
+              locationLabel: locationName?.trim().isNotEmpty == true
+                  ? locationName!.trim()
+                  : 'Sin ubicación',
+              onLocationTap:
+                  isPreview || locationName?.trim().isNotEmpty != true
+                  ? null
+                  : onLocationTap,
+              indicators: indicators,
+              purpose: animal.productionPurpose,
+              healthAlert: healthAlert,
+              isPet: true,
+              petSexLabel: animal.sex == Sex.unknown
+                  ? null
+                  : animal.sex.displayName,
+            ),
           ],
         ),
       ),

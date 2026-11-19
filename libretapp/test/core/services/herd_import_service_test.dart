@@ -95,26 +95,49 @@ void main() {
   );
 
   test(
-    'the actual current Excel export can be previewed with native numeric cells and UUID columns',
+    'an Excel export accepts new rows with and without arete or UUID',
     () async {
       await fixture.seedLot();
       final workbook = xlsx.Excel.createExcel();
       await AnimalesExportSheet(fixture.animals).writeTo(workbook);
+      final sheet = workbook['Animales'];
+      sheet.appendRow([
+        null,
+        xlsx.TextCellValue('0003'),
+        xlsx.TextCellValue('Estrella'),
+      ]);
+      sheet.appendRow([null, null, xlsx.TextCellValue('Paloma')]);
       final service = fixture.importer();
       final preview = await service.preview(
         service.readDocument(workbook.save()!, fileName: 'hato-exportado.xlsx'),
       );
       expect(preview.existingCount, 2);
       expect(preview.invalidCount, 0);
-      expect(preview.rows.map((r) => r.proposed!.earTagNumber).toSet(), {
+      final existing = preview.rows.where((row) => row.isExisting);
+      expect(existing.map((row) => row.proposed!.earTagNumber).toSet(), {
         '0001',
         '0002',
       });
-      expect(preview.rows.every((r) => r.proposed!.weight == 300), isTrue);
+      expect(existing.every((row) => row.proposed!.weight == 300), isTrue);
       expect(
-        preview.defaultActions.values.every((a) => a == HerdImportAction.skip),
+        existing.every((row) => row.defaultAction == HerdImportAction.skip),
         isTrue,
       );
+
+      final summary = await service.commit(preview, preview.defaultActions);
+      expect(summary.created, 2);
+      final herd = await fixture.animals.getAllIncludingInactive();
+      final estrella = herd.singleWhere(
+        (animal) => animal.customName == 'Estrella',
+      );
+      final paloma = herd.singleWhere(
+        (animal) => animal.customName == 'Paloma',
+      );
+      expect(estrella.earTagNumber, '0003');
+      expect(paloma.earTagNumber, isEmpty);
+      expect(estrella.uuid, startsWith('ani-'));
+      expect(paloma.uuid, startsWith('ani-'));
+      expect(paloma.uuid, isNot(estrella.uuid));
     },
   );
 

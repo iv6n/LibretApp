@@ -73,7 +73,10 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     if (initial != null) {
       _species = initial.species;
       _sex = initial.sex;
-      _identificationCtrl.text = initial.earTagNumber;
+      _identificationCtrl.text =
+          _policy.identificationKind == AnimalIdentificationKind.earTag
+          ? AnimalRegistrationNormalizer.earTag(initial.earTagNumber)
+          : initial.earTagNumber;
       _nameCtrl.text = initial.customName ?? '';
       _breedCtrl.text = initial.breed == 'Desconocido' ? '' : initial.breed;
       _weightCtrl.text = initial.weight?.toString() ?? '';
@@ -139,6 +142,11 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
     _markChanged();
     setState(() {
       _species = species;
+      if (_policy.identificationKind == AnimalIdentificationKind.earTag) {
+        _identificationCtrl.text = AnimalRegistrationNormalizer.earTag(
+          _identificationCtrl.text,
+        );
+      }
       if (!_policy.purposeOptions.contains(_purpose)) {
         _purpose = null;
       }
@@ -157,7 +165,11 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
         : _birthInputMode == _BirthInputMode.approximate && !_age.isUnknown
         ? BirthDatePrecision.estimated
         : BirthDatePrecision.unknown,
-    identification: _nullableText(_identificationCtrl.text),
+    identification: _nullableText(
+      _policy.identificationKind == AnimalIdentificationKind.earTag
+          ? AnimalRegistrationNormalizer.earTag(_identificationCtrl.text)
+          : _identificationCtrl.text,
+    ),
     name: _nullableText(_nameCtrl.text),
     breed: _nullableText(_breedCtrl.text),
     weight: parseFormDouble(_weightCtrl.text),
@@ -185,7 +197,10 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
       _showMessage('Elige la edad aproximada o selecciona No lo sé.');
       return;
     }
-    final identification = _identificationCtrl.text.trim();
+    final identification =
+        _policy.identificationKind == AnimalIdentificationKind.earTag
+        ? AnimalRegistrationNormalizer.earTag(_identificationCtrl.text)
+        : _identificationCtrl.text.trim();
     final weight = parseFormDouble(_weightCtrl.text);
     if (_weightCtrl.text.trim().isNotEmpty &&
         (weight == null ||
@@ -622,6 +637,10 @@ class _QuickRegisterAnimalPageState extends State<QuickRegisterAnimalPage> {
                 controller: _identificationCtrl,
                 key: const ValueKey('animal-quick-identification'),
                 textCapitalization: TextCapitalization.characters,
+                inputFormatters:
+                    policy.identificationKind == AnimalIdentificationKind.earTag
+                    ? [FilteringTextInputFormatter.deny(RegExp(r'\s'))]
+                    : null,
                 decoration: InputDecoration(
                   labelText: policy.identificationLabel,
                   hintText: policy.identificationHint,

@@ -89,7 +89,9 @@ class AnimalCard extends StatelessWidget {
     final hasEarTag = animal.earTagNumber.trim().isNotEmpty;
     final pendingEarTag = hasPendingEarTag(animal);
     final breedLabel = breedSummary(animal, abbreviated: true);
-    final identification = hasEarTag ? animal.earTagNumber.trim() : '';
+    final identification = hasEarTag
+        ? AnimalRegistrationNormalizer.earTag(animal.earTagNumber)
+        : '';
     final usesEarTag =
         AnimalRegistrationPolicy.forSpecies(
           animal.species,
@@ -176,6 +178,7 @@ class AnimalCard extends StatelessWidget {
                       stageColor: stageColor,
                       iconColor: headerSecondaryTextColor,
                       showStageLabel: false,
+                      dense: true,
                       onSelected: onMenuAction!,
                       onMenuOpenChanged: onQuickMenuOpenChanged,
                       onPrepareQuickMenu: onPrepareQuickMenu,
@@ -459,8 +462,8 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
     required this.indicators,
     required this.purpose,
     this.healthAlert,
-    this.identityFact,
-    this.identityIcon = Icons.pets_outlined,
+    this.isPet = false,
+    this.petSexLabel,
   });
 
   final String? locationLabel;
@@ -468,20 +471,19 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
   final List<PurposeIndicator> indicators;
   final ProductionPurpose purpose;
   final CompactAnimalAlert? healthAlert;
-  final String? identityFact;
-  final IconData identityIcon;
+  final bool isPet;
+  final String? petSexLabel;
 
   @override
   Widget build(BuildContext context) {
     if (locationLabel == null &&
         indicators.isEmpty &&
         healthAlert == null &&
-        identityFact == null) {
+        petSexLabel == null) {
       return const SizedBox.shrink();
     }
     final metrics = AppDirectoryMetrics.of(context);
     final ordered = _orderedFooterIndicators(indicators, purpose);
-    final isPet = identityFact != null;
     final featuredIndicators = isPet
         ? const <PurposeIndicator>[]
         : ordered
@@ -520,14 +522,13 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
         onTap: onLocationTap,
         borderRadius: BorderRadius.circular(8),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: BoxConstraints(
+            minHeight: featuredIndicators.isNotEmpty ? 42 : 34,
+          ),
           child: _InlineInfo(icon: Icons.place_outlined, label: locationLabel!),
         ),
       ),
     );
-
-    Widget identity() =>
-        _PetIdentityFact(label: identityFact!, icon: identityIcon);
 
     Widget metric(PurposeIndicator indicator) =>
         _DirectoryFooterMetric(indicator: indicator);
@@ -552,14 +553,61 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
           final wide = constraints.maxWidth >= 520;
           final primaryGroups = <Widget>[
             if (locationLabel != null) location(),
-            if (isPet) identity(),
             for (final indicator in featuredIndicators) metric(indicator),
           ];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (wide && primaryGroups.length > 1)
+              if (isPet)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (locationLabel != null) ...[
+                        Expanded(flex: 2, child: location()),
+                        const SizedBox(width: 8),
+                      ],
+                      if (petSexLabel != null || supplementalFacts.isNotEmpty)
+                        Expanded(
+                          flex: locationLabel == null ? 1 : 3,
+                          child: Wrap(
+                            alignment: WrapAlignment.end,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: _footerFactSpacing,
+                            runSpacing: _footerFactSpacing,
+                            children: [
+                              if (petSexLabel != null)
+                                TagChip(
+                                  label: petSexLabel!,
+                                  accentColor: AnimalPalette.summaryChipAccent(
+                                    context,
+                                  ),
+                                  textColor: AnimalPalette.cardTextPrimary(
+                                    context,
+                                  ),
+                                  fontSize: 11,
+                                  tintOpacity: 0.12,
+                                  borderOpacity: 0.18,
+                                  useProvidedTextColorInDark: true,
+                                ),
+                              for (final fact in supplementalFacts)
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: locationLabel == null
+                                        ? constraints.maxWidth
+                                        : (constraints.maxWidth - 8) * 3 / 5,
+                                  ),
+                                  child: fact,
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else if (wide && primaryGroups.length > 1)
                 ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 56),
                   child: Row(
@@ -592,7 +640,6 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 8,
                     children: [
-                      if (isPet) identity(),
                       for (final indicator in featuredIndicators)
                         ConstrainedBox(
                           constraints: BoxConstraints(
@@ -603,7 +650,7 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
                     ],
                   ),
               ],
-              if (supplementalFacts.isNotEmpty)
+              if (!isPet && supplementalFacts.isNotEmpty)
                 Padding(
                   padding: EdgeInsets.only(
                     top: wide && primaryGroups.length > 1 ? 4 : 0,
@@ -624,7 +671,9 @@ class AnimalDirectoryCardFooter extends StatelessWidget {
                     ],
                   ),
                 ),
-              if (primaryGroups.isEmpty && supplementalFacts.isEmpty)
+              if (primaryGroups.isEmpty &&
+                  supplementalFacts.isEmpty &&
+                  petSexLabel == null)
                 const SizedBox(height: 8),
             ],
           );
@@ -657,37 +706,6 @@ class _DirectoryFooterMetric extends StatelessWidget {
             accentColor: AnimalPalette.summaryChipAccent(context),
             textColor: AnimalPalette.cardTextPrimary(context),
             fontSize: 12,
-            tintOpacity: 0.12,
-            borderOpacity: 0.18,
-            maxLines: 1,
-            useProvidedTextColorInDark: true,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _PetIdentityFact extends StatelessWidget {
-  const _PetIdentityFact({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) => ConstrainedBox(
-    constraints: const BoxConstraints(minHeight: 48),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 26, color: AnimalPalette.cardTextPrimary(context)),
-        const SizedBox(width: 8),
-        Flexible(
-          child: TagChip(
-            label: label,
-            accentColor: AnimalPalette.summaryChipAccent(context),
-            textColor: AnimalPalette.cardTextPrimary(context),
-            fontSize: 13,
             tintOpacity: 0.12,
             borderOpacity: 0.18,
             maxLines: 1,
@@ -865,6 +883,7 @@ class AnimalQuickMenu extends StatelessWidget {
     this.onMenuOpenChanged,
     this.onPrepareQuickMenu,
     this.showStageLabel = true,
+    this.dense = false,
   });
 
   final String stageLabel;
@@ -874,6 +893,7 @@ class AnimalQuickMenu extends StatelessWidget {
   final ValueChanged<bool>? onMenuOpenChanged;
   final Future<void> Function(BuildContext menuContext)? onPrepareQuickMenu;
   final bool showStageLabel;
+  final bool dense;
 
   Future<void> _openMenu(BuildContext context) async {
     onMenuOpenChanged?.call(true);
@@ -921,7 +941,10 @@ class AnimalQuickMenu extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => _openMenu(context),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            constraints: BoxConstraints(
+              minWidth: 32,
+              minHeight: dense ? 32 : 40,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -933,7 +956,7 @@ class AnimalQuickMenu extends StatelessWidget {
                     accentColor: stageColor,
                     outlined: false,
                   ),
-                Icon(Icons.more_vert, size: 24, color: iconColor),
+                Icon(Icons.more_vert, size: 32, color: iconColor),
               ],
             ),
           ),
@@ -1310,7 +1333,7 @@ class AnimalIdentityChipRow extends StatelessWidget {
 }
 
 /// Spacing between identity chips.
-const double _identityChipSpacing = 4;
+const double _identityChipSpacing = 6;
 
 class AnimalProfileVisual {
   const AnimalProfileVisual({

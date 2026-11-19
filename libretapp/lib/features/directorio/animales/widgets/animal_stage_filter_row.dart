@@ -24,14 +24,15 @@ class AnimalStageFilterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = _stageGroups(species, counts, companionOnly);
     final total = counts.values.fold<int>(0, (sum, count) => sum + count);
-    if (total == 0 || groups.isEmpty) return const SizedBox.shrink();
+    if (total == 0 || groups.length < 2) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     return AppDirectoryFilterRow(
+      compact: true,
       children: [
         _stageChip(
           theme: theme,
-          label: 'Todas',
+          label: 'Todos',
           count: total,
           selected: selectedStages.isEmpty,
           onTap: () => onChanged(const <LifeStage>{}),

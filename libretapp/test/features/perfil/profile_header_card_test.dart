@@ -58,7 +58,7 @@ void main() {
         ),
       );
       expect(find.text('Mi perfil'), findsOneWidget);
-      expect(find.text('Editar perfil'), findsOneWidget);
+      expect(find.byTooltip('Editar perfil'), findsOneWidget);
       expect(find.text('Añadir datos opcionales'), findsNothing);
       expect(find.textContaining('Completar'), findsNothing);
     },
@@ -137,12 +137,42 @@ void main() {
       ),
     );
 
+    expect(find.byTooltip('Mostrar datos'), findsNothing);
     await tester.tap(find.text('001234-MX'));
     await tester.pump();
     expect(copied, '001234-MX');
     expect(find.text('UPP copiado'), findsOneWidget);
   });
 
+  testWidgets('la UPP permanece visible al abrir y cerrar los contactos', (
+    tester,
+  ) async {
+    const profile = Perfil(
+      id: 'local',
+      nombre: 'Ana',
+      apellido: '',
+      finca: '',
+      upp: '000123',
+      email: 'ana@example.com',
+      telefono: '',
+      direccion: '',
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: ProfileHeaderCard(perfil: profile)),
+      ),
+    );
+    expect(find.text('Datos para copiar: UPP'), findsOneWidget);
+    expect(find.text('ana@example.com'), findsNothing);
+    await tester.tap(find.byTooltip('Mostrar datos'));
+    await tester.pump();
+    expect(find.text('000123'), findsOneWidget);
+    expect(find.text('ana@example.com'), findsOneWidget);
+    await tester.tap(find.byTooltip('Ocultar datos'));
+    await tester.pump();
+    expect(find.text('000123'), findsOneWidget);
+    expect(find.text('ana@example.com'), findsNothing);
+  });
   testWidgets('solo muestra los datos seleccionados y con valor', (
     tester,
   ) async {
@@ -166,6 +196,10 @@ void main() {
       ),
     );
     expect(find.text('001234-MX'), findsNothing);
+    expect(find.text('ana@example.com'), findsNothing);
+    expect(find.text('5551234567'), findsNothing);
+    await tester.tap(find.byTooltip('Mostrar datos'));
+    await tester.pump();
     expect(find.text('ana@example.com'), findsNothing);
     expect(find.text('5551234567'), findsOneWidget);
     expect(find.text('Calle 1'), findsOneWidget);

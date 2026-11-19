@@ -30,9 +30,8 @@ class ProfileHeaderCard extends StatelessWidget {
         hasDetails &&
         onEditTap != null &&
         MediaQuery.textScalerOf(context).scale(1) < 1.4;
+    final upp = perfil.showUpp ? perfil.upp.trim() : '';
     final copyItems = <_CopyItem>[
-      if (perfil.showUpp && perfil.upp.trim().isNotEmpty)
-        _CopyItem(Icons.badge_outlined, 'UPP', perfil.upp.trim()),
       if (perfil.showTelefono && perfil.telefono.trim().isNotEmpty)
         _CopyItem(Icons.phone_outlined, 'Teléfono', perfil.telefono.trim()),
       if (perfil.showEmail && perfil.email.trim().isNotEmpty)
@@ -95,20 +94,15 @@ class ProfileHeaderCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (compactEdit)
-                      TextButton.icon(
-                        onPressed: onEditTap,
-                        style: TextButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          padding: EdgeInsets.zero,
-                          minimumSize: const Size(0, 48),
-                        ),
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Editar perfil'),
-                      ),
                   ],
                 ),
               ),
+              if (compactEdit)
+                IconButton.filledTonal(
+                  tooltip: 'Editar perfil',
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  onPressed: onEditTap,
+                ),
             ],
           ),
           if (onEditTap != null && !compactEdit) ...[
@@ -124,88 +118,9 @@ class ProfileHeaderCard extends StatelessWidget {
               ),
             ),
           ],
-          if (copyItems.isNotEmpty) ...[
+          if (upp.isNotEmpty || copyItems.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                color: cs.surface.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.48),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Material(
-                  color: Colors.transparent,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final pairQuickItems =
-                          copyItems.length >= 2 &&
-                          copyItems[0].label == 'UPP' &&
-                          copyItems[1].label == 'Teléfono' &&
-                          constraints.maxWidth >= 320 &&
-                          MediaQuery.textScalerOf(context).scale(1) < 1.4;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-                            child: Text(
-                              'Datos para copiar',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                          if (pairQuickItems)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 2),
-                              child: IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      child: _CopyInfoRow(
-                                        item: copyItems[0],
-                                        compact: true,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: _CopyInfoRow(
-                                        item: copyItems[1],
-                                        compact: true,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          for (
-                            var i = pairQuickItems ? 2 : 0;
-                            i < copyItems.length;
-                            i++
-                          ) ...[
-                            if (i > 0 && !(pairQuickItems && i == 2))
-                              Divider(
-                                height: 1,
-                                indent: 14,
-                                endIndent: 14,
-                                color: cs.outlineVariant.withValues(
-                                  alpha: 0.55,
-                                ),
-                              ),
-                            _CopyInfoRow(item: copyItems[i]),
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
+            _CopyPanel(key: ValueKey(perfil.id), upp: upp, items: copyItems),
           ],
         ],
       ),
@@ -221,79 +136,114 @@ class _CopyItem {
   final String value;
 }
 
-class _CopyInfoRow extends StatelessWidget {
-  const _CopyInfoRow({required this.item, this.compact = false});
+class _CopyPanel extends StatefulWidget {
+  const _CopyPanel({required this.upp, required this.items, super.key});
 
-  final _CopyItem item;
-  final bool compact;
+  final String upp;
+  final List<_CopyItem> items;
+
+  @override
+  State<_CopyPanel> createState() => _CopyPanelState();
+}
+
+class _CopyPanelState extends State<_CopyPanel> {
+  bool expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Semantics(
-      button: true,
-      excludeSemantics: true,
-      label: 'Copiar ${item.label}: ${item.value}',
-      child: Tooltip(
-        message: 'Copiar ${item.label}',
-        child: Material(
-          color: compact
-              ? cs.primaryContainer.withValues(alpha: 0.38)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () async {
-              await Clipboard.setData(ClipboardData(text: item.value));
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(content: Text('${item.label} copiado')),
-                );
-            },
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 56),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 10 : 14,
-                  vertical: compact ? 8 : 9,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(item.icon, size: 18, color: cs.primary),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            item.label,
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: cs.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Icon(Icons.copy_outlined, size: 18, color: cs.primary),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.value,
-                      softWrap: true,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    final hasUpp = widget.upp.isNotEmpty;
+    final canExpand = widget.items.isNotEmpty;
+    final heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          hasUpp ? 'Datos para copiar: UPP' : 'Datos para copiar',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: cs.onSurfaceVariant,
           ),
         ),
+        if (hasUpp)
+          Text(
+            widget.upp,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+      ],
+    );
+    void toggle() => setState(() => expanded = !expanded);
+    final toggleLabel = expanded ? 'Ocultar datos' : 'Mostrar datos';
+    return Material(
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: hasUpp ? 'Copiar UPP' : toggleLabel,
+                  child: InkWell(
+                    onTap: hasUpp
+                        ? () => _copy(context, 'UPP', widget.upp)
+                        : toggle,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(child: heading),
+                          if (hasUpp)
+                            Icon(
+                              Icons.copy_outlined,
+                              size: 18,
+                              color: cs.primary,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (canExpand)
+                IconButton(
+                  tooltip: toggleLabel,
+                  onPressed: toggle,
+                  icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+                ),
+            ],
+          ),
+          if (expanded && canExpand)
+            for (final item in widget.items) ...[
+              const Divider(height: 1, indent: 14, endIndent: 14),
+              ListTile(
+                leading: Icon(item.icon, size: 20),
+                title: Text(item.label, style: theme.textTheme.labelMedium),
+                subtitle: Text(item.value, style: theme.textTheme.bodyMedium),
+                trailing: const Icon(Icons.copy_outlined, size: 18),
+                onTap: () => _copy(context, item.label, item.value),
+              ),
+            ],
+        ],
       ),
     );
   }
+}
+
+Future<void> _copy(BuildContext context, String label, String value) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text('$label copiado')));
 }

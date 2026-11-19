@@ -1,5 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
+import com.flutter.gradle.tasks.FlutterTask
+import groovy.json.JsonSlurper
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -109,6 +112,47 @@ dependencies {
 
 flutter {
     source = "../.."
+}
+
+// `flutter run` passes only its own dart-defines (FLUTTER_*), so a local debug
+// build would ship without the Supabase settings and phone sign-in would fall
+// back to guest-only. Complete the defines with the developer's gitignored
+// parameter file; values passed explicitly with --dart-define always win.
+// Release builds keep requiring their own --dart-define-from-file.
+val localDefineFile = rootProject.file("../onboarding.dart-define.local.json")
+val withLocalDartDefineDefaults: (String?) -> String? = { current ->
+    if (!localDefineFile.exists()) {
+        current
+    } else {
+        val merged = linkedMapOf<String, String>()
+        (JsonSlurper().parse(localDefineFile) as Map<*, *>).forEach { (key, value) ->
+            merged[key.toString()] = value.toString()
+        }
+        current
+            ?.split(',')
+            ?.filter { it.isNotEmpty() }
+            ?.forEach { encoded ->
+                val define = String(Base64.getDecoder().decode(encoded), Charsets.UTF_8)
+                val separator = define.indexOf('=')
+                if (separator > 0) {
+                    merged[define.substring(0, separator)] = define.substring(separator + 1)
+                }
+            }
+        merged.entries.joinToString(",") { (key, value) ->
+            Base64.getEncoder().encodeToString("$key=$value".toByteArray(Charsets.UTF_8))
+        }
+    }
+}
+
+// Flutter configures these tasks inside AGP's `afterEvaluate`, so the hook has
+// to run after the whole task graph is known; a `configureEach` would run earlier
+// and get overwritten.
+gradle.taskGraph.whenReady {
+    allTasks.forEach { candidate ->
+        if (candidate is FlutterTask && candidate.buildMode != "release") {
+            candidate.dartDefines = withLocalDartDefineDefaults(candidate.dartDefines)
+        }
+    }
 }
 
 // `flutter run` sin `--flavor` pide `assembleDebug` (que agrega los tres

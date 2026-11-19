@@ -144,14 +144,17 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
       final current = RegistrationPreferences.decode(
         prefs.getString(RegistrationPreferences.storageKey),
       );
-      if (!current.configured) {
+      final generalized = RegistrationPreferences(
+        preferredSpecies: RegistrationPreferences.allSpecies,
+        includePlants: true,
+        configured: true,
+        careProfile: null,
+      );
+      if (generalized.encode() != current.encode()) {
         await prefs.setString(
           RegistrationPreferences.storageKey,
-          RegistrationPreferences.defaults.encode(),
+          generalized.encode(),
         );
-        await prefs.setBool(RegistrationPreferences.recordsMigrationKey, false);
-      } else if (current.careProfile == null) {
-        // Add an inferred presentation profile to prior preference documents.
         await prefs.setBool(RegistrationPreferences.recordsMigrationKey, false);
       } else if (prefs.getBool(RegistrationPreferences.recordsMigrationKey) ==
           null) {
@@ -203,10 +206,9 @@ class _WorkspaceAppHostState extends State<WorkspaceAppHost> {
         careProfile:
             stored.careProfile ??
             inferCareProfileFromAnimals(existingAnimals) ??
-            inferCareProfileFromSpecies({
-              ...stored.preferredSpecies,
-              ...registeredSpecies,
-            }),
+            (registeredSpecies.isEmpty
+                ? null
+                : inferCareProfileFromSpecies(registeredSpecies)),
         configured:
             stored.configured || registeredSpecies.isNotEmpty || hasPlants,
       );

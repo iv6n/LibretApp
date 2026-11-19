@@ -8,6 +8,7 @@ import 'package:libretapp/core/utils/number_parsing.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:libretapp/app/widgets/widgets.dart';
 import 'package:libretapp/core/backup/first_backup_suggestion.dart';
@@ -259,7 +260,13 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   }
 
   void _applyAnimalToForm(AnimalEntity animal) {
-    _earTagCtrl.text = animal.earTagNumber;
+    _earTagCtrl.text =
+        AnimalRegistrationPolicy.forSpecies(
+              animal.species,
+            ).identificationKind ==
+            AnimalIdentificationKind.earTag
+        ? AnimalRegistrationNormalizer.earTag(animal.earTagNumber)
+        : animal.earTagNumber;
     _nameCtrl.text = animal.customName ?? '';
     _breedCtrl.text = animal.breed;
     _crossBreedCtrl.text = animal.crossBreed ?? '';
@@ -375,7 +382,10 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
     _birthDate = seed.birthDate;
     _selectedDamUuid = seed.damUuid;
     _selectedSireUuid = seed.sireUuid;
-    _earTagCtrl.text = seed.identification ?? '';
+    _earTagCtrl.text =
+        _policy.identificationKind == AnimalIdentificationKind.earTag
+        ? AnimalRegistrationNormalizer.earTag(seed.identification)
+        : seed.identification ?? '';
     _nameCtrl.text = seed.name ?? '';
     _breedCtrl.text = seed.breed ?? '';
     _weightCtrl.text = seed.weight?.toString() ?? '';
@@ -642,6 +652,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
                         controller: _earTagCtrl,
                         key: const ValueKey('animal-complete-identification'),
                         textCapitalization: TextCapitalization.characters,
+                        inputFormatters:
+                            policy.identificationKind ==
+                                AnimalIdentificationKind.earTag
+                            ? [FilteringTextInputFormatter.deny(RegExp(r'\s'))]
+                            : null,
                         decoration: InputDecoration(
                           labelText: policy.identificationLabel,
                           hintText: policy.identificationHint,
@@ -2208,6 +2223,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
   void _onSpeciesChanged(Species species) {
     setState(() {
       _species = species;
+      if (_policy.identificationKind == AnimalIdentificationKind.earTag) {
+        _earTagCtrl.text = AnimalRegistrationNormalizer.earTag(
+          _earTagCtrl.text,
+        );
+      }
       if (!widget.isEdit) {
         _selectedDamUuid = null;
         _selectedSireUuid = null;
@@ -2330,7 +2350,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
         final continueWithoutEarTag = await _confirmMissingEarTag();
         if (!mounted || !continueWithoutEarTag) return;
       } else {
-        final duplicated = await _isEarTagDuplicated(_earTagCtrl.text.trim());
+        final duplicated = await _isEarTagDuplicated(
+          _policy.identificationKind == AnimalIdentificationKind.earTag
+              ? AnimalRegistrationNormalizer.earTag(_earTagCtrl.text)
+              : _earTagCtrl.text.trim(),
+        );
         if (duplicated && mounted) {
           _showMessage('El arete ya existe en otro registro.');
           return;
@@ -2573,6 +2597,11 @@ class _RegisterAnimalPageState extends State<RegisterAnimalPage> {
       _healthNotesCtrl.text = (m['healthNotes'] as String?) ?? '';
       // Enums
       _species = safeEnum(Species.values, m['species'] as String?, _species);
+      if (_policy.identificationKind == AnimalIdentificationKind.earTag) {
+        _earTagCtrl.text = AnimalRegistrationNormalizer.earTag(
+          _earTagCtrl.text,
+        );
+      }
       _category = safeEnum(
         Category.values,
         m['category'] as String?,
